@@ -37,9 +37,10 @@ import random
 import shutil
 import time
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from collections.abc import Iterable, Sequence
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -190,7 +191,7 @@ def _record_audit(
     ).first()
     prev_hash = last.event_hash if last else "GENESIS"
     seq = (last.seq + 1) if last else 1
-    created_at = datetime.now(timezone.utc)
+    created_at = datetime.now(UTC)
     event_hash = hashlib.sha256(
         "|".join(
             [
@@ -238,7 +239,7 @@ def _seed_tenants(db: Session, metadata: Any) -> dict[str, uuid.UUID]:
             "name": t["name"],
             "name_ur": t["name_ur"],
             "is_active": True,
-            "created_at": datetime(2026, 11, 20, 13, 0, tzinfo=timezone.utc),
+            "created_at": datetime(2026, 11, 20, 13, 0, tzinfo=UTC),
         }
         for t in sd.TENANTS
     ]
@@ -264,7 +265,7 @@ def _seed_users(db: Session, metadata: Any, tenants: dict[str, uuid.UUID]) -> di
                 "full_name": persona.full_name,
                 "preferred_lang": persona.preferred_lang,
                 "is_active": True,
-                "created_at": datetime(2026, 11, 20, 13, 5, tzinfo=timezone.utc),
+                "created_at": datetime(2026, 11, 20, 13, 5, tzinfo=UTC),
             }
         )
     _insert(db, metadata, "users", rows)
@@ -275,7 +276,7 @@ def _seed_citizens(db: Session, metadata: Any, users: dict[str, uuid.UUID]) -> d
     """Citizen profiles for the personas plus the demo cast."""
     rows: list[dict[str, Any]] = []
     ids: dict[str, uuid.UUID] = {}
-    now = datetime(2026, 11, 20, 13, 10, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 20, 13, 10, tzinfo=UTC)
 
     def add(
         key: str,
@@ -438,7 +439,7 @@ def _seed_citizens(db: Session, metadata: Any, users: dict[str, uuid.UUID]) -> d
 def _seed_programs(
     db: Session, metadata: Any, tenants: dict[str, uuid.UUID], admin_id: uuid.UUID
 ) -> dict[str, dict[str, Any]]:
-    now = datetime(2026, 11, 20, 13, 15, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 20, 13, 15, tzinfo=UTC)
     specs = [
         {
             "code": "SAHARA_WIDOW_GRANT",
@@ -519,7 +520,7 @@ def _seed_consent(
     users: dict[str, uuid.UUID],
     tenants: dict[str, uuid.UUID],
 ) -> None:
-    now = datetime(2026, 11, 20, 13, 20, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 20, 13, 20, tzinfo=UTC)
     grants: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
 
@@ -970,7 +971,7 @@ def _seed_mock_registries(db: Session) -> None:
                 mode="NORMAL",
                 latency_ms=4000,
                 failure_rate=0.50,
-                updated_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(UTC),
             )
         )
     db.flush()
@@ -1102,7 +1103,7 @@ def _seed_historical_cases(
     rng: random.Random,
 ) -> dict[str, Any]:
     """60 decided SPD cases + 10 ZWB cases (Digital Twin fodder)."""
-    now = datetime(2026, 11, 20, 14, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 20, 14, 0, tzinfo=UTC)
     spd = programs["SAHARA_WIDOW_GRANT"]
     zwb = programs["GUZARA_ALLOWANCE"]
 

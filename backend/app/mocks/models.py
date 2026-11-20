@@ -14,7 +14,7 @@ Every row here is 100% synthetic. CNICs use the reserved fictional prefix
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -33,7 +33,7 @@ from app.db import Base
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class MockIdentity(Base):

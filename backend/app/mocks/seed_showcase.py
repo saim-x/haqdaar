@@ -10,9 +10,10 @@ from __future__ import annotations
 import hashlib
 import random
 import uuid
-from datetime import datetime, timedelta, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -40,7 +41,7 @@ def seed_showcase_cases(
     citizens: dict[str, uuid.UUID],
     rng: random.Random,
 ) -> dict[str, Any]:
-    now = datetime(2026, 11, 20, 15, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 20, 15, 0, tzinfo=UTC)
     spd = programs["SAHARA_WIDOW_GRANT"]
     rules = spd["rules"]
     tenant_id = tenants["SPD"]

@@ -148,9 +148,9 @@ def demo_reset(db: Session) -> dict[str, Any]:
 __all__ = [
     "DEFAULT_FAILURE_RATE",
     "DEFAULT_LATENCY_MS",
-    "MockConfigError",
     "NORMAL_JITTER_MAX_MS",
     "NORMAL_JITTER_MIN_MS",
+    "MockConfigError",
     "demo_reset",
     "ensure_defaults",
     "get_service_config",

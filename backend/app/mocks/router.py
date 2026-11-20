@@ -13,8 +13,9 @@ synthetic: CNICs start with the reserved fictional prefix ``99900``.
 from __future__ import annotations
 
 import re
-from datetime import date, datetime, timezone
-from typing import Any, Iterable
+from collections.abc import Iterable
+from datetime import UTC, date, datetime
+from typing import Any
 
 from fastapi import APIRouter, Body, Header, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -388,7 +389,7 @@ def payment_transfer(
             amount_pkr=payload.amount_pkr,
             status=status,
             failure_reason=failure_reason,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(row)
         db.commit()
@@ -430,7 +431,7 @@ def register_complaint(payload: ComplaintRequest = Body(...)) -> dict[str, Any]:
             citizen_cnic=_digits(payload.citizen_cnic) or None,
             reason=payload.reason,
             status="REGISTERED",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(row)
         db.commit()

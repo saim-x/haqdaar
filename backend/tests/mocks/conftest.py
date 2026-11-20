@@ -14,7 +14,7 @@ import types
 
 def _install_db_stub() -> None:
     try:  # pragma: no cover - the happy path once A1 lands
-        import app.db  # noqa: F401
+        import app.db
 
         return
     except Exception:

@@ -21,8 +21,9 @@ from __future__ import annotations
 import argparse
 import json
 import random
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 from app.mocks import seed_data as sd
 

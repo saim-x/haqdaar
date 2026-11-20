@@ -25,10 +25,11 @@ import argparse
 import hashlib
 import io
 import json
-from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from collections.abc import Iterable
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -539,7 +540,7 @@ def generate_demo_docs(*, force: bool = False) -> dict[str, Any]:
     )
 
     manifest = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "watermark": WATERMARK_TEXT,
         "generator_seed": GENERATOR_SEED,
         "count": len(entries),
@@ -712,7 +713,7 @@ def generate_doc_eval_set(*, force: bool = False) -> dict[str, Any]:
     entries.sort(key=lambda item: item["file"])
 
     manifest = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "watermark": WATERMARK_TEXT,
         "generator_seed": GENERATOR_SEED,
         "count": len(entries),

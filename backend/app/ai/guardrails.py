@@ -71,8 +71,8 @@ def _p(code: str, pattern: str, description: str) -> InjectionPattern:
 
 #: Ordered most-specific first so the audit trail names the clearest match.
 INJECTION_PATTERNS: tuple[InjectionPattern, ...] = (
-    _p("IGNORE_INSTRUCTIONS", r"\b(?:ignore|disregard|forget|override)\b[^.\n]{0,40}\b(?:previous|prior|above|earlier|all)\b[^.\n]{0,20}\b(?:instruction|prompt|rule|direction)s?\b", "asks the model to discard its instructions"),
-    _p("IGNORE_INSTRUCTIONS", r"(?:پچھلی|سابقہ)\s+ہدایات\s+(?:کو\s+)?نظر\s*انداز", "Urdu instruction override"),
+    _p("IGNORE_INSTRUCTIONS", r"\b(?:ignore|disregard|forget|override)\b[^.\n]{0,40}\b(?:previous|prior|above|earlier|all|your|these|those)\b[^.\n]{0,20}\b(?:instruction|prompt|rule|direction)s?\b", "asks the model to discard its instructions"),
+    _p("IGNORE_INSTRUCTIONS", r"(?:پچھلی|سابقہ|تمام)\s+ہدایات\s+(?:کو\s+)?(?:نظر\s*انداز|بھول)", "Urdu instruction override"),
     _p("DECISION_OVERRIDE", r"\b(?:approve|reject|accept|pass|clear)\b[^.\n]{0,25}\b(?:this|the)\b[^.\n]{0,15}\b(?:case|application|claim|file)\b", "asks the model to decide a case"),
     _p("DECISION_OVERRIDE", r"\b(?:mark|set|flag)\b[^.\n]{0,25}\b(?:as\s+)?(?:approved|eligible|verified|paid)\b", "asks the model to set a status"),
     _p("DECISION_OVERRIDE", r"(?:اس|اسے)\s*(?:کیس|درخواست)\s*کو\s*منظور", "Urdu decision override"),
@@ -154,14 +154,24 @@ def redact_cnic(text: str) -> str:
     return out
 
 
-_OTP_LIKE = re.compile(r"\b(?:otp|pin|mpin|code)\b[^\d\n]{0,12}(\d{4,8})\b", re.IGNORECASE)
+_OTP_LIKE = re.compile(
+    r"\b(?:otp|pin|mpin|code|password|passwd|pwd|secret|token)\b[^\d\n]{0,12}(\d{4,8})\b",
+    re.IGNORECASE,
+)
+_PASSWORD_LIKE = re.compile(
+    r"\b(?:password|passwd|pwd|secret|token)\b\s*[:=]?\s*([^\s,;]{4,})",
+    re.IGNORECASE,
+)
 
 
 def redact_secrets(text: str) -> str:
-    """Mask OTP/PIN values that appear next to their label."""
+    """Mask OTP/PIN values and passwords that appear next to their label."""
     if not text:
         return ""
-    return _OTP_LIKE.sub(lambda m: m.group(0).replace(m.group(1), "[SECRET_REDACTED]"), text)
+    out = _OTP_LIKE.sub(lambda m: m.group(0).replace(m.group(1), "[SECRET_REDACTED]"), text)
+    return _PASSWORD_LIKE.sub(
+        lambda m: m.group(0).replace(m.group(1), "[SECRET_REDACTED]"), out
+    )
 
 
 def redact_for_llm(text: str) -> str:
@@ -180,6 +190,13 @@ _CLAIM_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"آپ\s+(?:اہل|منظور|مستحق)\s+(?:ہیں|ہو\s+گئے|قرار)", re.UNICODE),
     re.compile(r"آپ\s+کی\s+درخواست\s+منظور", re.UNICODE),
     re.compile(r"آپ\s+کو\s+\d[\d,]*\s*روپے\s+مل(?:یں\s+گے|یں)", re.UNICODE),
+    re.compile(r"آپ\s+کو\s+[^.۔\n]{0,40}\s+مل\s+جائے\s+گ(?:ا|ی)", re.UNICODE),
+)
+
+#: A claim is not a claim when it is conditional or an instruction to check.
+#: "Submit an application to find out whether you qualify" must survive.
+_CONDITIONAL_PREFIX = re.compile(
+    r"\b(?:whether|if|check|find\s+out|confirm|verify|determine)\b", re.IGNORECASE
 )
 
 _CLAIM_SENTENCE = re.compile(r"[^.!?\n۔]+[.!?\n۔]?", re.UNICODE)
@@ -200,6 +217,9 @@ def filter_personal_claims(answer: str, *, lang: str = "en") -> ClaimFilterResul
     removed: list[str] = []
     kept: list[str] = []
     for sentence in _CLAIM_SENTENCE.findall(answer):
+        if _CONDITIONAL_PREFIX.search(sentence):
+            kept.append(sentence)
+            continue
         if any(pattern.search(sentence) for pattern in _CLAIM_PATTERNS):
             removed.append(sentence.strip())
             continue

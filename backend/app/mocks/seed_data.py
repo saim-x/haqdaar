@@ -11,9 +11,10 @@ import hashlib
 import json
 import random
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Sequence
+from typing import Any
 
 SEED_RNG_SEED = 20261120
 DEMO_PASSWORD = "Demo@2026"
@@ -668,12 +669,12 @@ __all__ = [
     "GUZARA_RULES_V1",
     "NAME_POOL",
     "PERSONAS",
-    "PersonaSpec",
     "SAHARA_RULES_V1",
     "SEED_RNG_SEED",
     "SHARED_ALIAS_TRIO",
     "SINDH_DISTRICTS",
     "TENANTS",
+    "PersonaSpec",
     "age_from_dob",
     "amount_for",
     "build_facts",
