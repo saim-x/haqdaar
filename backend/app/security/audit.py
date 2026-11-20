@@ -110,9 +110,10 @@ def record(
     seq = int(
         db.execute(
             text(
-                f"SELECT GREATEST(nextval('{AUDIT_SEQ_NAME}'), "
+                "SELECT GREATEST(nextval(:seq_name), "
                 "COALESCE((SELECT MAX(seq) FROM audit_events), 0) + 1)"
-            )
+            ),
+            {"seq_name": AUDIT_SEQ_NAME},
         ).scalar_one()
     )
     created_at = utcnow()
