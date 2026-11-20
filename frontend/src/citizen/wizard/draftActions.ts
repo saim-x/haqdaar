@@ -49,9 +49,8 @@ export async function createLocalDraft(program: Program, serverCase?: CaseDetail
 const ALL_CATEGORIES: DataCategory[] = ['IDENTITY', 'HOUSEHOLD', 'DOCUMENTS', 'PAYMENT', 'CASE_HISTORY'];
 
 /** Consent gate → grant department consent, then create the server case. */
-export async function grantConsentAndCreateCase(draft: DraftRow, program: Program): Promise<void> {
+export async function grantConsentAndCreateCase(draft: DraftRow, program: Program, nextStep: string): Promise<void> {
   const c = ctx();
-  await db.drafts.update(draft.localId, { consentGranted: true, updatedAt: Date.now() });
   const grant = await sendOrQueue<ConsentGrant>({
     kind: 'GRANT_CONSENT',
     method: 'POST',
@@ -79,6 +78,9 @@ export async function grantConsentAndCreateCase(draft: DraftRow, program: Progra
     });
     if (created.status === 'failed') throw created.error;
   }
+  // One write: mark consent and advance together, so a fast answer on the next
+  // screen can never be overwritten by a late step change.
+  await db.drafts.update(draft.localId, { consentGranted: true, wizardStep: nextStep, updatedAt: Date.now() });
 }
 
 export async function saveAnswer(localId: string, key: string, answer: Omit<DraftAnswer, 'entered_by'>, nextStep: string) {

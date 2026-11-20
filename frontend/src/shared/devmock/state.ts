@@ -205,7 +205,7 @@ export interface MockState {
   refCounter: number;
 }
 
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 const T_SPD = 'tenant-spd';
 const T_ZWB = 'tenant-zwb';
@@ -757,7 +757,27 @@ export function seed(): MockState {
     users,
     citizens,
     cases,
-    documents: [],
+    documents: [
+      {
+        id: 'doc-101-cnic',
+        tenant_id: T_SPD,
+        citizen_id: 'cit-q101',
+        case_id: 'case-101',
+        doc_type: 'CNIC_FRONT',
+        verify_status: 'TAMPER_SUSPECTED',
+        verify_confidence: 0.1,
+        verify_checks: [
+          { check: 'blur_laplacian_variance', passed: true, value: 212, threshold: 60, detail: 'Sharp image' },
+          { check: 'qr_signature_hmac', passed: true, value: 'valid', threshold: 'HMAC-SHA256', detail: 'Signed by MOCK_IDENTITY_REGISTRY' },
+          { check: 'ocr_vs_qr_name', passed: false, value: 0.41, threshold: 0.85, detail: 'Printed "Zainab Bibi" vs QR "Fatima Bibi"' },
+          { check: 'ocr_vs_qr_cnic', passed: true, value: 1, threshold: 1, detail: 'CNIC digits match' },
+        ],
+        extracted_fields: { qr_payload: { full_name: 'Fatima Bibi', cnic: '9990010001012' }, ocr_fields: { full_name: 'Zainab Bibi' } },
+        retake_reason_ur: null,
+        retake_reason_en: null,
+        created_at: minutesAgo(310),
+      },
+    ],
     decisions: [],
     grants,
     accessLogs: [],

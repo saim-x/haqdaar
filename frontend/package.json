@@ -9,8 +9,7 @@
     "build": "tsc -b && vite build",
     "build:mock": "tsc -b && vite build --mode mock",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "budget": "node scripts/check-budget.mjs"
+    "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
     "@fontsource/noto-sans-arabic": "^5.1.0",

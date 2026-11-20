@@ -89,16 +89,14 @@ export function CaseStatusPage() {
   return (
     <div className="space-y-5 animate-rise">
       <div className={cx('rounded-card border-2 p-5', tone.border, tone.soft)}>
-        <div className="flex items-start gap-4">
-          <span className={cx('inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl', tone.solid)}>
-            <Icon className="h-9 w-9" aria-hidden />
+        <div className="flex items-center gap-3">
+          <span className={cx('inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl', tone.solid)}>
+            <Icon className="h-8 w-8" aria-hidden />
           </span>
-          <div className="min-w-0 flex-1">
-            <p className={cx('text-sm font-bold', tone.text)}>{t(meta.label)}</p>
-            <h1 className="mt-1 text-2xl font-bold leading-snug">{headline}</h1>
-          </div>
+          <p className={cx('min-w-0 flex-1 text-lg font-bold', tone.text)}>{t(meta.label)}</p>
           <AudioButton clip={ex ? undefined : meta.clip} text={spoken} label={t('caseTitle')} ttsUrl={ex ? ttsFor(spoken, lang) : undefined} />
         </div>
+        <h1 className="mt-4 text-2xl font-bold leading-snug">{headline}</h1>
         {(c.approved_amount_pkr || c.payment?.amount_pkr) && (
           <p className="mt-4 text-4xl font-bold text-ok">{formatPkr(c.payment?.amount_pkr ?? c.approved_amount_pkr, lang)}</p>
         )}

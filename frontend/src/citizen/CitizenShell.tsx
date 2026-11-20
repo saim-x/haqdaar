@@ -5,7 +5,7 @@ import { logout } from '../shared/auth/session';
 import { homePathFor, useAuth } from '../shared/auth/store';
 import { langStore, useT } from '../shared/i18n';
 import { settingsStore, useSettings } from '../shared/settings';
-import { ConnectivityPill } from '../shared/ui/ConnectivityPill';
+import { ConnectivityIcon, ConnectivityStrip } from '../shared/ui/ConnectivityPill';
 import { cx } from '../shared/ui/cx';
 
 function IconToggle({ pressed, onClick, label, children }: { pressed?: boolean; onClick: () => void; label: string; children: ReactNode }) {
@@ -17,7 +17,7 @@ function IconToggle({ pressed, onClick, label, children }: { pressed?: boolean; 
       aria-pressed={pressed}
       title={label}
       className={cx(
-        'inline-flex h-11 min-w-[44px] items-center justify-center gap-1 rounded-full px-2 text-sm font-semibold transition-colors duration-fast',
+        'inline-flex h-11 min-w-[44px] items-center justify-center gap-1 rounded-full px-1.5 text-sm font-semibold transition-colors duration-fast',
         pressed ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-sunken',
       )}
     >
@@ -49,7 +49,7 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
             <span>{t('appName')}</span>
           </Link>
           <div className="ms-auto flex min-w-0 items-center gap-0.5">
-            <ConnectivityPill />
+            <ConnectivityIcon />
             <IconToggle onClick={() => langStore.set(lang === 'ur' ? 'en' : 'ur')} label={t('switchLang')}>
               <Languages className="h-5 w-5" aria-hidden />
               <span className={lang === 'ur' ? 'font-sans text-xs' : 'font-urdu text-sm'}>{lang === 'ur' ? 'EN' : 'اردو'}</span>
@@ -87,6 +87,7 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
             )}
           </div>
         </div>
+        <ConnectivityStrip />
         {user?.role === 'HELPER' && actingFor && (
           <div className="flex items-center gap-3 px-3 py-2 text-white" style={{ backgroundColor: actingFor.avatarColor }}>
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/25 text-sm font-bold" aria-hidden>

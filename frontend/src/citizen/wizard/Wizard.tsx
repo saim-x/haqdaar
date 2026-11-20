@@ -161,16 +161,16 @@ function StepBody(props: BodyProps) {
   }
 }
 
-function ConsentStep({ step, draft, programId, onNext }: BodyProps) {
+function ConsentStep({ step, draft, programId, nextId }: BodyProps) {
   const { t, pick } = useT();
   const programsQ = useQuery({ queryKey: ['programs'], queryFn: programs.list, staleTime: 5 * 60_000 });
   const program = programsQ.data!.find((p) => p.id === programId)!;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const rows = [
-    { icon: '/', label: t('q_consent_who'), value: 'Social Protection Department (Mock) · محکمہ سماجی تحفظ' },
-    { icon: '/', label: t('q_consent_what'), value: `${t('cat_IDENTITY')} · ${t('cat_HOUSEHOLD')} · ${t('cat_DOCUMENTS')} · ${t('cat_PAYMENT')}` },
-    { icon: '/', label: t('q_consent_why'), value: pick(program.name_ur, program.name) },
+    { label: t('q_consent_who'), value: 'Social Protection Department (Mock) · محکمہ سماجی تحفظ' },
+    { label: t('q_consent_what'), value: `${t('cat_IDENTITY')} · ${t('cat_HOUSEHOLD')} · ${t('cat_DOCUMENTS')} · ${t('cat_PAYMENT')}` },
+    { label: t('q_consent_why'), value: pick(program.name_ur, program.name) },
   ];
   return (
     <Frame step={step} extraAudio={t('q_consent_body')}>
@@ -202,8 +202,7 @@ function ConsentStep({ step, draft, programId, onNext }: BodyProps) {
           setBusy(true);
           setError(null);
           try {
-            await grantConsentAndCreateCase(draft, program);
-            onNext();
+            await grantConsentAndCreateCase(draft, program, nextId);
           } catch (e) {
             setError(e instanceof ApiError ? pick(e.messageUr, e.message) : t('somethingWrong'));
           } finally {

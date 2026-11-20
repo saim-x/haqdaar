@@ -61,7 +61,9 @@ export function formatDateTime(iso: string | null | undefined, l: Lang = lang): 
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(l === 'ur' ? 'ur-PK' : 'en-GB', {
+  // Latin digits + English month abbreviations stay unambiguous in both scripts.
+  void l;
+  return d.toLocaleString('en-GB', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

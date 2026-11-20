@@ -796,7 +796,7 @@ on('POST', '/officer/cases/:id/decide', (ctx, { params, body }) => {
   }
   const aiRoute = c.latest_route;
   // Override = officer outcome disagrees with what the engine would have done on its own.
-  const isOverride = (b.action === 'REJECT' && (aiRoute === 'AUTO_APPROVE' || aiRoute === 'ASK_MORE')) || (b.action === 'APPROVE' && c.flags.some((f) => f.severity === 'HIGH'));
+  const isOverride = b.action === 'REJECT' && (aiRoute === 'AUTO_APPROVE' || aiRoute === 'ASK_MORE');
   s.decisions.push({
     id: id('dec'),
     tenant_id: c.tenant_id,

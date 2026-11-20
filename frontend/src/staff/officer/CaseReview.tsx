@@ -123,7 +123,7 @@ export function RuleTrace({ trace }: { trace: RuleTraceItem[] }) {
                 <span className="font-mono text-xs font-semibold">{r.rule_id}</span>{' '}
                 <span className={cx('text-xs font-bold', tone[r.result])}>{r.result}</span> <span className="text-muted">· {r.label_en}</span>
               </p>
-              <p className="text-xs text-muted">
+              <p className="break-words text-xs text-muted [overflow-wrap:anywhere]">
                 actual <span className="font-mono">{fmtVal(r.actual)}</span> · rule <span className="font-mono">{String(r.expected)}</span>
               </p>
             </div>

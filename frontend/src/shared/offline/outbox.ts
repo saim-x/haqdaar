@@ -12,6 +12,8 @@ const BACKOFF_MS = [2000, 5000, 15000, 30000];
 type Result = { ok: true; data: unknown } | { ok: false; error: ApiError };
 const waiters = new Map<string, (r: Result) => void>();
 let flushing = false;
+/** Set when flush() is requested while one is running; the loop then runs again. */
+let flushAgain = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 // ---- online state ----
@@ -98,10 +100,25 @@ async function afterSuccess(row: OutboxRow, data: unknown) {
 }
 
 export async function flush(): Promise<void> {
-  if (flushing) return;
+  if (flushing) {
+    flushAgain = true;
+    return;
+  }
   flushing = true;
   setSyncing(true);
   try {
+    do {
+      flushAgain = false;
+      await flushOnce();
+    } while (flushAgain);
+  } finally {
+    flushing = false;
+    setSyncing(false);
+  }
+}
+
+async function flushOnce(): Promise<void> {
+  {
     // Strict creation order: a draft save must never overtake its case creation.
     const rows = await db.outbox.orderBy('createdAt').toArray();
     for (const row of rows) {
@@ -141,9 +158,6 @@ export async function flush(): Promise<void> {
         waiters.delete(row.id);
       }
     }
-  } finally {
-    flushing = false;
-    setSyncing(false);
   }
 }
 

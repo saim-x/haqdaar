@@ -142,10 +142,11 @@ export function CitizenHome() {
 
       <Link
         to="/c/ask"
-        className="fixed bottom-5 start-1/2 z-30 inline-flex min-h-tap-lg -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-6 text-lg font-semibold text-page shadow-lift rtl:translate-x-1/2"
+        className="flex min-h-tap-lg items-center gap-3 rounded-card border-2 border-ink/80 bg-ink px-5 py-4 text-lg font-semibold text-page shadow-card"
       >
-        <MessageCircleQuestion className="h-6 w-6" aria-hidden />
-        {t('askQuestion')}
+        <MessageCircleQuestion className="h-7 w-7 shrink-0" aria-hidden />
+        <span className="flex-1">{t('askQuestion')}</span>
+        <Chevron className="h-5 w-5" aria-hidden />
       </Link>
     </div>
   );
