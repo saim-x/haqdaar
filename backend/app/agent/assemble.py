@@ -38,6 +38,7 @@ from app.engine.facts import (
     FACT_REGISTRY,
     EnteredBy,
     Fact,
+    FactAlternative,
     FactBundle,
     FactSource,
     FactState,
@@ -415,11 +416,23 @@ def assemble_facts(
         draft, "applicant_cnic", entered_by=entered_by
     )
     if matched is not None:
+        # ADR-015: the registry spelling wins, but the citizen's own spelling stays
+        # visible in provenance so an officer can see what was actually declared.
+        name_alternatives: tuple[FactAlternative, ...] = ()
+        if declared_name and declared_name != matched.full_name:
+            name_alternatives = (
+                FactAlternative(
+                    value=declared_name,
+                    source=FactSource.SELF_DECLARED,
+                    entered_by=entered_by,
+                ),
+            )
         facts["applicant_full_name"] = known_fact(
             "applicant_full_name",
             matched.full_name,
             source=FactSource.IDENTITY_REGISTRY,
             source_confidence=0.98,
+            alternatives=name_alternatives,
         )
         facts["applicant_dob"] = (
             known_fact(
