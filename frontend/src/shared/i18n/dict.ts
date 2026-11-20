@@ -34,6 +34,19 @@ export const dict = {
   syncing: { ur: 'بھیجا جا رہا ہے…', en: 'Syncing…' },
   needsAttention: { ur: '{n} چیز توجہ چاہتی ہے', en: '{n} item needs attention' },
 
+  // Login hero
+  heroTitle: { ur: 'آپ کا حق، محفوظ طریقے سے', en: 'Your right, delivered safely' },
+  heroBody: {
+    ur: 'بیوہ خواتین سہارا گرانٹ کے لیے آواز اور تصویروں سے درخواست دیں، کمزور سگنل پر بھی۔ ہر فیصلے کی وجہ بتائی جاتی ہے۔',
+    en: 'Widows apply for the Sahara grant by voice and pictures, even on a weak signal. Every decision comes with a reason.',
+  },
+  pillarVoice: { ur: 'بولیں یا ٹیپ کریں، پڑھنا ضروری نہیں', en: 'Speak or tap. No reading needed' },
+  pillarOffline: { ur: 'سگنل نہ ہو تو بھی کام محفوظ رہتا ہے', en: 'Keeps working without signal' },
+  pillarHuman: { ur: 'شک ہو تو فیصلہ افسر کرتا ہے', en: 'When unsure, an officer decides' },
+  heroFoot: { ur: 'کوڈرز کپ 2026 پروٹوٹائپ · تمام ڈیٹا فرضی ہے', en: "Coder's Cup 2026 prototype · all data is synthetic" },
+  tabDemo: { ur: 'ڈیمو', en: 'Demo' },
+  tabPhone: { ur: 'فون', en: 'Phone' },
+  tabStaff: { ur: 'عملہ', en: 'Staff' },
   // Login
   loginTitle: { ur: 'حقدار میں خوش آمدید', en: 'Welcome to Haqdaar' },
   loginSubtitle: { ur: 'سہارا بیوہ امدادی گرانٹ — آواز اور تصویروں کے ساتھ درخواست دیں', en: 'Sahara Widow Support Grant — apply with voice and pictures' },
