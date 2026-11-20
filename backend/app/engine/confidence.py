@@ -218,11 +218,21 @@ def build_confidence(
     documents: Sequence[DocumentEvidence] = (),
     flags: Sequence[RiskFlag] = (),
     consent_method: ConsentMethod | str | None = None,
+    consent_assurance: float | None = None,
 ) -> ConfidenceComponents:
-    """Assemble all four pillars and the weakest-link overall score."""
+    """Assemble all four pillars and the weakest-link overall score.
+
+    ``consent_assurance`` supplies the pillar directly when the evidence is already a
+    score (the labelled eval set records it that way); otherwise it is derived from
+    ``consent_method`` through the docs/06 §3.2 bands.
+    """
     document_score = document_confidence(documents)
     consistency_score = data_consistency_confidence(flags)
-    consent_score = consent_assurance_confidence(consent_method)
+    consent_score = (
+        round(consent_assurance, 3)
+        if consent_assurance is not None
+        else consent_assurance_confidence(consent_method)
+    )
     return ConfidenceComponents(
         identity=round(identity, 3),
         documents=document_score,

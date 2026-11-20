@@ -22,13 +22,22 @@ from pydantic import BaseModel, ConfigDict
 
 from app.engine.anomalies import FLAG_CATALOGUE, FlagCode, RiskFlag
 from app.engine.confidence import (
+    IDENTITY_AMBIGUOUS_OR_MISSING,
     ConfidenceComponents,
-    ConsentMethod,
     DocumentEvidence,
+    DocumentStatus,
     build_confidence,
+    identity_confidence_for_cnic_match,
 )
 from app.engine.evaluator import evaluate_ruleset
-from app.engine.facts import FACT_REGISTRY, Fact, FactBundle, FactSource, known_fact
+from app.engine.facts import (
+    FACT_REGISTRY,
+    Fact,
+    FactBundle,
+    FactSource,
+    FactState,
+    known_fact,
+)
 from app.engine.router import RouteAction, route_case
 from app.engine.rules_dsl import CostMatrix, RuleSetSchema
 
@@ -95,15 +104,12 @@ class LabelledCase(BaseModel):
                 record["confidence_components"]
             )
         else:
-            documents = tuple(
-                DocumentEvidence.model_validate(doc)
-                for doc in record.get("documents") or ()
-            )
             confidence = build_confidence(
-                identity=float(record.get("identity_confidence", 0.25)),
-                documents=documents,
+                identity=_identity_confidence(record, bundle),
+                documents=_document_evidence(record, bundle),
                 flags=flags,
-                consent_method=record.get("consent_method", ConsentMethod.SELF_OTP),
+                consent_method=record.get("consent_method"),
+                consent_assurance=_consent_assurance(record),
             )
 
         return cls(
@@ -115,6 +121,72 @@ class LabelledCase(BaseModel):
             ask_more_rounds=int(record.get("ask_more_rounds") or 0),
             hours_waiting=float(record.get("hours_waiting") or 0.0),
         )
+
+
+#: Which fact carries each required document's verification outcome.
+_DOCUMENT_FACTS: tuple[tuple[str, str], ...] = (
+    ("cnic_doc_verified", "CNIC_FRONT"),
+    ("death_cert_doc_verified", "SPOUSE_DEATH_CERTIFICATE"),
+)
+
+
+def _identity_confidence(record: dict[str, Any], bundle: FactBundle) -> float:
+    """docs/06 §3.2 pillar 1, from whatever evidence the record actually carries.
+
+    An explicit ``identity_confidence`` wins. Otherwise the band is derived from the
+    registry name similarity the generator stores on ``applicant_full_name`` — the
+    same input :func:`identity_confidence_for_cnic_match` takes in production. A
+    record with no registry hit is ``IDENTITY_AMBIGUOUS_OR_MISSING``, never a guess.
+    """
+    explicit = record.get("identity_confidence")
+    if explicit is not None:
+        return float(explicit)
+    if record.get("registry_not_found"):
+        return IDENTITY_AMBIGUOUS_OR_MISSING
+
+    name_fact = bundle.facts.get("applicant_full_name")
+    if name_fact is None or name_fact.state is not FactState.KNOWN:
+        return IDENTITY_AMBIGUOUS_OR_MISSING
+
+    dob_fact = bundle.facts.get("applicant_dob")
+    dob_match = dob_fact is not None and dob_fact.state is FactState.KNOWN
+    return identity_confidence_for_cnic_match(
+        float(name_fact.source_confidence), dob_match=dob_match
+    )
+
+
+def _document_evidence(
+    record: dict[str, Any], bundle: FactBundle
+) -> tuple[DocumentEvidence, ...]:
+    """docs/06 §3.2 pillar 2, from an explicit list or the ``*_doc_verified`` facts."""
+    explicit = record.get("documents")
+    if explicit:
+        return tuple(DocumentEvidence.model_validate(doc) for doc in explicit)
+
+    evidence: list[DocumentEvidence] = []
+    for fact_key, doc_type in _DOCUMENT_FACTS:
+        fact = bundle.facts.get(fact_key)
+        if fact is None or fact.state is not FactState.KNOWN:
+            continue
+        if fact.value is True:
+            evidence.append(
+                DocumentEvidence(
+                    doc_type=doc_type,
+                    status=DocumentStatus.VERIFIED,
+                    verify_confidence=fact.source_confidence or None,
+                )
+            )
+        else:
+            evidence.append(
+                DocumentEvidence(doc_type=doc_type, status=DocumentStatus.NEEDS_RETAKE)
+            )
+    return tuple(evidence)
+
+
+def _consent_assurance(record: dict[str, Any]) -> float | None:
+    """The consent pillar when the record states it as a score rather than a method."""
+    explicit = record.get("consent_assurance")
+    return float(explicit) if explicit is not None else None
 
 
 def _flag_from_code(code: str) -> RiskFlag:
