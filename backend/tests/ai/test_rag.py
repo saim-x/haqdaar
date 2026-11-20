@@ -542,7 +542,7 @@ class TestRealPostgresRanking:
                         chunk_index INTEGER NOT NULL,
                         content TEXT NOT NULL,
                         embedding FLOAT8[],
-                        tsv TSVECTOR
+                        tsv TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', content)) STORED
                     )
                     """
                 )
@@ -559,12 +559,13 @@ class TestRealPostgresRanking:
                     {"id": document_id, "title": doc.title, "version": doc.version},
                 )
                 for chunk in text_index.chunk_markdown(doc.body):
+                    # ``tsv`` is GENERATED ALWAYS (docs/04 §4.5): Postgres computes it
+                    # from ``content``, so naming it in the insert is rejected.
                     conn.execute(
                         text(
                             "INSERT INTO rag_chunks "
-                            "(id, document_id, section_heading, chunk_index, content, embedding, tsv) "
-                            "VALUES (:id, :document_id, :heading, :index, :content, :embedding, "
-                            "to_tsvector('simple', :content))"
+                            "(id, document_id, section_heading, chunk_index, content, embedding) "
+                            "VALUES (:id, :document_id, :heading, :index, :content, :embedding)"
                         ),
                         {
                             "id": uuid.uuid5(uuid.NAMESPACE_URL, f"{doc.title}:{chunk.chunk_index}"),

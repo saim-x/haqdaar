@@ -21,6 +21,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import JSONResponse, Response
 
 from app.ai import api_support, voice
+from app.models.enums import UserRole
+from app.security.rbac import require_any_authenticated, require_roles
 
 logger = logging.getLogger("haqdaar.api.voice")
 
@@ -39,10 +41,6 @@ _ALLOWED_AUDIO_PREFIXES = (
 
 def _db() -> Any:
     yield from api_support.get_db()
-
-
-def _optional_user(request: Request) -> Any:
-    return api_support.optional_user(request.headers.get("authorization"))
 
 
 def _normalise_lang(value: str | None) -> str:
@@ -72,7 +70,7 @@ async def transcribe_parse(
     field_key: str = Form(...),
     lang: str = Form("ur"),
     db: Any = Depends(_db),
-    user: Any = Depends(_optional_user),
+    user: Any = Depends(require_roles(UserRole.CITIZEN, UserRole.HELPER)),
 ) -> JSONResponse:
     """Transcribe one spoken answer and parse a single wizard field from it."""
     key = (field_key or "").strip()
@@ -141,7 +139,7 @@ async def transcribe_parse(
 async def text_to_speech(
     request: Request,
     db: Any = Depends(_db),
-    user: Any = Depends(_optional_user),
+    user: Any = Depends(require_any_authenticated),
 ) -> Response:
     """Stream a cached Urdu clip for a dynamic sentence."""
     try:

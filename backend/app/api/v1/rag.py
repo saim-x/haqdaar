@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.ai import api_support, rag
+from app.security.rbac import require_any_authenticated
 
 logger = logging.getLogger("haqdaar.api.rag")
 
@@ -27,10 +28,6 @@ MAX_QUESTION_CHARS = 500
 
 def _db() -> Any:
     yield from api_support.get_db()
-
-
-def _optional_user(request: Request) -> Any:
-    return api_support.optional_user(request.headers.get("authorization"))
 
 
 def _parse_uuid(value: Any) -> Any:
@@ -51,7 +48,7 @@ def _parse_uuid(value: Any) -> Any:
 async def ask(
     request: Request,
     db: Any = Depends(_db),
-    user: Any = Depends(_optional_user),
+    user: Any = Depends(require_any_authenticated),
 ) -> JSONResponse:
     """Answer a policy question from the indexed corpus, or abstain."""
     try:

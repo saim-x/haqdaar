@@ -62,7 +62,7 @@ ANONYMOUS = AnonymousUser()
 
 
 def _backend_deps() -> Any:
-    for module_name in ("app.security.deps", "app.api.deps", "app.deps"):
+    for module_name in ("app.security.rbac", "app.security.deps", "app.api.deps", "app.deps"):
         try:
             module = __import__(module_name, fromlist=["*"])
         except Exception:
@@ -126,7 +126,8 @@ def current_user_dependency() -> Callable[..., Any]:
 
 
 def user_id(user: Any) -> Any:
-    return getattr(user, "id", None)
+    """The caller's id. ``ActorContext`` names it ``user_id``; older shapes use ``id``."""
+    return getattr(user, "user_id", None) or getattr(user, "id", None)
 
 
 def user_role(user: Any) -> str:

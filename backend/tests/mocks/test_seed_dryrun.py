@@ -147,7 +147,10 @@ def test_showcase_cases_match_the_frozen_spec(seeded: tuple[dict[str, Any], _Fak
         "HQ-2026-000103": ("HUMAN_REVIEW", 65, "HIGH", "POSSIBLE_DUPLICATE_IDENTITY", 0.25),
         "HQ-2026-000104": ("HUMAN_REVIEW", 65, "HIGH", "PAYOUT_ACCOUNT_SHARED", 0.20),
         "HQ-2026-000105": ("HUMAN_REVIEW", 45, "NORMAL", "LOW_ASSURANCE_CONSENT", 0.82),
-        "HQ-2026-000106": ("PAYMENT_FAILED", 65, "HIGH", "PAYMENT_FAILED", 0.93),
+        # docs/10 §2 gives 106 the *status* PAYMENT_FAILED, not an anomaly flag, and
+        # PAYMENT_FAILED is not in engine.anomalies.FlagCode. The failure lives on
+        # the payments row (status FAILED, reason ACCOUNT_DORMANT).
+        "HQ-2026-000106": ("PAYMENT_FAILED", 65, "HIGH", None, 0.93),
     }
     for reference, (status, score, band, flag, confidence) in expected.items():
         row = showcase[reference]
@@ -155,7 +158,8 @@ def test_showcase_cases_match_the_frozen_spec(seeded: tuple[dict[str, Any], _Fak
         assert row["priority_score"] == score, reference
         assert row["priority_band"] == band, reference
         assert row["latest_confidence"] == pytest.approx(confidence), reference
-        assert [f["code"] for f in row["flags_json"]] == [flag], reference
+        codes = [f["code"] for f in row["flags_json"]]
+        assert codes == ([flag] if flag else []), reference
 
 
 def test_every_cnic_uses_the_fictional_prefix(seeded: tuple[dict[str, Any], _FakeSession]) -> None:
@@ -205,6 +209,39 @@ def test_audit_events_are_written_for_decisions(
     actions = {event["action"] for event in summary["_audits"]}
     assert "decision.recorded" in actions
     assert len(summary["_audits"]) >= 70
+
+
+def test_every_seeded_flag_matches_the_engine_risk_flag_model(
+    seeded: tuple[dict[str, Any], _FakeSession],
+) -> None:
+    """``cases.flags_json`` must round-trip through ``engine.anomalies.RiskFlag``.
+
+    The model is ``extra="forbid"`` and requires both language variants, so a
+    ``{"code", "severity", "detail"}`` dict fails validation the moment the
+    golden-path replay touches the row. Build flags through ``seed_data.flag``.
+    """
+    from app.engine.anomalies import RiskFlag
+
+    _, session = seeded
+    seen = 0
+    for row in session.inserted["cases"]:
+        for flag in row["flags_json"]:
+            RiskFlag.model_validate(flag)
+            seen += 1
+    assert seen >= 5, f"expected the showcase flags to be seeded, saw {seen}"
+
+
+def test_seeded_flags_never_invent_a_code_outside_the_catalogue(
+    seeded: tuple[dict[str, Any], _FakeSession],
+) -> None:
+    """A flag code that is not in ``FlagCode`` is a contract violation, not a typo."""
+    from app.engine.anomalies import FlagCode
+
+    _, session = seeded
+    valid = {code.value for code in FlagCode}
+    for row in session.inserted["cases"]:
+        for flag in row["flags_json"]:
+            assert flag["code"] in valid, f"{flag['code']} is not in FlagCode"
 
 
 def test_seed_is_deterministic(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
