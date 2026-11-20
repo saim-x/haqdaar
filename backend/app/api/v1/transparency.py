@@ -13,13 +13,18 @@ visible without inventing a fourth badge.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
+from app.api.v1.admin_mocks import mock_service_statuses
 from app.config import settings
+from app.db import get_db
 
 router = APIRouter(prefix="/transparency", tags=["transparency"])
+
+DbSession = Annotated[Session, Depends(get_db)]
 
 #: docs/15 §1 — the honest Real vs Simulated table shown to judges and citizens.
 COMPONENTS: list[dict[str, Any]] = [
@@ -123,7 +128,7 @@ COMPONENTS: list[dict[str, Any]] = [
 
 
 @router.get("", summary="Machine-readable Real vs Simulated disclosure")
-def transparency() -> dict[str, Any]:
+def transparency(db: DbSession) -> dict[str, Any]:
     """Public: no auth, no consent gate — this is the honesty page (RULE-5/RULE-6)."""
     return {
         "prototype": True,
@@ -135,11 +140,11 @@ def transparency() -> dict[str, Any]:
         "ai_provider": settings.ai_provider,
         "demo_mode": settings.demo_mode,
         "components": COMPONENTS,
-        # Live chaos modes are admin-only (GET /api/v1/admin/mocks); the public page
-        # shows the static classification above and never leaks mock internals.
-        "mock_services": [],
+        # The seven simulated DPI services with their *current* chaos mode, so a judge
+        # can see on the public page that a "government rail" is down right now.
+        "mock_services": mock_service_statuses(db),
         "mock_services_note": (
-            "Live chaos modes are visible to platform admins at /api/v1/admin/mocks."
+            "Live chaos modes are also editable by platform admins at /api/v1/admin/mocks."
         ),
     }
 

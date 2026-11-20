@@ -189,13 +189,13 @@ event_hash = hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 | Suite | Tests | Covers |
 |---|---|---|
-| `backend/tests/engine` | 565 | Rules DSL, tri-state evaluator, entity resolution, confidence, router policy, digital twin, eval sweep |
-| `backend/tests/ai` | 304 | Scam classifier, document verifier, RAG, voice, guardrails, provider |
-| `backend/tests/security` | 19 | RBAC matrix, tenant isolation, consent enforcement incl. denied-log persistence |
-| `backend/tests/integration` | 53 | Golden path, rule versioning, audit chain, idempotency, chaos resilience, my-data corrections, complaint path |
-| `backend/tests/mocks` | 47 | Simulated DPI services and seed integrity |
+| `backend/tests/engine` | 572 | Rules DSL, tri-state evaluator, entity resolution, confidence, router policy, digital twin, eval sweep |
+| `backend/tests/ai` | 333 | Scam classifier, document verifier, RAG, voice, guardrails, provider, API auth |
+| `backend/tests/security` | 21 | RBAC matrix, tenant isolation, consent enforcement incl. denied-log persistence and agent reads |
+| `backend/tests/integration` | 56 | Golden path, rule versioning, audit chain, idempotency, chaos resilience, my-data corrections, complaint path, transparency |
+| `backend/tests/mocks` | 49 | Simulated DPI services and seed integrity |
 | `backend/tests/test_invariants.py` | 11 | Engine purity, mock-import ban, RBAC-on-every-route, no auto-reject, no raw PII in logs, transparency disclosure |
-| **Total collected** | **999** | |
+| **Total** | **1042 passing** | |
 
 > **Citizen bundle size: pending countersign.** The budget gate is ≤150 KB gzipped for the citizen entry chunk (`docs/13 §1`); the measured figure is confirmed by the frontend owner and countersigned by the Lead before submission.
 

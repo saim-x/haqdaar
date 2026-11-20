@@ -73,18 +73,6 @@ PUBLIC_ROUTE_PREFIXES = (
     "/",
 )
 
-#: Routes that docs/05 says need authentication but whose owning module (EN/DPI)
-#: resolves the caller with an *optional* dependency, so an anonymous request is
-#: served. Reported to the Integration Lead; delete an entry once the owner fixes
-#: it. Keeping the list explicit is the point — a silent skip would hide the gap.
-AUTH_GAP_ALLOWLIST = frozenset(
-    {
-        "POST /api/v1/rag/ask",  # docs/05 §3.8: "Any auth"
-        "POST /api/v1/voice/tts",  # docs/05 §3.8: "Any auth"
-        "POST /api/v1/voice/transcribe-parse",  # docs/05 §3.8: CITIZEN, HELPER
-    }
-)
-
 #: Dependencies that enforce a role without going through ``require_roles``.
 #: ``admin_mocks`` predates the shared RBAC module and raises 403 itself.
 EXTRA_RBAC_MARKERS = frozenset({"_admin"})
@@ -232,8 +220,6 @@ def test_every_non_public_route_has_an_rbac_dependency() -> None:
             if method.upper() not in {"GET", "POST", "PUT", "PATCH", "DELETE"}:
                 continue
             checked += 1
-            if f"{method.upper()} {path}" in AUTH_GAP_ALLOWLIST:
-                continue
             if not _route_has_rbac(route):
                 missing.append(f"{method.upper()} {path}")
 
