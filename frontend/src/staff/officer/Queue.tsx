@@ -8,6 +8,8 @@ import { timeAgo } from '../../shared/i18n';
 import { Button } from '../../shared/ui/Button';
 import { cx } from '../../shared/ui/cx';
 import { PageLoader } from '../../shared/ui/Spinner';
+import { Table, TableBody, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '../../shared/ui/StatusBadge';
 import { ConfidenceBar, EmptyState, ErrorState, FlagChip, PageHeader, PriorityBadge, ReasonChip } from '../ui';
 
@@ -59,19 +61,15 @@ export function Queue() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div role="tablist" aria-label="Sort" className="inline-flex rounded-lg bg-sunken p-1">
-          {SORTS.map((s) => (
-            <button
-              key={s.id}
-              role="tab"
-              aria-selected={sort === s.id}
-              onClick={() => setSort(s.id)}
-              className={cx('min-h-[36px] rounded-md px-3 text-sm font-semibold', sort === s.id ? 'bg-surface shadow-card' : 'text-muted hover:text-ink')}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+          <TabsList className="h-10 rounded-lg">
+            {SORTS.map((x) => (
+              <TabsTrigger key={x.id} value={x.id} className="rounded-md px-3 text-sm font-semibold">
+                {x.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <div className="flex flex-wrap gap-1.5" aria-label="Filters">
           {FILTERS.map((f) => (
             <button
@@ -102,7 +100,7 @@ export function Queue() {
           {lead && (
             <Link
               to={`/staff/cases/${lead.id}`}
-              className="card block border-s-4 border-s-danger p-5 transition-shadow duration-fast hover:shadow-lift"
+              className="group relative block overflow-hidden rounded-xl border border-danger/30 bg-gradient-to-br from-danger-soft/70 via-surface to-surface p-5 transition-shadow duration-fast hover:shadow-lift"
               aria-label={`Top priority case ${lead.reference_code}`}
             >
               <div className="flex flex-wrap items-start gap-4">
@@ -128,12 +126,12 @@ export function Queue() {
           )}
 
           {rest.length > 0 && (
-            <div className="card overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-line bg-surface">
               <div className="relative overflow-x-auto">
-                <table className="w-full min-w-[900px] text-sm">
+                <Table className="min-w-[900px]">
                   <caption className="sr-only">Cases awaiting review</caption>
-                  <thead className="bg-sunken text-left text-xs uppercase tracking-wide text-muted">
-                    <tr>
+                  <TableHeader className="bg-sunken/60 [&_th]:text-start [&_th]:h-10 [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted">
+                    <TableRow className="border-line hover:bg-transparent">
                       <th className="px-3 py-2 font-semibold">Priority</th>
                       <th className="px-3 py-2 font-semibold">Reference · applicant</th>
                       <th className="px-3 py-2 font-semibold">Status</th>
@@ -144,11 +142,11 @@ export function Queue() {
                       <th className="px-3 py-2">
                         <span className="sr-only">Open</span>
                       </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {rest.map((c) => (
-                      <tr key={c.id} className="cursor-pointer hover:bg-sunken/60" onClick={() => nav(`/staff/cases/${c.id}`)}>
+                      <TableRow key={c.id} className="cursor-pointer border-line hover:bg-sunken/60" onClick={() => nav(`/staff/cases/${c.id}`)}>
                         <td className="px-3 py-3">
                           <PriorityBadge band={c.priority_band} score={c.priority_score} />
                         </td>
@@ -192,10 +190,10 @@ export function Queue() {
                         <td className="px-3 py-3 text-muted">
                           <ChevronRight className="h-4 w-4" aria-hidden />
                         </td>
-                      </tr>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 <div className="pointer-events-none absolute inset-y-0 end-0 w-8 bg-gradient-to-l from-surface to-transparent lg:hidden" aria-hidden />
               </div>
               <p className="border-t border-line px-3 py-2 text-xs text-muted">

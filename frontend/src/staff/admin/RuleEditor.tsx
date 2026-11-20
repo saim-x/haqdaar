@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CircleCheck, CircleX, FlaskConical, GitBranch, Plus, Rocket, Save, ShieldCheck, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { ApiError } from '../../shared/api/client';
 import { admin, programs } from '../../shared/api/endpoints';
 import type { EligibilityRule, RuleSet, RuleVersion, TwinResult } from '../../shared/api/types';
@@ -274,6 +275,7 @@ export function RuleEditor() {
       return admin.publish(selected!.id, note.trim());
     },
     onSuccess: (rv) => {
+      toast.success(`Rule v${rv.version_number ?? ''} published`, { description: 'Live now. No restart, no redeploy.' });
       setPublishOpen(false);
       setNote('');
       setSelectedId(rv.id ?? null);

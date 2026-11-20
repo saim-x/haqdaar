@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CloudOff, Gauge, RotateCcw, Shuffle, Zap, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { admin } from '../../shared/api/endpoints';
 import type { MockMode } from '../../shared/api/types';
 import { queryClient } from '../../shared/queryClient';
@@ -33,7 +34,10 @@ export function MocksPage() {
   const q = useQuery({ queryKey: ['mocks'], queryFn: admin.mocks, refetchInterval: 5000 });
   const set = useMutation({
     mutationFn: (v: { service: string; mode: MockMode }) => admin.updateMock(v.service, { mode: v.mode }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['mocks'] }),
+    onSuccess: (m) => {
+      toast(`${LABEL[m.service_name] ?? m.service_name} is now ${m.mode}`);
+      void qc.invalidateQueries({ queryKey: ['mocks'] });
+    },
   });
   const [resetOpen, setResetOpen] = useState(false);
   const reset = useMutation({

@@ -17,6 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../../shared/api/client';
 import { cases, officer } from '../../shared/api/endpoints';
@@ -201,6 +202,9 @@ export function CaseReview() {
     mutationFn: () => officer.decide(id!, { action: action!, reason_codes: reasons, note: note.trim() }),
     onSuccess: (d) => {
       refresh(d);
+      toast.success(`${d.reference_code}: ${d.status.replace(/_/g, ' ').toLowerCase()}`, {
+        description: d.status === 'PENDING_SECOND_APPROVAL' ? 'Sent to a second officer (four-eyes).' : undefined,
+      });
       setAction(null);
       setReasons([]);
       setNote('');
@@ -250,7 +254,7 @@ export function CaseReview() {
         {/* LEFT: evidence */}
         <div className="min-w-0 space-y-5">
           {c.ai_case_note && (
-            <section className="card overflow-hidden border-s-4 border-s-info">
+            <section className="overflow-hidden rounded-xl border border-info/30 bg-surface">
               <div className="flex items-center gap-2 border-b border-line bg-info-soft px-4 py-3">
                 <Sparkles className="h-4 w-4 text-info" aria-hidden />
                 <h2 className="text-sm font-bold uppercase tracking-wide text-info">AI case handoff · system said &quot;I am not sure&quot;</h2>

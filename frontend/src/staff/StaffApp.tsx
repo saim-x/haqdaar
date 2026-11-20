@@ -24,6 +24,7 @@ import type { Role } from '../shared/api/types';
 import { logout } from '../shared/auth/session';
 import { homePathFor, useAuth } from '../shared/auth/store';
 import { cx } from '../shared/ui/cx';
+import { HaqdaarMark } from '../shared/ui/AjrakPattern';
 import { Queue } from './officer/Queue';
 import { CaseReview } from './officer/CaseReview';
 import { Corrections } from './officer/Corrections';
@@ -119,11 +120,7 @@ export default function StaffApp() {
   const sidebar = (
     <nav aria-label="Staff" className="flex h-full flex-col gap-5 overflow-y-auto p-4">
       <div className="flex items-center gap-2">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-ink" aria-hidden>
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M7 5v14M17 5v14M7 12h10" />
-          </svg>
-        </span>
+        <HaqdaarMark className="h-9 w-9 rounded-xl" />
         <div>
           <p className="font-bold leading-tight">Haqdaar</p>
           <p className="text-xs text-muted">Staff console · prototype</p>
@@ -140,7 +137,7 @@ export default function StaffApp() {
                   className={({ isActive }) =>
                     cx(
                       'flex min-h-[40px] items-center gap-2.5 rounded-lg px-2 text-sm font-medium transition-colors duration-fast',
-                      isActive ? 'bg-brand text-brand-ink' : 'text-ink hover:bg-sunken',
+                      isActive ? 'bg-brand-soft font-semibold text-brand' : 'text-muted hover:bg-sunken hover:text-ink',
                     )
                   }
                 >

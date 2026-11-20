@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ApiError } from '../shared/api/client';
 import type { Flag, PriorityBand, Severity } from '../shared/api/types';
 import { cx } from '../shared/ui/cx';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
   return (
@@ -19,26 +20,26 @@ export function PageHeader({ title, subtitle, actions, eyebrow }: { title: strin
 
 export function Panel({ title, children, actions, className, id }: { title?: ReactNode; children: ReactNode; actions?: ReactNode; className?: string; id?: string }) {
   return (
-    <section id={id} className={cx('card', className)}>
+    <Card id={id} className={cx('rounded-xl border-line shadow-none', className)}>
       {(title || actions) && (
-        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-          {title && <h2 className="text-sm font-bold uppercase tracking-wide text-muted">{title}</h2>}
+        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 border-b border-line px-4 py-3">
+          {title && <CardTitle className="text-[13px] font-semibold uppercase tracking-wide text-muted">{title}</CardTitle>}
           {actions}
-        </div>
+        </CardHeader>
       )}
-      <div className="p-4">{children}</div>
-    </section>
+      <CardContent className="p-4">{children}</CardContent>
+    </Card>
   );
 }
 
 export function Stat({ label, value, hint, tone = 'ink', lead }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'ink' | 'ok' | 'warn' | 'danger' | 'info'; lead?: boolean }) {
   const toneCls = { ink: 'text-ink', ok: 'text-ok', warn: 'text-warn', danger: 'text-danger', info: 'text-info' }[tone];
   return (
-    <div className={cx('card p-4', lead && 'sm:col-span-2')}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className={cx('num mt-1 font-bold leading-none', lead ? 'text-5xl' : 'text-3xl', toneCls)}>{value}</p>
-      {hint && <p className="mt-2 text-sm text-muted">{hint}</p>}
-    </div>
+    <Card className={cx('rounded-xl border-line p-4 shadow-none', lead && 'bg-brand text-brand-ink sm:col-span-2')}>
+      <p className={cx('text-xs font-semibold uppercase tracking-wide', lead ? 'text-white/75' : 'text-muted')}>{label}</p>
+      <p className={cx('num mt-2 font-bold leading-none tracking-tight', lead ? 'text-5xl text-white' : cx('text-3xl', toneCls))}>{value}</p>
+      {hint && <p className={cx('mt-2 text-sm', lead ? 'text-white/75' : 'text-muted')}>{hint}</p>}
+    </Card>
   );
 }
 
