@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import re
 import uuid
 from collections.abc import Sequence
@@ -33,7 +32,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from app.ai import qr_sign
+from app.ai import paths, qr_sign
 from app.ai.provider import OCRResult, get_provider, telemetry
 
 logger = logging.getLogger("haqdaar.ai.doc_verify")
@@ -553,20 +552,19 @@ def _table(name: str) -> Any:
 
 
 def upload_dir() -> Path:
-    try:  # pragma: no cover - depends on A1 landing
-        from app.config import settings  # type: ignore
-
-        value = getattr(settings, "UPLOAD_DIR", None)
-        if value:
-            return Path(str(value))
-    except Exception:
-        pass
-    return Path(os.environ.get("UPLOAD_DIR", str(Path(__file__).resolve().parent.parent / "uploads")))
+    """The upload root, resolved exactly as the writer resolves it (defect D-2b)."""
+    return paths.upload_dir()
 
 
 def _resolve_path(storage_path: str) -> Path:
+    """Resolve a stored ``storage_path`` against the writer's upload root.
+
+    ``documents.storage_path`` is relative to ``UPLOAD_DIR`` (``app/api/v1/documents.py``
+    writes ``{tenant}/{citizen}/{document_id}{suffix}``). An absolute value is honoured
+    as-is so a legacy row still resolves.
+    """
     candidate = Path(storage_path)
-    if candidate.is_absolute() and candidate.exists():
+    if candidate.is_absolute():
         return candidate
     return upload_dir() / storage_path
 

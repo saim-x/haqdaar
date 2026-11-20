@@ -34,7 +34,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from app.ai import guardrails, urdu_nlp
+from app.ai import guardrails, paths, urdu_nlp
 
 logger = logging.getLogger("haqdaar.ai.provider")
 
@@ -1036,15 +1036,8 @@ class LiveOpenAIProvider:
 
 
 def _tts_cache_dir() -> Path:
-    try:  # pragma: no cover - depends on A1 landing
-        from app.config import settings  # type: ignore
-
-        base = getattr(settings, "UPLOAD_DIR", None)
-        if base:
-            return Path(str(base)) / "tts_cache"
-    except Exception:
-        pass
-    return Path(os.environ.get("UPLOAD_DIR", str(DATA_DIR.parent / "uploads"))) / "tts_cache"
+    """``UPLOAD_DIR/tts_cache``, resolved the same way the document writer resolves it."""
+    return paths.upload_dir() / "tts_cache"
 
 
 # --------------------------------------------------------------------------- #

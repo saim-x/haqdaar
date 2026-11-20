@@ -32,7 +32,6 @@ import argparse
 import hashlib
 import json
 import logging
-import os
 import random
 import shutil
 import time
@@ -1410,16 +1409,10 @@ def _seed_historical_cases(
 # demo documents + orchestration
 # --------------------------------------------------------------------------- #
 def upload_dir() -> Path:
-    """Resolve ``UPLOAD_DIR`` without importing A1's settings module eagerly."""
-    try:  # pragma: no cover - depends on A1 landing
-        from app.config import settings  # type: ignore
+    """The upload root, resolved exactly as the document writer resolves it (D-2b)."""
+    from app.ai import paths
 
-        value = getattr(settings, "UPLOAD_DIR", None) or getattr(settings, "upload_dir", None)
-        if value:
-            return Path(str(value))
-    except Exception:
-        pass
-    return Path(os.environ.get("UPLOAD_DIR", str(DATA_DIR.parent / "uploads")))
+    return paths.upload_dir()
 
 
 def _stage_demo_documents() -> dict[str, Any]:
