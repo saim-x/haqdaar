@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Annotated, Any
 
@@ -36,6 +37,8 @@ from app.security.rbac import (
 )
 
 router = APIRouter(prefix="/me", tags=["me"])
+
+logger = logging.getLogger(__name__)
 
 DbSession = Annotated[Session, Depends(get_db)]
 CitizenActor = Annotated[ActorContext, Depends(require_roles(UserRole.CITIZEN, UserRole.HELPER))]
@@ -192,6 +195,80 @@ def my_data(request: Request, actor: CitizenActor, db: DbSession) -> dict[str, A
     }
 
 
+#: AC-12.1 — a corrected self-declared fact can change the outcome of a case that is
+#: still being worked, so those two statuses are re-evaluated immediately.
+_REEVALUATION_TRIGGER_STATUSES = ("NEEDS_INFO", "IN_REVIEW")
+
+
+def _reevaluate_after_correction(
+    db: Session, citizen_id: uuid.UUID, field_key: str
+) -> list[dict[str, Any]]:
+    """Re-run the pipeline for this citizen's open cases (AC-12.1).
+
+    Called only after the correction itself is committed: the citizen's intent must
+    survive even if a simulated registry is down and the re-evaluation parks the case
+    in ``WAITING_EXTERNAL``. A case that cannot be re-evaluated is reported, never
+    raised — a correction must not fail because a downstream service is unhappy.
+    """
+    from app.agent.case_agent import ReevaluationNotAllowed, reevaluate_case
+
+    open_cases = list(
+        db.execute(
+            select(Case)
+            .where(
+                Case.citizen_id == citizen_id,
+                Case.status.in_(_REEVALUATION_TRIGGER_STATUSES),
+            )
+            .order_by(Case.created_at.desc())
+        ).scalars()
+    )
+
+    results: list[dict[str, Any]] = []
+    for case in open_cases:
+        try:
+            outcome = reevaluate_case(
+                db,
+                case.id,
+                officer_user_id=None,
+                reason=f"citizen correction: {field_key}",
+            )
+        except ReevaluationNotAllowed as exc:
+            db.rollback()
+            results.append(
+                {
+                    "case_id": str(case.id),
+                    "reference_code": case.reference_code,
+                    "reevaluated": False,
+                    "reason": str(exc),
+                }
+            )
+        except Exception as exc:  # noqa: BLE001 - a correction must never 500 here
+            db.rollback()
+            logger.warning(
+                "re-evaluation after correction failed for case %s: %s",
+                case.reference_code,
+                type(exc).__name__,
+            )
+            results.append(
+                {
+                    "case_id": str(case.id),
+                    "reference_code": case.reference_code,
+                    "reevaluated": False,
+                    "reason": "REEVALUATION_FAILED",
+                }
+            )
+        else:
+            results.append(
+                {
+                    "case_id": str(case.id),
+                    "reference_code": case.reference_code,
+                    "reevaluated": True,
+                    "status": outcome.get("status") if isinstance(outcome, dict) else None,
+                }
+            )
+    return results
+
+
 @router.post("/corrections", status_code=201, summary="Request a correction to stored data")
 def request_correction(
     payload: dict[str, Any],
@@ -305,6 +382,13 @@ def request_correction(
     )
     db.commit()
 
+    # AC-12.1: a corrected self-declared fact can flip a case that is still open.
+    # Registry-sourced corrections change nothing yet — an officer has to accept them
+    # first — so only an applied correction re-evaluates.
+    reevaluated = (
+        _reevaluate_after_correction(db, citizen_id, field_key) if applied else []
+    )
+
     return {
         "id": str(correction.id),
         "field_key": correction.field_key,
@@ -312,6 +396,7 @@ def request_correction(
         "requested_value": correction.requested_value,
         "status": correction.status,
         "applied": applied,
+        "reevaluated_cases": reevaluated,
         "message_en": (
             "Your correction was applied immediately."
             if applied
