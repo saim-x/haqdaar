@@ -23,6 +23,7 @@ from app.models.enums import (
     ConsentStatus,
     DataCategory,
     JobType,
+    NotificationChannel,
     UserRole,
 )
 from app.models.identity import Citizen
@@ -824,6 +825,90 @@ def withdraw_case(
     return body
 
 
+def _notify_complaint(
+    db: Session, *, complaint: Case, parent: Case, reason: str
+) -> None:
+    """Tell the citizen it landed, and put it in front of the tenant's officers.
+
+    AC-09.3 stops at "files a mock complaint if FAILED", but a complaint nobody sees
+    is not a complaint. The citizen gets an in-app row plus a simulated SMS carrying
+    an ``HQ-XXXXX`` code (so the message itself can be verified by the scam checker),
+    and every active officer in the tenant gets an in-app row pointing at the case.
+    """
+    from app.models.identity import User
+    from app.notify import create_notification
+
+    create_notification(
+        db,
+        channel=NotificationChannel.IN_APP,
+        title_en="Complaint received",
+        title_ur="شکایت موصول ہوئی",
+        body_en=(
+            f"We received your complaint about application {parent.reference_code}. "
+            "We are checking the payment and will update you here."
+        ),
+        body_ur=(
+            f"آپ کی درخواست {parent.reference_code} کے بارے میں شکایت موصول ہو گئی۔ "
+            "ہم ادائیگی کی جانچ کر رہے ہیں اور آپ کو یہیں اطلاع دیں گے۔"
+        ),
+        citizen_id=complaint.citizen_id,
+        case_id=complaint.id,
+        tenant_id=complaint.tenant_id,
+    )
+
+    citizen = db.get(Citizen, complaint.citizen_id)
+    if citizen is not None and citizen.phone:
+        create_notification(
+            db,
+            channel=NotificationChannel.SMS_SIMULATED,
+            title_en="Haqdaar complaint",
+            title_ur="حقدار شکایت",
+            body_en=(
+                f"Complaint {complaint.reference_code} received for application "
+                f"{parent.reference_code}. Reason: {reason}. We will check the payment."
+            ),
+            body_ur=(
+                f"درخواست {parent.reference_code} کے لیے شکایت "
+                f"{complaint.reference_code} موصول ہوئی۔ ہم ادائیگی کی جانچ کریں گے۔"
+            ),
+            phone=citizen.phone,
+            citizen_id=complaint.citizen_id,
+            case_id=complaint.id,
+            tenant_id=complaint.tenant_id,
+        )
+
+    officers = (
+        db.execute(
+            select(User).where(
+                User.tenant_id == complaint.tenant_id,
+                User.role == UserRole.OFFICER.value,
+                User.is_active.is_(True),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for officer in officers:
+        create_notification(
+            db,
+            channel=NotificationChannel.IN_APP,
+            title_en="New payment complaint",
+            title_ur="نئی ادائیگی شکایت",
+            body_en=(
+                f"{complaint.reference_code} — money not received on "
+                f"{parent.reference_code} ({reason}). The payment check is queued."
+            ),
+            body_ur=(
+                f"{complaint.reference_code} — {parent.reference_code} کی رقم موصول نہیں ہوئی۔ "
+                "ادائیگی کی جانچ قطار میں ہے۔"
+            ),
+            user_id=officer.id,
+            case_id=complaint.id,
+            tenant_id=complaint.tenant_id,
+            with_verification_code=False,
+        )
+
+
 @router.post("/{case_id}/complaint", status_code=201, summary="File a payment complaint")
 def file_complaint(
     case_id: uuid.UUID,
@@ -910,6 +995,8 @@ def file_complaint(
         },
         dedup_key=f"CHECK_COMPLAINT:{complaint.id}",
     )
+
+    _notify_complaint(db, complaint=complaint, parent=parent, reason=reason)
 
     body = _case_payload(db, complaint, actor, include_internal=False)
     remember(
