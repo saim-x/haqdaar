@@ -3,9 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
-import type { DraftAnswer, OfficerCaseReview, RuleTraceEntry } from '../../shared/api/types';
+import type { OfficerCaseReview } from '../../shared/api/types';
 import { Card, CardTitle, Chip, ConfidenceBar, ErrorState, Loading, PageHeader } from '../ui';
 import { IconLock, IconWarning } from '../../shared/ui/Icons';
+import { FactTable, RuleTraceTable, WhyThisRoute } from './CaseEvidence';
 
 const REASON_CODES = [
   'DOCUMENT_ILLEGIBLE',
@@ -26,47 +27,6 @@ const ACTIONS = [
 ] as const;
 
 type ActionKey = (typeof ACTIONS)[number]['key'];
-
-function sourceTone(source: string | null): 'ok' | 'info' | 'warn' | 'neutral' {
-  if (!source) return 'neutral';
-  if (source.includes('REGISTRY')) return 'info';
-  if (source.includes('DOCUMENT')) return 'ok';
-  if (source.includes('SELF')) return 'warn';
-  return 'neutral';
-}
-
-function FactRow({ factKey, fact }: { factKey: string; fact: DraftAnswer }) {
-  const unknown = fact.state === 'UNKNOWN' || (fact.value === null && fact.missing_reason);
-  return (
-    <tr className={`border-b border-ink/5 last:border-0 ${fact.conflict ? 'bg-amber-50' : ''}`}>
-      <td className="px-2 py-1.5 font-mono text-[11px] text-ink-soft">{factKey}</td>
-      <td className="px-2 py-1.5 text-xs font-semibold text-ink">
-        {unknown ? <span className="text-ink-soft">UNKNOWN</span> : String(fact.value ?? '—')}
-        {fact.missing_reason && <span className="ms-1 text-[10px] text-ink-soft">({fact.missing_reason})</span>}
-      </td>
-      <td className="px-2 py-1.5">
-        <Chip tone={sourceTone(fact.source ?? null)}>{fact.source ?? '—'}</Chip>
-      </td>
-      <td className="px-2 py-1.5 text-[11px] text-ink-soft">{fact.entered_by ?? '—'}</td>
-      <td className="px-2 py-1.5">
-        {fact.conflict ? <Chip tone="danger">conflict</Chip> : <span className="text-[11px] text-ink-soft">—</span>}
-      </td>
-    </tr>
-  );
-}
-
-function TraceRow({ entry }: { entry: RuleTraceEntry }) {
-  const tone = entry.result === 'PASS' ? 'ok' : entry.result === 'FAIL' ? 'danger' : 'warn';
-  return (
-    <tr className="border-b border-ink/5 last:border-0">
-      <td className="px-2 py-1.5 font-mono text-[11px] text-ink-soft">{entry.rule_id}</td>
-      <td className="px-2 py-1.5">
-        <Chip tone={tone}>{entry.result}</Chip>
-      </td>
-      <td className="px-2 py-1.5 text-[11px] text-ink">{entry.reason_en}</td>
-    </tr>
-  );
-}
 
 /**
  * Officer case review — docs/11 §6.1.
@@ -136,10 +96,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const consentRevoked = query.error instanceof ApiError && query.error.isConsentRevoked;
   const caseData = query.data;
 
+  // docs/05 §3.6 — `facts` is the canonical tri-state bundle. Older payloads
+  // only carry `draft_answers`, which has the same shape minus `state`.
   const facts = useMemo(
-    () => Object.entries(caseData?.draft_answers ?? {}),
+    () => caseData?.facts ?? caseData?.draft_answers ?? {},
     [caseData],
   );
+  const ruleTrace = caseData?.rule_trace ?? [];
   const highFlags = (caseData?.flags ?? []).filter((f) => f.severity === 'HIGH');
   const ruleStale = caseData?.rule_stale === true;
 
@@ -266,94 +229,19 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             )}
           </Card>
 
-          <Card className="overflow-x-auto">
-            <CardTitle hint={`${facts.length} facts`}>Canonical facts</CardTitle>
-            <table className="w-full min-w-[560px] text-left">
-              <thead>
-                <tr className="border-b border-ink/10 text-[10px] uppercase tracking-wide text-ink-soft">
-                  <th className="px-2 py-1">Fact</th>
-                  <th className="px-2 py-1">Value</th>
-                  <th className="px-2 py-1">Source</th>
-                  <th className="px-2 py-1">Entered by</th>
-                  <th className="px-2 py-1">Conflict</th>
-                </tr>
-              </thead>
-              <tbody>
-                {facts.map(([key, fact]) => (
-                  <FactRow key={key} factKey={key} fact={fact} />
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <FactTable facts={facts} />
 
-          <Card className="overflow-x-auto">
-            <CardTitle
-              hint={
-                (caseData.rule_trace?.length ?? 0) > 0
-                  ? 'PASS / FAIL / UNKNOWN'
-                  : 'route + confidence + flags'
-              }
-            >
-              Why this route
-            </CardTitle>
-            {(caseData.rule_trace?.length ?? 0) > 0 ? (
-              <table className="w-full min-w-[520px] text-left">
-                <thead>
-                  <tr className="border-b border-ink/10 text-[10px] uppercase tracking-wide text-ink-soft">
-                    <th className="px-2 py-1">Rule</th>
-                    <th className="px-2 py-1">Result</th>
-                    <th className="px-2 py-1">Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(caseData.rule_trace ?? []).map((entry) => (
-                    <TraceRow key={entry.rule_id} entry={entry} />
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-ink-soft">Route</span>
-                  <Chip
-                    tone={
-                      caseData.latest_route === 'AUTO_APPROVE'
-                        ? 'ok'
-                        : caseData.latest_route === 'HUMAN_REVIEW'
-                          ? 'warn'
-                          : 'info'
-                    }
-                  >
-                    {caseData.latest_route ?? '—'}
-                  </Chip>
-                  <span className="text-ink-soft">Confidence</span>
-                  <span className="num font-bold text-ink">
-                    {caseData.latest_confidence !== null && caseData.latest_confidence !== undefined
-                      ? caseData.latest_confidence.toFixed(3)
-                      : '—'}
-                  </span>
-                  <span className="text-ink-soft">Priority</span>
-                  <span className="num font-bold text-ink">
-                    {caseData.priority_band ?? '—'} ({caseData.priority_score ?? '—'})
-                  </span>
-                </div>
-                {(caseData.flags?.length ?? 0) > 0 && (
-                  <ul className="space-y-1">
-                    {(caseData.flags ?? []).map((flag) => (
-                      <li key={flag.code} className="text-[11px] text-ink">
-                        <span className="font-mono font-semibold">{flag.code}</span>
-                        {flag.detail && <span className="text-ink-soft"> — {flag.detail}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-[11px] text-ink-soft">
-                  Per-rule PASS/FAIL/UNKNOWN is recorded on the decision and is available to auditors
-                  in the decision-trace inspector.
-                </p>
-              </div>
-            )}
-          </Card>
+          {ruleTrace.length > 0 ? (
+            <RuleTraceTable trace={ruleTrace} />
+          ) : (
+            <WhyThisRoute
+              route={caseData.latest_route}
+              confidence={caseData.latest_confidence}
+              priorityBand={caseData.priority_band}
+              priorityScore={caseData.priority_score}
+              flags={caseData.flags ?? []}
+            />
+          )}
 
           <Card>
             <CardTitle hint="Blur · QR HMAC · OCR vs QR">Documents</CardTitle>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { ApiKeyCreated, ApiKeyRecord } from '../../shared/api/types';
+import { CopyCode } from '../../shared/ui/CopyCode';
 import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
 
 const SCOPES = ['cases:read', 'scam:check', 'rules:read'];
@@ -13,7 +14,6 @@ export default function ApiKeysPage() {
   const [name, setName] = useState('');
   const [scopes, setScopes] = useState<string[]>(['cases:read']);
   const [created, setCreated] = useState<ApiKeyCreated | null>(null);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const query = useQuery({
@@ -49,20 +49,9 @@ export default function ApiKeysPage() {
       {created && (
         <Card className="border-2 border-teal-600/40 bg-teal-50">
           <CardTitle hint="shown once — copy it now">New API key</CardTitle>
-          <div className="flex items-center gap-2">
-            <code className="num flex-1 overflow-x-auto rounded bg-white px-2 py-1.5 font-mono text-xs">{created.api_key}</code>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard?.writeText(created.api_key).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
-                });
-              }}
-              className="rounded bg-ink px-2 py-1.5 text-[11px] font-bold text-white"
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="num min-w-0 flex-1 overflow-x-auto rounded bg-white px-2 py-1.5 font-mono text-xs">{created.api_key}</code>
+            <CopyCode value={created.api_key} label="Key" tone="ink" size="md" />
             <button type="button" onClick={() => setCreated(null)} className="rounded px-2 py-1.5 text-[11px] font-semibold text-ink-soft">
               Dismiss
             </button>

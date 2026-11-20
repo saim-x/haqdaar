@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { ApiError } from '../shared/api/errors';
 
 /** Small staff-console UI kit. English LTR, dense, keyboard-friendly. */
@@ -23,8 +23,16 @@ export function PageHeader({
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl border border-ink/10 bg-white p-4 shadow-sm ${className}`}>{children}</section>;
+export function Card({
+  children,
+  className = '',
+  ...rest
+}: { children: ReactNode; className?: string } & HTMLAttributes<HTMLElement>) {
+  return (
+    <section className={`rounded-xl border border-ink/10 bg-white p-4 shadow-sm ${className}`} {...rest}>
+      {children}
+    </section>
+  );
 }
 
 export function CardTitle({ children, hint }: { children: ReactNode; hint?: string }) {
