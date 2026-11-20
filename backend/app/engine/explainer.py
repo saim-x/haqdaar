@@ -19,9 +19,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from app.engine.evaluator import EvaluationResult, RuleResult
 from app.engine.router import CaseOutcome, RouteDecision
-from pydantic import BaseModel, ConfigDict
 
 __all__ = [
     "ACCUSATORY_TERMS",

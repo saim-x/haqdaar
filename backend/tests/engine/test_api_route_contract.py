@@ -146,11 +146,111 @@ def test_dataset_loader_reads_labelled_cases(
     assert all(isinstance(case, LabelledCase) for case in cases)
 
 
-def test_benchmarks_absent_is_reported_not_faked(api_modules: tuple[Any, Any]) -> None:
-    """docs/07 §8: a missing DPI module must not invent numbers."""
+def test_benchmarks_present_returns_real_metrics(api_modules: tuple[Any, Any]) -> None:
+    """docs/07 §8: DPI's measured numbers flow through with ``available=True``."""
     _, eval_module = api_modules
     scam, documents, available = eval_module._benchmarks()
-    assert (scam, documents, available) == ({}, {}, False)
+
+    assert available is True
+    assert set(scam) == {
+        "test_size",
+        "precision",
+        "recall",
+        "f1",
+        "false_positive_rate",
+        "hard_negative_fpr",
+        "confusion_matrix",
+        "live_checks_count",
+        "user_disputed_count",
+    }
+    assert set(documents) == {
+        "test_size",
+        "genuine_verified_rate",
+        "tampered_caught_rate",
+        "false_tamper_rate",
+        "blurry_retake_rate",
+    }
+
+    # Real measurements, not placeholders.
+    assert scam["test_size"] > 0
+    assert documents["test_size"] > 0
+    for key in ("precision", "recall", "f1", "false_positive_rate", "hard_negative_fpr"):
+        assert 0.0 <= scam[key] <= 1.0, key
+    for key in (
+        "genuine_verified_rate",
+        "tampered_caught_rate",
+        "false_tamper_rate",
+        "blurry_retake_rate",
+    ):
+        assert 0.0 <= documents[key] <= 1.0, key
+    assert len(scam["confusion_matrix"]) == 2
+    assert all(len(row) == 2 for row in scam["confusion_matrix"])
+
+
+def test_benchmarks_absent_is_reported_not_faked(
+    api_modules: tuple[Any, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """docs/07 §8: a missing DPI module must not invent numbers.
+
+    The seam is ``_import_benchmarks`` — patching ``sys.modules`` for a module that now
+    exists would not block the import the endpoint actually performs.
+    """
+
+    def _unavailable() -> Any:
+        raise ImportError("app.ai.benchmarks not merged")
+
+    _, eval_module = api_modules
+    monkeypatch.setattr(eval_module, "_import_benchmarks", _unavailable)
+    assert eval_module._benchmarks() == ({}, {}, False)
+
+
+def test_doc_metrics_are_cached_between_requests(
+    api_modules: tuple[Any, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``doc_metrics()`` re-verifies 30 images (~2 s); the dashboard must not pay per load."""
+    _, eval_module = api_modules
+    calls: list[int] = []
+
+    class _FakeBenchmarks:
+        @staticmethod
+        def doc_metrics() -> dict[str, Any]:
+            calls.append(1)
+            return {
+                "test_size": 30,
+                "genuine_verified_rate": 1.0,
+                "tampered_caught_rate": 1.0,
+                "false_tamper_rate": 0.0,
+                "blurry_retake_rate": 1.0,
+            }
+
+    monkeypatch.setattr(eval_module, "_doc_metrics_cache", None)
+    first = eval_module._doc_metrics(_FakeBenchmarks)
+    second = eval_module._doc_metrics(_FakeBenchmarks)
+    assert first == second
+    assert len(calls) == 1, "the second call must come from the cache"
+
+    # A returned dict is a copy: mutating it must not poison the cache.
+    first["test_size"] = 0
+    assert eval_module._doc_metrics(_FakeBenchmarks)["test_size"] == 30
+
+
+def test_doc_metrics_cache_expires(
+    api_modules: tuple[Any, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, eval_module = api_modules
+    calls: list[int] = []
+
+    class _FakeBenchmarks:
+        @staticmethod
+        def doc_metrics() -> dict[str, Any]:
+            calls.append(1)
+            return {"test_size": len(calls)}
+
+    monkeypatch.setattr(eval_module, "_doc_metrics_cache", None)
+    monkeypatch.setattr(eval_module, "DOC_METRICS_TTL_SECONDS", 0.0)
+    eval_module._doc_metrics(_FakeBenchmarks)
+    eval_module._doc_metrics(_FakeBenchmarks)
+    assert len(calls) == 2, "a zero TTL must re-measure every time"
 
 
 # -- invariants that must survive the takeover ---------------------------

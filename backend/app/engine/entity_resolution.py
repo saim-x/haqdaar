@@ -23,6 +23,10 @@ import unicodedata
 from collections.abc import Sequence
 from enum import Enum
 
+from pydantic import BaseModel, ConfigDict
+from rapidfuzz import fuzz
+from rapidfuzz.distance import JaroWinkler
+
 from app.engine.anomalies import (
     RiskFlag,
     detect_cnic_not_in_registry,
@@ -37,9 +41,6 @@ from app.engine.confidence import (
     identity_confidence_for_name_only,
 )
 from app.engine.facts import is_valid_cnic, parse_iso_date
-from pydantic import BaseModel, ConfigDict
-from rapidfuzz import fuzz
-from rapidfuzz.distance import JaroWinkler
 
 __all__ = [
     "HONORIFICS",
@@ -325,8 +326,26 @@ def phonetic_key(name: str | None) -> str:
     return canonical_name(name).replace("z", "s")
 
 
+def _similarity(left: str, right: str) -> float:
+    """``max(jaro_winkler, token_set_ratio / 100)`` over two canonical strings."""
+    jaro = JaroWinkler.similarity(left, right)
+    token_set = fuzz.token_set_ratio(left, right) / 100.0
+    return max(jaro, token_set)
+
+
 def name_sim(a: str | None, b: str | None) -> float:
-    """``max(jaro_winkler, token_set_ratio / 100)`` over canonical forms.
+    """``min(full, given)`` over canonical forms (docs/06 §5.1, ADR-017).
+
+    ``full`` is ``max(jaro_winkler, token_set_ratio / 100)``. ``given`` is the same
+    measure over the first canonical token only, which stops a shared surname from
+    carrying a different given name over the 0.80 threshold: ``"Zainab Khan"`` vs
+    ``"Sakina Khan"`` scores 0.867 on the full string but 0.778 once the given names
+    are compared. The guard can only lower a score, so it can only add human review.
+
+    Honorific stripping already handles the demo cast's shared ``Bibi``
+    (``"Zainab Bibi"`` vs ``"Sakina Bibi"`` is 0.778 before the guard), and the
+    golden path stays at 1.0 because ``"Mst. Fatima Bibi"`` and ``"Fatima Bibi"``
+    canonicalise to the same single token.
 
     Frozen cross-team interface: ``app.ai.doc_verify`` calls this at threshold 0.80.
     """
@@ -334,9 +353,9 @@ def name_sim(a: str | None, b: str | None) -> float:
     canonical_b = canonical_name(b)
     if not canonical_a or not canonical_b:
         return 0.0
-    jaro = JaroWinkler.similarity(canonical_a, canonical_b)
-    token_set = fuzz.token_set_ratio(canonical_a, canonical_b) / 100.0
-    return round(max(jaro, token_set), 4)
+    full = _similarity(canonical_a, canonical_b)
+    given = _similarity(canonical_a.split()[0], canonical_b.split()[0])
+    return round(min(full, given), 4)
 
 
 # -- 4. record matching (docs/06 §5.2) -----------------------------------

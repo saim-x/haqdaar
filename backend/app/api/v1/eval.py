@@ -23,10 +23,15 @@ Integration assumptions (confirm at S1):
 
 from __future__ import annotations
 
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.engine.eval_sweep import (
@@ -38,9 +43,6 @@ from app.engine.eval_sweep import (
 from app.engine.rules_dsl import RuleSetSchema
 from app.models import AiTelemetry, CaseNote, Decision, Program, RuleVersion
 from app.security.deps import require_roles
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 __all__ = ["router"]
 
@@ -54,6 +56,11 @@ EVAL_CASES_PATH = Path(__file__).resolve().parents[2] / "data" / "eval_cases.jso
 
 #: docs/07 §8: live operations look back one day.
 LIVE_WINDOW_HOURS = 24
+
+#: ``doc_metrics()`` re-verifies 30 images (~2 s) per call. The eval set is committed,
+#: so cache the result; the TTL only exists so a dataset swap is eventually picked up.
+DOC_METRICS_TTL_SECONDS = 300.0
+_doc_metrics_cache: tuple[float, dict[str, Any]] | None = None
 
 
 # -- helpers -------------------------------------------------------------
@@ -96,15 +103,45 @@ def _percentile(values: list[int], fraction: float) -> int:
     return int(ordered[index])
 
 
-def _benchmarks() -> tuple[dict[str, Any], dict[str, Any], bool]:
+def _import_benchmarks() -> Any:
+    """The lazy import seam for DPI's benchmarks module.
+
+    Kept as its own function so the "module has not merged" path is testable by
+    patching this seam, rather than by manipulating ``sys.modules`` for a module that
+    now exists.
+    """
+    from app.ai import benchmarks
+
+    return benchmarks
+
+
+def _doc_metrics(benchmarks: Any) -> dict[str, Any]:
+    """``doc_metrics()`` behind a TTL cache.
+
+    DPI's implementation re-runs the real verifier over the 30-image eval set on every
+    call (~2 s). The dataset is committed, so the result cannot change at runtime;
+    paying that on every dashboard load would make the page feel broken.
+    """
+    global _doc_metrics_cache
+    now = time.monotonic()
+    if _doc_metrics_cache is not None:
+        cached_at, cached = _doc_metrics_cache
+        if now - cached_at < DOC_METRICS_TTL_SECONDS:
+            return dict(cached)
+    measured = benchmarks.doc_metrics() if hasattr(benchmarks, "doc_metrics") else {}
+    _doc_metrics_cache = (now, dict(measured or {}))
+    return dict(measured or {})
+
+
+def _benchmarks(db: Session | None = None) -> tuple[dict[str, Any], dict[str, Any], bool]:
     """DPI's benchmark metrics, or empty blocks when the module has not merged."""
     try:
-        from app.ai import benchmarks
+        benchmarks = _import_benchmarks()
     except ImportError:
         return {}, {}, False
-    scam = benchmarks.scam_metrics() if hasattr(benchmarks, "scam_metrics") else {}
-    docs = benchmarks.doc_metrics() if hasattr(benchmarks, "doc_metrics") else {}
-    return dict(scam or {}), dict(docs or {}), True
+    # ``db`` gives the scam block its live check and dispute counts (docs/07 §8).
+    scam = benchmarks.scam_metrics(db) if hasattr(benchmarks, "scam_metrics") else {}
+    return dict(scam or {}), _doc_metrics(benchmarks), True
 
 
 # -- live operations -----------------------------------------------------
@@ -216,7 +253,7 @@ def eval_dashboard(
             "sample_size": 0,
         }
 
-    scam, documents, benchmarks_available = _benchmarks()
+    scam, documents, benchmarks_available = _benchmarks(db)
 
     return {
         **sweep_block,

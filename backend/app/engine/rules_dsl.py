@@ -16,8 +16,9 @@ import json
 from enum import Enum
 from typing import Any
 
-from app.engine.facts import FACT_REGISTRY, FactValueType
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+
+from app.engine.facts import FACT_REGISTRY, FactValueType
 
 __all__ = [
     "BenefitFormula",

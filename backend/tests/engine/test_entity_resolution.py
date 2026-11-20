@@ -144,6 +144,61 @@ def test_identical_names_score_one() -> None:
     assert name_sim("Fatima Bibi", "Fatima Bibi") == 1.0
 
 
+# -- 2b. given-name guard (ADR-017) --------------------------------------
+def test_given_name_guard_blocks_a_shared_surname() -> None:
+    """A shared surname must not carry a different given name over the 0.80 threshold."""
+    assert name_sim("Zainab Khan", "Sakina Khan") < 0.80
+    assert name_sim("Zainab Ali", "Sakina Ali") < 0.80
+    assert name_sim("Fatima Malik", "Zainab Malik") < 0.70
+
+
+def test_given_name_guard_keeps_the_golden_path_at_one() -> None:
+    """The registry's honorific variant must still be a perfect match."""
+    assert name_sim("Mst. Fatima Bibi", "Fatima Bibi") == 1.0
+    assert name_sim("Fatima Bibi", "Fatima Bibi") == 1.0
+    assert name_sim("فاطمہ بی بی", "Fatima Bibi") == 1.0
+
+
+def test_given_name_guard_keeps_the_bibi_population_below_threshold() -> None:
+    """Honorific stripping already handles the demo cast's shared ``Bibi``."""
+    assert name_sim("Zainab Bibi", "Sakina Bibi") < 0.80
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ("Mst. Fatima Bibi", "Fatima Bibi"),
+        ("Muhammad Akram", "Mohammad Akram"),
+        ("Ayesha Bibi", "Aisha Bibi"),
+        ("Hussain Ali", "Husain Ali"),
+        ("Ghulam Rasool", "Ghulam Rasul"),
+        ("Zainab Bibi", "Zubaida Bibi"),
+        ("Fatima Bibi", "Zainab Bibi"),
+        ("Fatima Bibi", "Muhammad Akram"),
+        ("Zainab Khan", "Sakina Khan"),
+        ("Fatima Malik", "Zainab Malik"),
+        ("Abdul Rahman", "Abdur Rehman"),
+        ("Nasreen Bibi", "Nasreen Akhtar"),
+    ],
+)
+def test_given_name_guard_never_raises_a_score(left: str, right: str) -> None:
+    """Conservative direction: the guard can only add human review, never approvals."""
+    from rapidfuzz import fuzz
+    from rapidfuzz.distance import JaroWinkler
+
+    canonical_left = canonical_name(left)
+    canonical_right = canonical_name(right)
+    unguarded = max(
+        JaroWinkler.similarity(canonical_left, canonical_right),
+        fuzz.token_set_ratio(canonical_left, canonical_right) / 100.0,
+    )
+    assert name_sim(left, right) <= round(unguarded, 4)
+
+
+def test_given_name_guard_is_symmetric() -> None:
+    assert name_sim("Zainab Khan", "Sakina Khan") == name_sim("Sakina Khan", "Zainab Khan")
+
+
 # -- 3. Case A: CNIC given ----------------------------------------------
 def test_case_a_exact_match_is_098() -> None:
     resolution = resolve_identity(
