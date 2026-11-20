@@ -1,5 +1,15 @@
 import { useMutation } from '@tanstack/react-query';
-import { CircleHelp, ImageUp, Mic, ShieldAlert, ShieldCheck, ShieldQuestion, Square, ThumbsDown, type LucideIcon } from 'lucide-react';
+import {
+  CircleHelp,
+  ImageUp,
+  Mic,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldQuestion,
+  Square,
+  ThumbsDown,
+  type LucideIcon,
+} from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ApiError } from '../shared/api/client';
 import { ai } from '../shared/api/endpoints';
@@ -13,11 +23,38 @@ import { Button } from '../shared/ui/Button';
 import { cx } from '../shared/ui/cx';
 import { useAutoRead } from './useAutoRead';
 
-const VERDICT: Record<ScamVerdict, { icon: LucideIcon; tone: string; solid: string; label: DictKey; clip: string }> = {
-  VERIFIED_OFFICIAL: { icon: ShieldCheck, tone: 'border-ok bg-ok-soft', solid: 'bg-ok text-white', label: 'v_VERIFIED_OFFICIAL', clip: 'scam_verified' },
-  LIKELY_SAFE: { icon: ShieldCheck, tone: 'border-ok/60 bg-ok-soft', solid: 'bg-ok text-white', label: 'v_LIKELY_SAFE', clip: 'scam_safe' },
-  CANNOT_TELL: { icon: ShieldQuestion, tone: 'border-warn bg-warn-soft', solid: 'bg-warn text-white', label: 'v_CANNOT_TELL', clip: 'scam_cannot_tell' },
-  LIKELY_SCAM: { icon: ShieldAlert, tone: 'border-danger bg-danger-soft', solid: 'bg-danger text-white', label: 'v_LIKELY_SCAM', clip: 'scam_likely' },
+const VERDICT: Record<
+  ScamVerdict,
+  { icon: LucideIcon; tone: string; solid: string; label: DictKey; clip: string }
+> = {
+  VERIFIED_OFFICIAL: {
+    icon: ShieldCheck,
+    tone: 'border-ok bg-ok-soft',
+    solid: 'bg-ok text-white',
+    label: 'v_VERIFIED_OFFICIAL',
+    clip: 'scam_verified',
+  },
+  LIKELY_SAFE: {
+    icon: ShieldCheck,
+    tone: 'border-ok/60 bg-ok-soft',
+    solid: 'bg-ok text-white',
+    label: 'v_LIKELY_SAFE',
+    clip: 'scam_safe',
+  },
+  CANNOT_TELL: {
+    icon: ShieldQuestion,
+    tone: 'border-warn bg-warn-soft',
+    solid: 'bg-warn text-white',
+    label: 'v_CANNOT_TELL',
+    clip: 'scam_cannot_tell',
+  },
+  LIKELY_SCAM: {
+    icon: ShieldAlert,
+    tone: 'border-danger bg-danger-soft',
+    solid: 'bg-danger text-white',
+    label: 'v_LIKELY_SCAM',
+    clip: 'scam_likely',
+  },
 };
 
 /** Public scam & official-message checker (docs/11 §3.4, Challenge 08). Advisory only. */
@@ -37,10 +74,16 @@ export function ScamCheck() {
   const onResult = (r: ScamCheckResponse) => {
     setResult(r);
     setFeedbackSent(false);
-    void play({ text: `${t(VERDICT[r.verdict].label)}. ${pick(r.explanation_ur, r.explanation_en)}`, lang, clip: VERDICT[r.verdict].clip });
+    void play({
+      text: `${t(VERDICT[r.verdict].label)}. ${pick(r.explanation_ur, r.explanation_en)}`,
+      lang,
+      clip: VERDICT[r.verdict].clip,
+    });
   };
   const check = useMutation({
-    mutationFn: async (input: { kind: 'text' } | { kind: 'image'; blob: Blob } | { kind: 'audio'; blob: Blob }) => {
+    mutationFn: async (
+      input: { kind: 'text' } | { kind: 'image'; blob: Blob } | { kind: 'audio'; blob: Blob },
+    ) => {
       if (input.kind === 'text') return ai.scamCheck(text.trim());
       if (input.kind === 'image') return ai.scamCheckImage(input.blob);
       return ai.scamCheckAudio(input.blob);
@@ -104,8 +147,11 @@ export function ScamCheck() {
     <div className="space-y-5 animate-rise">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold leading-tight">{t('scamTitle')}</h1>
-          <p className="mt-1 text-lg text-muted-foreground">{t('scamSubtitle')}</p>
+          <span className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+            <ShieldCheck className="h-6 w-6" aria-hidden />
+          </span>
+          <h1 className="text-2xl font-bold leading-tight">{t('scamTitle')}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t('scamSubtitle')}</p>
         </div>
         <AudioButton clip="scam_intro" text={`${t('scamTitle')}. ${t('scamSubtitle')}`} />
       </div>
@@ -132,19 +178,68 @@ export function ScamCheck() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (text.trim()) check.mutate({ kind: 'text' });
+            if (text.trim() && !check.isPending && online) check.mutate({ kind: 'text' });
           }}
           className="space-y-3"
         >
           <textarea
+            disabled={check.isPending}
             value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={5}
+            onChange={(e) => {
+              setText(e.target.value);
+              setResult(null);
+              check.reset();
+            }}
+            rows={4}
             placeholder={t('scamPlaceholder')}
             aria-label={t('scamPlaceholder')}
-            className="w-full rounded-card border-2 border-input bg-card p-4 text-lg"
+            className="w-full rounded-2xl border border-input bg-card p-4 text-base"
           />
-          <Button type="submit" size="xl" block loading={check.isPending} disabled={!text.trim() || !online}>
+          {!text && (
+            <div className="rounded-xl border border-border bg-card p-3">
+              <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                {pick('ایک فرضی مثال آزمائیں', 'Try a synthetic example')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  {
+                    label: pick('جعلی فیس کا پیغام', 'Fee request'),
+                    message: pick(
+                      'آپ کی امداد تیار ہے۔ 500 روپے فیس بھیجیں اور اپنا PIN بتائیں۔',
+                      'Your relief payment is ready. Send Rs 500 processing fee and share your PIN to claim it.',
+                    ),
+                  },
+                  {
+                    label: pick('غیر واضح پیغام', 'Unclear message'),
+                    message: pick(
+                      'آپ کی ادائیگی کے بارے میں اطلاع ہے۔',
+                      'There is an update about your payment.',
+                    ),
+                  },
+                ].map((sample) => (
+                  <button
+                    key={sample.label}
+                    type="button"
+                    onClick={() => {
+                      setText(sample.message);
+                      setResult(null);
+                      check.reset();
+                    }}
+                    className="min-h-12 rounded-lg bg-primary-soft px-3 text-xs font-semibold text-primary"
+                  >
+                    {sample.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <Button
+            type="submit"
+            size="xl"
+            block
+            loading={check.isPending}
+            disabled={!text.trim() || !online || check.isPending}
+          >
             {check.isPending ? t('checking') : t('checkMessage')}
           </Button>
         </form>
@@ -164,7 +259,15 @@ export function ScamCheck() {
               e.target.value = '';
             }}
           />
-          <Button size="xl" block variant="secondary" loading={check.isPending} icon={<ImageUp className="h-7 w-7" aria-hidden />} onClick={() => fileRef.current?.click()} disabled={!online}>
+          <Button
+            size="xl"
+            block
+            variant="secondary"
+            loading={check.isPending}
+            icon={<ImageUp className="h-7 w-7" aria-hidden />}
+            onClick={() => fileRef.current?.click()}
+            disabled={!online}
+          >
             {t('uploadScreenshot')}
           </Button>
         </div>
@@ -177,7 +280,9 @@ export function ScamCheck() {
           variant={recording ? 'danger' : 'secondary'}
           loading={check.isPending}
           disabled={!online || (!speechRecognitionSupported() && typeof MediaRecorder === 'undefined')}
-          icon={recording ? <Square className="h-7 w-7" aria-hidden /> : <Mic className="h-7 w-7" aria-hidden />}
+          icon={
+            recording ? <Square className="h-7 w-7" aria-hidden /> : <Mic className="h-7 w-7" aria-hidden />
+          }
           onClick={() => {
             if (recording) {
               stopListen.current?.();
@@ -202,9 +307,17 @@ export function ScamCheck() {
       )}
 
       {result && v && (
-        <section aria-live="polite" className={cx('space-y-4 rounded-card border-2 p-5 animate-rise', v.tone)}>
+        <section
+          aria-live="polite"
+          className={cx('space-y-4 rounded-card border-2 p-5 animate-rise', v.tone)}
+        >
           <div className="flex items-start gap-4">
-            <span className={cx('inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl', v.solid)}>
+            <span
+              className={cx(
+                'inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl',
+                v.solid,
+              )}
+            >
               <v.icon className="h-9 w-9" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -213,7 +326,10 @@ export function ScamCheck() {
                 {t('confidence')}: {Math.round(result.confidence * 100)}%
               </p>
             </div>
-            <AudioButton clip={v.clip} text={`${t(v.label)}. ${pick(result.explanation_ur, result.explanation_en)}. ${pick(result.advice_ur, result.advice_en)}`} />
+            <AudioButton
+              clip={v.clip}
+              text={`${t(v.label)}. ${pick(result.explanation_ur, result.explanation_en)}. ${pick(result.advice_ur, result.advice_en)}`}
+            />
           </div>
           <p className="text-lg">{pick(result.explanation_ur, result.explanation_en)}</p>
 
@@ -221,8 +337,11 @@ export function ScamCheck() {
             <div className="rounded-control bg-card p-3">
               <p className="text-sm text-muted-foreground">{t('matchedOfficial')}</p>
               <p className="font-semibold">
-                <span className="num font-mono text-primary">{result.matched_official.verification_code}</span>
-                {result.matched_official.program ? ` · ${result.matched_official.program}` : ''} · <span className="num">{formatDateTime(result.matched_official.sent_at, lang)}</span>
+                <span className="num font-mono text-primary">
+                  {result.matched_official.verification_code}
+                </span>
+                {result.matched_official.program ? ` · ${result.matched_official.program}` : ''} ·{' '}
+                <span className="num">{formatDateTime(result.matched_official.sent_at, lang)}</span>
               </p>
             </div>
           )}
@@ -258,7 +377,13 @@ export function ScamCheck() {
             {feedbackSent ? (
               <p className="text-sm font-semibold text-ok">{t('feedbackThanks')}</p>
             ) : (
-              <Button size="sm" variant="ghost" loading={feedback.isPending} onClick={() => feedback.mutate()} icon={<ThumbsDown className="h-4 w-4" aria-hidden />}>
+              <Button
+                size="sm"
+                variant="ghost"
+                loading={feedback.isPending}
+                onClick={() => feedback.mutate()}
+                icon={<ThumbsDown className="h-4 w-4" aria-hidden />}
+              >
                 {t('thinkWrong')}
               </Button>
             )}

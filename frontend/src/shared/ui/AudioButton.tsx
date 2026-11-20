@@ -19,7 +19,7 @@ export function AudioButton({ clip, text, lang, size = 'lg', className, label, t
   const { t, lang: uiLang } = useT();
   const l = lang ?? uiLang;
   const playing = usePlayingId() === `${clip ?? ''}|${text}`;
-  const dim = size === 'lg' ? 'h-12 w-12' : 'h-11 w-11';
+  const dim = size === 'lg' ? 'h-14 w-14' : 'h-12 w-12';
 
   return (
     <button
@@ -33,7 +33,9 @@ export function AudioButton({ clip, text, lang, size = 'lg', className, label, t
       aria-pressed={playing}
       className={cx(
         'inline-flex shrink-0 items-center justify-center rounded-full border transition-colors duration-fast',
-        playing ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary',
+        playing
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary',
         dim,
         className,
       )}
