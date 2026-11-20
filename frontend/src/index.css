@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens (semantic tier). Values are space-separated RGB channels so
+ * Tailwind can apply alpha. Contrast pairs verified for WCAG 2.2 AA:
+ *   text-primary on surface-page           16.1:1
+ *   text-secondary on surface-page          7.2:1
+ *   border-strong on surface-page           4.6:1  (control borders)
+ *   action-primary-text on action-primary   9.6:1
+ *   feedback-* text colours on white        >= 4.8:1
+ */
+:root {
+  --surface-page: 251 248 243;
+  --surface-raised: 255 255 255;
+  --surface-sunken: 243 238 229;
+  --text-primary: 28 25 23;
+  --text-secondary: 87 83 78;
+  --border-default: 231 223 210;
+  --border-strong: 120 113 108;
+  --action-primary: 20 83 45;
+  --action-primary-hover: 22 101 52;
+  --action-primary-text: 255 255 255;
+  --action-primary-soft: 220 239 226;
+  --accent: 180 83 9;
+  --feedback-success: 21 128 61;
+  --feedback-success-soft: 220 252 231;
+  --feedback-warning: 146 64 14;
+  --feedback-warning-soft: 254 243 199;
+  --feedback-error: 185 28 28;
+  --feedback-error-hover: 153 27 27;
+  --feedback-error-soft: 254 226 226;
+  --feedback-info: 29 78 216;
+  --feedback-info-soft: 219 234 254;
+  --feedback-consent: 109 40 217;
+  --feedback-consent-soft: 237 233 254;
+  --feedback-neutral: 71 85 105;
+  --feedback-neutral-soft: 226 232 240;
+  --banner-bg: 254 243 199;
+  --banner-text: 69 26 3;
+  --focus-ring: 29 78 216;
+  --shadow-color: 41 37 36;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --surface-page: 20 18 16;
+  --surface-raised: 32 29 26;
+  --surface-sunken: 14 12 11;
+  --text-primary: 245 241 235;
+  --text-secondary: 186 179 170;
+  --border-default: 58 53 48;
+  --border-strong: 140 132 124;
+  --action-primary: 34 139 74;
+  --action-primary-hover: 40 160 86;
+  --action-primary-text: 255 255 255;
+  --action-primary-soft: 22 56 36;
+  --accent: 251 146 60;
+  --feedback-success: 74 222 128;
+  --feedback-success-soft: 20 50 32;
+  --feedback-warning: 251 191 36;
+  --feedback-warning-soft: 58 42 10;
+  --feedback-error: 248 113 113;
+  --feedback-error-hover: 239 68 68;
+  --feedback-error-soft: 64 20 20;
+  --feedback-info: 96 165 250;
+  --feedback-info-soft: 20 36 70;
+  --feedback-consent: 167 139 250;
+  --feedback-consent-soft: 40 28 72;
+  --feedback-neutral: 148 163 184;
+  --feedback-neutral-soft: 36 42 52;
+  --banner-bg: 66 44 6;
+  --banner-text: 254 243 199;
+  --focus-ring: 96 165 250;
+  --shadow-color: 0 0 0;
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-page text-ink font-sans antialiased;
+    line-height: 1.5;
+  }
+  [lang='ur'],
+  [lang='ur'] body {
+    @apply font-urdu;
+    /* Arabic-script glyphs need extra leading to avoid clipped dots. */
+    line-height: 1.8;
+  }
+  :focus-visible {
+    outline: 3px solid rgb(var(--focus-ring));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* WCAG 2.4.11: keep focused elements clear of the sticky banner + top bar. */
+  html {
+    scroll-padding-top: 6rem;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-card border border-line shadow-card;
+  }
+  .sr-only-focusable:not(:focus) {
+    @apply sr-only;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 200ms ease-out both;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin 900ms linear infinite;
+}
