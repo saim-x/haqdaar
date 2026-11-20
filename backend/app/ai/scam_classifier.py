@@ -614,14 +614,26 @@ def classify(
     hard_flags = [flag for flag in flags if flag.severity == "HARD"]
 
     # ---- stage 3: calibrated ML ----------------------------------------- #
+    model_available = True
     try:
         probability = _probability(cleaned, flags)
     except Exception as exc:  # pragma: no cover - model must never break the API
         logger.warning("scam model unavailable (%s) — falling back to flags only", exc)
         probability = 0.0
+        model_available = False
 
     # ---- stage 4: combine and threshold --------------------------------- #
-    if probability >= SCAM_THRESHOLD or len(hard_flags) >= HARD_FLAG_COUNT_FOR_SCAM:
+    if not model_available:
+        # Without the model we cannot judge a clean message, so we never call it
+        # safe. One hard flag is enough to warn, and anything else is "cannot
+        # tell" — the citizen is told to check, not told she is fine.
+        if hard_flags:
+            verdict = LIKELY_SCAM
+            confidence = 0.80
+        else:
+            verdict = CANNOT_TELL
+            confidence = 0.5
+    elif probability >= SCAM_THRESHOLD or len(hard_flags) >= HARD_FLAG_COUNT_FOR_SCAM:
         verdict = LIKELY_SCAM
         confidence = max(probability, 0.80 if hard_flags else 0.0)
     elif (

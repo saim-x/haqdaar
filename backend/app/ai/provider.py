@@ -176,6 +176,21 @@ def _telemetry_table(db: Any) -> Any:
         return None
 
 
+def _isolated_write(db: Any, statement: Any, params: Any) -> None:
+    """Run a best-effort write inside a savepoint.
+
+    A failed telemetry insert would otherwise abort the caller's transaction and
+    every later query in the same request would die with ``InFailedSqlTransaction``.
+    Telemetry must never break the request it is measuring.
+    """
+    begin_nested = getattr(db, "begin_nested", None)
+    if begin_nested is None:
+        db.execute(statement, params)
+        return
+    with begin_nested():
+        db.execute(statement, params)
+
+
 def _emit(
     *,
     task_type: str,
@@ -213,7 +228,8 @@ def _emit(
         table = _telemetry_table(context.db)
         if table is not None:
             allowed = {column.name for column in table.columns}
-            context.db.execute(table.insert(), [{k: v for k, v in row.items() if k in allowed}])
+            payload = {k: v for k, v in row.items() if k in allowed}
+            _isolated_write(context.db, table.insert(), [payload])
     except Exception as exc:  # pragma: no cover
         logger.warning("ai_telemetry write failed: %s", exc)
 
@@ -580,6 +596,11 @@ def _hash_embedding(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
 
 def cosine(a: Sequence[float], b: Sequence[float]) -> float:
     if not a or not b:
+        return 0.0
+    if len(a) != len(b):
+        # A live 1536-dim vector left in the database must never be compared
+        # against a 64-dim fake query: zip() would silently truncate and return a
+        # plausible-looking score for two unrelated vectors.
         return 0.0
     dot = sum(x * y for x, y in zip(a, b))
     na = math.sqrt(sum(x * x for x in a))

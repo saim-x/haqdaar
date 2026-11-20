@@ -21,8 +21,9 @@ import asyncio
 import json
 import logging
 import random
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -92,8 +93,13 @@ def _load_state(service: str) -> ChaosState:
         return ChaosState(service=service, mode="NORMAL", delay_ms=0, failure_rate=0.0)
 
     mode = str(cfg.get("mode") or "NORMAL").upper()
-    latency_ms = int(cfg.get("latency_ms") or DEFAULT_LATENCY_MS)
-    failure_rate = float(cfg.get("failure_rate") or DEFAULT_FAILURE_RATE)
+    # ``or`` would turn a configured 0 into the default: FLAKY with
+    # failure_rate=0.0 is a legitimate drill (exercise the retry path without
+    # failures) and must not silently become 50% failures.
+    raw_latency = cfg.get("latency_ms")
+    latency_ms = DEFAULT_LATENCY_MS if raw_latency is None else int(raw_latency)
+    raw_rate = cfg.get("failure_rate")
+    failure_rate = DEFAULT_FAILURE_RATE if raw_rate is None else float(raw_rate)
 
     if mode == "NORMAL":
         delay_ms = random.randint(NORMAL_JITTER_MIN_MS, NORMAL_JITTER_MAX_MS)

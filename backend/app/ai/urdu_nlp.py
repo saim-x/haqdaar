@@ -35,6 +35,23 @@ _PUNCT_MAP = {
     ord("\ufeff"): "",
 }
 
+#: Arabic-form letters that Urdu writes differently. OCR engines and Arabic
+#: keyboards emit the left-hand form; the registry stores the right-hand form.
+#: Without this, "يك" and "یک" score as different words and a genuine name fails
+#: the 0.80 cross-check.
+#:
+#: Deliberately narrow: ``ئ``, ``ؤ``, ``آ`` and ``أ`` are distinct Urdu letters,
+#: not variants. Folding them corrupts real words — "اٹھائیس" (28) and "آٹھ" (8)
+#: both stop parsing.
+_LETTER_MAP = {
+    ord("ي"): "ی",  # Arabic yeh -> Urdu yeh
+    ord("ى"): "ی",  # alef maksura -> Urdu yeh
+    ord("ك"): "ک",  # Arabic kaf -> Urdu kaf
+    ord("ة"): "ہ",  # teh marbuta -> Urdu heh
+    ord("ۀ"): "ہ",
+    ord("ۃ"): "ہ",
+}
+
 
 def normalize_digits(text: str) -> str:
     """Convert Eastern/Western Arabic-Indic digits to ASCII and strip ZWJ marks."""
@@ -44,11 +61,12 @@ def normalize_digits(text: str) -> str:
 
 
 def normalize_text(text: str) -> str:
-    """NFKC-normalise, unify digits, collapse whitespace."""
+    """NFKC-normalise, unify digits and letter variants, collapse whitespace."""
     if not text:
         return ""
     out = unicodedata.normalize("NFKC", text)
     out = normalize_digits(out)
+    out = out.translate(_LETTER_MAP)
     out = re.sub(r"\s+", " ", out)
     return out.strip()
 
@@ -571,6 +589,22 @@ ENGLISH_MONTHS: dict[str, int] = {
 }
 
 
+#: Formal Urdu ordinals used when speaking a date ("یکم مارچ" = the 1st of March).
+_URDU_ORDINAL_DAYS: dict[str, int] = {
+    "یکم": 1,
+    "پہلی": 1,
+    "دوم": 2,
+    "سوئم": 3,
+    "چہارم": 4,
+    "پنجم": 5,
+    "ششم": 6,
+    "ہفتم": 7,
+    "ہشتم": 8,
+    "نہم": 9,
+    "دہم": 10,
+}
+
+
 def parse_date(text: str) -> str | None:
     """Parse a date into ISO ``YYYY-MM-DD``; returns ``None`` when unsure."""
     if not text:
@@ -592,11 +626,44 @@ def parse_date(text: str) -> str | None:
 
     lowered = normalized.lower()
     for name, month in {**URDU_MONTHS, **ENGLISH_MONTHS}.items():
-        if name in lowered:
-            day_match = re.search(r"(\d{1,2})", lowered)
-            year_match = re.search(r"(19|20)\d{2}", lowered)
-            if day_match and year_match:
-                return _safe_iso(int(year_match.group(0)), month, int(day_match.group(1)))
+        position = lowered.find(name)
+        if position < 0:
+            continue
+        # Split around the month name so the year can never be read as the day.
+        before = lowered[:position]
+        after = lowered[position + len(name) :]
+        day = _spoken_day(before)
+        year = _spoken_year(after)
+        if day is not None and year is not None:
+            return _safe_iso(year, month, day)
+        return None
+    return None
+
+
+def _spoken_day(text: str) -> int | None:
+    """Read a day-of-month from digits or Urdu number words; ``None`` if unsure."""
+    digits = re.search(r"(?<!\d)(\d{1,2})(?!\d)", text)
+    if digits:
+        value = int(digits.group(1))
+        return value if 1 <= value <= 31 else None
+    for word, value in _URDU_ORDINAL_DAYS.items():
+        if word in text:
+            return value
+    words = parse_number(text)
+    if words is not None and 1 <= words <= 31:
+        return words
+    return None
+
+
+def _spoken_year(text: str) -> int | None:
+    """Read a four-digit year from digits or Urdu number words; ``None`` if unsure."""
+    digits = re.search(r"(?<!\d)(\d{4})(?!\d)", text)
+    if digits:
+        value = int(digits.group(1))
+        return value if 1900 <= value <= 2100 else None
+    words = parse_number(text)
+    if words is not None and 1900 <= words <= 2100:
+        return words
     return None
 
 
@@ -749,6 +816,10 @@ def parse_name(text: str) -> str | None:
     """Extract a person name from a spoken answer, preserving Urdu script."""
     if not text:
         return None
+    if is_unknown(text):
+        # "نہیں معلوم" is an answer, not a name. Recording it would put a phrase
+        # into the fact bundle where a person's name belongs.
+        return None
     normalized = normalize_text(text)
     normalized = re.sub(r"[^\w\u0600-\u06ff\s]", " ", normalized)
     words = [word for word in normalized.split() if word.lower() not in _NAME_NOISE]
@@ -815,7 +886,10 @@ def parse_amount(text: str, *, minimum: int = 0, maximum: int = 10_000_000) -> N
     if value is None:
         return NumberParse(value=None, unknown=False, confidence=0.0)
     if not minimum <= value <= maximum:
-        return NumberParse(value=value, unknown=False, confidence=0.35)
+        # Out of range is a failed parse, not a low-confidence answer: returning
+        # 50,000 for a field capped at 30,000 would put an impossible income into
+        # the fact bundle. The wizard asks again instead.
+        return NumberParse(value=None, unknown=False, confidence=0.0)
     has_digits = bool(re.search(r"\d", normalize_text(text)))
     return NumberParse(value=value, unknown=False, confidence=0.97 if has_digits else 0.88)
 
