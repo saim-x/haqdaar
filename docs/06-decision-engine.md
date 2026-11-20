@@ -175,6 +175,23 @@ Every `rules_json` payload MUST validate against the Pydantic `RuleSetSchema`:
       "fail_reason_ur": "شناختی کارڈ کی تصویر واضح نہیں یا مزید جانچ درکار ہے۔",
       "ask_prompt_en": "Please take a clear photo of the front of your CNIC.",
       "ask_prompt_ur": "براہ کرم شناختی کارڈ کے سامنے والے حصے کی واضح تصویر لیں۔"
+    },
+    {
+      "id": "R09_CHILDREN_KNOWN",
+      "fact": "children_under_18",
+      "op": "gte",
+      "value": 0,
+      "on_fail": "HUMAN",
+      "on_unknown": "ASK",
+      "required_for_auto": true,
+      "label_en": "Number of children under 18 must be known (it determines the grant amount)",
+      "label_ur": "18 سال سے کم عمر بچوں کی تعداد معلوم ہونا ضروری ہے (رقم کا حساب اس سے بنتا ہے)",
+      "pass_reason_en": "Children count confirmed.",
+      "pass_reason_ur": "بچوں کی تعداد کی تصدیق ہو گئی۔",
+      "fail_reason_en": "Recorded children count is invalid; an officer will review.",
+      "fail_reason_ur": "بچوں کی تعداد درست نہیں؛ افسر جائزہ لے گا۔",
+      "ask_prompt_en": "Please tell us how many children under 18 you have.",
+      "ask_prompt_ur": "براہ کرم بتائیں کہ 18 سال سے کم عمر بچے کتنے ہیں۔"
     }
   ],
   "benefit_formula": {
