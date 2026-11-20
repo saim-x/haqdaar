@@ -214,6 +214,14 @@ export interface FactObject {
   missing_reason: string | null;
 }
 
+/**
+ * One entry of `decisions.rule_trace_json` — docs/04 §5 / docs/06 §2.
+ *
+ * The minimal shape (`rule_id`, `result`, `actual`, `expected`, `reason_ur`,
+ * `reason_en`) is what the decision row always carries. The rule-DSL context
+ * below is present only when the backend joins the trace to the rule version, so
+ * every added field is optional and the renderer must work without them.
+ */
 export interface RuleTraceEntry {
   rule_id: string;
   result: RuleResult;
@@ -221,6 +229,21 @@ export interface RuleTraceEntry {
   expected: unknown;
   reason_ur: string;
   reason_en: string;
+  /** Canonical fact key this rule evaluated (docs/04 §5). */
+  fact?: string;
+  op?: string;
+  value?: unknown;
+  on_fail?: string;
+  on_unknown?: string;
+  required_for_auto?: boolean;
+  label_en?: string;
+  label_ur?: string;
+  pass_reason_en?: string | null;
+  pass_reason_ur?: string | null;
+  fail_reason_en?: string | null;
+  fail_reason_ur?: string | null;
+  ask_prompt_en?: string | null;
+  ask_prompt_ur?: string | null;
 }
 
 export interface ConfidenceComponents {

@@ -4,6 +4,7 @@ import { errorMessage } from '../shared/api/errors';
 import type { ScamCheckResult, ScamVerdict } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
+import { CopyCode } from '../shared/ui/CopyCode';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconCamera, IconCheck, IconCross, IconMic, IconQuestion, IconShield, IconWarning } from '../shared/ui/Icons';
 
@@ -184,8 +185,10 @@ export function ScamCheckPage() {
             {result.matched_official && (
               <div className="mt-3 rounded-xl bg-[#0F7B3F]/10 px-3 py-2">
                 <p className="text-[11px] font-bold uppercase text-[#0F7B3F]">{t('scam.matchedCode')}</p>
-                <p className="num text-base font-bold text-[#0F7B3F]">{result.matched_official.verification_code}</p>
-                <p className="text-[11px] text-ink-soft">
+                <div className="mt-1">
+                  <CopyCode value={result.matched_official.verification_code} tone="green" size="md" />
+                </div>
+                <p className="mt-1 text-[11px] text-ink-soft">
                   {result.matched_official.program} ·{' '}
                   <span className="num">{new Date(result.matched_official.created_at).toLocaleString()}</span>
                 </p>

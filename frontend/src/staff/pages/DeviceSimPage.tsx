@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { request } from '../../shared/api/client';
 import { MOCK_BASE } from '../../shared/config';
+import { smsCodes } from '../../shared/lib/codes';
+import { CopyCode } from '../../shared/ui/CopyCode';
 import { Card, CardTitle, ErrorState, Loading, PageHeader } from '../ui';
 import { IconRefresh } from '../../shared/ui/Icons';
 
 interface SmsMessage {
   id: string;
+  kind?: string;
+  title_ur?: string;
+  title_en?: string;
   body_ur?: string;
   body_en?: string;
   body?: string;
@@ -27,28 +32,11 @@ const PHONES = [
   { label: 'Ayesha Khatoon (helper)', phone: '+923001000003' },
 ];
 
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        void navigator.clipboard?.writeText(value).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
-      className="rounded bg-ink px-2 py-1 text-[10px] font-bold text-white"
-    >
-      {copied ? 'Copied' : 'Copy'}
-    </button>
-  );
-}
-
 /**
  * Device Simulator — docs/11 §6.5.
  * Reads the simulated SMS inbox so judges can watch OTPs and official payment
- * messages arrive live, then paste them into the scam checker.
+ * messages arrive live, then paste them into the scam checker or the helper's
+ * consent form. Every code is one tap from the clipboard.
  */
 export default function DeviceSimPage() {
   const [phone, setPhone] = useState(PHONES[0]?.phone ?? '');
@@ -67,7 +55,7 @@ export default function DeviceSimPage() {
     <div className="space-y-4">
       <PageHeader
         title="Device simulator"
-        subtitle="Simulated SMS inbox — no real telecom gateway is involved."
+        subtitle="Simulated SMS inbox — no real telecom gateway is involved. Tap any code to copy it."
         actions={
           <button
             type="button"
@@ -106,19 +94,22 @@ export default function DeviceSimPage() {
           </CardTitle>
           <ul className="space-y-2">
             {query.data.messages.map((msg) => {
-              const code = msg.verification_code ?? msg.code ?? null;
+              const { otp, hq } = smsCodes(msg);
               return (
                 <li key={msg.id} className="rounded-lg border border-ink/10 bg-[#F7F7F5] p-3">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase text-ink-soft">SMS</span>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase text-ink-soft">{msg.kind ?? 'SMS'}</span>
                     <span className="num text-[10px] text-ink-soft">{new Date(msg.created_at).toLocaleString()}</span>
-                    {code && (
-                      <span className="ms-auto inline-flex items-center gap-1.5">
-                        <span className="num rounded bg-teal-600 px-1.5 py-0.5 text-[11px] font-bold text-white">{code}</span>
-                        <CopyButton value={code} />
-                      </span>
-                    )}
+                    <span className="ms-auto flex flex-wrap items-center gap-1.5">
+                      {otp && <CopyCode value={otp} label="OTP" tone="teal" />}
+                      {hq && <CopyCode value={hq} label="HQ code" tone="ink" />}
+                    </span>
                   </div>
+                  {msg.title_ur && (
+                    <p className="text-[11px] font-bold text-ink" dir="rtl">
+                      {msg.title_ur}
+                    </p>
+                  )}
                   <p className="text-xs leading-relaxed text-ink" dir="rtl">
                     {msg.body_ur ?? msg.body ?? ''}
                   </p>
