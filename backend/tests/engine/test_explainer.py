@@ -94,15 +94,34 @@ def test_approved_next_step_mentions_the_sms_code(
     assert "24" in explanation.next_step_en
 
 
-def test_provisional_amount_is_labelled_estimated(
+def test_unknown_children_asks_instead_of_quoting_a_provisional_amount(
+    sahara_v1: RuleSetSchema, fatima_facts: FactBundle
+) -> None:
+    """ADR-015: a provisional amount is never presented to the citizen as final."""
+    bundle = fatima_facts.with_fact(
+        "children_under_18", unknown_fact("children_under_18")
+    )
+    evaluation = evaluate_ruleset(sahara_v1, bundle)
+    assert evaluation.benefit.provisional is True
+    assert evaluation.benefit.amount_pkr == 12000  # base only, no invented bonus
+
+    explanation = _explain(sahara_v1, bundle)
+    assert "one more thing" in explanation.headline_en
+    assert "Please tell us how many children under 18 you have." in explanation.reasons_en
+    assert "12,000" not in explanation.headline_en
+    assert "12,000" not in explanation.headline_ur
+    assert "Approved" not in explanation.headline_en
+
+
+def test_unknown_children_after_max_rounds_goes_to_human_review(
     sahara_v1: RuleSetSchema, fatima_facts: FactBundle
 ) -> None:
     bundle = fatima_facts.with_fact(
         "children_under_18", unknown_fact("children_under_18")
     )
-    explanation = _explain(sahara_v1, bundle)
-    assert "estimated" in explanation.headline_en.lower()
-    assert "12,000" in explanation.headline_en
+    explanation = _explain(sahara_v1, bundle, ask_more_rounds=2)
+    assert "review" in explanation.headline_en.lower()
+    assert "12,000" not in explanation.headline_en
 
 
 # -- needs info ----------------------------------------------------------
