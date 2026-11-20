@@ -529,6 +529,7 @@ def list_cases(
 def get_case(
     case_id: uuid.UUID,
     request: Request,
+    response: Response,
     actor: CaseReader,
     db: DbSession,
 ) -> dict[str, Any]:
@@ -569,6 +570,11 @@ def get_case(
                 else None,
             }
     db.commit()
+
+    etag = weak_etag(body)
+    if etag_matches(request, etag):
+        return not_modified(etag)
+    response.headers["ETag"] = etag
     return body
 
 
