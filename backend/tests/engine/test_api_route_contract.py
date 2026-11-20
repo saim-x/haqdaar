@@ -2,21 +2,17 @@
 
 ``app/api/v1/admin_rules.py`` and ``app/api/v1/eval.py`` cannot be imported until BE's
 ``app.db`` / ``app.models`` / ``app.security.*`` / ``app.jobs.queue`` / ``app.notify``
-land at S1. This module stubs exactly those imports so the *surface* — path, method,
-status code, role dependency — is locked against docs/05 §3.7 and §3.9 today, and keeps
-being checked after the merge.
-
-The stubs are installed with ``monkeypatch.setitem`` so they are removed again at
-teardown and cannot leak into another test.
+land at S1. :mod:`be_stubs` supplies stand-ins so the *surface* — path, method, status
+code, role dependency — is locked against docs/05 §3.7 and §3.9 today, and keeps being
+checked after the merge.
 """
 
 from __future__ import annotations
 
-import sys
-import types
 from collections.abc import Iterator
 from typing import Any, get_type_hints
 
+import be_stubs
 import pytest
 from app.engine.eval_sweep import LabelledCase
 from app.engine.router import RouteAction
@@ -34,87 +30,11 @@ EXPECTED_ADMIN_ROUTES = {
 #: docs/05 §3.9 — the evaluation dashboard.
 EXPECTED_EVAL_ROUTES = {("GET", "/eval/dashboard", 200)}
 
-_MODEL_NAMES = (
-    "AiTelemetry",
-    "Case",
-    "CaseNote",
-    "Decision",
-    "Program",
-    "RuleVersion",
-    "SimulationRun",
-)
-
-_COLUMN_NAMES = (
-    "active_rule_version_id",
-    "case_id",
-    "created_at",
-    "decision_source",
-    "estimated_cost_usd",
-    "id",
-    "is_active",
-    "is_override",
-    "metadata_json",
-    "note_type",
-    "program_id",
-    "route_action",
-    "succeeded",
-    "tenant_id",
-    "version_number",
-)
-
-
-def _stub(name: str, **attrs: Any) -> types.ModuleType:
-    module = types.ModuleType(name)
-    for key, value in attrs.items():
-        setattr(module, key, value)
-    return module
-
-
-def _stub_models() -> types.ModuleType:
-    """Model classes whose column attributes are plain strings (usable in filters)."""
-    module = types.ModuleType("app.models")
-    for name in _MODEL_NAMES:
-        cls = type(name, (), {"__module__": "app.models"})
-        for column in _COLUMN_NAMES:
-            setattr(cls, column, column)
-        setattr(module, name, cls)
-    return module
-
-
-def _stub_require_roles(*roles: str) -> Any:
-    def dependency() -> None:  # pragma: no cover - never executed
-        raise RuntimeError("stub dependency")
-
-    dependency.roles = roles  # type: ignore[attr-defined]
-    return dependency
-
 
 @pytest.fixture
 def api_modules(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Any, Any]]:
     """Import both API modules against stubbed BE helpers."""
-    stubs = {
-        "app.db": _stub("app.db", get_db=lambda: None),
-        "app.models": _stub_models(),
-        "app.security.deps": _stub(
-            "app.security.deps",
-            require_roles=_stub_require_roles,
-            get_current_user=lambda: None,
-        ),
-        "app.security.audit": _stub("app.security.audit", record=lambda *a, **k: None),
-        "app.security.consent": _stub(
-            "app.security.consent",
-            ActorContext=type("ActorContext", (), {}),
-            ConsentRevokedError=type("ConsentRevokedError", (Exception,), {}),
-            enforce_consent=lambda *a, **k: None,
-        ),
-        "app.jobs.queue": _stub("app.jobs.queue", enqueue_job=lambda *a, **k: None),
-        "app.notify": _stub("app.notify", create_notification=lambda *a, **k: None),
-    }
-    for name, module in stubs.items():
-        monkeypatch.setitem(sys.modules, name, module)
-    for name in ("app.api.v1.admin_rules", "app.api.v1.eval"):
-        monkeypatch.delitem(sys.modules, name, raising=False)
-
+    be_stubs.install(monkeypatch)
     from app.api.v1 import admin_rules
     from app.api.v1 import eval as eval_module
 
@@ -127,6 +47,17 @@ def _surface(router: Any) -> set[tuple[str, str, int]]:
         for route in router.routes
         for method in route.methods - {"HEAD", "OPTIONS"}
     }
+
+
+def _roles_of(endpoint: Any) -> tuple[str, ...]:
+    """Read the roles baked into the endpoint's ``require_roles`` dependency."""
+    hints = get_type_hints(endpoint, include_extras=True)
+    for annotation in hints.values():
+        for item in getattr(annotation, "__metadata__", ()):
+            roles = getattr(getattr(item, "dependency", None), "roles", None)
+            if roles is not None:
+                return tuple(roles)
+    raise AssertionError(f"no role dependency on {endpoint.__name__}")
 
 
 # -- route surface -------------------------------------------------------
@@ -148,8 +79,6 @@ def test_rule_editor_is_admin_only_and_listing_allows_auditor(
     """docs/05 §3.7: every mutation is ADMIN; the list is ADMIN + AUDITOR."""
     admin_rules, _ = api_modules
     by_name = {route.name: route for route in admin_rules.router.routes}
-    assert by_name["list_rule_versions"].dependant is not None
-    # The role dependency is the last parameter of each endpoint.
     for name, expected in (
         ("list_rule_versions", ("ADMIN", "AUDITOR")),
         ("create_rule_draft", ("ADMIN",)),
@@ -158,22 +87,16 @@ def test_rule_editor_is_admin_only_and_listing_allows_auditor(
         ("simulate_rule_version", ("ADMIN",)),
         ("publish_rule_version", ("ADMIN",)),
     ):
-        route = by_name[name]
-        call = route.dependant.call
-        assert call is not None
-        roles = _roles_of(call)
+        roles = _roles_of(by_name[name].dependant.call)
         assert roles == expected, f"{name} roles {roles} != {expected}"
 
 
-def _roles_of(endpoint: Any) -> tuple[str, ...]:
-    """Read the roles baked into the endpoint's ``require_roles`` dependency."""
-    hints = get_type_hints(endpoint, include_extras=True)
-    for annotation in hints.values():
-        for item in getattr(annotation, "__metadata__", ()):
-            roles = getattr(getattr(item, "dependency", None), "roles", None)
-            if roles is not None:
-                return tuple(roles)
-    raise AssertionError(f"no role dependency on {endpoint.__name__}")
+def test_eval_dashboard_is_readable_by_admin_auditor_officer(
+    api_modules: tuple[Any, Any],
+) -> None:
+    _, eval_module = api_modules
+    route = next(iter(eval_module.router.routes))
+    assert _roles_of(route.dependant.call) == ("ADMIN", "AUDITOR", "OFFICER")
 
 
 # -- pure helpers inside the API modules ---------------------------------

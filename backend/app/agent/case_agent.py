@@ -59,7 +59,9 @@ from sqlalchemy.orm import Session
 __all__ = [
     "ExternalServiceUnavailable",
     "MockClient",
+    "ReevaluationNotAllowed",
     "check_complaint_agent",
+    "reevaluate_case",
     "run_case_agent",
 ]
 
@@ -493,6 +495,10 @@ def _step_commit_and_dispatch(ctx: _Context) -> None:
     if status == "APPROVED":
         ctx.case.approved_amount_pkr = result.amount_pkr
         ctx.case.decided_at = datetime.now(UTC)
+    else:
+        # A re-evaluation that no longer approves must not leave a stale amount behind.
+        ctx.case.approved_amount_pkr = None
+        ctx.case.decided_at = None
     if status == "NEEDS_INFO":
         ctx.case.ask_more_rounds = int(ctx.case.ask_more_rounds or 0) + 1
 
@@ -667,6 +673,159 @@ def _halt_for_external(ctx: _Context) -> None:
         },
     )
     ctx.db.commit()
+
+
+# -- officer re-evaluation -----------------------------------------------
+class ReevaluationNotAllowed(RuntimeError):
+    """The case is not in a state an officer may re-evaluate.
+
+    The route layer maps this to ``409 INVALID_TRANSITION`` (docs/05 §2).
+    """
+
+    code = "INVALID_TRANSITION"
+
+
+#: Statuses an officer may re-evaluate. Consent holds and closed cases are excluded.
+_REEVALUABLE_STATUSES = (
+    "NEEDS_INFO",
+    "HUMAN_REVIEW",
+    "IN_REVIEW",
+    "PENDING_SECOND_APPROVAL",
+    "WAITING_EXTERNAL",
+    "APPROVED",
+    "PAYMENT_INITIATED",
+    "PAYMENT_FAILED",
+    "REJECTED",
+)
+
+
+def _latest_decision(db: Session, case_id: Any) -> Any:
+    return (
+        db.execute(
+            select(Decision)
+            .where(Decision.case_id == case_id)
+            .order_by(Decision.created_at.desc())
+        )
+        .scalars()
+        .first()
+    )
+
+
+def reevaluate_case(
+    db: Session,
+    case_id: Any,
+    *,
+    officer_user_id: Any,
+    reason: str | None = None,
+    correlation_id: str | None = None,
+    client: MockClient | None = None,
+) -> dict[str, Any]:
+    """Officer ``/reevaluate``: re-run the pipeline against the CURRENT active rules.
+
+    The earlier decision is append-only and stays exactly as it was, including the rule
+    version and content hash it was made under. A new decision is recorded only when the
+    facts or the rules actually changed (AC-05.3); otherwise the existing decision is
+    returned and the timeline records that nothing moved.
+
+    The officer's request is committed before the pipeline runs, so the timeline entry
+    survives even if a mock service is down and the case parks in ``WAITING_EXTERNAL``.
+    """
+    correlation_id = correlation_id or str(uuid.uuid4())
+    case = db.get(Case, case_id)
+    if case is None:
+        raise LookupError(f"case {case_id} not found")
+    if case.status not in _REEVALUABLE_STATUSES:
+        raise ReevaluationNotAllowed(
+            f"case {case.reference_code} is {case.status}; re-evaluation is allowed "
+            f"from {', '.join(_REEVALUABLE_STATUSES)}"
+        )
+
+    program = db.get(Program, case.program_id)
+    if program is None:
+        raise LookupError(f"program {case.program_id} not found for case {case.id}")
+    active = (
+        db.get(RuleVersion, program.active_rule_version_id)
+        if program.active_rule_version_id
+        else None
+    )
+    if active is None:
+        raise LookupError(f"program {program.code} has no active rule version")
+
+    previous = _latest_decision(db, case.id)
+    previous_version_id = getattr(previous, "rule_version_id", None)
+    previous_version = (
+        db.get(RuleVersion, previous_version_id) if previous_version_id else None
+    )
+    version_changed = previous_version_id != active.id
+    previous_number = getattr(previous_version, "version_number", None)
+
+    if version_changed and previous_number is not None:
+        change = f"v{previous_number} → v{active.version_number}"
+    else:
+        change = f"v{active.version_number} (unchanged)"
+
+    db.add(
+        CaseNote(
+            tenant_id=case.tenant_id,
+            case_id=case.id,
+            author_user_id=officer_user_id,
+            note_type="OFFICER_NOTE",
+            body=(
+                f"Re-evaluation requested against rule version {change}"
+                + (f" — {reason}" if reason else "")
+            ),
+            metadata_json={
+                "action": "REEVALUATE",
+                "rule_version_changed": version_changed,
+                "previous_rule_version_id": (
+                    str(previous_version_id) if previous_version_id else None
+                ),
+                "previous_rule_version_number": previous_number,
+                "active_rule_version_id": str(active.id),
+                "active_rule_version_number": active.version_number,
+                "previous_decision_id": str(previous.id) if previous is not None else None,
+                "reason": reason,
+                "correlation_id": correlation_id,
+            },
+            is_visible_to_citizen=False,
+        )
+    )
+    deps.audit(
+        db,
+        action="case.reevaluated",
+        resource_type="case",
+        resource_id=case.id,
+        tenant_id=case.tenant_id,
+        actor_user_id=officer_user_id,
+        payload={
+            "rule_version_changed": version_changed,
+            "previous_rule_version_id": (
+                str(previous_version_id) if previous_version_id else None
+            ),
+            "active_rule_version_id": str(active.id),
+            "previous_decision_id": str(previous.id) if previous is not None else None,
+            "correlation_id": correlation_id,
+        },
+    )
+    db.commit()
+
+    decision = run_case_agent(db, case.id, correlation_id=correlation_id, client=client)
+    recorded = decision is not None and (
+        previous is None or decision.id != previous.id
+    )
+
+    return {
+        "case_id": str(case.id),
+        "reference_code": case.reference_code,
+        "status": case.status,
+        "rule_version_id": str(active.id),
+        "rule_version_number": active.version_number,
+        "rule_version_changed": version_changed,
+        "previous_decision_id": str(previous.id) if previous is not None else None,
+        "decision_id": str(decision.id) if decision is not None else None,
+        "decision_recorded": recorded,
+        "correlation_id": correlation_id,
+    }
 
 
 # -- complaint agent -----------------------------------------------------
