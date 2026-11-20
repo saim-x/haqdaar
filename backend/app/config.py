@@ -120,6 +120,19 @@ class Settings(BaseSettings):
     def MOCK_BASE_URL(self, value: str) -> None:  # noqa: N802 - see getter
         object.__setattr__(self, "_mock_base_url_override", value)
 
+    @property
+    def UPLOAD_DIR(self) -> Path:  # noqa: N802 - uppercase alias used by app/ai
+        """Uppercase alias so ``settings.UPLOAD_DIR`` works for teammates.
+
+        ``app/ai/doc_verify.py`` and ``app/ai/provider.py`` read the directory with
+        ``getattr(settings, "UPLOAD_DIR", None)``. Without this alias that lookup
+        returned ``None``, so the verifier fell back to its own default
+        (``backend/app/uploads``) while the writer stored under
+        ``backend/data/uploads`` — every uploaded document came back
+        ``file_present: false``. One attribute, one directory.
+        """
+        return self.upload_dir
+
 
 @lru_cache
 def get_settings() -> Settings:
@@ -127,3 +140,16 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+
+def upload_root() -> Path:
+    """The single upload directory, created on demand.
+
+    ``upload_dir`` is already resolved against the backend root by
+    :meth:`Settings._resolve_path`, so this is independent of the process working
+    directory — the writer, the download endpoint, ``/health`` and the document
+    verifier all land on the same absolute path.
+    """
+    root = settings.upload_dir
+    root.mkdir(parents=True, exist_ok=True)
+    return root
