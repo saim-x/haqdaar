@@ -14,10 +14,11 @@ from app.db import get_db
 from app.models.audit import AuditEvent
 from app.models.cases import Case, CaseNote, Decision
 from app.models.consent import ConsentAccessLog, ConsentEvent, ConsentGrant
-from app.models.enums import UserRole
+from app.models.enums import ConsentPurpose, DataCategory, UserRole
 from app.models.identity import Citizen
 from app.schemas.serializers import decision_to_dict, grant_to_dict, note_to_dict
 from app.security import audit
+from app.security.consent import enforce_consent
 from app.security.errors import NotFoundError
 from app.security.masking import mask_cnic
 from app.security.rbac import ActorContext, require_roles
@@ -105,6 +106,16 @@ def case_trace(case_id: uuid.UUID, actor: AuditorActor, db: DbSession) -> dict[s
     case = db.get(Case, case_id)
     if case is None:
         raise NotFoundError()
+
+    # Statutory oversight bypasses the grant but is always logged (docs/09 §4.1).
+    enforce_consent(
+        db,
+        citizen_id=case.citizen_id,
+        actor=actor,
+        category=DataCategory.CASE_HISTORY,
+        purpose=ConsentPurpose.BENEFIT_APPLICATION,
+        resource_ref=f"case:{case.id}",
+    )
 
     citizen = db.get(Citizen, case.citizen_id)
     decisions = (

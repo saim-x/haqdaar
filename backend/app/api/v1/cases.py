@@ -251,12 +251,44 @@ def _program_for(db: Session, program_id: uuid.UUID) -> Program:
     return program
 
 
+def _wizard_steps(program: Program) -> list[dict[str, Any]]:
+    """The program's wizard steps.
+
+    ``wizard_schema`` is a JSONB list of step objects (docs/04 §4.3); older rows
+    may carry a dict with a ``required_facts`` key instead, so both are accepted.
+    """
+    schema = program.wizard_schema
+    if isinstance(schema, list):
+        return [step for step in schema if isinstance(step, dict)]
+    return []
+
+
+def _first_wizard_step(program: Program) -> str:
+    for step in _wizard_steps(program):
+        name = step.get("step")
+        if name:
+            return str(name)[:40]
+    return "identity"
+
+
 def _required_facts(program: Program) -> list[str]:
-    schema = program.wizard_schema or {}
-    declared = schema.get("required_facts")
-    if isinstance(declared, list) and declared:
-        return [str(key) for key in declared if str(key) in CANONICAL_FACT_KEY_SET]
-    return list(DEFAULT_REQUIRED_FACTS)
+    schema = program.wizard_schema
+    if isinstance(schema, dict):
+        declared = schema.get("required_facts")
+        if isinstance(declared, list) and declared:
+            return [str(key) for key in declared if str(key) in CANONICAL_FACT_KEY_SET]
+
+    # A step's ``fact_key`` is required when the step is required and the citizen
+    # may not answer UNKNOWN (``allow_unknown`` steps stay optional, because
+    # ``missing_facts`` treats UNKNOWN as unanswered).
+    facts: list[str] = []
+    for step in _wizard_steps(program):
+        key = step.get("fact_key")
+        if not key or not step.get("required") or step.get("allow_unknown"):
+            continue
+        if str(key) in CANONICAL_FACT_KEY_SET and str(key) not in facts:
+            facts.append(str(key))
+    return facts or list(DEFAULT_REQUIRED_FACTS)
 
 
 def _required_documents(program: Program) -> list[str]:
@@ -366,7 +398,7 @@ def create_case(
         submitted_via_helper=actor.role_value == UserRole.HELPER.value,
         case_type=case_type,
         status=CaseStatus.DRAFT.value,
-        wizard_step=(program.wizard_schema or {}).get("first_step") or "identity",
+        wizard_step=_first_wizard_step(program),
         draft_answers={},
         flags_json=[],
     )
