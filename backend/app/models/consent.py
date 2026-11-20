@@ -66,8 +66,10 @@ class ConsentAccessLog(Base, UUIDPrimaryKeyMixin, CreatedAtMixin):
     citizen_id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("citizens.id"), nullable=False, index=True
     )
-    actor_user_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    #: NULL for ``AGENT``/``SYSTEM`` actors, which have no user row (ADR-019). The
+    #: ``actor_role`` + ``actor_label`` pair still says who read the data.
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
     actor_role: Mapped[str] = mapped_column(String(20), nullable=False)
     actor_label: Mapped[str] = mapped_column(String(120), nullable=False)

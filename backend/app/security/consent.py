@@ -80,7 +80,11 @@ def _access_log_row(
 ) -> ConsentAccessLog:
     return ConsentAccessLog(
         citizen_id=citizen_id,
-        actor_user_id=actor.user_id or uuid.UUID(int=0),
+        # ADR-019: AGENT/SYSTEM actors have no user row, so this is NULL rather than a
+        # sentinel UUID. The sentinel used to violate the users FK, and because the
+        # isolated session swallows write errors the row was silently dropped — every
+        # consent read the case agent made vanished from the citizen's access log.
+        actor_user_id=actor.user_id,
         actor_role=actor.role_value,
         actor_label=actor_label_for(actor),
         tenant_id=actor.tenant_id,

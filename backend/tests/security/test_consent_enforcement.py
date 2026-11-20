@@ -24,7 +24,13 @@ from sqlalchemy import delete, select
 from app.models.audit import AuditEvent
 from app.models.cases import Case
 from app.models.consent import ConsentAccessLog, ConsentGrant
-from app.models.enums import CaseStatus, ConsentRecipientType, ConsentStatus
+from app.models.enums import (
+    CaseStatus,
+    ConsentPurpose,
+    ConsentRecipientType,
+    ConsentStatus,
+    DataCategory,
+)
 from app.security.jwt import decode_access_token
 
 
@@ -427,4 +433,103 @@ def test_auditor_oversight_is_allowed_and_logged(
         db.rollback()
         grant = db.get(ConsentGrant, citizen_scope["grant_id"])
         grant.status = ConsentStatus.ACTIVE.value
+        db.commit()
+
+
+# --- ADR-019: the agent has no user row, and its reads must still be logged --
+
+
+def test_agent_consent_reads_persist_an_access_log_row(
+    db: Any, citizen_scope: dict[str, Any]
+) -> None:
+    """The case agent reads citizen data as ``AGENT`` with ``user_id=None``.
+
+    Before ADR-019 the access-log insert used ``uuid.UUID(int=0)`` as a stand-in for
+    the missing user, which violated the ``users`` FK. The isolated session that
+    persists access logs swallows write errors by design (it must never mask the
+    security decision), so every agent read was silently dropped — the citizen's
+    access log lost exactly the reads they most need to see. This pins the fix.
+    """
+    from app.agent.deps import agent_actor
+    from app.security.consent import enforce_consent
+
+    actor = agent_actor(citizen_scope["tenant_id"])
+    assert actor.user_id is None, "the agent must not pretend to be a user"
+
+    resource_ref = f"agent-read:{uuid.uuid4().hex[:8]}"
+    grant = enforce_consent(
+        db,
+        citizen_id=citizen_scope["citizen_id"],
+        actor=actor,
+        category=DataCategory.IDENTITY,
+        purpose=ConsentPurpose.BENEFIT_APPLICATION,
+        resource_ref=resource_ref,
+    )
+    assert grant is not None, "the seeded DEPARTMENT grant should authorise the agent"
+
+    db.rollback()
+    log = db.execute(
+        select(ConsentAccessLog).where(
+            ConsentAccessLog.citizen_id == citizen_scope["citizen_id"],
+            ConsentAccessLog.resource_ref == resource_ref,
+        )
+    ).scalar_one_or_none()
+
+    assert log is not None, "an agent consent read must persist an access-log row"
+    assert log.actor_user_id is None, "AGENT rows carry a NULL actor_user_id (ADR-019)"
+    assert log.actor_role == "AGENT"
+    assert log.actor_label, "the label is what the citizen sees instead of a user id"
+    assert log.allowed is True
+
+
+def test_agent_denied_read_is_logged_and_audited(
+    db: Any, citizen_scope: dict[str, Any]
+) -> None:
+    """A withdrawn grant must still produce a NULL-actor denial row plus its event."""
+    from app.agent.deps import agent_actor
+    from app.security.consent import ConsentRevokedError, enforce_consent
+
+    grant = db.get(ConsentGrant, citizen_scope["grant_id"])
+    grant.status = ConsentStatus.WITHDRAWN.value
+    db.commit()
+
+    resource_ref = f"agent-denied:{uuid.uuid4().hex[:8]}"
+    try:
+        with pytest.raises(ConsentRevokedError):
+            enforce_consent(
+                db,
+                citizen_id=citizen_scope["citizen_id"],
+                actor=agent_actor(citizen_scope["tenant_id"]),
+                category=DataCategory.IDENTITY,
+                purpose=ConsentPurpose.BENEFIT_APPLICATION,
+                resource_ref=resource_ref,
+            )
+
+        db.rollback()
+        log = db.execute(
+            select(ConsentAccessLog).where(
+                ConsentAccessLog.citizen_id == citizen_scope["citizen_id"],
+                ConsentAccessLog.resource_ref == resource_ref,
+            )
+        ).scalar_one_or_none()
+        assert log is not None, "a denied agent read must still be logged"
+        assert log.actor_user_id is None
+        assert log.allowed is False
+        assert log.denial_reason == "CONSENT_REVOKED"
+
+        event = db.execute(
+            select(AuditEvent)
+            .where(
+                AuditEvent.action == "consent.access_denied",
+                AuditEvent.resource_id == str(citizen_scope["citizen_id"]),
+            )
+            .order_by(AuditEvent.seq.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        assert event is not None, "the denial must also reach the audit chain"
+    finally:
+        db.rollback()
+        grant = db.get(ConsentGrant, citizen_scope["grant_id"])
+        grant.status = ConsentStatus.ACTIVE.value
+        grant.withdrawn_at = None
         db.commit()
