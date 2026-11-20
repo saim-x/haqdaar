@@ -145,6 +145,15 @@ def test_payload_tamper_is_detected(db: Any) -> None:
 
 def test_deleting_a_row_breaks_the_link_after_it(db: Any) -> None:
     """A removed event leaves its successor pointing at a hash that is gone."""
+    # Fail loudly if the chain was already broken before this test touched it: the
+    # assertion below would otherwise report a confusing seq mismatch instead of the
+    # real cause (another suite leaving a tampered row behind).
+    before = audit.verify_chain(db)
+    assert before["valid"] is True, (
+        "audit chain was already broken at seq "
+        f"{before['first_broken_seq']} before this test tampered with it"
+    )
+
     rows = db.execute(select(AuditEvent).order_by(AuditEvent.seq.asc())).scalars().all()
     victim = rows[len(rows) // 2]
     successor = next(row for row in rows if row.seq > victim.seq)
