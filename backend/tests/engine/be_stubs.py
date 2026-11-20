@@ -24,6 +24,7 @@ MODEL_NAMES = (
     "Case",
     "CaseNote",
     "Citizen",
+    "ConsentGrant",
     "Decision",
     "Document",
     "Payment",

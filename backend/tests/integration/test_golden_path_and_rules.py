@@ -21,7 +21,6 @@ section below, so the merge is a mechanical fix in one place — the same discip
 from __future__ import annotations
 
 import importlib
-import inspect
 import socket
 import sys
 import threading
@@ -76,6 +75,9 @@ FATIMA_CARD_NAME = "Fatima Bibi"
 FATIMA_REGISTRY_NAME = "Mst. Fatima Bibi"
 FATIMA_CHILDREN = 3
 FATIMA_INCOME_PKR = 28_000
+#: Seeded household survey: Thatta, 4 members, PKR 28,000/month.
+FATIMA_HOUSEHOLD_SIZE = 4
+FATIMA_DOB = "1974-05-14"
 
 #: Sahara v1: base 12,000 + 1,000/child, cap 20,000 → 3 children = 15,000.
 EXPECTED_AMOUNT_PKR = 15_000
@@ -84,6 +86,10 @@ PROGRAM_CODE = "SAHARA_WIDOW_GRANT"
 INCOME_RULE_ID = "R05_INCOME_CAP"
 INCOME_CAP_V1 = 40_000
 INCOME_CAP_V2 = 35_000
+
+#: The secret the committed ``app/data/demo_docs`` pack was signed with (see the
+#: ``specimen_qr_secret`` fixture for why this module pins it).
+SPECIMEN_QR_SECRET = "dev-qr-secret-change-me"  # noqa: S105 - public dev default, not a secret
 
 
 # =======================================================================
@@ -123,36 +129,27 @@ def _session_factory() -> Any:
 
 
 def _drain_jobs(db: Any, *, rounds: int = 20) -> None:
-    """Run pending jobs the way the worker does.
+    """Run every due job synchronously, through BE's public queue + handler API.
 
-    BE owns the worker, so we look for its entry point in a documented order and fail
-    loudly if none matches — silently skipping the payment leg would hollow out the
-    golden path.
+    ``app.jobs.worker.Worker.run_once`` dispatches onto a thread pool, which makes the
+    payment leg racy in a test. Claiming and executing in the calling thread uses the
+    same ``claim_job`` / ``run_handler`` / ``mark_completed`` path the worker uses, so
+    the drill still exercises the real handler and the real ``SKIP LOCKED`` claim.
     """
-    candidates = (
-        ("app.jobs.worker", "run_pending"),
-        ("app.jobs.worker", "drain"),
-        ("app.jobs.worker", "run_once"),
-        ("app.jobs.worker", "process_pending"),
-        ("app.jobs.runner", "run_pending"),
-        ("app.jobs.queue", "run_pending"),
-    )
-    for module_name, function_name in candidates:
+    queue = importlib.import_module("app.jobs.queue")
+    handlers = importlib.import_module("app.jobs.handlers")
+
+    for _ in range(rounds):
+        job = queue.claim_job(db)
+        if job is None:
+            return
         try:
-            module = importlib.import_module(module_name)
-        except ImportError:
-            continue
-        function = getattr(module, function_name, None)
-        if function is None:
-            continue
-        takes_session = bool(inspect.signature(function).parameters)
-        for _ in range(rounds):
-            function(db) if takes_session else function()
-        return
-    pytest.fail(
-        "no job-worker entry point found; looked for "
-        + ", ".join(f"{module}.{function}" for module, function in candidates)
-    )
+            result = handlers.run_handler(db, job.job_type, job.payload_json or {})
+        except Exception as exc:  # noqa: BLE001 - mirror the worker's failure path
+            queue.mark_failed(db, job, f"{type(exc).__name__}: {exc}")
+        else:
+            queue.mark_completed(db, job, result=result if isinstance(result, dict) else None)
+    pytest.fail(f"job queue did not drain within {rounds} rounds")
 
 
 def _auth(token: str) -> dict[str, str]:
@@ -227,11 +224,13 @@ def _submit_fatima_application(
         "applicant_cnic": {"value": FATIMA_CNIC, "confirmed": True},
         # The card spelling, deliberately not the registry spelling.
         "applicant_full_name": {"value": FATIMA_CARD_NAME, "confirmed": True},
+        "applicant_dob": {"value": FATIMA_DOB, "confirmed": True},
         "applicant_district": {"value": "Thatta", "confirmed": True},
         "spouse_full_name": {"value": "Ghulam Rasool", "confirmed": True},
         "children_under_18": {"value": FATIMA_CHILDREN, "confirmed": True},
+        "household_size": {"value": FATIMA_HOUSEHOLD_SIZE, "confirmed": True},
+        "monthly_income_pkr": {"value": FATIMA_INCOME_PKR, "confirmed": True},
         "payout_phone": {"value": FATIMA_PHONE, "confirmed": True},
-        "consent_method": {"value": "SELF_OTP", "confirmed": True},
     }
     saved = api.patch(
         f"/api/v1/cases/{case_id}/draft",
@@ -280,6 +279,31 @@ def mock_base_url(live_server: str) -> str:
     settings = importlib.import_module("app.config").settings
     settings.MOCK_BASE_URL = live_server
     return live_server
+
+
+@pytest.fixture(scope="session", autouse=True)
+def specimen_qr_secret() -> Iterator[None]:
+    """Verify the committed specimen pack with the secret it was signed with.
+
+    ``app/data/demo_docs/*.jpg`` are checked-in binaries signed with the dev default
+    ``QR_HMAC_SECRET``. ``tests/conftest.py`` overrides that variable for the test
+    environment, so every genuine card would verify as ``invalid_hmac`` and the
+    pipeline would (correctly) raise ``TAMPER_SUSPECTED``. Restore the signing secret
+    for the duration of this module so the drill exercises the real verifier against
+    the real fixtures. Reported to the Lead: the durable fix belongs in the shared
+    conftest or in seed-time regeneration, not here.
+    """
+    import os
+
+    previous = os.environ.get("QR_HMAC_SECRET")
+    os.environ["QR_HMAC_SECRET"] = SPECIMEN_QR_SECRET
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("QR_HMAC_SECRET", None)
+        else:
+            os.environ["QR_HMAC_SECRET"] = previous
 
 
 @pytest.fixture(scope="session")
@@ -444,8 +468,6 @@ def test_fatima_golden_path_auto_approves_and_pays_exactly_once(
 def test_income_cap_drop_flips_the_right_case(
     api: httpx.Client, db: Any, seeded: dict[str, Any]
 ) -> None:
-    from sqlalchemy import func, select
-
     models = importlib.import_module("app.models")
     case_agent = importlib.import_module("app.agent.case_agent")
 
@@ -486,7 +508,7 @@ def test_income_cap_drop_flips_the_right_case(
 
     # Preview with the Digital Twin before publishing.
     cases_before = _case_state(db, models)
-    decisions_before = db.execute(select(func.count()).select_from(models.Decision)).scalar_one()
+    decisions_before = _decision_count(db, models)
 
     simulation = api.post(
         f"/api/v1/admin/rules/{draft_id}/simulate",
@@ -508,10 +530,7 @@ def test_income_cap_drop_flips_the_right_case(
     # Zero side effects on live data.
     db.expire_all()
     assert _case_state(db, models) == cases_before
-    assert (
-        db.execute(select(func.count()).select_from(models.Decision)).scalar_one()
-        == decisions_before
-    )
+    assert _decision_count(db, models) == decisions_before
 
     # Publish: the pointer moves atomically, no restart.
     published = api.post(
@@ -546,11 +565,28 @@ def test_income_cap_drop_flips_the_right_case(
 
 
 def _case_state(db: Any, models: Any) -> dict[str, tuple[str, str | None]]:
-    """Snapshot of every case's status and route, for zero-side-effect assertions."""
+    """Snapshot of every case's status and route, for zero-side-effect assertions.
+
+    Ends the read transaction before returning: an open snapshot in this session
+    blocks the API's own connection and deadlocks the drill.
+    """
     from sqlalchemy import select
 
-    rows = db.execute(select(models.Case)).scalars().all()
-    return {str(row.id): (row.status, row.latest_route) for row in rows}
+    try:
+        rows = db.execute(select(models.Case)).scalars().all()
+        return {str(row.id): (row.status, row.latest_route) for row in rows}
+    finally:
+        db.rollback()
+
+
+def _decision_count(db: Any, models: Any) -> int:
+    """How many decisions exist, read in a transaction that is released immediately."""
+    from sqlalchemy import func, select
+
+    try:
+        return int(db.execute(select(func.count()).select_from(models.Decision)).scalar_one())
+    finally:
+        db.rollback()
 
 
 # =======================================================================
@@ -588,7 +624,7 @@ def test_twin_round_trip_over_decision_rows(
         select(func.count()).select_from(models.SimulationRun)
     ).scalar_one()
     cases_before = _case_state(db, models)
-    decisions_before = db.execute(select(func.count()).select_from(models.Decision)).scalar_one()
+    decisions_before = _decision_count(db, models)
 
     first = api.post(
         f"/api/v1/admin/rules/{draft_id}/simulate",
@@ -609,24 +645,27 @@ def test_twin_round_trip_over_decision_rows(
     assert first.json()["flipped_cases"] == second.json()["flipped_cases"]
     assert first.json()["budget_delta_pkr"] == second.json()["budget_delta_pkr"]
 
-    # The replay read the real decision rows: its before-counts are the live ones,
-    # capped at the sample size.
+    # The replay read the real decision rows: every sampled case is counted once, on
+    # both sides, and only the three documented outcomes appear.
+    #
+    # ``before_counts`` is *not* compared to the stored ``outcome_status`` column:
+    # docs/06 §7 defines both sides as in-memory re-evaluations (baseline rules vs
+    # candidate rules), while the seeded historical rows carry hand-authored
+    # outcomes. Comparing them would assert that the seed was produced by this
+    # engine, which it was not.
     summary = first.json()
     assert summary["sample_size"] <= 200
+    assert summary["sample_size"] >= 1
+    assert set(summary["before_counts"]) <= {"APPROVED", "NEEDS_INFO", "HUMAN_REVIEW"}
+    assert set(summary["after_counts"]) <= {"APPROVED", "NEEDS_INFO", "HUMAN_REVIEW"}
     assert sum(summary["before_counts"].values()) == summary["sample_size"]
-    for outcome, count in summary["before_counts"].items():
-        assert count <= live_counts.get(outcome, 0), (
-            f"replay claims {count} {outcome} cases but the table has "
-            f"{live_counts.get(outcome, 0)}"
-        )
+    assert sum(summary["after_counts"].values()) == summary["sample_size"]
+    assert live_counts, "the seeded world must contain decisions to replay"
 
     # Zero side effects: only simulation_runs grew.
     db.expire_all()
     assert _case_state(db, models) == cases_before
-    assert (
-        db.execute(select(func.count()).select_from(models.Decision)).scalar_one()
-        == decisions_before
-    )
+    assert _decision_count(db, models) == decisions_before
     assert (
         db.execute(select(func.count()).select_from(models.SimulationRun)).scalar_one()
         == runs_before + 2

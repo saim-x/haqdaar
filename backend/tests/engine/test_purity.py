@@ -23,6 +23,7 @@ ALLOWED_ROOTS = {
     "__future__",
     "app",
     "collections",
+    "copy",
     "datetime",
     "enum",
     "hashlib",
