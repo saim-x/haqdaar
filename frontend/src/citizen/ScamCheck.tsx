@@ -7,6 +7,7 @@ import type { ScamCheckResponse, ScamVerdict } from '../shared/api/types';
 import { play } from '../shared/audio';
 import { formatDateTime, useT, type DictKey } from '../shared/i18n';
 import { useOnline } from '../shared/offline/outbox';
+import { listen, speechRecognitionSupported } from '../shared/voice/recognition';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { Button } from '../shared/ui/Button';
 import { cx } from '../shared/ui/cx';
@@ -51,7 +52,29 @@ export function ScamCheck() {
     onSuccess: () => setFeedbackSent(true),
   });
 
+  const [heard, setHeard] = useState('');
+  const stopListen = useRef<(() => void) | null>(null);
+  // Read the message aloud: the browser recognizer transcribes it, then the text is checked.
+  // Without browser recognition, record a voice note for the server (Whisper) instead.
   const startRec = async () => {
+    if (speechRecognitionSupported()) {
+      setHeard('');
+      setRecording(true);
+      stopListen.current = listen(lang, {
+        onInterim: setHeard,
+        onFinal: (alts) => {
+          const said = alts[0]?.transcript.trim() ?? '';
+          setHeard(said);
+          if (said) {
+            setText(said);
+            setTab('text');
+          }
+        },
+        onError: () => undefined,
+        onEnd: () => setRecording(false),
+      });
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
@@ -153,10 +176,11 @@ export function ScamCheck() {
           block
           variant={recording ? 'danger' : 'secondary'}
           loading={check.isPending}
-          disabled={!online || typeof MediaRecorder === 'undefined'}
+          disabled={!online || (!speechRecognitionSupported() && typeof MediaRecorder === 'undefined')}
           icon={recording ? <Square className="h-7 w-7" aria-hidden /> : <Mic className="h-7 w-7" aria-hidden />}
           onClick={() => {
             if (recording) {
+              stopListen.current?.();
               recRef.current?.stop();
               setRecording(false);
             } else void startRec();
@@ -164,6 +188,11 @@ export function ScamCheck() {
         >
           {recording ? t('recording') : t('speak')}
         </Button>
+      )}
+      {tab === 'voice' && recording && (
+        <p aria-live="polite" className="text-center text-lg text-muted">
+          {heard || (lang === 'ur' ? 'پیغام پڑھ کر سنائیں…' : 'Read the message aloud…')}
+        </p>
       )}
 
       {check.error && (

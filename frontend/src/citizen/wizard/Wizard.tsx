@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../../shared/api/client';
 import { programs } from '../../shared/api/endpoints';
-import type { DraftAnswer, VoiceParseResponse } from '../../shared/api/types';
+import type { DraftAnswer } from '../../shared/api/types';
+import { cleanName, parseChoice, parseCnic, parseNumber, parsePhone, parseYear } from '../../shared/voice/parse';
 import { play } from '../../shared/audio';
 import { useAuth } from '../../shared/auth/store';
 import { formatPkr, useT } from '../../shared/i18n';
@@ -19,7 +20,7 @@ import { Counter, Keypad, PeopleDots } from './inputs';
 import { PhotoStep } from './PhotoStep';
 import { ReviewStep } from './ReviewStep';
 import { DISTRICTS, formatCnic, INCOME_BANDS, isValidPkPhone, normalizePhone, stepsFor, type StepDef } from './steps';
-import { VoiceCapture } from './VoiceCapture';
+import { VoiceCapture, type FieldParser, type VoiceResult } from './VoiceCapture';
 
 export function Wizard() {
   const { localId } = useParams();
@@ -272,27 +273,53 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
     }
   };
 
-  const onVoice = (r: VoiceParseResponse) => {
+  const onVoice = (r: VoiceResult) => {
     if (r.missing_reason === 'USER_UNKNOWN' && step.allowUnknown) return void commit(null, 'USER_UNKNOWN');
-    const v = r.parsed_value === null ? '' : String(r.parsed_value);
-    setValue(step.kind === 'cnic' ? v.replace(/\D/g, '') : v);
+    if (r.value === null) return;
+    setValue(String(r.value));
     void (async () => {
-      await saveAnswer(draft.localId, step.id, { value: step.kind === 'counter' || step.kind === 'income' ? Number(v) : v, confirmed: true }, nextId);
+      await saveAnswer(draft.localId, step.id, { value: r.value, confirmed: true }, nextId);
       onNext();
     })();
   };
 
-  const voiceFormat = (r: VoiceParseResponse) => {
-    if (step.kind === 'income') return formatPkr(Number(r.parsed_value), lang);
-    if (step.kind === 'cnic') return formatCnic(String(r.parsed_value ?? ''));
-    if (step.kind === 'district') {
-      const d = DISTRICTS.find((x) => x.value === r.parsed_value);
-      return d ? pick(d.ur, d.value) : String(r.parsed_value ?? '');
+  // Field-scoped parsing of what the citizen actually said (no default answers).
+  const parseVoice: FieldParser = (text) => {
+    switch (step.kind) {
+      case 'text': {
+        const n = cleanName(text);
+        return n ? { value: n, display: n } : null;
+      }
+      case 'cnic': {
+        const d = parseCnic(text);
+        return d ? { value: d, display: formatCnic(d) } : null;
+      }
+      case 'dob': {
+        const y = parseYear(text);
+        return y ? { value: y, display: y } : null;
+      }
+      case 'district': {
+        const d = parseChoice(text, DISTRICTS);
+        return d ? { value: d.value, display: pick(d.ur, d.value) } : null;
+      }
+      case 'counter': {
+        const n = parseNumber(text);
+        return n !== null && n >= (step.min ?? 0) && n <= (step.max ?? 30) ? { value: n, display: String(n) } : null;
+      }
+      case 'income': {
+        const n = parseNumber(text);
+        return n !== null && n >= 500 && n <= 5_000_000 ? { value: n, display: formatPkr(n, lang) } : null;
+      }
+      case 'phone': {
+        const p = parsePhone(text);
+        return p ? { value: p, display: p } : null;
+      }
+      default:
+        return null;
     }
-    return String(r.parsed_value ?? '');
   };
 
-  const voice = step.voice ? <VoiceCapture fieldKey={step.id} format={voiceFormat} onConfirm={onVoice} /> : null;
+  const voice = step.voice ? <VoiceCapture key={step.id} fieldKey={step.id} parse={parseVoice} allowUnknown={step.allowUnknown} onConfirm={onVoice} /> : null;
   const unknownBtn = step.allowUnknown && (
     <Button size="lg" variant="secondary" block icon={<HelpCircle className="h-6 w-6" aria-hidden />} onClick={() => void commit(null, 'USER_UNKNOWN')}>
       {t('iDontKnow')}

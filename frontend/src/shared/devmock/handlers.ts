@@ -1060,24 +1060,11 @@ on('GET', '/auditor/verify-chain', (ctx) => {
 });
 
 // ======================= AI =======================
-on('POST', '/voice/transcribe-parse', async (ctx, { form }) => {
+// The dev mock cannot transcribe audio. The UI uses the browser speech recognizer instead
+// and only falls back to this endpoint (Whisper on the real backend) when that is missing.
+on('POST', '/voice/transcribe-parse', (ctx) => {
   requireRole(ctx, 'CITIZEN', 'HELPER');
-  await delay(900);
-  const field = String(form?.get('field_key'));
-  const sample: Record<string, [string, string | number, string, string]> = {
-    applicant_full_name: ['فاطمہ بی بی', 'Fatima Bibi', 'آپ نے نام فاطمہ بی بی بتایا۔ کیا یہ درست ہے؟', 'You said Fatima Bibi. Is that correct?'],
-    spouse_full_name: ['غلام رسول', 'Ghulam Rasool', 'آپ نے شوہر کا نام غلام رسول بتایا۔ کیا یہ درست ہے؟', 'You said Ghulam Rasool. Is that correct?'],
-    applicant_cnic: ['نو نو نو صفر صفر ایک ...', '9990010000012', 'آپ نے شناختی کارڈ نمبر 99900-1000001-2 بتایا۔ کیا یہ درست ہے؟', 'You said 99900-1000001-2. Is that correct?'],
-    applicant_dob: ['انیس سو چوہتر', '1974', 'آپ نے پیدائش کا سال 1974 بتایا۔ کیا یہ درست ہے؟', 'You said 1974. Is that correct?'],
-    applicant_district: ['ٹھٹھہ', 'Thatta', 'آپ نے ضلع ٹھٹھہ بتایا۔ کیا یہ درست ہے؟', 'You said Thatta. Is that correct?'],
-    children_under_18: ['تین', 3, 'آپ نے 3 بچے بتائے۔ کیا یہ درست ہے؟', 'You said 3 children. Is that correct?'],
-    monthly_income_pkr: ['اٹھائیس ہزار روپے', 28000, 'آپ نے ماہانہ آمدنی اٹھائیس ہزار (28,000) روپے بتائی۔ کیا یہ درست ہے؟', 'You said PKR 28,000. Is that correct?'],
-    spouse_cnic: ['نہیں معلوم', '', 'آپ نے بتایا کہ معلوم نہیں۔', "You said you don't know."],
-  };
-  const x = sample[field];
-  if (!x) return { transcript: '', parsed_value: null, confidence: 0.2, readback_ur: '', readback_en: '', needs_retry: true };
-  audit({ ctx, actor_type: 'AI', actor_id: 'whisper-1', action: 'ai.voice_parse', resource_type: 'field', resource_id: field, payload: { confidence: 0.91 } });
-  return { transcript: x[0], parsed_value: x[1] === '' ? null : x[1], confidence: 0.91, readback_ur: x[2], readback_en: x[3], needs_retry: false, missing_reason: field === 'spouse_cnic' ? 'USER_UNKNOWN' : null };
+  throw E.unavailable('speech-to-text (needs the AI service)');
 });
 on('POST', '/voice/tts', () => {
   throw E.unavailable('tts');
@@ -1094,8 +1081,8 @@ const RED_FLAGS: [string, RegExp, string, string, 'hard' | 'medium' | 'low'][] =
 on('POST', '/scam/check', async (ctx, { body, form }) => {
   const s = db();
   let text = (body as { text?: string } | null)?.text ?? '';
-  if (form?.get('image')) text = 'Mubarak ho! Aap ki relief payment Rs 25,000 tayyar hai. Fori 500 rupay EasyPaisa fee bhejen 0345-1234567';
-  if (form?.get('audio')) text = 'Aap ka Sahara package aa gaya hai, apna PIN code bata dein';
+  // Screenshot OCR and voice-note STT need the AI service; never invent message text.
+  if (form?.get('image') || form?.get('audio')) throw E.unavailable('screenshot / voice-note reading (needs the AI service)');
   await delay(500);
   const red_flags: ScamCheckResponse['red_flags'] = [];
   let verdict: ScamCheckResponse['verdict'];
