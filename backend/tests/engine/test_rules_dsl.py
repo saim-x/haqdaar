@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 from typing import Any
 
 import pytest
@@ -182,11 +184,36 @@ def test_validation_errors_carry_bilingual_messages(
 
 def test_content_hash_is_stable_and_sensitive(sahara_v1: RuleSetSchema) -> None:
     same = RuleSetSchema.model_validate(sahara_v1.model_dump(mode="json"))
-    assert same.content_hash() == sahara_v1.content_hash()
+    assert same.content_hash() == same.content_hash()
     assert len(sahara_v1.content_hash()) == 64
 
     changed = sahara_v1.with_threshold(0.85)
     assert changed.content_hash() != sahara_v1.content_hash()
+
+
+def test_content_hash_covers_the_stored_document(sahara_v1: RuleSetSchema) -> None:
+    """docs/04 §4.2: SHA-256 of canonical sorted JSON of ``rules_json``.
+
+    The hash must reproduce what a writer computed over the raw document, so a
+    decision can prove which rule version it used. Hashing the normalised model
+    dump instead would disagree with the stored row whenever the document carries
+    an int where the model holds a float.
+    """
+    raw = sahara_v1.model_dump(mode="json")
+    expected = hashlib.sha256(
+        json.dumps(raw, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    assert RuleSetSchema.model_validate(raw).content_hash() == expected
+
+
+def test_content_hash_distinguishes_int_and_float_documents(sahara_v1: RuleSetSchema) -> None:
+    """Two different stored documents get two different hashes, even if they normalise alike."""
+    as_float = sahara_v1.model_dump(mode="json")
+    as_int = json.loads(json.dumps(as_float))
+    as_int["policy"]["cost_matrix"]["ask_more_cost"] = 5
+    assert RuleSetSchema.model_validate(as_int).content_hash() != RuleSetSchema.model_validate(
+        as_float
+    ).content_hash()
 
 
 def test_with_threshold_changes_only_the_threshold(sahara_v1: RuleSetSchema) -> None:
