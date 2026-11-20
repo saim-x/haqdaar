@@ -56,6 +56,21 @@ _install_db_stub()
 from app.mocks import chaos
 
 
+@pytest.fixture(autouse=True)
+def _specimen_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify the committed specimens with the secret they were signed with.
+
+    ``app/data/demo_docs`` is pre-signed, so the secret is part of the fixture
+    contract. The root ``tests/conftest.py`` overrides ``QR_HMAC_SECRET`` for its
+    own QR tests; left alone that makes every genuine specimen fail its signature
+    and the verifier reports ``TAMPER_SUSPECTED`` for a good card — which would
+    make the AI-outage scenario below pass for the wrong reason.
+    """
+    from app.ai import qr_sign
+
+    monkeypatch.setenv("QR_HMAC_SECRET", qr_sign.DEFAULT_QR_SECRET)
+
+
 # --------------------------------------------------------------------------- #
 # real database wiring
 # --------------------------------------------------------------------------- #
@@ -412,6 +427,14 @@ class TestAiFailure:
 
         assert result.status != doc_verify.TAMPER_SUSPECTED, "an AI outage must never accuse a citizen"
         assert result.status in {doc_verify.UNVERIFIABLE, doc_verify.NEEDS_RETAKE}
+
+        # Prove the pipeline actually reached the OCR step. Without this the test
+        # would also pass when a signature mismatch short-circuits the run at the
+        # QR check — which is exactly how it once passed for the wrong reason.
+        by_name = {check.check: check for check in result.checks}
+        assert by_name["qr_signature"].passed, "the specimen's own signature must be valid"
+        assert "ocr_extraction" in by_name, "the outage must be observed at the OCR step"
+        assert not by_name["ocr_extraction"].passed
 
     def test_a_blurry_document_still_asks_for_a_retake(
         self, monkeypatch: pytest.MonkeyPatch

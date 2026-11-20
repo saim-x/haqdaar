@@ -254,17 +254,25 @@ class TestPromptManifest:
         if not manifest_path.exists():  # pragma: no cover - frontend not merged yet
             pytest.skip("frontend tree not present in this worktree")
 
+        # ADR-018: a flat {key: text} map with producer data under _meta.
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        texts = manifest["keys"]
-        files = manifest["files"]
+        meta = manifest["_meta"]
+        texts = {key: value for key, value in manifest.items() if key != "_meta"}
+        files = meta["files"]
 
-        for required in ("consent_intro", "step_full_name", "step_income", "submit_confirm"):
+        for required in (
+            "wizard_consent",
+            "wizard_applicant_full_name",
+            "wizard_monthly_income_pkr",
+            "wizard_submitted",
+            "submit_confirm",
+        ):
             assert required in texts, f"missing wizard prompt {required}"
         for status in ("status_approved", "status_needs_info", "status_human_review", "status_waiting_external"):
             assert status in texts, f"missing status headline {status}"
 
         assert set(texts) == set(files), "every prompt needs a file entry"
-        assert manifest["count"] == len(texts)
+        assert meta["count"] == len(texts)
         for key, text in texts.items():
             assert text.strip(), key
             assert files[key]["file"] == f"{key}.mp3", key

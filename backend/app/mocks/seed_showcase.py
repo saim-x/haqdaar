@@ -176,14 +176,18 @@ def seed_showcase_cases(
         route="HUMAN_REVIEW",
         outcome="HUMAN_REVIEW",
         flags=[
-            {
-                "code": "TAMPER_SUSPECTED",
-                "severity": "HIGH",
-                "detail": (
+            sd.flag(
+                "TAMPER_SUSPECTED",
+                "HIGH",
+                detail_en=(
                     "Printed CNIC name 'Zainab Bibi' does not match the signed QR payload "
                     "('Fatima Bibi', 9990010000012)."
                 ),
-            }
+                detail_ur=(
+                    "شناختی کارڈ پر چھپا نام 'زینب بی بی' دستخط شدہ کیو آر سے میل نہیں کھاتا "
+                    "('فاطمہ بی بی'، 9990010000012)۔"
+                ),
+            )
         ],
         reasons=["TAMPER_SUSPECTED"],
         facts=facts_101,
@@ -284,11 +288,12 @@ def seed_showcase_cases(
         route="HUMAN_REVIEW",
         outcome="HUMAN_REVIEW",
         flags=[
-            {
-                "code": "DATA_CONFLICT_INCOME",
-                "severity": "MEDIUM",
-                "detail": "Self-declared PKR 24,000 vs household survey PKR 54,000 (125% difference).",
-            }
+            sd.flag(
+                "DATA_CONFLICT_INCOME",
+                "MEDIUM",
+                detail_en="Self-declared PKR 24,000 vs household survey PKR 54,000 (125% difference).",
+                detail_ur="خود بتائی گئی آمدنی 24,000 روپے بمقابلہ گھریلو سروے 54,000 روپے (125% فرق)۔",
+            )
         ],
         reasons=["LOW_CONFIDENCE", "DATA_CONFLICT_INCOME"],
         facts=facts_102,
@@ -336,14 +341,18 @@ def seed_showcase_cases(
         route="HUMAN_REVIEW",
         outcome="HUMAN_REVIEW",
         flags=[
-            {
-                "code": "POSSIBLE_DUPLICATE_IDENTITY",
-                "severity": "HIGH",
-                "detail": (
+            sd.flag(
+                "POSSIBLE_DUPLICATE_IDENTITY",
+                "HIGH",
+                detail_en=(
                     "Name+district search returned 2 registry records "
                     "(Muhammad Akram / Mohammad Akram) with no CNIC to disambiguate."
                 ),
-            }
+                detail_ur=(
+                    "نام اور ضلع کی تلاش میں رجسٹری کے 2 ریکارڈ ملے "
+                    "(محمد اکرم / محمد اکرم) اور شناختی کارڈ نمبر کے بغیر فرق واضح نہیں ہوتا۔"
+                ),
+            )
         ],
         reasons=["POSSIBLE_DUPLICATE_IDENTITY"],
         facts=facts_103,
@@ -394,11 +403,12 @@ def seed_showcase_cases(
         route="HUMAN_REVIEW",
         outcome="HUMAN_REVIEW",
         flags=[
-            {
-                "code": "PAYOUT_ACCOUNT_SHARED",
-                "severity": "HIGH",
-                "detail": f"Payout alias {SHARED_PAYOUT_ALIAS} is used by 3 unrelated applicants.",
-            }
+            sd.flag(
+                "PAYOUT_ACCOUNT_SHARED",
+                "HIGH",
+                detail_en=f"Payout alias {SHARED_PAYOUT_ALIAS} is used by 3 unrelated applicants.",
+                detail_ur=f"ادائیگی کا نمبر {SHARED_PAYOUT_ALIAS} 3 غیر متعلقہ درخواست گزار استعمال کر رہے ہیں۔",
+            )
         ],
         reasons=["PAYOUT_ACCOUNT_SHARED"],
         facts=facts_104,
@@ -450,11 +460,12 @@ def seed_showcase_cases(
         route="HUMAN_REVIEW",
         outcome="HUMAN_REVIEW",
         flags=[
-            {
-                "code": "LOW_ASSURANCE_CONSENT",
-                "severity": "MEDIUM",
-                "detail": "Helper captured witnessed verbal consent (assurance 0.82 < 0.90 threshold).",
-            }
+            sd.flag(
+                "LOW_ASSURANCE_CONSENT",
+                "MEDIUM",
+                detail_en="Helper captured witnessed verbal consent (assurance 0.82 < 0.90 threshold).",
+                detail_ur="ہیلپر نے گواہ کے سامنے زبانی رضامندی لی (یقین 0.82 < 0.90 حد)۔",
+            )
         ],
         reasons=["LOW_CONFIDENCE", "LOW_ASSURANCE_CONSENT"],
         facts=facts_105,
@@ -507,13 +518,10 @@ def seed_showcase_cases(
         conf=sd.confidence(identity=0.93, documents=0.95, data_consistency=0.98, consent=1.0),
         route="AUTO_APPROVE",
         outcome="APPROVED",
-        flags=[
-            {
-                "code": "PAYMENT_FAILED",
-                "severity": "HIGH",
-                "detail": f"Raast transfer to {DORMANT_ALIAS} failed: ACCOUNT_DORMANT.",
-            }
-        ],
+        # docs/10 §2 lists PAYMENT_FAILED as this case's *status*, not as an anomaly
+        # flag, and it is not in engine.anomalies.FlagCode. The failure itself lives
+        # on the payments row below (status FAILED, reason ACCOUNT_DORMANT).
+        flags=[],
         reasons=[],
         facts=facts_106,
         amount=13000,

@@ -61,6 +61,27 @@ def _fake_provider(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     provider.reset_provider()
 
 
+@pytest.fixture(autouse=True)
+def _specimen_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify the committed specimens with the secret they were signed with.
+
+    ``app/data/demo_docs`` and ``app/data/doc_eval_set`` are pre-signed artifacts:
+    their HMAC is part of their content, so the secret is part of the fixture
+    contract, not an ambient setting. The generator signs with
+    ``qr_sign.DEFAULT_QR_SECRET`` — the same value the live stack uses — but the
+    root ``tests/conftest.py`` overrides ``QR_HMAC_SECRET`` for its own QR tests.
+    Left alone, that override makes every genuine specimen fail its signature and
+    the verifier reports ``TAMPER_SUSPECTED`` for a perfectly good card.
+
+    ``test_committed_specimens_verify_under_the_default_secret`` pins the other
+    half of the contract: regenerating the artifacts with a different secret
+    fails loudly instead of silently accusing citizens.
+    """
+    from app.ai import qr_sign
+
+    monkeypatch.setenv("QR_HMAC_SECRET", qr_sign.DEFAULT_QR_SECRET)
+
+
 class RecordingSession:
     """Minimal session that records executed statements instead of running them."""
 

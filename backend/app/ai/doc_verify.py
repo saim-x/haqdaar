@@ -658,7 +658,10 @@ def verify_document(db: Any, document_id: Any) -> dict[str, Any]:
                 CheckResult(
                     "file_present",
                     False,
-                    str(path),
+                    # Never echo the absolute server path: verify_checks is
+                    # returned to the client, and a filesystem layout is not the
+                    # citizen's business. The storage key is what they uploaded.
+                    "missing",
                     "exists",
                     "the stored file is missing — cannot verify",
                 )
@@ -678,6 +681,13 @@ def verify_document(db: Any, document_id: Any) -> dict[str, Any]:
             resource_id=str(document_id),
         ):
             verification = verify_image(image_bytes, doc_type)
+        # Report the storage check on success too, so ``verify_checks`` always
+        # starts with the same entry and an officer never has to infer that the
+        # file was found from the absence of a failure.
+        verification.checks.insert(
+            0,
+            CheckResult("file_present", True, "present", "exists", "the stored file was read"),
+        )
 
     now = datetime.now(UTC)
     update: dict[str, Any] = {

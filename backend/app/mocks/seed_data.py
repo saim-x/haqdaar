@@ -197,6 +197,29 @@ def rule(
     }
 
 
+def flag(
+    code: str,
+    severity: str,
+    *,
+    detail_en: str,
+    detail_ur: str,
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """One ``cases.flags_json`` entry in the shape ``engine.anomalies.RiskFlag`` enforces.
+
+    ``RiskFlag`` is ``extra="forbid"`` and requires both language variants, so a
+    bare ``{"code", "severity", "detail"}`` dict fails validation on replay. Build
+    every seeded flag through here so the shape cannot drift again.
+    """
+    return {
+        "code": code,
+        "severity": severity,
+        "detail_en": detail_en,
+        "detail_ur": detail_ur,
+        "evidence": evidence or {},
+    }
+
+
 _COST_MATRIX = {
     "wrong_approval_cost": 100,
     "unnecessary_human_review_cost": 8,
@@ -684,6 +707,7 @@ __all__ = [
     "content_hash",
     "explanation",
     "fact",
+    "flag",
     "hash_password",
     "public_facts",
     "rule",
