@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.mypy_cache/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/node_modules/
+
+# Env & secrets (never commit)
+.env
+.env.local
+.env.*.local
+
+# Runtime data (uploads volume + cached TTS) — keep repo datasets under backend/app/data/
+/data/
+uploads/
+tts_cache/
+
+# E2E / test artifacts
+test-results/
+playwright-report/
+.playwright/
+
+# Misc
+.DS_Store
+*.log
+*.tmp
