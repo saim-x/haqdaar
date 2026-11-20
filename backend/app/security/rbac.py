@@ -25,8 +25,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.models.consent import ConsentGrant
 from app.models.enums import ActorType, ConsentRecipientType, ConsentStatus, UserRole
-from app.models.identity import ApiKey, Citizen, ConsentGrant, User
+from app.models.identity import ApiKey, Citizen, User
 from app.security import audit
 from app.security.context import get_request_id, set_actor_context
 from app.security.errors import (

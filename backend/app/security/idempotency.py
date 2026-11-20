@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastapi import Request
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.jobs import IdempotencyKey

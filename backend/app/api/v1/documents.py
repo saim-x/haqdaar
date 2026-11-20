@@ -112,10 +112,12 @@ def _authorise_document_read(
     )
 
 
-def _try_sync_verify(document: Document, path: Path) -> dict[str, Any] | None:
-    """Call A4's verifier if it is importable and fast; otherwise return ``None``.
+def _try_sync_verify(db: Session, document: Document) -> dict[str, Any] | None:
+    """Run A4's verifier inline when it is importable and finishes inside the budget.
 
-    The module does not exist at M0 — a missing verifier must never break upload.
+    ``app.ai.doc_verify.verify_document(db, document_id)`` persists the outcome
+    itself, so the caller only has to refresh the row. A missing module or a slow
+    run degrades to the ``VERIFY_DOCUMENT`` job — upload never fails because of it.
     """
     try:
         module = importlib.import_module("app.ai.doc_verify")
@@ -128,34 +130,13 @@ def _try_sync_verify(document: Document, path: Path) -> dict[str, Any] | None:
 
     started = time.monotonic()
     try:
-        result = verify(
-            storage_path=str(path),
-            doc_type=document.doc_type,
-            mime_type=document.mime_type,
-        )
+        result = verify(db, document.id)
     except Exception:  # noqa: BLE001 - a verifier crash degrades to async
         return None
 
     if time.monotonic() - started > SYNC_VERIFY_BUDGET_SECONDS:
         return None
     return result if isinstance(result, dict) else None
-
-
-def _apply_verification(document: Document, result: dict[str, Any]) -> None:
-    status = str(result.get("verify_status") or result.get("status") or "").upper()
-    if status in {item.value for item in DocVerifyStatus}:
-        document.verify_status = status
-    confidence = result.get("verify_confidence", result.get("confidence"))
-    if confidence is not None:
-        document.verify_confidence = round(float(confidence), 3)
-    checks = result.get("verify_checks", result.get("checks"))
-    if isinstance(checks, list):
-        document.verify_checks = checks
-    extracted = result.get("extracted_fields", result.get("fields"))
-    if isinstance(extracted, dict):
-        document.extracted_fields = extracted
-    document.retake_reason_en = result.get("retake_reason_en")
-    document.retake_reason_ur = result.get("retake_reason_ur")
 
 
 @router.post("", status_code=201, summary="Upload a document and verify it")
@@ -267,9 +248,9 @@ async def upload_document(
         **_audit_actor(actor),
     )
 
-    result = _try_sync_verify(document, absolute)
+    result = _try_sync_verify(db, document)
     if result is not None:
-        _apply_verification(document, result)
+        db.refresh(document)
         audit.record(
             db,
             action="document.verified",

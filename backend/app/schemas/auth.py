@@ -109,7 +109,7 @@ class TenantOut(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
+    token_type: str = "bearer"  # noqa: S105 - OAuth token type, not a secret
     expires_in: int
     user: UserOut
     citizen_id: uuid.UUID | None = None
@@ -118,7 +118,7 @@ class TokenOut(BaseModel):
 class RefreshOut(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
+    token_type: str = "bearer"  # noqa: S105 - OAuth token type, not a secret
     expires_in: int
 
 

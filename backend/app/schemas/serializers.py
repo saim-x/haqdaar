@@ -11,8 +11,9 @@ from typing import Any
 
 from app.models.cases import Case, CaseNote, Decision, Document, Payment
 from app.models.consent import ConsentGrant
-from app.models.identity import Citizen, Program, Tenant
 from app.models.enums import CaseStatus
+from app.models.identity import Citizen, Tenant
+from app.models.programs import Program
 from app.security.masking import mask_cnic, mask_phone
 
 #: Citizen-facing status copy (docs/04 §3.3).

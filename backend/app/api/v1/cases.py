@@ -30,7 +30,6 @@ from app.models.programs import Program
 from app.schemas.facts import (
     CANONICAL_FACT_KEY_SET,
     SELF_DECLARABLE_FACT_KEYS,
-    is_known,
     missing_facts,
     normalize_fact,
 )

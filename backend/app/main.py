@@ -28,7 +28,6 @@ from app.security.context import (
     get_request_id,
     log_event,
     request_id_var,
-    set_request_id,
 )
 from app.security.errors import ApiError
 from app.security.ratelimit import check_ai_limit, check_scam_limit

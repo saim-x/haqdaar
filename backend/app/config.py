@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -27,8 +27,8 @@ class Settings(BaseSettings):
 
     # --- Core (docs/03 §5.3) -------------------------------------------------
     database_url: str = "postgresql+psycopg://haqdaar:haqdaar@localhost:5432/haqdaar"
-    jwt_secret: str = "dev-secret-change-me"
-    qr_hmac_secret: str = "dev-qr-secret-change-me"
+    jwt_secret: str = "dev-secret-change-me"  # noqa: S105 - dev default, overridden by env
+    qr_hmac_secret: str = "dev-qr-secret-change-me"  # noqa: S105 - dev default, overridden by env
     mock_base_url: str = "http://127.0.0.1:8000/mock"
     ai_provider: Literal["live", "fake"] = "fake"
     openai_api_key: str = ""

@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, CreatedAtMixin, TSTAMPTZ, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TSTAMPTZ, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class Job(Base, UUIDPrimaryKeyMixin, TimestampMixin):

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models.enums import UserRole
-from app.models.identity import Program
+from app.models.programs import Program
 from app.security.rbac import ActorContext, require_roles
 
 router = APIRouter(prefix="/programs", tags=["programs"])
