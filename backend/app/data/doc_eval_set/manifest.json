@@ -1,0 +1,674 @@
+{
+  "generated_at": "2026-11-20T15:59:35.150256+00:00",
+  "watermark": "MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT",
+  "generator_seed": 20261120,
+  "count": 30,
+  "label_counts": {
+    "GENUINE_CLEAN": 12,
+    "GENUINE_COMPRESSED": 8,
+    "BLURRY": 5,
+    "FORGED": 5
+  },
+  "images": [
+    {
+      "file": "eval_001_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "752fa485e1dafbc436ab21437ef06e9a2520da26c20a5694d9c0a9dcc47396e6",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "laplacian_var": 4413.96,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_002_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "829ff899f6b2d81f79e7dbcd54d07f2c5b2498998cc97af6a81b382c2995d485",
+      "printed_fields": {
+        "cnic": "9990010000043",
+        "full_name": "Sakina Bibi",
+        "dob": "1980-09-02"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000043",
+        "full_name": "Sakina Bibi",
+        "dob": "1980-09-02",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "eeb1b5d8b38f00fb6642ef5ac55ceb2eb152b627c9a64e78865df1c7b4bdca5b"
+      },
+      "laplacian_var": 4246.42,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_003_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "59e5ed494563d4933cc7e74fc6f6d878bf568aae1d168f7fb3525ae512959b7c",
+      "printed_fields": {
+        "cnic": "9990010000051",
+        "full_name": "Zainab Bibi",
+        "dob": "1971-12-19"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000051",
+        "full_name": "Zainab Bibi",
+        "dob": "1971-12-19",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "2372cd7c14bd7588ae09c207f3d4aa4201ea2a19b46d0ffa6cedac934103d5ed"
+      },
+      "laplacian_var": 4240.05,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_004_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "c9e55690a612fee5adb838002cdbcb4302673117075fa9dad3bcfb61972736e5",
+      "printed_fields": {
+        "cnic": "9990010000068",
+        "full_name": "Mariam Bibi",
+        "dob": "1985-04-27"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000068",
+        "full_name": "Mariam Bibi",
+        "dob": "1985-04-27",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "91e7ab8105ac4a84d1738e7f1907644cbe3f74976b41909f4af785461a8d1356"
+      },
+      "laplacian_var": 4426.63,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_005_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "71dfe32eb2813059e4e08d50cc15ad542941a162e57f60598742c86077e81779",
+      "printed_fields": {
+        "cnic": "9990010000076",
+        "full_name": "Khadija Bibi",
+        "dob": "1978-07-08"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000076",
+        "full_name": "Khadija Bibi",
+        "dob": "1978-07-08",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "b87554dbb761e7ad419d3d99ed60c081ca201e2254cfd7e8444f8fc2b4ec3231"
+      },
+      "laplacian_var": 4251.03,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_006_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "b87e8f62a0d5bca6ead03fa5d95378ac4a7003385438c12963b4f9033a882fd9",
+      "printed_fields": {
+        "cnic": "9990010000084",
+        "full_name": "Amina Bibi",
+        "dob": "1969-01-30"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000084",
+        "full_name": "Amina Bibi",
+        "dob": "1969-01-30",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "8ae03480fc0a1bcbcd892c6a2b8b6bf07f8795da443dc5b6c6a7ac3de3090f4a"
+      },
+      "laplacian_var": 4256.24,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_007_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "abb9656431875522fac9cdfd880106a5e33b4221d26d053b9b8825ef8393019f",
+      "printed_fields": {
+        "cnic": "9990010000092",
+        "full_name": "Haleema Bibi",
+        "dob": "1983-11-11"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000092",
+        "full_name": "Haleema Bibi",
+        "dob": "1983-11-11",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "f726794a7bfa5b9865ea1fc17a81165697bca9cdc9065341720172c169a4714d"
+      },
+      "laplacian_var": 4238.92,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_008_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "9e3026c6c3dd85390fb140b7fa30b44c268dad4dbcfe5feb279e4559ff768aa1",
+      "printed_fields": {
+        "cnic": "9990010000109",
+        "full_name": "Rukhsana Bibi",
+        "dob": "1976-06-05"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000109",
+        "full_name": "Rukhsana Bibi",
+        "dob": "1976-06-05",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "86f002ba2dd8e3d9ea7e950a6ea13d0442bf1fde1d3f4a7cf1f372f1dd9529d7"
+      },
+      "laplacian_var": 4241.98,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_009_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "551867bfc130ff4941d23f06d2f7ee9ab24045edbe0b1bb1514ab527a1503abf",
+      "printed_fields": {
+        "cnic": "9990010000117",
+        "full_name": "Nasreen Bibi",
+        "dob": "1988-03-22"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000117",
+        "full_name": "Nasreen Bibi",
+        "dob": "1988-03-22",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "67b56025c05ebfd1a5a3537dfe8dc839ed58c5647714d05e77d7fa8fbaba1deb"
+      },
+      "laplacian_var": 4323.82,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_010_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "88c38fc11459d5f473e37afb08863c5b6010e3121e90d4b7f4d611743e40221c",
+      "printed_fields": {
+        "cnic": "9990010000125",
+        "full_name": "Shahida Bibi",
+        "dob": "1973-10-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000125",
+        "full_name": "Shahida Bibi",
+        "dob": "1973-10-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "1ab14f025c4d5422a6a3a80dd4e75aec5507f67e65b0c6f637d85e7b75581ddb"
+      },
+      "laplacian_var": 4338.32,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_011_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "4360bfa94c8a2cff496986fadb8a11991eb49848957a89f1fe7d5052c981e193",
+      "printed_fields": {
+        "cnic": "9990010000133",
+        "full_name": "Razia Bibi",
+        "dob": "1981-08-09"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000133",
+        "full_name": "Razia Bibi",
+        "dob": "1981-08-09",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "bc69736d63de51aea1f0c01cb86d987b2c79bbc53b7e35cb172d9e1608fe54af"
+      },
+      "laplacian_var": 4384.18,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_012_genuine_clean.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "33b7ebd1e34e02d46fe1f7813ee2e311fcdacf074d19faa3a695d519cd7b06a2",
+      "printed_fields": {
+        "cnic": "9990010000141",
+        "full_name": "Parveen Bibi",
+        "dob": "1979-05-25"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000141",
+        "full_name": "Parveen Bibi",
+        "dob": "1979-05-25",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "2bdd25cc252880233b14aa389500740c91a7694e7ea00f2ec35896715936513e"
+      },
+      "laplacian_var": 4329.51,
+      "notes": "Sharp specimen card, signed QR matches printed text."
+    },
+    {
+      "file": "eval_013_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "71601750108b0280cab0c7750ecd15009a3df532710d4403a1eb95c3904f44ec",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "laplacian_var": 2572.56,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_014_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "950fd7cd2ea6dc41af9bb880c208609b69a25d5153e564a93cac4a2d6a5af5a8",
+      "printed_fields": {
+        "cnic": "9990010000043",
+        "full_name": "Sakina Bibi",
+        "dob": "1980-09-02"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000043",
+        "full_name": "Sakina Bibi",
+        "dob": "1980-09-02",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "eeb1b5d8b38f00fb6642ef5ac55ceb2eb152b627c9a64e78865df1c7b4bdca5b"
+      },
+      "laplacian_var": 2510.57,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_015_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "af6a5d13db0f1829d1d140250d235f0c87ce3f12e88a2f9ae5894d273ac85af6",
+      "printed_fields": {
+        "cnic": "9990010000051",
+        "full_name": "Zainab Bibi",
+        "dob": "1971-12-19"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000051",
+        "full_name": "Zainab Bibi",
+        "dob": "1971-12-19",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "2372cd7c14bd7588ae09c207f3d4aa4201ea2a19b46d0ffa6cedac934103d5ed"
+      },
+      "laplacian_var": 2505.45,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_016_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "d219a6cc7e827724d587790c81ded7cec2e58484f24dea86a6a6b1106623e7cf",
+      "printed_fields": {
+        "cnic": "9990010000068",
+        "full_name": "Mariam Bibi",
+        "dob": "1985-04-27"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000068",
+        "full_name": "Mariam Bibi",
+        "dob": "1985-04-27",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "91e7ab8105ac4a84d1738e7f1907644cbe3f74976b41909f4af785461a8d1356"
+      },
+      "laplacian_var": 2578.97,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_017_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "0721d657d4a126ef0e9c4a64f414593446fa14a97042589e86efadbffc38b958",
+      "printed_fields": {
+        "cnic": "9990010000076",
+        "full_name": "Khadija Bibi",
+        "dob": "1978-07-08"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000076",
+        "full_name": "Khadija Bibi",
+        "dob": "1978-07-08",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "b87554dbb761e7ad419d3d99ed60c081ca201e2254cfd7e8444f8fc2b4ec3231"
+      },
+      "laplacian_var": 2494.13,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_018_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "d17c10798347af29bba131c0080aee5d68838f1323a9e65218313832e295fbc1",
+      "printed_fields": {
+        "cnic": "9990010000084",
+        "full_name": "Amina Bibi",
+        "dob": "1969-01-30"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000084",
+        "full_name": "Amina Bibi",
+        "dob": "1969-01-30",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "8ae03480fc0a1bcbcd892c6a2b8b6bf07f8795da443dc5b6c6a7ac3de3090f4a"
+      },
+      "laplacian_var": 2511.72,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_019_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "12f9333a4efdcabb809dbaccb83c7611f5f24e959c36c3e3b4da4fff716cd199",
+      "printed_fields": {
+        "cnic": "9990010000092",
+        "full_name": "Haleema Bibi",
+        "dob": "1983-11-11"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000092",
+        "full_name": "Haleema Bibi",
+        "dob": "1983-11-11",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "f726794a7bfa5b9865ea1fc17a81165697bca9cdc9065341720172c169a4714d"
+      },
+      "laplacian_var": 2499.69,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_020_genuine_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "dad75e2cba711f05243fae258410ab4b9339b9c7c8a0b0f08f231ec2b3d0e947",
+      "printed_fields": {
+        "cnic": "9990010000109",
+        "full_name": "Rukhsana Bibi",
+        "dob": "1976-06-05"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000109",
+        "full_name": "Rukhsana Bibi",
+        "dob": "1976-06-05",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "86f002ba2dd8e3d9ea7e950a6ea13d0442bf1fde1d3f4a7cf1f372f1dd9529d7"
+      },
+      "laplacian_var": 2500.81,
+      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+    },
+    {
+      "file": "eval_021_blurry.jpg",
+      "label": "BLURRY",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "NEEDS_RETAKE",
+      "sha256": "f8c4a3bddb5e8f812be3243873ce716332e3cf91a1b12e3a742ebe575c2b69e3",
+      "printed_fields": {
+        "cnic": "9990010000117",
+        "full_name": "Nasreen Bibi",
+        "dob": "1988-03-22"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000117",
+        "full_name": "Nasreen Bibi",
+        "dob": "1988-03-22",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "67b56025c05ebfd1a5a3537dfe8dc839ed58c5647714d05e77d7fa8fbaba1deb"
+      },
+      "laplacian_var": 1.15,
+      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+    },
+    {
+      "file": "eval_022_blurry.jpg",
+      "label": "BLURRY",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "NEEDS_RETAKE",
+      "sha256": "0aadd90724f0204e80301ac5edf8f3d8862e74671ae5dfcdbcbec21b218a5f7f",
+      "printed_fields": {
+        "cnic": "9990010000125",
+        "full_name": "Shahida Bibi",
+        "dob": "1973-10-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000125",
+        "full_name": "Shahida Bibi",
+        "dob": "1973-10-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "1ab14f025c4d5422a6a3a80dd4e75aec5507f67e65b0c6f637d85e7b75581ddb"
+      },
+      "laplacian_var": 1.11,
+      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+    },
+    {
+      "file": "eval_023_blurry.jpg",
+      "label": "BLURRY",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "NEEDS_RETAKE",
+      "sha256": "96fc06c1b9c82f7badec033dbf773124f196ab094ef0edc74adecb8839b99d69",
+      "printed_fields": {
+        "cnic": "9990010000133",
+        "full_name": "Razia Bibi",
+        "dob": "1981-08-09"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000133",
+        "full_name": "Razia Bibi",
+        "dob": "1981-08-09",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "bc69736d63de51aea1f0c01cb86d987b2c79bbc53b7e35cb172d9e1608fe54af"
+      },
+      "laplacian_var": 1.08,
+      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+    },
+    {
+      "file": "eval_024_blurry.jpg",
+      "label": "BLURRY",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "NEEDS_RETAKE",
+      "sha256": "d649d896aa8c1b049e660b593f892ed46f4334a58ae3bd88a2d6e396b146713b",
+      "printed_fields": {
+        "cnic": "9990010000141",
+        "full_name": "Parveen Bibi",
+        "dob": "1979-05-25"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000141",
+        "full_name": "Parveen Bibi",
+        "dob": "1979-05-25",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "2bdd25cc252880233b14aa389500740c91a7694e7ea00f2ec35896715936513e"
+      },
+      "laplacian_var": 1.07,
+      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+    },
+    {
+      "file": "eval_025_blurry.jpg",
+      "label": "BLURRY",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "NEEDS_RETAKE",
+      "sha256": "89ad56e301dae091bb955f9ec58c251b1b41c3b95c7db1dca9e64d260d76d797",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "laplacian_var": 1.06,
+      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+    },
+    {
+      "file": "eval_026_forged.jpg",
+      "label": "FORGED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "TAMPER_SUSPECTED",
+      "sha256": "a60db9c7264bf7359ca2740511f4ad3510632930b59c79b753710d82304d482b",
+      "printed_fields": {
+        "cnic": "9990010000043",
+        "full_name": "Zainab Bibi",
+        "dob": "1980-09-02"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000043",
+        "full_name": "Sakina Bibi",
+        "dob": "1980-09-02",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "eeb1b5d8b38f00fb6642ef5ac55ceb2eb152b627c9a64e78865df1c7b4bdca5b"
+      },
+      "laplacian_var": 4247.54,
+      "notes": "Printed name 'Zainab Bibi' edited over a valid signed QR for 'Sakina Bibi'."
+    },
+    {
+      "file": "eval_027_forged.jpg",
+      "label": "FORGED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "TAMPER_SUSPECTED",
+      "sha256": "f724f3596e21e4207643b5b9ceafc678e7285be9ddafe35668201c339e2d82b4",
+      "printed_fields": {
+        "cnic": "9990010000051",
+        "full_name": "Sakina Bibi",
+        "dob": "1971-12-19"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000051",
+        "full_name": "Zainab Bibi",
+        "dob": "1971-12-19",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "2372cd7c14bd7588ae09c207f3d4aa4201ea2a19b46d0ffa6cedac934103d5ed"
+      },
+      "laplacian_var": 4238.93,
+      "notes": "Printed name 'Sakina Bibi' edited over a valid signed QR for 'Zainab Bibi'."
+    },
+    {
+      "file": "eval_028_forged.jpg",
+      "label": "FORGED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "TAMPER_SUSPECTED",
+      "sha256": "c52aca8ee588b8ab71a4b4449c47c2eca18954cdad7baf7af97ffeb4a2901472",
+      "printed_fields": {
+        "cnic": "9990010000068",
+        "full_name": "Nasreen Bibi",
+        "dob": "1985-04-27"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000068",
+        "full_name": "Mariam Bibi",
+        "dob": "1985-04-27",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "91e7ab8105ac4a84d1738e7f1907644cbe3f74976b41909f4af785461a8d1356"
+      },
+      "laplacian_var": 4430.39,
+      "notes": "Printed name 'Nasreen Bibi' edited over a valid signed QR for 'Mariam Bibi'."
+    },
+    {
+      "file": "eval_029_forged.jpg",
+      "label": "FORGED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "TAMPER_SUSPECTED",
+      "sha256": "08dd712f2e003a82bd8aa34af3f69a6b7cf5e539e528fb2a101955a8d46d058d",
+      "printed_fields": {
+        "cnic": "9990010000076",
+        "full_name": "Khadija Bibi",
+        "dob": "1978-07-08"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000076",
+        "full_name": "Khadija Bibi",
+        "dob": "1978-07-08",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "00000000b761e7ad419d3d99ed60c081ca201e2254cfd7e8444f8fc2b4ec3231"
+      },
+      "laplacian_var": 4237.57,
+      "notes": "QR payload carries an invalid HMAC signature."
+    },
+    {
+      "file": "eval_030_forged.jpg",
+      "label": "FORGED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "TAMPER_SUSPECTED",
+      "sha256": "8e20f3f1925e8408209415827106a5aca5b073b8922f62ffc1a58d40b1d040f0",
+      "printed_fields": {
+        "cnic": "9990010000084",
+        "full_name": "Amina Bibi",
+        "dob": "1969-01-30"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000084",
+        "full_name": "Amina Bibi",
+        "dob": "1969-01-30",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "00000000fc0a1bcbcd892c6a2b8b6bf07f8795da443dc5b6c6a7ac3de3090f4a"
+      },
+      "laplacian_var": 4266.76,
+      "notes": "QR payload carries an invalid HMAC signature."
+    }
+  ]
+}
