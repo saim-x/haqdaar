@@ -670,3 +670,56 @@ def test_twin_round_trip_over_decision_rows(
         db.execute(select(func.count()).select_from(models.SimulationRun)).scalar_one()
         == runs_before + 2
     )
+
+
+# =======================================================================
+# 4. the eval dashboard curve (demo Scene 7)
+# =======================================================================
+def test_eval_dashboard_serves_the_live_sweep_curve(
+    api: httpx.Client, seeded: dict[str, Any]
+) -> None:
+    """``GET /api/v1/eval/dashboard`` must carry the real curve, not a placeholder.
+
+    Scene 7 puts this payload on screen, so the contract is: ten points on the
+    docs/06 §3.3 grid, the active threshold from the live rule version, and a knee
+    that is actually the minimum of the curve it ships.
+    """
+    admin = _demo_login(api, "admin_bilal")
+    response = api.get("/api/v1/eval/dashboard", headers=_auth(admin))
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    curve = body["decision_router_sweep"]
+    assert len(curve) == 10, curve
+    assert [point["threshold"] for point in curve] == [
+        0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95
+    ]
+    for point in curve:
+        assert set(point) == {
+            "threshold",
+            "auto_approve_rate",
+            "false_approval_rate",
+            "human_review_rate",
+            "expected_cost",
+        }
+        assert 0.0 <= point["auto_approve_rate"] <= 1.0
+        assert 0.0 <= point["false_approval_rate"] <= 1.0
+
+    # The active threshold is the live rule version's, not a constant.
+    assert body["active_threshold"] == 0.90
+    assert body["sample_size"] >= 100
+
+    # The knee is the minimum of the curve that was actually shipped.
+    costs = {point["threshold"]: point["expected_cost"] for point in curve}
+    assert costs[body["knee_threshold"]] == min(costs.values())
+
+    # The other two blocks Scene 7 shows.
+    assert set(body["live_operations"]) >= {
+        "total_decisions",
+        "by_route",
+        "officer_override_rate",
+        "latency_p50_ms",
+        "latency_p95_ms",
+    }
+    assert body["live_operations"]["total_decisions"] >= 1
+    assert isinstance(body["benchmarks_available"], bool)
