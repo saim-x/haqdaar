@@ -198,7 +198,14 @@ def _run_step(ctx: _Context, name: str, fn: Callable[[_Context], None]) -> None:
 
 # -- step 1: consent -----------------------------------------------------
 def _step_verify_consent(ctx: _Context) -> None:
-    """Active DEPARTMENT consent for IDENTITY, HOUSEHOLD and DOCUMENTS."""
+    """Active DEPARTMENT consent for IDENTITY, HOUSEHOLD and DOCUMENTS.
+
+    Those three are the citizen's own data (docs/04 §3.1 ``data_category``). The
+    benefits-registry and payout-alias lookups in step 7 are cross-program fraud and
+    eligibility checks, not reads of the applicant's record, so they are not gated on
+    ``PAYMENT`` / ``CASE_HISTORY`` consent — gating them would park a case that the
+    citizen has fully authorised.
+    """
     actor = deps.agent_actor(ctx.case.tenant_id)
     for category in ("IDENTITY", "HOUSEHOLD", "DOCUMENTS"):
         deps.enforce_consent(
@@ -344,6 +351,9 @@ def _step_run_anomaly_checks(ctx: _Context) -> None:
         )
 
     # Shared payout alias: PAYOUT usages count, shared CONTACT phones do not.
+    # Deliberately not tenant-scoped: docs/06 §6 defines the trigger as "≥ 2 other
+    # distinct citizens' cases", and the same alias paying citizens of two departments
+    # is a stronger fraud signal, not a weaker one. Nothing here is returned to a user.
     if alias:
         usages: list[PayoutUsage] = []
         paid = (
