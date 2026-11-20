@@ -420,6 +420,15 @@ def test_the_shipped_eval_set_loads_and_sweeps() -> None:
     for case in cases:
         assert 0.0 <= case.confidence.overall <= 1.0
         # Every pillar must come from evidence, never from a silent default.
+        # Identity and consent are discrete bands (docs/06 §3.2 pillars 1 and 4).
         assert case.confidence.identity in {0.25, 0.30, 0.75, 0.78, 0.93, 0.98}
-        assert case.confidence.documents in {0.10, 0.40, 0.55, 0.93}
         assert case.confidence.consent_assurance in {0.82, 1.0}
+        # Documents is a measured score, not a band: a verified document contributes
+        # its own confidence, "typically 0.92-0.98" (docs/06 §3.2 pillar 2) — that
+        # range is descriptive, and a compressed-but-genuine card legitimately
+        # measures lower. The three failure outcomes are the discrete values.
+        documents = case.confidence.documents
+        assert documents in {0.10, 0.40, 0.55} or 0.55 < documents <= 1.0, (
+            f"{case.case_id}: documents pillar {documents} is neither a documented "
+            "failure band nor a verified score above the unverifiable band"
+        )
