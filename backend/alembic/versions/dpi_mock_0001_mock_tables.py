@@ -21,7 +21,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision = "dpi_mock_0001"
-down_revision = None
+down_revision = "app_0001"
 branch_labels = None
 depends_on = None
 

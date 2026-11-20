@@ -35,3 +35,6 @@ playwright-report/
 
 # Test upload scratch
 .pytest-uploads/
+
+# Agent status reports (Lead drop zone lives outside the repo)
+status/
