@@ -551,7 +551,13 @@ def _unknown(reason: str = "USER_UNKNOWN") -> dict[str, Any]:
 
 
 def _is_eligible(facts: dict[str, Any]) -> bool:
-    """Evaluate the frozen docs/06 §2.1 rules against a fact snapshot."""
+    """Evaluate the frozen docs/06 §2.1 eligibility rules against a fact snapshot.
+
+    ``children_under_18`` is deliberately absent: R09_CHILDREN_KNOWN (ADR-015)
+    gates the *amount*, not eligibility. A citizen whose children count is unknown
+    is still genuinely eligible — the engine routes ASK_MORE/HUMAN_REVIEW instead
+    of approving, and the ground-truth label must not pretend otherwise.
+    """
     checks = {
         "applicant_is_alive": lambda v: v is True,
         "applicant_cnic_valid": lambda v: v is True,
@@ -572,8 +578,9 @@ def _is_eligible(facts: dict[str, Any]) -> bool:
 
 
 def _amount(children: int) -> int:
-    base = 10000
-    return min(base + 1000 * children, 20000)
+    """docs/06 §2.1 ``benefit_formula``: 12,000 + 1,000/child (max 5), cap 20,000."""
+    counted = min(max(0, children), 5)
+    return min(12000 + 1000 * counted, 20000)
 
 
 def build_eval_cases() -> list[dict[str, Any]]:
@@ -673,6 +680,7 @@ def build_eval_cases() -> list[dict[str, Any]]:
 
         consent_assurance = 0.82 if "VERBAL_CONSENT" in noise else 1.0
         truly_eligible = _is_eligible(facts)
+        children_unknown = facts["children_under_18"]["state"] != "KNOWN"
 
         rows.append(
             {
@@ -682,7 +690,12 @@ def build_eval_cases() -> list[dict[str, Any]]:
                 "noise": noise,
                 "consent_assurance": consent_assurance,
                 "truly_eligible": truly_eligible,
-                "expected_amount_pkr": _amount(children) if truly_eligible else None,
+                # ADR-015: an unknown children count makes the amount undetermined,
+                # so no amount is asserted and the case must not auto-approve.
+                "children_unknown": children_unknown,
+                "expected_amount_pkr": (
+                    _amount(children) if truly_eligible and not children_unknown else None
+                ),
                 "facts": facts,
                 "notes": "synthetic case; noise injected independently of the eligibility truth",
             }

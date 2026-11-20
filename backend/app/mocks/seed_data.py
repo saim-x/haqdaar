@@ -297,6 +297,19 @@ SAHARA_RULES_V1: dict[str, Any] = {
             ask_en="Please take a clear photo of the front of your CNIC.",
             ask_ur="براہ کرم شناختی کارڈ کے سامنے والے حصے کی واضح تصویر لیں۔",
         ),
+        # ADR-015: the grant amount depends on the children count, so an UNKNOWN
+        # count must never clear every rule and auto-approve a provisional amount.
+        rule(
+            "R09_CHILDREN_KNOWN", "children_under_18", "gte", 0, on_fail="HUMAN", on_unknown="ASK",
+            label_en="Number of children under 18 must be known (it determines the grant amount)",
+            label_ur="18 سال سے کم عمر بچوں کی تعداد معلوم ہونا ضروری ہے (رقم کا حساب اس سے بنتا ہے)",
+            pass_en="Children count confirmed.",
+            pass_ur="بچوں کی تعداد کی تصدیق ہو گئی۔",
+            fail_en="Recorded children count is invalid; an officer will review.",
+            fail_ur="بچوں کی تعداد درست نہیں؛ افسر جائزہ لے گا۔",
+            ask_en="Please tell us how many children under 18 you have.",
+            ask_ur="براہ کرم بتائیں کہ 18 سال سے کم عمر بچے کتنے ہیں۔",
+        ),
     ],
     "benefit_formula": {
         "base_amount_pkr": 12000,
@@ -399,6 +412,19 @@ GUZARA_RULES_V1: dict[str, Any] = {
             fail_ur="شناختی کارڈ کی تصویر واضح نہیں یا مزید جانچ درکار ہے۔",
             ask_en="Please take a clear photo of the front of your CNIC.",
             ask_ur="براہ کرم شناختی کارڈ کے سامنے والے حصے کی واضح تصویر لیں۔",
+        ),
+        # ADR-015 mirror: Guzara pays a per-child supplement, so the count must be
+        # known before any automatic approval. Thresholds above are unchanged.
+        rule(
+            "R09_CHILDREN_KNOWN", "children_under_18", "gte", 0, on_fail="HUMAN", on_unknown="ASK",
+            label_en="Number of children under 18 must be known (it determines the allowance amount)",
+            label_ur="18 سال سے کم عمر بچوں کی تعداد معلوم ہونا ضروری ہے (وظیفے کا حساب اس سے بنتا ہے)",
+            pass_en="Children count confirmed.",
+            pass_ur="بچوں کی تعداد کی تصدیق ہو گئی۔",
+            fail_en="Recorded children count is invalid; an officer will review.",
+            fail_ur="بچوں کی تعداد درست نہیں؛ افسر جائزہ لے گا۔",
+            ask_en="Please tell us how many children under 18 you have.",
+            ask_ur="براہ کرم بتائیں کہ 18 سال سے کم عمر بچے کتنے ہیں۔",
         ),
     ],
     "benefit_formula": {

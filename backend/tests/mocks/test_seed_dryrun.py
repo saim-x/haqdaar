@@ -215,3 +215,97 @@ def test_showcase_ids_are_uuid5(seeded: tuple[dict[str, Any], _FakeSession]) -> 
     _, session = seeded
     for row in session.inserted["cases"]:
         assert isinstance(row["id"], uuid.UUID)
+
+
+# --------------------------------------------------------------------------- #
+# ADR-015: R09_CHILDREN_KNOWN — no auto-approval with a provisional amount
+# --------------------------------------------------------------------------- #
+def test_both_programs_carry_the_children_known_rule() -> None:
+    for ruleset in (sd.SAHARA_RULES_V1, sd.GUZARA_RULES_V1):
+        ids = [rule["id"] for rule in ruleset["eligibility_rules"]]
+        assert "R09_CHILDREN_KNOWN" in ids, ids
+        rule = next(r for r in ruleset["eligibility_rules"] if r["id"] == "R09_CHILDREN_KNOWN")
+        assert rule["fact"] == "children_under_18"
+        assert rule["op"] == "gte"
+        assert rule["value"] == 0
+        assert rule["on_fail"] == "HUMAN"
+        assert rule["on_unknown"] == "ASK"
+        assert rule["required_for_auto"] is True
+        assert rule["label_en"] and rule["label_ur"]
+        assert rule["ask_prompt_en"] and rule["ask_prompt_ur"]
+
+
+def test_seeded_rulesets_validate_against_the_engine_dsl() -> None:
+    from app.engine.rules_dsl import validate_rules_json
+
+    for ruleset in (sd.SAHARA_RULES_V1, sd.GUZARA_RULES_V1):
+        report = validate_rules_json(ruleset)
+        assert report.valid, report.errors
+
+
+def test_unknown_children_never_auto_approves() -> None:
+    """The whole point of ADR-015: UNKNOWN children routes ASK_MORE, then HUMAN."""
+    from app.engine.confidence import DocumentEvidence, DocumentStatus
+    from app.engine.facts import FactBundle
+    from app.engine.pipeline import evaluate_and_route
+    from app.engine.rules_dsl import RuleSetSchema
+
+    def bundle(children: int | None) -> FactBundle:
+        facts = sd.build_facts(
+            cnic_value=sd.cnic(1),
+            full_name="Fatima Bibi",
+            dob="1988-04-12",
+            district="Thatta",
+            income=28000,
+            children=children if children is not None else 0,
+            household_size=5,
+            poverty_score=22,
+            payout_phone="+923001234567",
+            spouse_name="Ghulam Rasool",
+            spouse_cnic=sd.cnic(2),
+            cnic_doc_verified=True,
+            death_cert_verified=True,
+        )
+        if children is None:
+            facts["children_under_18"] = sd.unknown()
+        return FactBundle(facts=sd.public_facts(facts))
+
+    docs = [
+        DocumentEvidence(doc_type="CNIC_FRONT", status=DocumentStatus.VERIFIED, verify_confidence=0.97),
+        DocumentEvidence(
+            doc_type="SPOUSE_DEATH_CERTIFICATE",
+            status=DocumentStatus.VERIFIED,
+            verify_confidence=0.96,
+        ),
+    ]
+
+    for ruleset in (sd.SAHARA_RULES_V1, sd.GUZARA_RULES_V1):
+        schema = RuleSetSchema.model_validate(ruleset)
+        first = evaluate_and_route(bundle(None), schema, identity_confidence=0.98, documents=docs)
+        assert first.route.action.value == "ASK_MORE"
+        assert first.evaluation.benefit.provisional is True
+
+        exhausted = evaluate_and_route(
+            bundle(None), schema, identity_confidence=0.98, documents=docs, ask_more_rounds=2
+        )
+        assert exhausted.route.action.value == "HUMAN_REVIEW"
+
+        known = evaluate_and_route(bundle(2), schema, identity_confidence=0.98, documents=docs)
+        assert known.route.action.value == "AUTO_APPROVE"
+        assert known.evaluation.benefit.provisional is False
+
+
+def test_eval_cases_include_unknown_children_with_honest_labels() -> None:
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "app" / "data" / "eval_cases.jsonl"
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+    unknown = [row for row in rows if row.get("children_unknown")]
+    assert len(unknown) >= 5, len(unknown)
+    # Ground-truth eligibility is unchanged by an unknown count, but no amount is
+    # asserted for those cases because the amount genuinely depends on the count.
+    assert any(row["truly_eligible"] for row in unknown)
+    assert all(row["expected_amount_pkr"] is None for row in unknown)
+    assert all(row["facts"]["children_under_18"]["state"] == "UNKNOWN" for row in unknown)
