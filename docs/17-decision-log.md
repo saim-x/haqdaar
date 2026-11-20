@@ -76,6 +76,11 @@
 - **Decision:** `backend/alembic/versions/` is BE-owned except exactly one mock-tables migration owned by DPI, whose `down_revision` is rebased onto BE's tip at merge time (coordinated by the Integration Lead).
 - **Rationale:** Parallel work with a single linear migration history and zero chain conflicts.
 
+## ADR-015: Mandatory Children-Count Rule (R09_CHILDREN_KNOWN) — Grant Never Auto-Approved with Provisional Amount
+- **Context:** Agent EN's M0 review (Fri 20 Nov, ~21:50 PKT) exposed a spec gap: Sahara v1's 8 rules never reference `children_under_18`, so a case with UNKNOWN children could clear every rule and AUTO_APPROVE paying the provisional base PKR 12,000 — finalizing a payment on an amount known to be incomplete, contrary to the "no silent guessing" principle (SP-3). (Docs/06 §2.4 correctly withheld the child bonus, but no routing constraint prevented payment.)
+- **Decision (Integration Lead, approved):** Add rule `R09_CHILDREN_KNOWN` (`fact: children_under_18`, `op: gte`, `value: 0`, `on_fail: HUMAN`, `on_unknown: ASK`, `required_for_auto: true`) to docs/06 §2.1 Sahara v1; DPI mirrors an equivalent children-known rule in the Guzara Allowance v1 seed. Any rule referencing a fact forces tri-state exposure: UNKNOWN children now routes ASK_MORE → (after 2 rounds) HUMAN_REVIEW — never AUTO_APPROVE. Provisional amounts remain visible to officers/AI notes only. Data-only fix using existing DSL semantics; zero engine or routing-order changes.
+- Also recorded from the EN review: (a) docs/04 §5 has 20 fact keys, not 19 — the agent briefs said 19; the 20th (`citizen_has_active_dept_consent`) is non-tri-state; (b) `CNIC_NOT_IN_REGISTRY` (named in docs/06 §5.2) is a 13th HIGH anomaly code missing from the §6 table — implemented as HIGH; (c) canonicalization maps `"Mst. Fatima Bibi"` vs `"Fatima Bibi"` to similarity 1.0 (→ identity 0.98 band), not 0.93 as the §3.2 example implied — accepted: variant spelling is logged transparently in provenance, Fatima's golden path still auto-approves, and the 0.70–0.84 band is exercised by non-canonical pairs (e.g., "Zainab Bibi" vs "Zubaida Bibi" ≈ 0.77); (d) identity resolution of the Fatima canonicalization quantity is surfaced in the rule trace so officers/auditors see the raw→canonical mapping.
+
 ---
 
 ## Change Control Protocol (During Hackathon)
