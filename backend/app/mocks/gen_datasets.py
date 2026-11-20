@@ -538,13 +538,13 @@ def _fact(value: Any, source: str, confidence: float, *, entered_by: str = "SYST
     }
 
 
-def _unknown(reason: str = "USER_UNKNOWN") -> dict[str, Any]:
+def _unknown(reason: str = "USER_UNKNOWN", *, entered_by: str = "CITIZEN") -> dict[str, Any]:
     return {
         "state": "UNKNOWN",
         "value": None,
         "source": None,
         "source_confidence": 0.0,
-        "entered_by": "CITIZEN",
+        "entered_by": entered_by,
         "alternatives": [],
         "conflict": False,
         "missing_reason": reason,
@@ -629,6 +629,15 @@ def build_eval_cases() -> list[dict[str, Any]]:
         if index % 21 == 0:
             noise.append("LOW_QUALITY_DOC")
 
+        # docs/06 §5.2 Case A "Not found": the identity registry holds no record for
+        # this CNIC. The evidence is recorded as UNKNOWN identity facts — never a
+        # guessed name and never a fabricated "alive" — so EN derives
+        # CNIC_NOT_IN_REGISTRY (HIGH) from the absence rather than from a label.
+        # No RNG is consumed here, so the other cases stay byte-identical.
+        registry_miss = index % 31 == 6
+        if registry_miss:
+            noise.append("REGISTRY_MISS")
+
         # A slice of cases is genuinely ineligible on the merits.
         if index % 6 == 3:
             income = rng.choice([44000, 48000, 55000, 62000])
@@ -663,6 +672,18 @@ def build_eval_cases() -> list[dict[str, Any]]:
             "death_cert_doc_verified": _fact(spouse_verified, "DOCUMENT_VERIFIER", 0.93),
             "citizen_has_active_dept_consent": _fact(True, "CONSENT_ENGINE", 1.0),
         }
+
+        if registry_miss:
+            # NOT_PROVIDED is the frozen MissingReason that fits: the registry was
+            # reachable and simply returned no record. The citizen did supply the
+            # CNIC, so USER_UNKNOWN would misattribute the gap.
+            for key in (
+                "applicant_full_name",
+                "applicant_dob",
+                "applicant_age_years",
+                "applicant_is_alive",
+            ):
+                facts[key] = _unknown("NOT_PROVIDED", entered_by="SYSTEM")
 
         if "INCOME_CONFLICT" in noise:
             declared = max(8000, income - rng.choice([8000, 12000, 16000]))
@@ -701,6 +722,12 @@ def build_eval_cases() -> list[dict[str, Any]]:
                 "notes": "synthetic case; noise injected independently of the eligibility truth",
             }
         )
+        if registry_miss:
+            # Only the miss slice carries an explicit identity confidence: the
+            # absence of a registry record is the whole point of the case, and
+            # docs/06 §5.2 Case A scores NO MATCH at 0.25.
+            rows[-1]["identity_confidence"] = 0.25
+            rows[-1]["registry_not_found"] = True
 
     return rows
 
