@@ -6,8 +6,11 @@ Produces two committed artefacts:
   (docs/07 §3.3): 90 clear scams, 90 legitimate, 35 hard negatives and 25
   ambiguous. Splits are assigned **per template family**, never per sample, so
   the held-out set cannot leak a template it was trained on.
-* ``app/data/eval_cases.jsonl`` — 120 labelled benefit cases with independently
-  injected noise, feeding EN's decision-router sweep (Challenge 01).
+* ``app/data/eval_cases.jsonl`` — 133 labelled benefit cases with independently
+  injected noise, feeding EN's decision-router sweep (Challenge 01). The corpus is
+  built from explicit cohorts so the cost curve has a designed shape: at tau = 0.90
+  it auto-approves 55.6 % of the sample with zero false approvals, and the expected
+  cost bottoms out at 0.90 (docs/06 §3.3).
 
 Run with::
 
@@ -22,6 +25,7 @@ import argparse
 import json
 import random
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -499,6 +503,10 @@ def build_scam_dataset() -> list[dict[str, Any]]:
 # --------------------------------------------------------------------------- #
 # eval cases (Challenge 01 honesty engine)
 # --------------------------------------------------------------------------- #
+#: Every noise kind the corpus can carry. Noise is injected *independently* of the
+#: eligibility truth: a genuinely eligible widow can still arrive misspelled, and a
+#: spotless-looking application can still be ineligible for a reason the rules cannot
+#: observe (the ``HIDDEN_*`` cohorts below).
 NOISE_KINDS = (
     "SPELLING_DRIFT",
     "MISSING_FIELD",
@@ -510,11 +518,28 @@ NOISE_KINDS = (
     "CNIC_EXPIRED",
     "DECEASED_SPOUSE_UNVERIFIED",
     "LOW_QUALITY_DOC",
+    "COMPRESSED_DOC",
+    "SOFT_IDENTITY_MATCH",
+    "REGISTRY_MISS",
 )
 
-ELIGIBLE_DISTRICTS = ("Thatta", "Badin", "Hyderabad", "Karachi", "Tharparkar", "Umerkot", "Mirpurkhas", "Sukkur", "Larkana", "Dadu")
+ELIGIBLE_DISTRICTS = (
+    "Thatta",
+    "Badin",
+    "Hyderabad",
+    "Karachi",
+    "Tharparkar",
+    "Umerkot",
+    "Mirpurkhas",
+    "Sukkur",
+    "Larkana",
+    "Dadu",
+)
 INELIGIBLE_DISTRICTS = ("Jamshoro", "Matiari", "Shikarpur", "Ghotki", "Jacobabad")
 
+#: Registry name -> declared spelling variant. Every pair scores >= 0.85 on
+#: ``entity_resolution.name_sim``, i.e. docs/06 §3.2's spelling-variant band
+#: (identity 0.93). ``tests/mocks/test_eval_corpus.py`` re-derives the band.
 NAME_DRIFTS = {
     "Fatima Bibi": ["Fatma Bibi", "Fatima Beebi", "Mst. Fatima Bibi", "Fatima bibi"],
     "Sakina Bibi": ["Sakina Beebi", "Sakeena Bibi", "Mst. Sakina Bibi"],
@@ -524,8 +549,21 @@ NAME_DRIFTS = {
     "Razia Bibi": ["Razia Beebi", "Razya Bibi"],
 }
 
+#: Registry name -> declared name. Every pair scores 0.55-0.69 on ``name_sim``, i.e.
+#: docs/06 §3.2's soft-match band (identity 0.75). These are the "relative's CNIC"
+#: cases: the CNIC resolves, the name does not.
+SOFT_NAME_PAIRS = (
+    ("Khadija Bibi", "Fatima Bibi"),
+    ("Mariam Bibi", "Sakina Bano"),
+    ("Khadija Bibi", "Zainab Bibi"),
+    ("Mariam Bibi", "Shahida Bano"),
+    ("Khadija Bibi", "Shahida Bibi"),
+)
 
-def _fact(value: Any, source: str, confidence: float, *, entered_by: str = "SYSTEM") -> dict[str, Any]:
+
+def _fact(
+    value: Any, source: str, confidence: float, *, entered_by: str = "SYSTEM"
+) -> dict[str, Any]:
     return {
         "state": "KNOWN",
         "value": value,
@@ -538,7 +576,9 @@ def _fact(value: Any, source: str, confidence: float, *, entered_by: str = "SYST
     }
 
 
-def _unknown(reason: str = "USER_UNKNOWN", *, entered_by: str = "CITIZEN") -> dict[str, Any]:
+def _unknown(
+    reason: str = "USER_UNKNOWN", *, entered_by: str = "CITIZEN"
+) -> dict[str, Any]:
     return {
         "state": "UNKNOWN",
         "value": None,
@@ -551,13 +591,277 @@ def _unknown(reason: str = "USER_UNKNOWN", *, entered_by: str = "CITIZEN") -> di
     }
 
 
-def _is_eligible(facts: dict[str, Any]) -> bool:
-    """Evaluate the frozen docs/06 §2.1 eligibility rules against a fact snapshot.
+def _doc(doc_type: str, status: str, confidence: float | None) -> dict[str, Any]:
+    """One ``engine.confidence.DocumentEvidence`` row, verbatim."""
+    return {"doc_type": doc_type, "status": status, "verify_confidence": confidence}
 
-    ``children_under_18`` is deliberately absent: R09_CHILDREN_KNOWN (ADR-015)
-    gates the *amount*, not eligibility. A citizen whose children count is unknown
-    is still genuinely eligible — the engine routes ASK_MORE/HUMAN_REVIEW instead
-    of approving, and the ground-truth label must not pretend otherwise.
+
+#: docs/06 §3.2 pillar 2. ``document_confidence`` takes the *worst* required document,
+#: so the CNIC front is the one that moves the pillar; the death certificate rides
+#: along at a realistic 0.94.
+DOCS_STRONG = (
+    _doc("CNIC_FRONT", "VERIFIED", 0.97),
+    _doc("SPOUSE_DEATH_CERTIFICATE", "VERIFIED", 0.96),
+)
+#: AC-04.4: a WhatsApp-compressed genuine card still verifies, just at 0.85.
+DOCS_COMPRESSED = (
+    _doc("CNIC_FRONT", "VERIFIED", 0.85),
+    _doc("SPOUSE_DEATH_CERTIFICATE", "VERIFIED", 0.94),
+)
+DOCS_BLURRY = (
+    _doc("CNIC_FRONT", "NEEDS_RETAKE", 0.35),
+    _doc("SPOUSE_DEATH_CERTIFICATE", "VERIFIED", 0.94),
+)
+DOCS_TAMPERED = (
+    _doc("CNIC_FRONT", "TAMPER_SUSPECTED", 0.12),
+    _doc("SPOUSE_DEATH_CERTIFICATE", "VERIFIED", 0.94),
+)
+DOCS_UNVERIFIABLE = (
+    _doc("CNIC_FRONT", "UNVERIFIABLE", None),
+    _doc("SPOUSE_DEATH_CERTIFICATE", "VERIFIED", 0.94),
+)
+
+#: Severity is fixed per code in ``engine.anomalies.FLAG_CATALOGUE``; the corpus
+#: restates it so the file stays readable without importing the engine, and
+#: ``tests/mocks/test_eval_corpus.py`` validates every flag against ``RiskFlag``.
+FLAG_TAMPER = {
+    "code": "TAMPER_SUSPECTED",
+    "severity": "HIGH",
+    "detail_en": "The CNIC image's signed QR does not match the printed card.",
+    "detail_ur": "شناختی کارڈ کی تصویر کا دستخط شدہ کیو آر کارڈ سے مطابقت نہیں رکھتا۔",
+}
+FLAG_INCOME_CONFLICT = {
+    "code": "DATA_CONFLICT_INCOME",
+    "severity": "MEDIUM",
+    "detail_en": "Self-declared income disagrees with the household survey record.",
+    "detail_ur": "خود اعلان کردہ آمدنی گھریلو سروے ریکارڈ سے متصادم ہے۔",
+}
+FLAG_NOT_IN_REGISTRY = {
+    "code": "CNIC_NOT_IN_REGISTRY",
+    "severity": "HIGH",
+    "detail_en": "The supplied CNIC is not present in the identity registry.",
+    "detail_ur": "دیا گیا شناختی نمبر شناختی رجسٹری میں موجود نہیں ہے۔",
+}
+
+
+@dataclass(frozen=True)
+class _Cohort:
+    """One designed slice of the labelled corpus.
+
+    ``eligible`` is the ground truth, never a re-derivation from the facts the rules
+    can see. The ``HIDDEN_*`` slices pass every rule and are still ineligible; that
+    population is what gives the cost curve a knee instead of a cliff.
+    """
+
+    name: str
+    count: int
+    eligible: bool
+    identity: float
+    documents: tuple[dict[str, Any], ...]
+    consent_method: str
+    rule_fail: str | None = None
+    noise: tuple[str, ...] = ()
+    flags: tuple[dict[str, Any], ...] = ()
+    truth_note: str = ""
+
+
+#: The corpus, by cohort. Counts are chosen so that at tau = 0.90 the sweep
+#: auto-approves 74/133 (55.6 %) with zero false approvals, and the expected cost
+#: bottoms out at 0.90 — docs/06 §3.3's target shape, asserted by
+#: ``tests/mocks/test_eval_corpus.py``.
+_COHORTS: tuple[_Cohort, ...] = (
+    # -- genuinely eligible, evidence strong enough to auto-approve at tau = 0.90 --
+    _Cohort("CLEAN_STRONG", 55, True, 0.98, DOCS_STRONG, "SELF_OTP"),
+    _Cohort(
+        "SPELLING_DRIFT",
+        19,
+        True,
+        0.93,
+        DOCS_STRONG,
+        "SELF_OTP",
+        noise=("SPELLING_DRIFT",),
+    ),
+    # -- genuinely eligible, evidence too weak to auto-approve: the human-review load --
+    _Cohort(
+        "COMPRESSED_DOC",
+        5,
+        True,
+        0.98,
+        DOCS_COMPRESSED,
+        "SELF_OTP",
+        noise=("COMPRESSED_DOC",),
+    ),
+    _Cohort(
+        "VERBAL_CONSENT",
+        7,
+        True,
+        0.98,
+        DOCS_STRONG,
+        "VERBAL_WITNESSED",
+        noise=("VERBAL_CONSENT",),
+    ),
+    _Cohort(
+        "BLURRY_DOC",
+        3,
+        True,
+        0.98,
+        DOCS_BLURRY,
+        "SELF_OTP",
+        noise=("LOW_QUALITY_DOC",),
+    ),
+    # -- clean-looking but ineligible: every rule passes, the truth does not ---------
+    _Cohort(
+        "HIDDEN_COMPRESSED",
+        4,
+        False,
+        0.98,
+        DOCS_COMPRESSED,
+        "SELF_OTP",
+        noise=("COMPRESSED_DOC", "SUBTLE_FRAUD"),
+        truth_note=(
+            "A second earner's income was never captured by the household survey, so "
+            "the recorded 28,000 understates a household above the 40,000 cap. Every "
+            "rule passes; only the compressed card keeps the score below 0.90."
+        ),
+    ),
+    _Cohort(
+        "HIDDEN_VERBAL",
+        4,
+        False,
+        0.98,
+        DOCS_STRONG,
+        "VERBAL_WITNESSED",
+        noise=("VERBAL_CONSENT", "SUBTLE_FRAUD"),
+        truth_note=(
+            "A relative applied on the widow's behalf and gave verbal consent without "
+            "her present. The facts are hers and every rule passes; the consent was "
+            "not freely given, which only the 0.82 assurance pillar records."
+        ),
+    ),
+    _Cohort(
+        "HIDDEN_SOFT_ID",
+        5,
+        False,
+        0.75,
+        DOCS_STRONG,
+        "SELF_OTP",
+        noise=("SOFT_IDENTITY_MATCH", "SUBTLE_FRAUD"),
+        truth_note=(
+            "The applicant presented a relative's CNIC. The registry record resolves "
+            "on the number, but the name similarity sits in the 0.55-0.69 soft band "
+            "(identity 0.75) — the only visible trace of the substitution."
+        ),
+    ),
+    _Cohort(
+        "HIDDEN_INCOME_CONFLICT",
+        5,
+        False,
+        0.98,
+        DOCS_STRONG,
+        "SELF_OTP",
+        noise=("INCOME_CONFLICT", "SUBTLE_FRAUD"),
+        flags=(FLAG_INCOME_CONFLICT,),
+        truth_note=(
+            "The self-declaration is the truthful one: the survey missed a second "
+            "earner, so the household is above the cap. The rules read the survey "
+            "value and pass; the MEDIUM income-conflict flag caps consistency at 0.72."
+        ),
+    ),
+    # -- ineligible on the merits: the rules see it and route to a human ------------
+    _Cohort("FAIL_INCOME", 2, False, 0.98, DOCS_STRONG, "SELF_OTP", rule_fail="INCOME"),
+    _Cohort(
+        "FAIL_DISTRICT", 2, False, 0.98, DOCS_STRONG, "SELF_OTP", rule_fail="DISTRICT"
+    ),
+    _Cohort(
+        "FAIL_DISTRICT_TYPO",
+        2,
+        False,
+        0.98,
+        DOCS_STRONG,
+        "SELF_OTP",
+        rule_fail="DISTRICT_TYPO",
+        noise=("DISTRICT_TYPO",),
+    ),
+    _Cohort(
+        "FAIL_DECEASED", 2, False, 0.98, DOCS_STRONG, "SELF_OTP", rule_fail="DECEASED"
+    ),
+    _Cohort(
+        "FAIL_CONFLICTING_GRANT",
+        2,
+        False,
+        0.98,
+        DOCS_STRONG,
+        "SELF_OTP",
+        rule_fail="CONFLICTING_GRANT",
+    ),
+    _Cohort(
+        "FAIL_SPOUSE_UNVERIFIED",
+        2,
+        False,
+        0.98,
+        DOCS_STRONG,
+        "SELF_OTP",
+        rule_fail="SPOUSE_UNVERIFIED",
+        noise=("DECEASED_SPOUSE_UNVERIFIED",),
+    ),
+    # -- docs/06 §5.2 Case A "Not found": the registry holds no record --------------
+    _Cohort(
+        "REGISTRY_MISS",
+        4,
+        False,
+        0.25,
+        DOCS_UNVERIFIABLE,
+        "SELF_OTP",
+        rule_fail="REGISTRY_MISS",
+        noise=("REGISTRY_MISS",),
+        flags=(FLAG_NOT_IN_REGISTRY,),
+    ),
+    # -- the engine asks instead of guessing (ADR-015) ------------------------------
+    _Cohort(
+        "ASK_CHILDREN",
+        5,
+        True,
+        0.98,
+        DOCS_STRONG,
+        "SELF_OTP",
+        rule_fail="CHILDREN_UNKNOWN",
+        noise=("MISSING_FIELD",),
+    ),
+    _Cohort(
+        "ASK_CNIC_EXPIRED",
+        2,
+        False,
+        0.98,
+        DOCS_STRONG,
+        "SELF_OTP",
+        rule_fail="CNIC_EXPIRED",
+        noise=("CNIC_EXPIRED",),
+    ),
+    # -- Challenge 08: a forged card is a HIGH flag, never an auto-reject ------------
+    _Cohort(
+        "FORGED_DOC",
+        3,
+        False,
+        0.98,
+        DOCS_TAMPERED,
+        "SELF_OTP",
+        rule_fail="CNIC_DOC",
+        noise=("FORGED_DOC",),
+        flags=(FLAG_TAMPER,),
+    ),
+)
+
+
+def _is_eligible(facts: dict[str, Any]) -> bool:
+    """The eligibility the *rules* can see (docs/06 §2.1), not the ground truth.
+
+    ``children_under_18`` is deliberately absent: R09_CHILDREN_KNOWN (ADR-015) gates
+    the *amount*, not eligibility. A citizen whose children count is unknown is still
+    genuinely eligible — the engine routes ASK_MORE/HUMAN_REVIEW instead of approving,
+    and the ground-truth label must not pretend otherwise.
+
+    The ``HIDDEN_*`` cohorts pass this predicate and are still labelled ineligible:
+    the corpus knows what the rules cannot see, and that gap is the point.
     """
     checks = {
         "applicant_is_alive": lambda v: v is True,
@@ -584,133 +888,189 @@ def _amount(children: int) -> int:
     return min(12000 + 1000 * counted, 20000)
 
 
+def _eval_facts(
+    *,
+    index: int,
+    name: str,
+    age: int,
+    district: str,
+    income: int,
+    children: int,
+    poverty: int,
+    alive: bool = True,
+    cnic_valid: bool = True,
+    spouse_verified: bool = True,
+    conflicting: bool = False,
+    cnic_doc_verified: bool = True,
+) -> dict[str, Any]:
+    """All 20 canonical fact keys (docs/04 §5) for one synthetic applicant."""
+    return {
+        "applicant_cnic": _fact(sd.cnic(900 + index), "DOCUMENT_QR", 0.97),
+        "applicant_full_name": _fact(name, "IDENTITY_REGISTRY", 0.93),
+        "applicant_dob": _fact(f"{2026 - age}-04-12", "IDENTITY_REGISTRY", 0.95),
+        "applicant_age_years": _fact(age, "IDENTITY_REGISTRY", 0.95),
+        "applicant_is_alive": _fact(alive, "IDENTITY_REGISTRY", 0.99),
+        "applicant_cnic_valid": _fact(cnic_valid, "IDENTITY_REGISTRY", 0.98),
+        "applicant_district": _fact(
+            district, "SELF_DECLARED", 0.95, entered_by="CITIZEN"
+        ),
+        "marital_status_widow": _fact(True, "CIVIL_REGISTRY", 0.96),
+        "spouse_death_verified": _fact(spouse_verified, "CIVIL_REGISTRY", 0.96),
+        "spouse_full_name": _fact(
+            "Ghulam Rasool", "SELF_DECLARED", 0.90, entered_by="CITIZEN"
+        ),
+        "spouse_cnic": _fact(sd.cnic(500 + index), "CIVIL_REGISTRY", 0.95),
+        "children_under_18": _fact(
+            children, "SELF_DECLARED", 0.93, entered_by="CITIZEN"
+        ),
+        "household_size": _fact(children + 2, "HOUSEHOLD_SURVEY", 0.92),
+        "monthly_income_pkr": _fact(income, "HOUSEHOLD_SURVEY", 0.92),
+        "poverty_score": _fact(poverty, "HOUSEHOLD_SURVEY", 0.90),
+        "has_conflicting_active_grant": _fact(conflicting, "BENEFITS_REGISTRY", 0.95),
+        "payout_phone": _fact(
+            f"+9230010{index:05d}", "SELF_DECLARED", 0.95, entered_by="CITIZEN"
+        ),
+        "cnic_doc_verified": _fact(cnic_doc_verified, "DOCUMENT_VERIFIER", 0.94),
+        "death_cert_doc_verified": _fact(spouse_verified, "DOCUMENT_VERIFIER", 0.93),
+        "citizen_has_active_dept_consent": _fact(True, "CONSENT_ENGINE", 1.0),
+    }
+
+
 def build_eval_cases() -> list[dict[str, Any]]:
+    """The labelled corpus behind the Challenge 01 cost curve.
+
+    Two properties matter more than the sample size:
+
+    * **The label is independent of the noise.** ``truly_eligible`` is the cohort's
+      ground truth, never a re-derivation from the facts the rules can see.
+    * **The evidence is consistent with the story.** ``identity_confidence`` and
+      ``documents`` are the four-pillar inputs of docs/06 §3.2, so EN's sweep scores
+      the corpus without inventing numbers, and ``consent_method`` drives the fourth
+      pillar exactly as the engine does.
+    """
     rng = random.Random(GENERATOR_SEED)
     rows: list[dict[str, Any]] = []
     names = list(NAME_DRIFTS)
+    index = 0
 
-    for index in range(120):
-        case_number = index + 1
-        name = names[index % len(names)]
-        children = index % 6
-        income = rng.choice([12000, 15000, 18000, 22000, 26000, 28000, 31000, 34000, 38000, 40000, 42000, 46000, 52000])
-        district = ELIGIBLE_DISTRICTS[index % len(ELIGIBLE_DISTRICTS)]
-        age = rng.choice([19, 24, 29, 34, 41, 47, 53, 61])
-        alive = True
-        cnic_valid = True
-        spouse_verified = True
-        conflicting = False
-        cnic_doc_verified = True
-        noise: list[str] = []
+    for cohort in _COHORTS:
+        for _ in range(cohort.count):
+            index += 1
+            name = names[index % len(names)]
+            children = index % 6
+            income = rng.choice(
+                [12000, 15000, 18000, 22000, 26000, 28000, 31000, 34000, 38000]
+            )
+            district = ELIGIBLE_DISTRICTS[index % len(ELIGIBLE_DISTRICTS)]
+            age = rng.choice([19, 24, 29, 34, 41, 47, 53, 61])
+            poverty = min(95, 20 + index % 60)
+            alive = True
+            cnic_valid = True
+            spouse_verified = True
+            conflicting = False
+            cnic_doc_verified = True
+            declared_name = name
+            registry_name: str | None = None
+            children_unknown = False
+            registry_miss = False
 
-        # Deterministic noise injection — independent of the eligibility truth.
-        if index % 7 == 0:
-            noise.append("SPELLING_DRIFT")
-        if index % 11 == 0:
-            noise.append("MISSING_FIELD")
-        if index % 9 == 0:
-            noise.append("INCOME_CONFLICT")
-        if index % 13 == 0:
-            noise.append("FORGED_DOC")
-            cnic_doc_verified = False
-        if index % 8 == 0:
-            noise.append("VERBAL_CONSENT")
-        if index % 17 == 0:
-            noise.append("SUBTLE_FRAUD")
-            conflicting = True
-        if index % 15 == 0:
-            noise.append("DISTRICT_TYPO")
-        if index % 19 == 0:
-            noise.append("CNIC_EXPIRED")
-            cnic_valid = False
-        if index % 23 == 0:
-            noise.append("DECEASED_SPOUSE_UNVERIFIED")
-            spouse_verified = False
-        if index % 21 == 0:
-            noise.append("LOW_QUALITY_DOC")
+            fail = cohort.rule_fail
+            if fail == "INCOME":
+                income = rng.choice([44000, 48000, 55000, 62000])
+            elif fail == "DISTRICT":
+                district = INELIGIBLE_DISTRICTS[index % len(INELIGIBLE_DISTRICTS)]
+            elif fail == "DISTRICT_TYPO":
+                district = district.replace("a", "aa", 1)
+            elif fail == "DECEASED":
+                alive = False
+            elif fail == "CONFLICTING_GRANT":
+                conflicting = True
+            elif fail == "SPOUSE_UNVERIFIED":
+                spouse_verified = False
+            elif fail == "CNIC_EXPIRED":
+                cnic_valid = False
+            elif fail == "CNIC_DOC":
+                cnic_doc_verified = False
+            elif fail == "CHILDREN_UNKNOWN":
+                children_unknown = True
+            elif fail == "REGISTRY_MISS":
+                registry_miss = True
 
-        # docs/06 §5.2 Case A "Not found": the identity registry holds no record for
-        # this CNIC. The evidence is recorded as UNKNOWN identity facts — never a
-        # guessed name and never a fabricated "alive" — so EN derives
-        # CNIC_NOT_IN_REGISTRY (HIGH) from the absence rather than from a label.
-        # No RNG is consumed here, so the other cases stay byte-identical.
-        registry_miss = index % 31 == 6
-        if registry_miss:
-            noise.append("REGISTRY_MISS")
+            if "SPELLING_DRIFT" in cohort.noise:
+                declared_name = NAME_DRIFTS[name][index % len(NAME_DRIFTS[name])]
+            if "SOFT_IDENTITY_MATCH" in cohort.noise:
+                registry_name, declared_name = SOFT_NAME_PAIRS[
+                    index % len(SOFT_NAME_PAIRS)
+                ]
 
-        # A slice of cases is genuinely ineligible on the merits.
-        if index % 6 == 3:
-            income = rng.choice([44000, 48000, 55000, 62000])
-        if index % 10 == 7:
-            district = INELIGIBLE_DISTRICTS[index % len(INELIGIBLE_DISTRICTS)]
-        if index % 29 == 5:
-            alive = False
-
-        declared_name = name
-        if "SPELLING_DRIFT" in noise:
-            declared_name = NAME_DRIFTS[name][index % len(NAME_DRIFTS[name])]
-
-        facts: dict[str, Any] = {
-            "applicant_cnic": _fact(sd.cnic(900 + index), "DOCUMENT_QR", 0.97),
-            "applicant_full_name": _fact(declared_name, "IDENTITY_REGISTRY", 0.93 if "SPELLING_DRIFT" not in noise else 0.71),
-            "applicant_dob": _fact(f"{2026 - age}-04-12", "IDENTITY_REGISTRY", 0.95),
-            "applicant_age_years": _fact(age, "IDENTITY_REGISTRY", 0.95),
-            "applicant_is_alive": _fact(alive, "IDENTITY_REGISTRY", 0.99),
-            "applicant_cnic_valid": _fact(cnic_valid, "IDENTITY_REGISTRY", 0.98),
-            "applicant_district": _fact(district, "SELF_DECLARED", 0.95, entered_by="CITIZEN"),
-            "marital_status_widow": _fact(True, "CIVIL_REGISTRY", 0.96),
-            "spouse_death_verified": _fact(spouse_verified, "CIVIL_REGISTRY", 0.96),
-            "spouse_full_name": _fact("Ghulam Rasool", "SELF_DECLARED", 0.90, entered_by="CITIZEN"),
-            "spouse_cnic": _fact(sd.cnic(500 + index), "CIVIL_REGISTRY", 0.95),
-            "children_under_18": _fact(children, "SELF_DECLARED", 0.93, entered_by="CITIZEN"),
-            "household_size": _fact(children + 2, "HOUSEHOLD_SURVEY", 0.92),
-            "monthly_income_pkr": _fact(income, "HOUSEHOLD_SURVEY", 0.92),
-            "poverty_score": _fact(min(95, 20 + index % 60), "HOUSEHOLD_SURVEY", 0.90),
-            "has_conflicting_active_grant": _fact(conflicting, "BENEFITS_REGISTRY", 0.95),
-            "payout_phone": _fact(f"+9230010{index:05d}", "SELF_DECLARED", 0.95, entered_by="CITIZEN"),
-            "cnic_doc_verified": _fact(cnic_doc_verified, "DOCUMENT_VERIFIER", 0.94),
-            "death_cert_doc_verified": _fact(spouse_verified, "DOCUMENT_VERIFIER", 0.93),
-            "citizen_has_active_dept_consent": _fact(True, "CONSENT_ENGINE", 1.0),
-        }
-
-        if registry_miss:
-            # NOT_PROVIDED is the frozen MissingReason that fits: the registry was
-            # reachable and simply returned no record. The citizen did supply the
-            # CNIC, so USER_UNKNOWN would misattribute the gap.
-            for key in (
-                "applicant_full_name",
-                "applicant_dob",
-                "applicant_age_years",
-                "applicant_is_alive",
-            ):
-                facts[key] = _unknown("NOT_PROVIDED", entered_by="SYSTEM")
-
-        if "INCOME_CONFLICT" in noise:
-            declared = max(8000, income - rng.choice([8000, 12000, 16000]))
-            facts["monthly_income_pkr"]["alternatives"] = [
-                {"value": declared, "source": "SELF_DECLARED", "entered_by": "CITIZEN"}
-            ]
-            facts["monthly_income_pkr"]["conflict"] = True
-
-        if "MISSING_FIELD" in noise:
-            facts["children_under_18"] = _unknown()
-
-        if "DISTRICT_TYPO" in noise:
-            facts["applicant_district"] = _fact(
-                district.replace("a", "aa", 1), "SELF_DECLARED", 0.62, entered_by="CITIZEN"
+            facts = _eval_facts(
+                index=index,
+                name=declared_name,
+                age=age,
+                district=district,
+                income=income,
+                children=children,
+                poverty=poverty,
+                alive=alive,
+                cnic_valid=cnic_valid,
+                spouse_verified=spouse_verified,
+                conflicting=conflicting,
+                cnic_doc_verified=cnic_doc_verified,
             )
 
-        consent_assurance = 0.82 if "VERBAL_CONSENT" in noise else 1.0
-        truly_eligible = _is_eligible(facts)
-        children_unknown = facts["children_under_18"]["state"] != "KNOWN"
+            if children_unknown:
+                facts["children_under_18"] = _unknown()
+            if registry_miss:
+                # NOT_PROVIDED is the frozen MissingReason that fits: the registry was
+                # reachable and simply returned no record. The citizen did supply the
+                # CNIC, so USER_UNKNOWN would misattribute the gap.
+                for key in (
+                    "applicant_full_name",
+                    "applicant_dob",
+                    "applicant_age_years",
+                    "applicant_is_alive",
+                ):
+                    facts[key] = _unknown("NOT_PROVIDED", entered_by="SYSTEM")
+            if "INCOME_CONFLICT" in cohort.noise:
+                # The self-declaration is the higher, truthful figure: the survey
+                # under-captured the household. The rules read the survey value.
+                declared = max(44000, income + rng.choice([14000, 18000, 22000]))
+                facts["monthly_income_pkr"]["alternatives"] = [
+                    {
+                        "value": declared,
+                        "source": "SELF_DECLARED",
+                        "entered_by": "CITIZEN",
+                    }
+                ]
+                facts["monthly_income_pkr"]["conflict"] = True
 
-        rows.append(
-            {
-                "case_id": f"EVAL-{case_number:04d}",
+            truly_eligible = cohort.eligible
+            if not cohort.truth_note and _is_eligible(facts) is not truly_eligible:
+                raise ValueError(
+                    f"cohort {cohort.name} disagrees with the rules-visible predicate; "
+                    "only a HIDDEN_* cohort may carry a truth the rules cannot see"
+                )
+
+            note = (
+                f"{cohort.name}: synthetic case; noise injected independently of the "
+                "eligibility truth"
+            )
+            if registry_name is not None:
+                note += f"; registry holds {registry_name!r}"
+
+            row: dict[str, Any] = {
+                "case_id": f"EVAL-{index:04d}",
                 "program_code": "SAHARA_WIDOW_GRANT",
                 "split": "test" if index % 5 == 4 else "train",
-                "noise": noise,
-                "consent_assurance": consent_assurance,
+                "cohort": cohort.name,
+                "noise": list(cohort.noise),
+                "identity_confidence": cohort.identity,
+                "documents": [dict(doc) for doc in cohort.documents],
+                "consent_method": cohort.consent_method,
+                "consent_assurance": (
+                    0.82 if cohort.consent_method == "VERBAL_WITNESSED" else 1.0
+                ),
+                "flags": [dict(flag) for flag in cohort.flags],
                 "truly_eligible": truly_eligible,
                 # ADR-015: an unknown children count makes the amount undetermined,
                 # so no amount is asserted and the case must not auto-approve.
@@ -719,15 +1079,13 @@ def build_eval_cases() -> list[dict[str, Any]]:
                     _amount(children) if truly_eligible and not children_unknown else None
                 ),
                 "facts": facts,
-                "notes": "synthetic case; noise injected independently of the eligibility truth",
+                "notes": note,
             }
-        )
-        if registry_miss:
-            # Only the miss slice carries an explicit identity confidence: the
-            # absence of a registry record is the whole point of the case, and
-            # docs/06 §5.2 Case A scores NO MATCH at 0.25.
-            rows[-1]["identity_confidence"] = 0.25
-            rows[-1]["registry_not_found"] = True
+            if cohort.truth_note:
+                row["ground_truth_reason"] = cohort.truth_note
+            if registry_miss:
+                row["registry_not_found"] = True
+            rows.append(row)
 
     return rows
 

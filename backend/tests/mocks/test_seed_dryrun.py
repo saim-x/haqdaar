@@ -393,5 +393,5 @@ def test_eval_cases_include_a_registry_miss_slice() -> None:
             assert fact["entered_by"] == "SYSTEM", key
 
     # The slice must not swallow the rest of the corpus.
-    assert len(rows) == 120
+    assert len(rows) == 133
     assert sum(1 for row in rows if row["truly_eligible"]) >= 40
