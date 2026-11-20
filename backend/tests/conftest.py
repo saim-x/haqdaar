@@ -36,7 +36,11 @@ os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("RUN_EMBEDDED_WORKER", "false")
 os.environ.setdefault("JWT_SECRET", "test-secret-not-a-real-key")
-os.environ.setdefault("QR_HMAC_SECRET", "test-qr-secret-not-a-real-key")
+# The committed specimen cards under app/data/doc_eval_set and app/data/demo_docs
+# are static artifacts whose QR payloads were signed with the dev default. Using a
+# different secret here makes every genuine card fail its HMAC check and come back
+# TAMPER_SUSPECTED, which is a false accusation, not a test failure worth having.
+os.environ.setdefault("QR_HMAC_SECRET", "dev-qr-secret-change-me")
 os.environ.setdefault("UPLOAD_DIR", str(BACKEND_DIR / ".pytest-uploads"))
 
 PERSONA_KEYS: tuple[str, ...] = (
