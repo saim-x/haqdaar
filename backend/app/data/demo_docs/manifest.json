@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-11-20T15:59:28.246860+00:00",
+  "watermark": "MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT",
+  "generator_seed": 20261120,
+  "count": 7,
+  "files": [
+    {
+      "file": "fatima_cnic_genuine.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "e845b3425e53c71d21012e788938d5fd7259538e39f4d62a9ffafb207fee3101",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "raw_text": null,
+      "notes": "Clean specimen card; signed QR matches printed text."
+    },
+    {
+      "file": "fatima_cnic_whatsapp_compressed.jpg",
+      "label": "GENUINE_COMPRESSED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "VERIFIED",
+      "sha256": "49e21eefa60b0b0fb2abbf9dc70450d99de9c41dbb197527c04f4aa33cfa4858",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "raw_text": null,
+      "notes": "Rotated 3°, JPEG q45, mild noise — must stay VERIFIED (0% false tamper)."
+    },
+    {
+      "file": "fatima_cnic_blurry.jpg",
+      "label": "BLURRY",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "NEEDS_RETAKE",
+      "sha256": "accc2c1a08cdc8e5a356f7a923f3050ca2b7da1bb055aeab9b7a83e3c8dc9e1f",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "raw_text": null,
+      "notes": "Gaussian blur; Laplacian variance 1.1 (< 65.0)."
+    },
+    {
+      "file": "fatima_cnic_forged_name.jpg",
+      "label": "FORGED",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "TAMPER_SUSPECTED",
+      "sha256": "31d55e2221549d53c2abd2704c6f4fc2b425b8579ddfe9fa44cfba299964839e",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Zainab Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": {
+        "doc_type": "CNIC_FRONT",
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14",
+        "issuer": "MOCK_IDENTITY_REGISTRY",
+        "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
+      },
+      "raw_text": null,
+      "notes": "Valid signed QR for Fatima Bibi, printed name altered to Zainab Bibi."
+    },
+    {
+      "file": "fatima_cnic_no_qr.jpg",
+      "label": "NO_QR",
+      "doc_type": "CNIC_FRONT",
+      "expected_verdict": "UNVERIFIABLE",
+      "sha256": "a02a7a8519360dd614156e4095e9708481275c9d87bc18a1cbe0083a764553d2",
+      "printed_fields": {
+        "cnic": "9990010000012",
+        "full_name": "Fatima Bibi",
+        "dob": "1974-05-14"
+      },
+      "qr_payload": null,
+      "raw_text": null,
+      "notes": "QR obscured — UNVERIFIABLE, never TAMPER_SUSPECTED."
+    },
+    {
+      "file": "ghulam_rasool_death_cert_genuine.jpg",
+      "label": "GENUINE_CLEAN",
+      "doc_type": "SPOUSE_DEATH_CERTIFICATE",
+      "expected_verdict": "VERIFIED",
+      "sha256": "489f6fbd7c37ab347d6a015e1d94ba5ed747b1ef48d44986e713c2ed8f047fc9",
+      "printed_fields": {
+        "cnic": "9990010000104",
+        "full_name": "Ghulam Rasool",
+        "dob": "1968-02-03"
+      },
+      "qr_payload": {
+        "doc_type": "SPOUSE_DEATH_CERTIFICATE",
+        "cnic": "9990010000104",
+        "full_name": "Ghulam Rasool",
+        "dob": "1968-02-03",
+        "issuer": "MOCK_CIVIL_REGISTRY",
+        "sig": "20280c34f12f2804f2fa2bea2a1b4cb727bf7c9acc969381613169fcbecae039"
+      },
+      "raw_text": null,
+      "notes": "Genuine mock death certificate for Ghulam Rasool."
+    },
+    {
+      "file": "scam_sms_screenshot.jpg",
+      "label": "SCAM_SCREENSHOT",
+      "doc_type": "OTHER",
+      "expected_verdict": "LIKELY_SCAM",
+      "sha256": "607af286844dfd0b23be46a44160c7e66d8543570b35fb426bf5392a6cda199a",
+      "printed_fields": null,
+      "qr_payload": null,
+      "raw_text": "MUHTARAM! Sarkari Relief Program se aap ko Rs 25,000 milne wale hain. Aaj aakhri din hai! Registration fee sirf Rs 500 EasyPaisa number 0300-9999999 par bhejen. Apna CNIC number aur OTP code bhi share karen taake account block na ho. Fori rabta: 0300-9999999 http://bit.ly/relief-25000",
+      "notes": "Fake Rs 25,000 relief SMS asking for a Rs 500 fee, CNIC and OTP."
+    }
+  ]
+}
