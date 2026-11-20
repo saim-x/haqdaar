@@ -185,14 +185,22 @@ def test_hidden_cases_pass_every_rule_on_the_observable_facts(rows, sahara) -> N
         assert not failed, (row["case_id"], failed)
 
 
-def test_hidden_cases_are_caught_by_the_active_threshold(cases) -> None:
-    """At tau = 0.90 every hidden case must fall below the line."""
-    hidden = [case for case in cases if case.confidence.overall < ACTIVE_THRESHOLD]
-    assert hidden
+def test_hidden_cases_are_caught_by_the_active_threshold(cases, sahara) -> None:
+    """At tau = 0.90 every rule-passing ineligible case must fall below the line.
+
+    Cases that fail a rule are caught by the rule, not by the threshold, so they are
+    out of scope here — their confidence is legitimately high.
+    """
+    checked = 0
     for case in cases:
         if case.truly_eligible:
             continue
+        evaluation = evaluate_ruleset(sahara, case.facts)
+        if any(trace.result is not RuleResult.PASS for trace in evaluation.rules):
+            continue
+        checked += 1
         assert case.confidence.overall < ACTIVE_THRESHOLD, case.case_id
+    assert checked >= 10, checked
 
 
 def test_visible_truth_cohorts_agree_with_the_rules_visible_predicate(rows) -> None:
@@ -231,7 +239,7 @@ def test_cost_curve_falls_then_rises(cases, sahara) -> None:
     knee = costs.index(min(costs))
     assert knee > 0, costs
     assert knee < len(costs) - 1, costs
-    assert costs[: knee + 1] == sorted(costs[: knee + 1]), costs
+    assert costs[: knee + 1] == sorted(costs[: knee + 1], reverse=True), costs
     assert costs[knee:] == sorted(costs[knee:]), costs
 
 
