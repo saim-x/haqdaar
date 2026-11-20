@@ -33,7 +33,7 @@ export function AudioButton({ clip, text, lang, size = 'lg', className, label, t
       aria-pressed={playing}
       className={cx(
         'inline-flex shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-fast',
-        playing ? 'border-brand bg-brand text-brand-ink' : 'border-brand/30 bg-brand-soft text-brand hover:border-brand',
+        playing ? 'border-primary bg-primary text-primary-foreground' : 'border-primary/30 bg-primary-soft text-primary hover:border-primary',
         dim,
         className,
       )}

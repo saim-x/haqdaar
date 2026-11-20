@@ -40,10 +40,10 @@ export function TransparencyPage() {
   return (
     <div lang="en" dir="ltr" className="space-y-6 font-sans animate-rise" style={{ lineHeight: 1.5 }}>
       <div>
-        <p className="text-sm font-bold uppercase tracking-wider text-accent">Prototype disclosure</p>
+        <p className="text-sm font-bold uppercase tracking-wider text-highlight">Prototype disclosure</p>
         <h1 className="mt-1 text-4xl font-bold leading-tight">What is real, what is simulated</h1>
-        <p className="mt-3 text-lg text-muted">
-          Haqdaar is a hackathon prototype. It is <strong className="text-ink">not an official government service</strong>. No real
+        <p className="mt-3 text-lg text-muted-foreground">
+          Haqdaar is a hackathon prototype. It is <strong className="text-foreground">not an official government service</strong>. No real
           personal data is used anywhere.
         </p>
       </div>
@@ -59,7 +59,7 @@ export function TransparencyPage() {
               </span>
               <div className="min-w-0">
                 <p className="font-semibold">{it.component}</p>
-                <p className="text-sm text-muted">{it.details}</p>
+                <p className="text-sm text-muted-foreground">{it.details}</p>
               </div>
             </li>
           );
@@ -91,9 +91,9 @@ export function TransparencyPage() {
         </p>
       </section>
 
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         Public REST API documentation:{' '}
-        <a href="/api/docs" className="font-semibold text-brand underline">
+        <a href="/api/docs" className="font-semibold text-primary underline">
           /api/docs (Swagger)
         </a>
       </p>

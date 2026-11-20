@@ -5,17 +5,17 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-[background-color,box-shadow,transform] duration-fast ease-out focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-[background-color,box-shadow,transform] duration-fast ease-out focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-brand text-brand-ink hover:bg-brand-hover [--press:var(--action-primary-press)]",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover [--press:var(--action-primary-press)]",
         destructive: "bg-danger text-white hover:bg-danger-hover [--press:var(--feedback-error-press)]",
         success: "bg-ok text-white hover:brightness-110 [--press:var(--feedback-success-press)]",
-        outline: "border-2 border-line-strong/60 bg-surface text-ink hover:border-line-strong hover:bg-sunken [--press:var(--border-press)]",
-        secondary: "bg-sunken text-ink hover:bg-line [--press:var(--border-press)]",
-        ghost: "text-ink hover:bg-sunken",
-        link: "text-brand underline-offset-4 hover:underline",
+        outline: "border-2 border-input/60 bg-card text-foreground hover:border-input hover:bg-muted [--press:var(--border-press)]",
+        secondary: "bg-muted text-foreground hover:bg-border [--press:var(--border-press)]",
+        ghost: "text-foreground hover:bg-muted",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2",

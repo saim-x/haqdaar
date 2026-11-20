@@ -28,15 +28,15 @@ export function Corrections() {
       ) : !q.data?.length ? (
         <EmptyState title="No pending corrections" body="When a citizen disputes a registry value, the request lands here with their reason." />
       ) : (
-        <div className="card divide-y divide-line">
+        <div className="card divide-y divide-border">
           {q.data.map((c) => (
             <div key={c.id} className="flex flex-wrap items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">
                   {c.citizen_name ?? 'Citizen'} · <span className="font-mono text-sm">{c.field_key}</span>
                 </p>
-                <p className="text-sm text-muted">
-                  Requested <span className="font-mono font-semibold text-ink">{String(c.requested_value)}</span>
+                <p className="text-sm text-muted-foreground">
+                  Requested <span className="font-mono font-semibold text-foreground">{String(c.requested_value)}</span>
                   {c.reason ? `: “${c.reason}”` : ''} · {fmtTime(c.created_at)}
                 </p>
               </div>

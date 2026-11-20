@@ -25,7 +25,7 @@ function OutboxModal({ open, onClose, label, pending, failed }: { open: boolean;
   const online = useOnline();
   return (
     <Modal open={open} onClose={onClose} title={label} closeLabel={t('close')}>
-      {failed.length === 0 && <p className="text-muted">{pending ? t('offlineSaved', { n: pending }) : t('online')}</p>}
+      {failed.length === 0 && <p className="text-muted-foreground">{pending ? t('offlineSaved', { n: pending }) : t('online')}</p>}
       <ul className="space-y-3">
         {failed.map((f) => (
           <li key={f.id} className="rounded-control border border-danger/40 bg-danger-soft p-3">

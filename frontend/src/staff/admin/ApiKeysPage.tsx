@@ -39,7 +39,7 @@ export function ApiKeysPage() {
         subtitle="Partner systems call /api/v1/public/* with an X-API-Key header. Keys are stored hashed; the secret is shown exactly once."
         actions={
           <>
-            <a href="/api/docs" target="_blank" rel="noreferrer" className="inline-flex min-h-[32px] items-center gap-1.5 rounded-lg border border-line-strong px-3 text-sm font-semibold hover:bg-sunken">
+            <a href="/api/docs" target="_blank" rel="noreferrer" className="inline-flex min-h-[32px] items-center gap-1.5 rounded-lg border border-input px-3 text-sm font-semibold hover:bg-muted">
               <ExternalLink className="h-4 w-4" aria-hidden />
               Swagger docs
             </a>
@@ -59,7 +59,7 @@ export function ApiKeysPage() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <caption className="sr-only">API keys</caption>
-            <thead className="bg-sunken text-left text-xs uppercase tracking-wide text-muted">
+            <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Prefix</th>
@@ -70,7 +70,7 @@ export function ApiKeysPage() {
                 <th className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {q.data.map((k) => (
                 <tr key={k.id} className={cx(!k.is_active && 'opacity-60')}>
                   <td className="px-3 py-2 font-semibold">{k.name}</td>
@@ -78,14 +78,14 @@ export function ApiKeysPage() {
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">
                       {k.scopes.map((s) => (
-                        <span key={s} className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[11px]">
+                        <span key={s} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
                           {s}
                         </span>
                       ))}
                     </div>
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">{k.rate_limit_per_min}/min</td>
-                  <td className="px-3 py-2 text-xs text-muted">{fmtTime(k.last_used_at)}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">{fmtTime(k.last_used_at)}</td>
                   <td className="px-3 py-2">
                     <span className={cx('rounded px-1.5 py-0.5 text-xs font-bold', k.is_active ? 'bg-ok-soft text-ok' : 'bg-danger-soft text-danger')}>{k.is_active ? 'Active' : 'Revoked'}</span>
                   </td>
@@ -128,7 +128,7 @@ export function ApiKeysPage() {
               This is the only time the full key is shown. Only its hash is stored.
             </p>
             <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 break-all rounded-lg bg-sunken p-3 font-mono text-sm">{created.api_key}</code>
+              <code className="min-w-0 flex-1 break-all rounded-lg bg-muted p-3 font-mono text-sm">{created.api_key}</code>
               <Button
                 size="sm"
                 variant="secondary"
@@ -152,7 +152,7 @@ export function ApiKeysPage() {
               <legend className="mb-1 text-sm font-semibold">Scopes</legend>
               {SCOPES.map((s) => (
                 <label key={s} className="flex min-h-[32px] items-center gap-2 text-sm">
-                  <input type="checkbox" className="h-4 w-4 accent-brand" checked={scopes.includes(s)} onChange={(e) => setScopes((x) => (e.target.checked ? [...x, s] : x.filter((y) => y !== s)))} />
+                  <input type="checkbox" className="h-4 w-4 accent-primary" checked={scopes.includes(s)} onChange={(e) => setScopes((x) => (e.target.checked ? [...x, s] : x.filter((y) => y !== s)))} />
                   <span className="font-mono">{s}</span>
                 </label>
               ))}

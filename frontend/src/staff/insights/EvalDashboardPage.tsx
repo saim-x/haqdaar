@@ -34,7 +34,7 @@ export function EvalDashboardPage() {
         </p>
       )}
       {d.benchmarks_available === false && (
-        <p role="status" className="mb-4 rounded-card border border-line bg-sunken p-3 text-sm text-muted">
+        <p role="status" className="mb-4 rounded-card border border-border bg-muted p-3 text-sm text-muted-foreground">
           Scam and document benchmarks are not published yet; their cards show “—” until the AI services report metrics.
         </p>
       )}
@@ -42,23 +42,23 @@ export function EvalDashboardPage() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
             <h2 className="text-xl font-bold">The cost of being wrong</h2>
-            <p className="mt-1 text-sm text-muted">
-              A wrong approval costs <strong className="text-ink">100</strong>, an unnecessary human review <strong className="text-ink">8</strong>, an extra question <strong className="text-ink">5</strong>. Auto-approving
+            <p className="mt-1 text-sm text-muted-foreground">
+              A wrong approval costs <strong className="text-foreground">100</strong>, an unnecessary human review <strong className="text-foreground">8</strong>, an extra question <strong className="text-foreground">5</strong>. Auto-approving
               beats a human only when <span className="font-mono">p(valid) &gt; 1 − 8/100 = 0.92</span>; weakest-link confidence under-estimates validity, so the sweep places the knee at{' '}
-              <strong className="text-ink">τ = {tau.toFixed(2)}</strong>.
+              <strong className="text-foreground">τ = {tau.toFixed(2)}</strong>.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-lg bg-sunken px-3 py-2">
-              <p className="text-[11px] font-bold uppercase text-muted">Auto-approved</p>
+            <div className="rounded-lg bg-muted px-3 py-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">Auto-approved</p>
               <p className="num text-2xl font-bold">{pct(at.auto_approve_rate)}</p>
             </div>
-            <div className="rounded-lg bg-sunken px-3 py-2">
-              <p className="text-[11px] font-bold uppercase text-muted">Wrong approvals</p>
+            <div className="rounded-lg bg-muted px-3 py-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">Wrong approvals</p>
               <p className={cx('num text-2xl font-bold', at.false_approval_rate <= 0.02 ? 'text-ok' : 'text-danger')}>{pct(at.false_approval_rate, 1)}</p>
             </div>
-            <div className="rounded-lg bg-sunken px-3 py-2">
-              <p className="text-[11px] font-bold uppercase text-muted">To officers</p>
+            <div className="rounded-lg bg-muted px-3 py-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">To officers</p>
               <p className="num text-2xl font-bold">{pct(at.human_review_load)}</p>
             </div>
           </div>
@@ -75,7 +75,7 @@ export function EvalDashboardPage() {
             { name: 'Human review load', values: pts.map((p) => p.human_review_load), className: 'stroke-info', dash: '2 4', axis: 'right', format: (v) => pct(v) },
           ]}
         />
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Info className="h-3.5 w-3.5" aria-hidden />
           Minimum expected cost at τ = {min.threshold.toFixed(2)} ({Math.round(min.expected_total_cost)}). Raising τ to 0.95 sends far more honest widows to a queue; lowering it to 0.85 lets convincing frauds through.
         </p>
@@ -92,9 +92,9 @@ export function EvalDashboardPage() {
             </div>
             <div>
               <table className="w-full text-center text-sm" aria-label="Confusion matrix">
-                <caption className="mb-1 text-xs font-bold uppercase text-muted">Confusion matrix (n={d.scam.test_size})</caption>
+                <caption className="mb-1 text-xs font-bold uppercase text-muted-foreground">Confusion matrix (n={d.scam.test_size})</caption>
                 <thead>
-                  <tr className="text-[11px] text-muted">
+                  <tr className="text-[11px] text-muted-foreground">
                     <th />
                     <th className="pb-1">pred scam</th>
                     <th className="pb-1">pred safe</th>
@@ -102,18 +102,18 @@ export function EvalDashboardPage() {
                 </thead>
                 <tbody className="font-mono">
                   <tr>
-                    <th className="pe-2 text-end text-[11px] font-normal text-muted">scam</th>
+                    <th className="pe-2 text-end text-[11px] font-normal text-muted-foreground">scam</th>
                     <td className="rounded-tl-lg bg-ok-soft p-3 text-lg font-bold text-ok">{cm.tp}</td>
                     <td className="bg-danger-soft p-3 text-lg font-bold text-danger" title="Missed scams">{cm.fn}</td>
                   </tr>
                   <tr>
-                    <th className="pe-2 text-end text-[11px] font-normal text-muted">safe</th>
+                    <th className="pe-2 text-end text-[11px] font-normal text-muted-foreground">safe</th>
                     <td className="bg-warn-soft p-3 text-lg font-bold text-warn" title="False alarms">{cm.fp}</td>
                     <td className="rounded-br-lg bg-ok-soft p-3 text-lg font-bold text-ok">{cm.tn}</td>
                   </tr>
                 </tbody>
               </table>
-              <p className="mt-2 text-xs text-muted">Blocking a real person is also a cost: we never block, only advise.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Blocking a real person is also a cost: we never block, only advise.</p>
             </div>
           </div>
         </Panel>
@@ -129,7 +129,7 @@ export function EvalDashboardPage() {
 
         <Panel title="Live operations">
           <div className="mb-4">
-            <p className="mb-2 text-xs font-bold uppercase text-muted">Engine routes ({routeTotal} decisions)</p>
+            <p className="mb-2 text-xs font-bold uppercase text-muted-foreground">Engine routes ({routeTotal} decisions)</p>
             <div className="flex h-6 overflow-hidden rounded-md" role="img" aria-label={routes.map(([k, n]) => `${k} ${n}`).join(', ')}>
               {routes.map(([k, n]) => (
                 <div

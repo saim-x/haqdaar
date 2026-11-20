@@ -1,45 +1,41 @@
 import animate from 'tailwindcss-animate';
 
 /** @type {import('tailwindcss').Config} */
-// Every colour is a semantic token backed by a CSS variable in src/index.css.
-// Components never use raw hex values: switching theme = editing index.css once.
-const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+// One theme for the whole app. Names follow the shadcn/ui convention so shadcn and
+// Watermelon UI components drop in and inherit our palette. Values live in src/index.css
+// as RGB channels (light + dark); components never use raw colours.
+const c = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
 export default {
+  darkMode: ['selector', '[data-theme="dark"]'],
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
-      borderColor: { DEFAULT: token('border-default') },
-      ringColor: { DEFAULT: token('focus-ring') },
+      borderColor: { DEFAULT: c('border') },
+      ringColor: { DEFAULT: c('ring') },
       colors: {
-        page: token('surface-page'),
-        surface: token('surface-raised'),
-        sunken: token('surface-sunken'),
-        ink: token('text-primary'),
-        muted: token('text-secondary'),
-        line: token('border-default'),
-        'line-strong': token('border-strong'),
-        brand: token('action-primary'),
-        'brand-hover': token('action-primary-hover'),
-        'brand-ink': token('action-primary-text'),
-        'brand-soft': token('action-primary-soft'),
-        accent: token('accent'),
-        ok: token('feedback-success'),
-        'ok-soft': token('feedback-success-soft'),
-        warn: token('feedback-warning'),
-        'warn-soft': token('feedback-warning-soft'),
-        danger: token('feedback-error'),
-        'danger-hover': token('feedback-error-hover'),
-        'danger-soft': token('feedback-error-soft'),
-        info: token('feedback-info'),
-        'info-soft': token('feedback-info-soft'),
-        consent: token('feedback-consent'),
-        'consent-soft': token('feedback-consent-soft'),
-        neutral: token('feedback-neutral'),
-        'neutral-soft': token('feedback-neutral-soft'),
-        banner: token('banner-bg'),
-        'banner-ink': token('banner-text'),
-        focus: token('focus-ring'),
+        background: c('background'),
+        foreground: c('foreground'),
+        card: { DEFAULT: c('card'), foreground: c('card-foreground') },
+        popover: { DEFAULT: c('popover'), foreground: c('popover-foreground') },
+        primary: { DEFAULT: c('primary'), foreground: c('primary-foreground'), hover: c('primary-hover'), soft: c('primary-soft') },
+        secondary: { DEFAULT: c('secondary'), foreground: c('secondary-foreground') },
+        muted: { DEFAULT: c('muted'), foreground: c('muted-foreground') },
+        accent: { DEFAULT: c('accent'), foreground: c('accent-foreground') },
+        destructive: { DEFAULT: c('destructive'), foreground: c('destructive-foreground') },
+        border: c('border'),
+        input: c('input'),
+        ring: c('ring'),
+        // Status tints (text colour + soft background). Used only to convey state.
+        ok: { DEFAULT: c('success'), soft: c('success-soft') },
+        warn: { DEFAULT: c('warning'), soft: c('warning-soft') },
+        info: { DEFAULT: c('info'), soft: c('info-soft') },
+        danger: { DEFAULT: c('destructive'), soft: c('destructive-soft'), hover: c('destructive-hover') },
+        consent: { DEFAULT: c('consent'), soft: c('consent-soft') },
+        neutral: { DEFAULT: c('neutral'), soft: c('neutral-soft') },
+        // A single warm highlight, used sparingly (brand seal, scam-check entry point).
+        highlight: { DEFAULT: c('highlight'), soft: c('highlight-soft') },
+        banner: { DEFAULT: c('banner-bg'), foreground: c('banner-text') },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -47,17 +43,18 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
       borderRadius: {
-        card: '1rem',
-        control: '0.75rem',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+        card: 'calc(var(--radius) + 4px)',
+        control: 'var(--radius)',
       },
       boxShadow: {
-        card: '0 1px 2px rgb(var(--shadow-color) / 0.06), 0 4px 16px rgb(var(--shadow-color) / 0.06)',
-        lift: '0 2px 4px rgb(var(--shadow-color) / 0.08), 0 12px 32px rgb(var(--shadow-color) / 0.12)',
+        xs: '0 1px 2px rgb(var(--shadow-color) / 0.05)',
+        card: '0 1px 2px rgb(var(--shadow-color) / 0.04), 0 1px 3px rgb(var(--shadow-color) / 0.04)',
+        lift: '0 4px 12px rgb(var(--shadow-color) / 0.06), 0 16px 40px rgb(var(--shadow-color) / 0.08)',
       },
-      transitionDuration: {
-        fast: '120ms',
-        base: '200ms',
-      },
+      transitionDuration: { fast: '120ms', base: '200ms' },
       minHeight: { tap: '48px', 'tap-lg': '56px' },
       minWidth: { tap: '48px', 'tap-lg': '56px' },
     },

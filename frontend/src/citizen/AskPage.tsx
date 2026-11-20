@@ -49,21 +49,21 @@ export function AskPage() {
           onChange={(e) => setQuestion(e.target.value)}
           placeholder={t('askPlaceholder')}
           aria-label={t('askPlaceholder')}
-          className="min-h-tap-lg min-w-0 flex-1 rounded-control border-2 border-line-strong bg-surface px-4 text-lg"
+          className="min-h-tap-lg min-w-0 flex-1 rounded-control border-2 border-input bg-card px-4 text-lg"
         />
         <Button type="submit" size="lg" loading={ask.isPending} disabled={!question.trim()} aria-label={t('askSend')} icon={<Send className="h-6 w-6 rtl:-scale-x-100" aria-hidden />} />
       </form>
 
       {history.length === 0 && (
         <section>
-          <h2 className="mb-2 text-sm font-bold text-muted">{t('suggested')}</h2>
+          <h2 className="mb-2 text-sm font-bold text-muted-foreground">{t('suggested')}</h2>
           <div className="flex flex-wrap gap-2">
             {SUGGESTED[lang].map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => ask.mutate(s)}
-                className="min-h-tap rounded-full border-2 border-line bg-surface px-4 font-medium hover:border-brand"
+                className="min-h-tap rounded-full border-2 border-border bg-card px-4 font-medium hover:border-primary"
               >
                 {s}
               </button>
@@ -81,7 +81,7 @@ export function AskPage() {
       <ul className="space-y-4" aria-live="polite">
         {history.map(({ q, a }, i) => (
           <li key={`${q}-${i}`} className="space-y-2">
-            <p className="ms-auto w-fit max-w-[85%] rounded-card rounded-ee-sm bg-brand px-4 py-2 font-medium text-brand-ink">{q}</p>
+            <p className="ms-auto w-fit max-w-[85%] rounded-card rounded-ee-sm bg-primary px-4 py-2 font-medium text-primary-foreground">{q}</p>
             {a.status === 'NOT_SURE' ? (
               <div className="rounded-card border-2 border-warn/50 bg-warn-soft p-4">
                 <div className="flex items-start gap-3">
@@ -107,24 +107,24 @@ export function AskPage() {
                   <AudioButton size="md" text={a.answer} />
                 </div>
                 {a.citations.length > 0 && (
-                  <div className="mt-3 border-t border-line pt-3">
-                    <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-muted">
+                  <div className="mt-3 border-t border-border pt-3">
+                    <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
                       <BookOpenText className="h-4 w-4" aria-hidden />
                       {t('sources')}
                     </h3>
                     <ul className="space-y-2">
                       {a.citations.map((c, k) => (
-                        <li key={k} className="rounded-control bg-sunken p-2 text-sm">
+                        <li key={k} className="rounded-control bg-muted p-2 text-sm">
                           <p className="font-semibold">
-                            {c.doc_title} · {c.section} <span className="text-muted">(v{c.version})</span>
+                            {c.doc_title} · {c.section} <span className="text-muted-foreground">(v{c.version})</span>
                           </p>
-                          <p className="mt-0.5 line-clamp-2 text-muted">{c.excerpt}</p>
+                          <p className="mt-0.5 line-clamp-2 text-muted-foreground">{c.excerpt}</p>
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
-                <p className="mt-3 text-xs text-muted">{t('askDisclaimer')}</p>
+                <p className="mt-3 text-xs text-muted-foreground">{t('askDisclaimer')}</p>
               </div>
             )}
           </li>

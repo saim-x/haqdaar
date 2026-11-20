@@ -74,11 +74,11 @@ export function CitizenHome() {
   return (
     <div className="space-y-5 animate-rise">
       <div className="flex items-center gap-3">
-        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xl font-bold text-accent" aria-hidden>
+        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-highlight/15 text-xl font-bold text-highlight" aria-hidden>
           {firstName.slice(0, 1)}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-muted">{lang === 'ur' ? 'السلام علیکم' : 'Assalam-o-Alaikum'}</p>
+          <p className="text-sm text-muted-foreground">{lang === 'ur' ? 'السلام علیکم' : 'Assalam-o-Alaikum'}</p>
           <h1 className="truncate text-2xl font-bold leading-tight">{firstName}</h1>
         </div>
         <AudioButton clip="home_intro" text={t('homeAudio')} />
@@ -88,7 +88,7 @@ export function CitizenHome() {
       <div className="relative">
         <Link
           to={hero.to}
-          className="relative block overflow-hidden rounded-3xl border-b-[6px] border-[rgb(var(--action-primary-press))] bg-brand p-5 text-brand-ink transition-transform duration-fast active:translate-y-[3px] active:border-b-2"
+          className="relative block overflow-hidden rounded-3xl border-b-[6px] border-[rgb(var(--action-primary-press))] bg-primary p-5 text-primary-foreground transition-transform duration-fast active:translate-y-[3px] active:border-b-2"
         >
           <AjrakPattern className="text-white/[0.08]" />
           <span className="relative flex items-start gap-4">
@@ -107,33 +107,33 @@ export function CitizenHome() {
       </div>
 
       {latest && meta && tone && (
-        <Link to={`/c/cases/${latest.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5">
+        <Link to={`/c/cases/${latest.id}`} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
           <span className={cn('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', tone.soft, tone.text)}>
             <meta.icon className="h-6 w-6" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold text-muted">{t('latestStatus')}</span>
+            <span className="block text-xs font-semibold text-muted-foreground">{t('latestStatus')}</span>
             <span className={cn('block truncate font-bold', tone.text)}>{t(meta.label)}</span>
           </span>
-          <Chevron className="h-5 w-5 shrink-0 text-muted" aria-hidden />
+          <Chevron className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
         </Link>
       )}
 
       <div className="grid grid-cols-2 gap-3">
         {openCase || draft ? (
-          <Tile to="/c/apply" label={t('tileApply')} clip="tile_apply" icon={FilePlus2} well="bg-brand-soft text-brand" tint="border-line bg-surface" />
+          <Tile to="/c/apply" label={t('tileApply')} clip="tile_apply" icon={FilePlus2} well="bg-primary-soft text-primary" tint="border-border bg-card" />
         ) : (
-          <Tile to="/c/cases" label={t('tileCases')} clip="tile_cases" icon={FolderOpen} well="bg-info-soft text-info" tint="border-line bg-surface" />
+          <Tile to="/c/cases" label={t('tileCases')} clip="tile_cases" icon={FolderOpen} well="bg-info-soft text-info" tint="border-border bg-card" />
         )}
-        <Tile to="/scam-check" label={t('tileScam')} clip="tile_scam" icon={ShieldQuestion} well="bg-warn-soft text-accent" tint="border-line bg-surface" />
+        <Tile to="/scam-check" label={t('tileScam')} clip="tile_scam" icon={ShieldQuestion} well="bg-warn-soft text-highlight" tint="border-border bg-card" />
         <div className="col-span-2">
-          <Tile to="/c/consent" label={t('tileData')} clip="tile_data" icon={ShieldCheck} well="bg-consent-soft text-consent" tint="border-line bg-surface" wide />
+          <Tile to="/c/consent" label={t('tileData')} clip="tile_data" icon={ShieldCheck} well="bg-consent-soft text-consent" tint="border-border bg-card" wide />
         </div>
       </div>
 
       <Link
         to="/c/ask"
-        className="flex min-h-tap-lg items-center gap-3 rounded-2xl border-2 border-dashed border-line-strong/50 px-4 py-3 font-semibold text-ink hover:border-brand hover:text-brand"
+        className="flex min-h-tap-lg items-center gap-3 rounded-2xl border-2 border-dashed border-input/50 px-4 py-3 font-semibold text-foreground hover:border-primary hover:text-primary"
       >
         <MessageCircleQuestion className="h-6 w-6 shrink-0" aria-hidden />
         <span className="flex-1">{t('askQuestion')}</span>

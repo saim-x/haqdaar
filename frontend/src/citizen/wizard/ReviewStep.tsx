@@ -90,11 +90,11 @@ export function ReviewStep({ steps, draft, onJump }: { steps: StepDef[]; draft: 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 rounded-card bg-brand-soft p-3">
+      <div className="flex items-center gap-3 rounded-card bg-primary-soft p-3">
         <AudioButton text={summaryText} label={t('q_review')} />
-        <p className="font-semibold text-brand">{t('listen')}</p>
+        <p className="font-semibold text-primary">{t('listen')}</p>
       </div>
-      <ul className="card divide-y divide-line">
+      <ul className="card divide-y divide-border">
         {items.map((s) => {
           const v = display(s);
           const isMissing = missing.includes(s);
@@ -106,13 +106,13 @@ export function ReviewStep({ steps, draft, onJump }: { steps: StepDef[]; draft: 
                 <CircleCheck className="h-6 w-6 shrink-0 text-ok" aria-hidden />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-muted">{t(s.question)}</p>
+                <p className="text-sm text-muted-foreground">{t(s.question)}</p>
                 <p className={cx('truncate text-lg font-semibold', s.kind === 'cnic' && 'num')}>{v ?? t('missingStep')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => onJump(s.id)}
-                className="inline-flex min-h-tap items-center gap-1 rounded-full px-3 text-sm font-semibold text-brand hover:bg-brand-soft"
+                className="inline-flex min-h-tap items-center gap-1 rounded-full px-3 text-sm font-semibold text-primary hover:bg-primary-soft"
                 aria-label={`${t('edit')}: ${t(s.question)}`}
               >
                 <Pencil className="h-4 w-4" aria-hidden />

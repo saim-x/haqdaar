@@ -105,12 +105,12 @@ export function ScamCheck() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold leading-tight">{t('scamTitle')}</h1>
-          <p className="mt-1 text-lg text-muted">{t('scamSubtitle')}</p>
+          <p className="mt-1 text-lg text-muted-foreground">{t('scamSubtitle')}</p>
         </div>
         <AudioButton clip="scam_intro" text={`${t('scamTitle')}. ${t('scamSubtitle')}`} />
       </div>
 
-      <div role="tablist" className="grid grid-cols-3 gap-1 rounded-control bg-sunken p-1">
+      <div role="tablist" className="grid grid-cols-3 gap-1 rounded-control bg-muted p-1">
         {tabs.map((tb) => (
           <button
             key={tb.id}
@@ -119,7 +119,7 @@ export function ScamCheck() {
             onClick={() => setTab(tb.id)}
             className={cx(
               'inline-flex min-h-tap items-center justify-center gap-1.5 rounded-lg text-sm font-semibold',
-              tab === tb.id ? 'bg-surface shadow-card' : 'text-muted',
+              tab === tb.id ? 'bg-card shadow-card' : 'text-muted-foreground',
             )}
           >
             <tb.icon className="h-4 w-4" aria-hidden />
@@ -142,7 +142,7 @@ export function ScamCheck() {
             rows={5}
             placeholder={t('scamPlaceholder')}
             aria-label={t('scamPlaceholder')}
-            className="w-full rounded-card border-2 border-line-strong bg-surface p-4 text-lg"
+            className="w-full rounded-card border-2 border-input bg-card p-4 text-lg"
           />
           <Button type="submit" size="xl" block loading={check.isPending} disabled={!text.trim() || !online}>
             {check.isPending ? t('checking') : t('checkMessage')}
@@ -190,7 +190,7 @@ export function ScamCheck() {
         </Button>
       )}
       {tab === 'voice' && recording && (
-        <p aria-live="polite" className="text-center text-lg text-muted">
+        <p aria-live="polite" className="text-center text-lg text-muted-foreground">
           {heard || (lang === 'ur' ? 'پیغام پڑھ کر سنائیں…' : 'Read the message aloud…')}
         </p>
       )}
@@ -209,7 +209,7 @@ export function ScamCheck() {
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="text-2xl font-bold leading-snug">{t(v.label)}</h2>
-              <p className="num text-sm text-muted">
+              <p className="num text-sm text-muted-foreground">
                 {t('confidence')}: {Math.round(result.confidence * 100)}%
               </p>
             </div>
@@ -218,10 +218,10 @@ export function ScamCheck() {
           <p className="text-lg">{pick(result.explanation_ur, result.explanation_en)}</p>
 
           {result.matched_official && (
-            <div className="rounded-control bg-surface p-3">
-              <p className="text-sm text-muted">{t('matchedOfficial')}</p>
+            <div className="rounded-control bg-card p-3">
+              <p className="text-sm text-muted-foreground">{t('matchedOfficial')}</p>
               <p className="font-semibold">
-                <span className="num font-mono text-brand">{result.matched_official.verification_code}</span>
+                <span className="num font-mono text-primary">{result.matched_official.verification_code}</span>
                 {result.matched_official.program ? ` · ${result.matched_official.program}` : ''} · <span className="num">{formatDateTime(result.matched_official.sent_at, lang)}</span>
               </p>
             </div>
@@ -232,7 +232,7 @@ export function ScamCheck() {
               <h3 className="mb-2 font-bold">{t('redFlags')}</h3>
               <ul className="space-y-2">
                 {result.red_flags.map((f) => (
-                  <li key={f.code} className="flex items-start gap-2 rounded-control bg-surface p-3">
+                  <li key={f.code} className="flex items-start gap-2 rounded-control bg-card p-3">
                     <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden />
                     <span className="font-medium">{pick(f.label_ur, f.label_en)}</span>
                   </li>
@@ -241,11 +241,11 @@ export function ScamCheck() {
             </div>
           )}
 
-          <div className="rounded-control bg-surface p-3">
+          <div className="rounded-control bg-card p-3">
             <h3 className="mb-1 font-bold">{t('advice')}</h3>
             <p>{pick(result.advice_ur, result.advice_en)}</p>
             {result.verdict !== 'VERIFIED_OFFICIAL' && (
-              <ul className="mt-2 list-inside list-disc space-y-1 text-muted">
+              <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
                 <li>{t('safetyRule1')}</li>
                 <li>{t('safetyRule2')}</li>
                 <li>{t('safetyRule3')}</li>
@@ -253,8 +253,8 @@ export function ScamCheck() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted">{t('advisoryOnly')}</p>
+          <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">{t('advisoryOnly')}</p>
             {feedbackSent ? (
               <p className="text-sm font-semibold text-ok">{t('feedbackThanks')}</p>
             ) : (

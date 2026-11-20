@@ -75,7 +75,7 @@ export function CaseStatusPage() {
       <div role="alert" className="rounded-card border-2 border-consent/40 bg-consent-soft p-6 text-center">
         <TriangleAlert className="mx-auto mb-2 h-10 w-10 text-consent" aria-hidden />
         <p className="text-lg font-semibold">{e.code === 'CONSENT_REVOKED' ? t('accessBlocked') : pick(e.messageUr, e.message)}</p>
-        {e.code === 'CONSENT_REVOKED' && <p className="mt-1 text-muted">{t('accessBlockedBody')}</p>}
+        {e.code === 'CONSENT_REVOKED' && <p className="mt-1 text-muted-foreground">{t('accessBlockedBody')}</p>}
       </div>
     );
   }
@@ -101,7 +101,7 @@ export function CaseStatusPage() {
           <p className="mt-4 text-4xl font-bold text-ok">{formatPkr(c.payment?.amount_pkr ?? c.approved_amount_pkr, lang)}</p>
         )}
         {inFlight && (
-          <p className="mt-3 flex items-center gap-2 text-sm text-muted">
+          <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin-slow" aria-hidden />
             {t('autoRefresh')}
           </p>
@@ -127,7 +127,7 @@ export function CaseStatusPage() {
           <h2 className="mb-1 text-lg font-bold">{t('nextTitle')}</h2>
           <p className="text-lg">{nextStep}</p>
           {['HUMAN_REVIEW', 'IN_REVIEW', 'PENDING_SECOND_APPROVAL', 'WAITING_EXTERNAL'].includes(c.status) && (
-            <p className="mt-2 font-semibold text-brand">{t('waitNoAction')}</p>
+            <p className="mt-2 font-semibold text-primary">{t('waitNoAction')}</p>
           )}
         </section>
       )}
@@ -143,10 +143,10 @@ export function CaseStatusPage() {
       {c.payment?.external_ref && (
         <div className="card flex items-center justify-between gap-3 p-4">
           <div>
-            <p className="text-sm text-muted">{t('paymentRef')}</p>
+            <p className="text-sm text-muted-foreground">{t('paymentRef')}</p>
             <p className="num font-mono font-semibold">{c.payment.external_ref}</p>
           </div>
-          <span className="rounded-full bg-sunken px-2 py-1 text-xs font-semibold text-muted">Raast · simulated</span>
+          <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">Raast · simulated</span>
         </div>
       )}
 
@@ -159,13 +159,13 @@ export function CaseStatusPage() {
           {caseNotes.map((n) => (
             <div key={n.id} className="card p-4">
               <p className="font-semibold">{pick(n.title_ur, n.title_en)}</p>
-              <p className="mt-1 text-muted">{pick(n.body_ur, n.body_en)}</p>
+              <p className="mt-1 text-muted-foreground">{pick(n.body_ur, n.body_en)}</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-muted">{t('verificationCode')}:</span>
-                <span className="num rounded bg-brand-soft px-2 py-0.5 font-mono font-bold text-brand">{n.verification_code}</span>
+                <span className="text-sm text-muted-foreground">{t('verificationCode')}:</span>
+                <span className="num rounded bg-primary-soft px-2 py-0.5 font-mono font-bold text-primary">{n.verification_code}</span>
                 <button
                   type="button"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-sunken"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted"
                   onClick={() => void navigator.clipboard?.writeText(n.verification_code)}
                   aria-label="Copy"
                 >
@@ -179,16 +179,16 @@ export function CaseStatusPage() {
 
       <section className="card p-4">
         <h2 className="mb-3 text-lg font-bold">{t('timeline')}</h2>
-        <ol className="relative space-y-4 border-s-2 border-line ps-5">
+        <ol className="relative space-y-4 border-s-2 border-border ps-5">
           {c.timeline.map((it, i) => (
             <li key={`${it.at}-${i}`} className="relative">
-              <span className={cx('absolute -start-[27px] top-1.5 h-3 w-3 rounded-full border-2 border-surface', i === c.timeline.length - 1 ? tone.solid : 'bg-line-strong')} aria-hidden />
+              <span className={cx('absolute -start-[27px] top-1.5 h-3 w-3 rounded-full border-2 border-card', i === c.timeline.length - 1 ? tone.solid : 'bg-input')} aria-hidden />
               <p className="font-medium">{pick(it.label_ur, it.label_en)}</p>
-              <p className="num text-sm text-muted">{formatDateTime(it.at, lang)}</p>
+              <p className="num text-sm text-muted-foreground">{formatDateTime(it.at, lang)}</p>
             </li>
           ))}
         </ol>
-        <p className="num mt-4 text-sm text-muted">
+        <p className="num mt-4 text-sm text-muted-foreground">
           {t('reference')}: {c.reference_code}
         </p>
       </section>

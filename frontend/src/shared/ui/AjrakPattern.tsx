@@ -29,11 +29,11 @@ export function AjrakPattern({ className }: { className?: string }) {
 /** The Haqdaar mark: an H whose crossbar is a handshake line, with a saffron seal dot. */
 export function HaqdaarMark({ className }: { className?: string }) {
   return (
-    <span aria-hidden className={cn('relative inline-flex items-center justify-center rounded-2xl bg-brand text-brand-ink shadow-[inset_0_-3px_0_rgb(var(--action-primary-press))]', className)}>
+    <span aria-hidden className={cn('relative inline-flex items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[inset_0_-3px_0_rgb(var(--action-primary-press))]', className)}>
       <svg viewBox="0 0 24 24" className="h-[55%] w-[55%]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
         <path d="M7 4.5v15M17 4.5v15M7 12c2.5-2 7.5-2 10 0" />
       </svg>
-      <span className="absolute -bottom-0.5 -end-0.5 h-[28%] w-[28%] rounded-full border-2 border-page bg-accent" />
+      <span className="absolute -bottom-0.5 -end-0.5 h-[28%] w-[28%] rounded-full border-2 border-background bg-highlight" />
     </span>
   );
 }

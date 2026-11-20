@@ -37,17 +37,17 @@ export function MyData() {
       {data.groups.map((g) => (
         <section key={g.category} className="space-y-2">
           <h2 className="text-lg font-bold">{t(`cat_${g.category}` as DictKey)}</h2>
-          <ul className="card divide-y divide-line">
+          <ul className="card divide-y divide-border">
             {g.fields.map((f) => (
               <li key={f.key} className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-muted">{pick(f.label_ur, f.label_en)}</p>
+                  <p className="text-sm text-muted-foreground">{pick(f.label_ur, f.label_en)}</p>
                   <p className="truncate text-lg font-semibold">{fmt(f.value)}</p>
                   <span
                     className={
                       f.source_type === 'REGISTRY'
                         ? 'mt-1 inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-xs font-semibold text-info'
-                        : 'mt-1 inline-flex items-center gap-1 rounded-full bg-sunken px-2 py-0.5 text-xs font-semibold text-muted'
+                        : 'mt-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground'
                     }
                   >
                     {f.source_type === 'REGISTRY' ? <Building className="h-3.5 w-3.5" aria-hidden /> : <UserRound className="h-3.5 w-3.5" aria-hidden />}
@@ -64,7 +64,7 @@ export function MyData() {
                     setReason('');
                     correct.reset();
                   }}
-                  className="inline-flex min-h-tap items-center gap-1 rounded-full px-3 text-sm font-semibold text-brand hover:bg-brand-soft"
+                  className="inline-flex min-h-tap items-center gap-1 rounded-full px-3 text-sm font-semibold text-primary hover:bg-primary-soft"
                   aria-label={`${t('requestCorrection')}: ${pick(f.label_ur, f.label_en)}`}
                 >
                   <PencilLine className="h-4 w-4" aria-hidden />
@@ -79,13 +79,13 @@ export function MyData() {
       {data.corrections.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-lg font-bold">{t('requestCorrection')}</h2>
-          <ul className="card divide-y divide-line">
+          <ul className="card divide-y divide-border">
             {data.corrections.map((c) => (
               <li key={c.id} className="p-3">
                 <p className="font-semibold">
                   {c.field_key}: <span className="num">{String(c.requested_value)}</span>
                 </p>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   {c.status === 'APPLIED' || c.status === 'APPROVED' ? t('correctionApplied') : c.status === 'REJECTED' ? t('st_REJECTED') : t('correctionPending')} ·{' '}
                   <span className="num">{formatDateTime(c.created_at, lang)}</span>
                 </p>
@@ -124,11 +124,11 @@ export function MyData() {
             {field?.source_type === 'REGISTRY' && <p className="rounded-control bg-info-soft p-3 text-info">{t('correctionPending')}</p>}
             <label className="block">
               <span className="mb-1 block font-semibold">{t('correctionNew')}</span>
-              <input value={newValue} onChange={(e) => setNewValue(e.target.value)} className="min-h-tap-lg w-full rounded-control border-2 border-line-strong bg-surface px-3 text-lg" />
+              <input value={newValue} onChange={(e) => setNewValue(e.target.value)} className="min-h-tap-lg w-full rounded-control border-2 border-input bg-card px-3 text-lg" />
             </label>
             <label className="block">
               <span className="mb-1 block font-semibold">{t('correctionReason')}</span>
-              <input value={reason} onChange={(e) => setReason(e.target.value)} className="min-h-tap w-full rounded-control border-2 border-line-strong bg-surface px-3" />
+              <input value={reason} onChange={(e) => setReason(e.target.value)} className="min-h-tap w-full rounded-control border-2 border-input bg-card px-3" />
             </label>
             {correct.error && <p className="text-danger">{pick((correct.error as ApiError).messageUr, correct.error.message)}</p>}
           </div>

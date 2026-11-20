@@ -3,85 +3,107 @@
 @tailwind utilities;
 
 /*
- * Design tokens (semantic tier). Values are space-separated RGB channels so
- * Tailwind can apply alpha. Contrast pairs verified for WCAG 2.2 AA:
- *   text-primary on surface-page           16.1:1
- *   text-secondary on surface-page          7.2:1
- *   border-strong on surface-page           4.6:1  (control borders)
- *   action-primary-text on action-primary   9.6:1
- *   feedback-* text colours on white        >= 4.8:1
+ * Design tokens: ONE theme for the whole product (shadcn naming, RGB channels so
+ * Tailwind can apply alpha). Calm warm neutrals carry the UI; a single deep emerald
+ * primary marks the main action; status hues are muted and only convey state.
+ * WCAG 2.2 AA pairs (light):
+ *   foreground on background           16.4:1
+ *   muted-foreground on background      5.4:1
+ *   primary-foreground on primary       7.6:1
+ *   input (control border) on card      3.5:1
+ *   success / warning / info / destructive / consent text on card  >= 4.9:1
  */
 :root {
-  --surface-page: 251 248 243;
-  --surface-raised: 255 255 255;
-  --surface-sunken: 243 238 229;
-  --text-primary: 28 25 23;
-  --text-secondary: 87 83 78;
-  --border-default: 231 223 210;
-  --border-strong: 120 113 108;
-  --action-primary: 20 83 45;
-  --action-primary-hover: 22 101 52;
-  --action-primary-text: 255 255 255;
-  --action-primary-soft: 220 239 226;
-  --action-primary-press: 10 52 28;
-  --feedback-error-press: 127 29 29;
-  --feedback-success-press: 20 83 45;
-  --border-press: 214 205 190;
-  --accent: 180 83 9;
-  --feedback-success: 21 128 61;
-  --feedback-success-soft: 220 252 231;
-  --feedback-warning: 146 64 14;
-  --feedback-warning-soft: 254 243 199;
-  --feedback-error: 185 28 28;
-  --feedback-error-hover: 153 27 27;
-  --feedback-error-soft: 254 226 226;
-  --feedback-info: 29 78 216;
-  --feedback-info-soft: 219 234 254;
-  --feedback-consent: 109 40 217;
-  --feedback-consent-soft: 237 233 254;
-  --feedback-neutral: 71 85 105;
-  --feedback-neutral-soft: 226 232 240;
-  --banner-bg: 254 243 199;
-  --banner-text: 69 26 3;
-  --focus-ring: 29 78 216;
-  --shadow-color: 41 37 36;
+  --radius: 0.75rem;
+  --background: 250 250 248;
+  --foreground: 28 27 25;
+  --card: 255 255 255;
+  --card-foreground: 28 27 25;
+  --popover: 255 255 255;
+  --popover-foreground: 28 27 25;
+  --primary: 14 94 75;
+  --primary-hover: 10 77 61;
+  --primary-foreground: 255 255 255;
+  --primary-soft: 231 242 238;
+  --secondary: 243 242 238;
+  --secondary-foreground: 28 27 25;
+  --muted: 243 242 238;
+  --muted-foreground: 107 104 99;
+  --accent: 240 239 235;
+  --accent-foreground: 28 27 25;
+  --destructive: 185 38 38;
+  --destructive-hover: 153 30 30;
+  --destructive-foreground: 255 255 255;
+  --destructive-soft: 252 238 237;
+  --border: 232 230 225;
+  --input: 140 136 129;
+  --ring: 14 94 75;
+  --success: 22 118 72;
+  --success-soft: 233 245 238;
+  --warning: 158 84 10;
+  --warning-soft: 252 244 230;
+  --info: 37 86 158;
+  --info-soft: 234 241 250;
+  --consent: 102 62 166;
+  --consent-soft: 242 237 250;
+  --neutral: 92 98 110;
+  --neutral-soft: 239 240 242;
+  --highlight: 184 112 24;
+  --highlight-soft: 251 243 228;
+  --banner-bg: 250 241 218;
+  --banner-text: 82 52 6;
+  --shadow-color: 41 37 30;
+  /* press edges for large tactile citizen buttons */
+  --action-primary-press: 8 60 47;
+  --feedback-error-press: 120 26 26;
+  --feedback-success-press: 14 84 50;
+  --border-press: 222 219 212;
   color-scheme: light;
 }
 
 [data-theme='dark'] {
-  --surface-page: 20 18 16;
-  --surface-raised: 32 29 26;
-  --surface-sunken: 14 12 11;
-  --text-primary: 245 241 235;
-  --text-secondary: 186 179 170;
-  --border-default: 58 53 48;
-  --border-strong: 140 132 124;
-  --action-primary: 34 139 74;
-  --action-primary-hover: 40 160 86;
-  --action-primary-text: 255 255 255;
-  --action-primary-soft: 22 56 36;
-  --action-primary-press: 14 70 38;
-  --feedback-error-press: 127 29 29;
-  --feedback-success-press: 21 128 61;
-  --border-press: 10 9 8;
-  --accent: 251 146 60;
-  --feedback-success: 74 222 128;
-  --feedback-success-soft: 20 50 32;
-  --feedback-warning: 251 191 36;
-  --feedback-warning-soft: 58 42 10;
-  --feedback-error: 248 113 113;
-  --feedback-error-hover: 239 68 68;
-  --feedback-error-soft: 64 20 20;
-  --feedback-info: 96 165 250;
-  --feedback-info-soft: 20 36 70;
-  --feedback-consent: 167 139 250;
-  --feedback-consent-soft: 40 28 72;
-  --feedback-neutral: 148 163 184;
-  --feedback-neutral-soft: 36 42 52;
-  --banner-bg: 66 44 6;
-  --banner-text: 254 243 199;
-  --focus-ring: 96 165 250;
+  --background: 15 16 16;
+  --foreground: 236 235 231;
+  --card: 23 24 24;
+  --card-foreground: 236 235 231;
+  --popover: 26 27 27;
+  --popover-foreground: 236 235 231;
+  --primary: 64 178 142;
+  --primary-hover: 86 196 160;
+  --primary-foreground: 6 26 20;
+  --primary-soft: 19 48 40;
+  --secondary: 34 35 35;
+  --secondary-foreground: 236 235 231;
+  --muted: 32 33 33;
+  --muted-foreground: 163 160 154;
+  --accent: 38 39 39;
+  --accent-foreground: 236 235 231;
+  --destructive: 236 104 100;
+  --destructive-hover: 244 128 124;
+  --destructive-foreground: 30 8 8;
+  --destructive-soft: 58 22 22;
+  --border: 44 45 45;
+  --input: 104 104 100;
+  --ring: 64 178 142;
+  --success: 92 200 140;
+  --success-soft: 20 46 32;
+  --warning: 236 168 76;
+  --warning-soft: 54 38 14;
+  --info: 120 166 232;
+  --info-soft: 22 34 56;
+  --consent: 178 150 236;
+  --consent-soft: 40 30 64;
+  --neutral: 160 166 178;
+  --neutral-soft: 36 40 46;
+  --highlight: 234 166 82;
+  --highlight-soft: 54 40 18;
+  --banner-bg: 58 42 12;
+  --banner-text: 250 236 200;
   --shadow-color: 0 0 0;
+  --action-primary-press: 30 110 86;
+  --feedback-error-press: 150 50 50;
+  --feedback-success-press: 40 120 80;
+  --border-press: 8 8 8;
   color-scheme: dark;
 }
 
@@ -90,7 +112,7 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-page text-ink font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
     line-height: 1.5;
   }
   [lang='ur'],
@@ -100,7 +122,7 @@
     line-height: 1.8;
   }
   :focus-visible {
-    outline: 3px solid rgb(var(--focus-ring));
+    outline: 3px solid rgb(var(--ring));
     outline-offset: 2px;
     border-radius: 6px;
   }
@@ -112,7 +134,7 @@
 
 @layer components {
   .card {
-    @apply bg-surface rounded-card border border-line shadow-card;
+    @apply bg-card rounded-card border border-border shadow-card;
   }
   .sr-only-focusable:not(:focus) {
     @apply sr-only;

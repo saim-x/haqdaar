@@ -9,9 +9,9 @@ export function PageHeader({ title, subtitle, actions, eyebrow }: { title: strin
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        {eyebrow && <p className="text-xs font-bold uppercase tracking-wider text-accent">{eyebrow}</p>}
+        {eyebrow && <p className="text-xs font-bold uppercase tracking-wider text-highlight">{eyebrow}</p>}
         <h1 className="text-3xl font-bold leading-tight tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 max-w-[70ch] text-muted">{subtitle}</p>}
+        {subtitle && <p className="mt-1 max-w-[70ch] text-muted-foreground">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -20,10 +20,10 @@ export function PageHeader({ title, subtitle, actions, eyebrow }: { title: strin
 
 export function Panel({ title, children, actions, className, id }: { title?: ReactNode; children: ReactNode; actions?: ReactNode; className?: string; id?: string }) {
   return (
-    <Card id={id} className={cx('rounded-xl border-line shadow-none', className)}>
+    <Card id={id} className={cx('rounded-xl border-border shadow-none', className)}>
       {(title || actions) && (
-        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 border-b border-line px-4 py-3">
-          {title && <CardTitle className="text-[13px] font-semibold uppercase tracking-wide text-muted">{title}</CardTitle>}
+        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 border-b border-border px-4 py-3">
+          {title && <CardTitle className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</CardTitle>}
           {actions}
         </CardHeader>
       )}
@@ -33,12 +33,12 @@ export function Panel({ title, children, actions, className, id }: { title?: Rea
 }
 
 export function Stat({ label, value, hint, tone = 'ink', lead }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'ink' | 'ok' | 'warn' | 'danger' | 'info'; lead?: boolean }) {
-  const toneCls = { ink: 'text-ink', ok: 'text-ok', warn: 'text-warn', danger: 'text-danger', info: 'text-info' }[tone];
+  const toneCls = { ink: 'text-foreground', ok: 'text-ok', warn: 'text-warn', danger: 'text-danger', info: 'text-info' }[tone];
   return (
-    <Card className={cx('rounded-xl border-line p-4 shadow-none', lead && 'bg-brand text-brand-ink sm:col-span-2')}>
-      <p className={cx('text-xs font-semibold uppercase tracking-wide', lead ? 'text-white/75' : 'text-muted')}>{label}</p>
+    <Card className={cx('rounded-xl border-border p-4 shadow-none', lead && 'bg-primary text-primary-foreground sm:col-span-2')}>
+      <p className={cx('text-xs font-semibold uppercase tracking-wide', lead ? 'text-white/75' : 'text-muted-foreground')}>{label}</p>
       <p className={cx('num mt-2 font-bold leading-none tracking-tight', lead ? 'text-5xl text-white' : cx('text-3xl', toneCls))}>{value}</p>
-      {hint && <p className={cx('mt-2 text-sm', lead ? 'text-white/75' : 'text-muted')}>{hint}</p>}
+      {hint && <p className={cx('mt-2 text-sm', lead ? 'text-white/75' : 'text-muted-foreground')}>{hint}</p>}
     </Card>
   );
 }
@@ -60,7 +60,7 @@ export function FlagChip({ flag }: { flag: Flag }) {
 }
 
 export function ReasonChip({ code }: { code: string }) {
-  return <span className="inline-flex rounded-md bg-sunken px-1.5 py-0.5 font-mono text-[11px] font-semibold text-muted">{code}</span>;
+  return <span className="inline-flex rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground">{code}</span>;
 }
 
 const BAND: Record<PriorityBand, string> = {
@@ -91,9 +91,9 @@ export function ConfidenceBar({ value, threshold = 0.9, label, compact }: { valu
           <span className="num font-mono">{value === null || value === undefined ? '—' : v.toFixed(2)}</span>
         </div>
       )}
-      <div className="relative h-2 rounded-full bg-sunken" role="meter" aria-valuemin={0} aria-valuemax={1} aria-valuenow={v} aria-label={label ?? 'Confidence'}>
+      <div className="relative h-2 rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={1} aria-valuenow={v} aria-label={label ?? 'Confidence'}>
         <div className={cx('h-2 rounded-full', tone)} style={{ width: `${Math.round(v * 100)}%` }} />
-        <div className="absolute -top-1 h-4 w-0.5 bg-ink" style={{ left: `${threshold * 100}%` }} title={`Auto-approve threshold ${threshold}`} aria-hidden />
+        <div className="absolute -top-1 h-4 w-0.5 bg-foreground" style={{ left: `${threshold * 100}%` }} title={`Auto-approve threshold ${threshold}`} aria-hidden />
       </div>
       {compact && <span className="num mt-0.5 block font-mono text-xs">{value === null || value === undefined ? '—' : v.toFixed(2)}</span>}
     </div>
@@ -102,10 +102,10 @@ export function ConfidenceBar({ value, threshold = 0.9, label, compact }: { valu
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-line-strong p-10 text-center">
-      <Inbox className="h-10 w-10 text-muted" aria-hidden />
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-input p-10 text-center">
+      <Inbox className="h-10 w-10 text-muted-foreground" aria-hidden />
       <p className="text-lg font-semibold">{title}</p>
-      {body && <p className="max-w-md text-muted">{body}</p>}
+      {body && <p className="max-w-md text-muted-foreground">{body}</p>}
       {action}
     </div>
   );
@@ -126,9 +126,9 @@ export function ErrorState({ error }: { error: unknown }) {
 }
 
 export function Hash({ value, className }: { value: string | null | undefined; className?: string }) {
-  if (!value) return <span className="text-muted">—</span>;
+  if (!value) return <span className="text-muted-foreground">—</span>;
   return (
-    <code title={value} className={cx('rounded bg-sunken px-1.5 py-0.5 font-mono text-xs', className)}>
+    <code title={value} className={cx('rounded bg-muted px-1.5 py-0.5 font-mono text-xs', className)}>
       {value.slice(0, 10)}…{value.slice(-6)}
     </code>
   );
@@ -147,10 +147,10 @@ export function Field({ label, children, hint, error }: { label: string; childre
     <label className="block">
       <span className="mb-1 block text-sm font-semibold">{label}</span>
       {children}
-      {hint && !error && <span className="mt-1 block text-xs text-muted">{hint}</span>}
+      {hint && !error && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
       {error && <span className="mt-1 block text-xs font-semibold text-danger">{error}</span>}
     </label>
   );
 }
 
-export const inputCls = 'min-h-[40px] w-full rounded-lg border border-line-strong bg-surface px-3 text-sm';
+export const inputCls = 'min-h-[40px] w-full rounded-lg border border-input bg-card px-3 text-sm';

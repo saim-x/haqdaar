@@ -49,7 +49,7 @@ export function UsersPage() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <caption className="sr-only">Users</caption>
-            <thead className="bg-sunken text-left text-xs uppercase tracking-wide text-muted">
+            <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Email</th>
@@ -60,12 +60,12 @@ export function UsersPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {q.data!.map((u) => (
                 <tr key={u.id} className={cx(!u.is_active && 'opacity-60')}>
                   <td className="px-3 py-2 font-semibold">
                     {u.full_name}
-                    {u.id === user?.id && <span className="ms-2 text-xs text-muted">(you)</span>}
+                    {u.id === user?.id && <span className="ms-2 text-xs text-muted-foreground">(you)</span>}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">{u.email ?? '—'}</td>
                   <td className="px-3 py-2">
@@ -82,7 +82,7 @@ export function UsersPage() {
                     </select>
                   </td>
                   <td className="px-3 py-2">
-                    <span className={cx('rounded px-1.5 py-0.5 text-xs font-bold', u.is_active ? 'bg-ok-soft text-ok' : 'bg-sunken text-muted')}>{u.is_active ? 'Active' : 'Disabled'}</span>
+                    <span className={cx('rounded px-1.5 py-0.5 text-xs font-bold', u.is_active ? 'bg-ok-soft text-ok' : 'bg-muted text-muted-foreground')}>{u.is_active ? 'Active' : 'Disabled'}</span>
                   </td>
                   <td className="px-3 py-2 text-end">
                     {u.id !== user?.id && (

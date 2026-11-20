@@ -144,10 +144,10 @@ export function VoiceCapture({ fieldKey, parse, allowUnknown, onConfirm }: { fie
 
   if (state === 'readback' && result) {
     return (
-      <div role="dialog" aria-label={t('isThisCorrect')} className="rounded-card border-2 border-brand bg-brand-soft p-4 animate-rise">
-        <p className="text-sm font-semibold text-brand">{t('youSaid')}</p>
+      <div role="dialog" aria-label={t('isThisCorrect')} className="rounded-card border-2 border-primary bg-primary-soft p-4 animate-rise">
+        <p className="text-sm font-semibold text-primary">{t('youSaid')}</p>
         <p className="my-2 break-words text-3xl font-bold">{result.display}</p>
-        <p className="mb-4 flex items-start gap-1.5 text-sm text-muted">
+        <p className="mb-4 flex items-start gap-1.5 text-sm text-muted-foreground">
           <Ear className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>“{result.transcript}”</span>
         </p>
@@ -182,7 +182,7 @@ export function VoiceCapture({ fieldKey, parse, allowUnknown, onConfirm }: { fie
         aria-pressed={listening}
         className={cx(
           'relative flex min-h-tap-lg w-full items-center justify-center gap-3 overflow-hidden rounded-card border-2 px-4 text-lg font-bold transition-colors duration-fast',
-          listening ? 'border-danger bg-danger text-white' : 'border-brand/40 bg-surface text-brand hover:border-brand',
+          listening ? 'border-danger bg-danger text-white' : 'border-primary/40 bg-card text-primary hover:border-primary',
         )}
       >
         {listening && <span className="absolute inset-0 animate-pulse bg-white/10" aria-hidden />}
@@ -190,7 +190,7 @@ export function VoiceCapture({ fieldKey, parse, allowUnknown, onConfirm }: { fie
         {listening ? t('recording') : state === 'parsing' ? t('processingVoice') : t('speak')}
       </button>
       {listening && (
-        <p aria-live="polite" className="min-h-[1.5rem] text-center text-lg font-medium text-muted">
+        <p aria-live="polite" className="min-h-[1.5rem] text-center text-lg font-medium text-muted-foreground">
           {interim || (lang === 'ur' ? 'بولیں…' : 'Speak now…')}
         </p>
       )}

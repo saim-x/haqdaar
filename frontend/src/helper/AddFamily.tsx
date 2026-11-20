@@ -84,7 +84,7 @@ export function AddFamily() {
     }
   };
 
-  const field = 'min-h-tap-lg w-full rounded-control border-2 border-line-strong bg-surface px-4 text-lg';
+  const field = 'min-h-tap-lg w-full rounded-control border-2 border-input bg-card px-4 text-lg';
   const validProfile = form.full_name.trim().length >= 2 && isValidPkPhone(form.phone);
 
   return (
@@ -150,7 +150,7 @@ export function AddFamily() {
                 role="radio"
                 aria-checked={method === m}
                 onClick={() => setMethod(m)}
-                className={cx('flex min-h-tap-lg items-center gap-3 rounded-control border-2 p-3 text-start font-semibold', method === m ? 'border-brand bg-brand-soft' : 'border-line bg-surface')}
+                className={cx('flex min-h-tap-lg items-center gap-3 rounded-control border-2 p-3 text-start font-semibold', method === m ? 'border-primary bg-primary-soft' : 'border-border bg-card')}
               >
                 <Icon className="h-6 w-6 shrink-0" aria-hidden />
                 {label}
@@ -176,7 +176,7 @@ export function AddFamily() {
                       onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       autoFocus
                     />
-                    <span className="mt-1 block text-sm text-muted">{t('smsHint')}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">{t('smsHint')}</span>
                   </label>
                   <Button size="lg" block loading={verify.isPending} disabled={code.length !== 6} onClick={() => verify.mutate()}>
                     {t('verifyCode')}
@@ -200,7 +200,7 @@ export function AddFamily() {
                 {recording ? t('recording') : t('recordConsent')}
               </Button>
               <label className="flex min-h-tap items-start gap-3">
-                <input type="checkbox" className="mt-1 h-6 w-6 accent-brand" checked={attested} onChange={(e) => setAttested(e.target.checked)} />
+                <input type="checkbox" className="mt-1 h-6 w-6 accent-primary" checked={attested} onChange={(e) => setAttested(e.target.checked)} />
                 <span className="font-medium">{t('attest')}</span>
               </label>
               <Button size="lg" block loading={verify.isPending} disabled={!attested || !recorded} onClick={() => verify.mutate()}>

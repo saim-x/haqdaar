@@ -15,7 +15,7 @@ export function PrototypeBanner({ forceEnglish = false }: { forceEnglish?: boole
       aria-label="Prototype notice"
       lang={l}
       dir={l === 'ur' ? 'rtl' : 'ltr'}
-      className="sticky top-0 z-50 flex min-h-[28px] items-center justify-center gap-2 bg-banner px-3 py-1 text-center text-xs font-medium text-banner-ink"
+      className="sticky top-0 z-50 flex min-h-[28px] items-center justify-center gap-2 bg-banner px-3 py-1 text-center text-xs font-medium text-banner-foreground"
     >
       <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>{text}</span>

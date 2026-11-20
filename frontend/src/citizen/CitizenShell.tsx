@@ -19,7 +19,7 @@ function IconToggle({ pressed, onClick, label, children }: { pressed?: boolean; 
       title={label}
       className={cx(
         'inline-flex h-11 min-w-[44px] items-center justify-center gap-1 rounded-full px-1.5 text-sm font-semibold transition-colors duration-fast',
-        pressed ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-sunken',
+        pressed ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:bg-muted',
       )}
     >
       {children}
@@ -40,18 +40,18 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
   ];
 
   return (
-    <div className="relative min-h-[calc(100dvh-28px)] lg:flex lg:items-start lg:justify-center lg:gap-14 lg:bg-sunken lg:px-8 lg:py-8">
+    <div className="relative min-h-[calc(100dvh-28px)] lg:flex lg:items-start lg:justify-center lg:gap-14 lg:bg-muted lg:px-8 lg:py-8">
       {/* Desktop only: the citizen app is phone-first, so on wide screens it sits in a framed
           column beside a short context panel instead of floating in empty space. */}
-      <AjrakPattern className="hidden text-line-strong/[0.09] lg:block" />
+      <AjrakPattern className="hidden text-input/[0.09] lg:block" />
       <aside className="sticky top-[60px] hidden w-[320px] shrink-0 lg:block">
         <HaqdaarMark className="h-14 w-14" />
         <h2 className="mt-6 text-3xl font-bold leading-tight">{t('deskTitle')}</h2>
-        <p className="mt-3 text-muted">{t('deskBody')}</p>
+        <p className="mt-3 text-muted-foreground">{t('deskBody')}</p>
         <ul className="mt-6 space-y-3">
           {tips.map((tip) => (
             <li key={tip.text} className="flex items-start gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-brand ring-1 ring-line">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card text-primary ring-1 ring-border">
                 <tip.icon className="h-4 w-4" aria-hidden />
               </span>
               <span className="pt-1.5 text-sm font-medium">{tip.text}</span>
@@ -59,12 +59,12 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
           ))}
         </ul>
       </aside>
-      <div className="relative mx-auto flex min-h-[calc(100dvh-28px)] w-full max-w-xl flex-col bg-page lg:mx-0 lg:min-h-[calc(100dvh-28px-4rem)] lg:max-w-[440px] lg:overflow-clip lg:rounded-[2rem] lg:border lg:border-line lg:shadow-lift">
-      <header className="sticky top-[28px] z-40 border-b border-line bg-page/95 backdrop-blur supports-[backdrop-filter]:bg-page/80">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-28px)] w-full max-w-xl flex-col bg-background lg:mx-0 lg:min-h-[calc(100dvh-28px-4rem)] lg:max-w-[440px] lg:overflow-clip lg:rounded-[2rem] lg:border lg:border-border lg:shadow-lift">
+      <header className="sticky top-[28px] z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center gap-2 px-3 py-2">
           <Link
             to={user ? homePathFor(user.role) : '/login'}
-            className="flex items-center gap-2 rounded-full pe-2 text-lg font-bold text-brand"
+            className="flex items-center gap-2 rounded-full pe-2 text-lg font-bold text-primary"
             aria-label={t('home')}
           >
             <HaqdaarMark className="h-9 w-9 rounded-xl" />
@@ -102,7 +102,7 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
               </IconToggle>
             ) : (
               isPublic && (
-                <Link to="/login" aria-label={t('loginTitle')} className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-sunken">
+                <Link to="/login" aria-label={t('loginTitle')} className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
                   <LogIn className="h-5 w-5" aria-hidden />
                 </Link>
               )

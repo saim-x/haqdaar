@@ -33,7 +33,7 @@ export function JobsPage() {
             type="button"
             aria-pressed={status === s}
             onClick={() => setStatus(s)}
-            className={cx('min-h-[32px] rounded-full border px-3 text-xs font-semibold', status === s ? 'border-brand bg-brand text-brand-ink' : 'border-line bg-surface text-muted')}
+            className={cx('min-h-[32px] rounded-full border px-3 text-xs font-semibold', status === s ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground')}
           >
             {s || 'All'}
           </button>
@@ -49,7 +49,7 @@ export function JobsPage() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <caption className="sr-only">Jobs</caption>
-            <thead className="bg-sunken text-left text-xs uppercase tracking-wide text-muted">
+            <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Status</th>
@@ -60,7 +60,7 @@ export function JobsPage() {
                 <th className="px-3 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {q.data.map((j) => (
                 <tr key={j.id}>
                   <td className="px-3 py-2 font-mono text-xs font-semibold">{j.job_type}</td>
@@ -70,9 +70,9 @@ export function JobsPage() {
                   <td className="px-3 py-2 font-mono text-xs">
                     {j.attempts}/{j.max_attempts}
                   </td>
-                  <td className="max-w-[220px] truncate px-3 py-2 font-mono text-xs text-muted">{JSON.stringify(j.payload_json)}</td>
+                  <td className="max-w-[220px] truncate px-3 py-2 font-mono text-xs text-muted-foreground">{JSON.stringify(j.payload_json)}</td>
                   <td className="max-w-[220px] truncate px-3 py-2 text-xs text-danger">{j.last_error ?? ''}</td>
-                  <td className="px-3 py-2 text-xs text-muted">{fmtTime(j.created_at)}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">{fmtTime(j.created_at)}</td>
                   <td className="px-3 py-2 text-end">
                     {(j.status === 'DEAD' || j.status === 'FAILED_RETRY') && (
                       <Button size="sm" variant="secondary" icon={<RotateCw className="h-4 w-4" aria-hidden />} loading={retry.isPending && retry.variables === j.id} onClick={() => retry.mutate(j.id)}>

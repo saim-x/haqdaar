@@ -74,19 +74,19 @@ export function ConsentCenter() {
     return (
       <li className={cx('card p-4', !isActive && 'opacity-80')}>
         <div className="flex items-start gap-3">
-          <span className={cx('inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', isActive ? 'bg-consent-soft text-consent' : 'bg-sunken text-muted')}>
+          <span className={cx('inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', isActive ? 'bg-consent-soft text-consent' : 'bg-muted text-muted-foreground')}>
             <Icon className="h-6 w-6" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-lg font-bold">{g.recipient_label}</p>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               {isActive ? (
                 <span className="inline-flex items-center gap-1 font-semibold text-ok">
                   <CircleCheck className="h-4 w-4" aria-hidden />
                   {t('active')}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 font-semibold text-muted">
+                <span className="inline-flex items-center gap-1 font-semibold text-muted-foreground">
                   <ShieldOff className="h-4 w-4" aria-hidden />
                   {g.status === 'EXPIRED' ? t('expired') : t('withdrawn')}
                 </span>
@@ -98,7 +98,7 @@ export function ConsentCenter() {
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {g.categories.map((c) => (
-                <span key={c} className="rounded-full bg-sunken px-2.5 py-1 text-sm font-medium">
+                <span key={c} className="rounded-full bg-muted px-2.5 py-1 text-sm font-medium">
                   {t(`cat_${c}` as DictKey)}
                 </span>
               ))}
@@ -143,10 +143,10 @@ export function ConsentCenter() {
           {active.map((g) => (
             <GrantCard key={g.id} g={g} />
           ))}
-          {active.length === 0 && <li className="rounded-card border-2 border-dashed border-line-strong p-5 text-center text-muted">—</li>}
+          {active.length === 0 && <li className="rounded-card border-2 border-dashed border-input p-5 text-center text-muted-foreground">—</li>}
         </ul>
         {past.length > 0 && (
-          <details className="rounded-card border border-line bg-surface p-3">
+          <details className="rounded-card border border-border bg-card p-3">
             <summary className="cursor-pointer font-semibold">
               {t('withdrawn')} / {t('expired')} ({past.length})
             </summary>
@@ -165,9 +165,9 @@ export function ConsentCenter() {
             {t('whoViewed')}
           </h2>
           {logs.length === 0 ? (
-            <p className="rounded-card border-2 border-dashed border-line-strong p-5 text-center text-muted">{t('noAccessYet')}</p>
+            <p className="rounded-card border-2 border-dashed border-input p-5 text-center text-muted-foreground">{t('noAccessYet')}</p>
           ) : (
-            <ul className="card divide-y divide-line" aria-live="polite">
+            <ul className="card divide-y divide-border" aria-live="polite">
               {logs.map((l) => (
                 <li key={l.id} className={cx('flex items-start gap-3 p-3', !l.allowed && 'bg-danger-soft')}>
                   {l.allowed ? (
@@ -182,7 +182,7 @@ export function ConsentCenter() {
                         {l.allowed ? t('allowed') : t('blocked')}
                       </span>
                     </p>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm text-muted-foreground">
                       {t(`cat_${l.category}` as DictKey)} · <span className="num">{formatDateTime(l.created_at, lang)}</span>
                     </p>
                   </div>
@@ -196,7 +196,7 @@ export function ConsentCenter() {
       <Link to="/c/my-data" className="card flex items-center gap-3 p-4 font-semibold">
         <Database className="h-6 w-6 text-info" aria-hidden />
         <span className="flex-1">{t('myData')}</span>
-        <Chevron className="h-5 w-5 text-muted" aria-hidden />
+        <Chevron className="h-5 w-5 text-muted-foreground" aria-hidden />
       </Link>
 
       <Modal

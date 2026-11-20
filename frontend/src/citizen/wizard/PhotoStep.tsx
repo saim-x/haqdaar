@@ -98,14 +98,14 @@ export function PhotoStep({ step, draft, onNext }: { step: StepDef; draft: Draft
     <div className="space-y-4">
       <div
         className={cx(
-          'relative flex aspect-[1.6] w-full items-center justify-center overflow-hidden rounded-card border-2 border-dashed bg-sunken',
-          needsRetake ? 'border-warn' : status === 'VERIFIED' ? 'border-ok' : 'border-line-strong',
+          'relative flex aspect-[1.6] w-full items-center justify-center overflow-hidden rounded-card border-2 border-dashed bg-muted',
+          needsRetake ? 'border-warn' : status === 'VERIFIED' ? 'border-ok' : 'border-input',
         )}
       >
         {preview ? (
           <img src={preview} alt="" className="h-full w-full object-contain" />
         ) : (
-          <svg viewBox="0 0 160 100" className="h-3/5 text-line-strong" aria-hidden>
+          <svg viewBox="0 0 160 100" className="h-3/5 text-input" aria-hidden>
             <rect x="4" y="4" width="152" height="92" rx="10" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray="8 6" />
             <circle cx="42" cy="44" r="16" fill="currentColor" opacity="0.4" />
             <rect x="70" y="32" width="70" height="8" rx="4" fill="currentColor" opacity="0.4" />

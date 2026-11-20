@@ -30,33 +30,33 @@ export function ConsentAudit() {
           title="Access log"
           actions={
             <label className="flex items-center gap-2 text-xs font-semibold">
-              <input type="checkbox" className="h-4 w-4 accent-brand" checked={deniedOnly} onChange={(e) => setDeniedOnly(e.target.checked)} />
+              <input type="checkbox" className="h-4 w-4 accent-primary" checked={deniedOnly} onChange={(e) => setDeniedOnly(e.target.checked)} />
               Blocked only
             </label>
           }
         >
-          <ul className="max-h-[560px] divide-y divide-line overflow-y-auto">
+          <ul className="max-h-[560px] divide-y divide-border overflow-y-auto">
             {logs.map((l) => (
               <li key={l.id} className={cx('flex items-start gap-2 py-2 text-sm', !l.allowed && 'bg-danger-soft/50')}>
                 {l.allowed ? <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-ok" aria-label="allowed" /> : <Ban className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-label="blocked" />}
                 <div className="min-w-0 flex-1">
                   <p>
-                    <strong>{l.actor_label}</strong> <span className="text-muted">({l.actor_role})</span> → {l.category} · <span className="font-mono text-xs">{l.resource_ref}</span>
+                    <strong>{l.actor_label}</strong> <span className="text-muted-foreground">({l.actor_role})</span> → {l.category} · <span className="font-mono text-xs">{l.resource_ref}</span>
                   </p>
-                  <p className="text-xs text-muted">
+                  <p className="text-xs text-muted-foreground">
                     {fmtTime(l.created_at)} {l.denial_reason && <span className="font-mono font-semibold text-danger">· {l.denial_reason}</span>}
                   </p>
                 </div>
               </li>
             ))}
-            {logs.length === 0 && <li className="py-6 text-center text-muted">No entries</li>}
+            {logs.length === 0 && <li className="py-6 text-center text-muted-foreground">No entries</li>}
           </ul>
         </Panel>
         <Panel title="Grants">
           <div className="max-h-[560px] overflow-auto">
             <table className="w-full text-sm">
               <caption className="sr-only">Consent grants</caption>
-              <thead className="text-left text-xs uppercase tracking-wide text-muted">
+              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="py-1.5 pe-2">Recipient</th>
                   <th className="py-1.5 pe-2">Status</th>
@@ -64,18 +64,18 @@ export function ConsentAudit() {
                   <th className="py-1.5">Granted / withdrawn</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-border">
                 {grants.map((g) => (
                   <tr key={g.id}>
                     <td className="py-1.5 pe-2">
                       {g.recipient_label}
-                      <span className="block font-mono text-[11px] text-muted">citizen {g.citizen_id.slice(0, 12)}</span>
+                      <span className="block font-mono text-[11px] text-muted-foreground">citizen {g.citizen_id.slice(0, 12)}</span>
                     </td>
                     <td className="py-1.5 pe-2">
-                      <span className={cx('rounded px-1.5 py-0.5 text-[11px] font-bold', g.status === 'ACTIVE' ? 'bg-ok-soft text-ok' : g.status === 'WITHDRAWN' ? 'bg-danger-soft text-danger' : 'bg-sunken text-muted')}>{g.status}</span>
+                      <span className={cx('rounded px-1.5 py-0.5 text-[11px] font-bold', g.status === 'ACTIVE' ? 'bg-ok-soft text-ok' : g.status === 'WITHDRAWN' ? 'bg-danger-soft text-danger' : 'bg-muted text-muted-foreground')}>{g.status}</span>
                     </td>
                     <td className="py-1.5 pe-2 font-mono text-[11px]">{g.assurance_level}</td>
-                    <td className="py-1.5 text-xs text-muted">
+                    <td className="py-1.5 text-xs text-muted-foreground">
                       {fmtTime(g.granted_at)}
                       {g.withdrawn_at && <span className="block text-danger">withdrawn {fmtTime(g.withdrawn_at)}</span>}
                     </td>

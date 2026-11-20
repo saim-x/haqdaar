@@ -64,7 +64,7 @@ function RuleCard({ rule, onChange, onRemove, disabled, errors }: { rule: Eligib
   const [open, setOpen] = useState(false);
   const hasErr = Object.keys(errors).length > 0;
   return (
-    <li className={cx('rounded-lg border p-3', hasErr ? 'border-danger bg-danger-soft/40' : 'border-line')}>
+    <li className={cx('rounded-lg border p-3', hasErr ? 'border-danger bg-danger-soft/40' : 'border-border')}>
       <div className="grid gap-2 md:grid-cols-[130px_minmax(0,1.6fr)_90px_minmax(0,1fr)_100px_100px_auto] md:items-end">
         <Field label="Rule id" error={errors.id}>
           <input className={cx(inputCls, 'font-mono')} disabled={disabled} value={rule.id} onChange={(e) => set('id', e.target.value.toUpperCase())} />
@@ -110,7 +110,7 @@ function RuleCard({ rule, onChange, onRemove, disabled, errors }: { rule: Eligib
           )}
         </div>
       </div>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 text-xs text-muted-foreground">
         {FACTS.find((f) => f.key === rule.fact)?.label} · never auto-rejects: a FAIL routes to {rule.on_fail === 'HUMAN' ? 'an officer' : 'the citizen for more info'}.
       </p>
       {(open || hasErr) && (
@@ -151,20 +151,20 @@ function TwinPanel({ result }: { result: TwinResult }) {
     <Panel title="Digital Twin · replay on past decided cases" className="border-info/40" id="twin">
       <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
         <div className="space-y-3">
-          <div className={cx('rounded-card p-4', delta > 0 ? 'bg-warn-soft' : delta < 0 ? 'bg-ok-soft' : 'bg-sunken')}>
-            <p className="text-xs font-bold uppercase tracking-wide text-muted">Budget delta</p>
-            <p className={cx('num mt-1 text-4xl font-bold', delta > 0 ? 'text-warn' : delta < 0 ? 'text-ok' : 'text-ink')}>
+          <div className={cx('rounded-card p-4', delta > 0 ? 'bg-warn-soft' : delta < 0 ? 'bg-ok-soft' : 'bg-muted')}>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Budget delta</p>
+            <p className={cx('num mt-1 text-4xl font-bold', delta > 0 ? 'text-warn' : delta < 0 ? 'text-ok' : 'text-foreground')}>
               {delta > 0 ? '+' : ''}
               {pkr(delta)}
             </p>
-            <p className="mt-1 text-xs text-muted">over {result.sample_size} replayed cases</p>
+            <p className="mt-1 text-xs text-muted-foreground">over {result.sample_size} replayed cases</p>
           </div>
-          <div className="rounded-card bg-sunken p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted">Outcome changes</p>
+          <div className="rounded-card bg-muted p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Outcome changes</p>
             <p className="num mt-1 text-4xl font-bold">{result.flipped_count}</p>
-            <p className="mt-1 text-xs text-muted">cases would get a different result or amount</p>
+            <p className="mt-1 text-xs text-muted-foreground">cases would get a different result or amount</p>
           </div>
-          <p className="flex items-start gap-1.5 text-xs text-muted">
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             Pure in-memory replay: no decisions, payments or messages touched on real cases.
           </p>
@@ -175,7 +175,7 @@ function TwinPanel({ result }: { result: TwinResult }) {
         <div className="mt-5 overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <caption className="mb-2 text-left text-sm font-bold">Every case that changes, and why</caption>
-            <thead className="text-left text-xs uppercase tracking-wide text-muted">
+            <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="py-1.5 pe-3">Case</th>
                 <th className="py-1.5 pe-3">Before</th>
@@ -184,7 +184,7 @@ function TwinPanel({ result }: { result: TwinResult }) {
                 <th className="py-1.5">Reason</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {result.flipped_cases.map((f) => (
                 <tr key={f.case_id}>
                   <td className="py-1.5 pe-3 font-mono text-xs">{f.reference_code}</td>
@@ -193,7 +193,7 @@ function TwinPanel({ result }: { result: TwinResult }) {
                   <td className="py-1.5 pe-3 font-mono text-xs">
                     {pkr(f.before_amount)} → {pkr(f.after_amount)}
                   </td>
-                  <td className="py-1.5 text-xs text-muted">{f.primary_reason}</td>
+                  <td className="py-1.5 text-xs text-muted-foreground">{f.primary_reason}</td>
                 </tr>
               ))}
             </tbody>
@@ -349,22 +349,22 @@ export function RuleEditor() {
                   type="button"
                   onClick={() => setSelectedId(v.id)}
                   aria-current={selected?.id === v.id}
-                  className={cx('w-full rounded-lg border p-3 text-start transition-colors duration-fast', selected?.id === v.id ? 'border-brand bg-brand-soft' : 'border-line hover:border-line-strong')}
+                  className={cx('w-full rounded-lg border p-3 text-start transition-colors duration-fast', selected?.id === v.id ? 'border-primary bg-primary-soft' : 'border-border hover:border-input')}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold">v{v.version_number}</span>
                     <span
                       className={cx(
                         'rounded px-1.5 py-0.5 text-[11px] font-bold',
-                        v.status === 'PUBLISHED' ? 'bg-ok text-white' : v.status === 'DRAFT' ? 'bg-warn-soft text-warn' : 'bg-sunken text-muted',
+                        v.status === 'PUBLISHED' ? 'bg-ok text-white' : v.status === 'DRAFT' ? 'bg-warn-soft text-warn' : 'bg-muted text-muted-foreground',
                       )}
                     >
                       {v.status === 'PUBLISHED' ? 'ACTIVE' : v.status}
                     </span>
                   </div>
                   <Hash value={v.content_hash} className="mt-1 inline-block" />
-                  {v.change_note && <p className="mt-1 line-clamp-2 text-xs text-muted">{v.change_note}</p>}
-                  <p className="mt-1 text-[11px] text-muted">{v.published_at ? `Published ${fmtTime(v.published_at)}${v.published_by ? ` by ${v.published_by}` : ''}` : `Created ${fmtTime(v.created_at)}`}</p>
+                  {v.change_note && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{v.change_note}</p>}
+                  <p className="mt-1 text-[11px] text-muted-foreground">{v.published_at ? `Published ${fmtTime(v.published_at)}${v.published_by ? ` by ${v.published_by}` : ''}` : `Created ${fmtTime(v.created_at)}`}</p>
                 </button>
               </li>
             ))}
@@ -374,7 +374,7 @@ export function RuleEditor() {
         {draft && selected && p && f ? (
           <div className="min-w-0 space-y-5">
             {editable && (
-              <div className="sticky top-[36px] z-20 flex flex-wrap items-center gap-2 rounded-card border border-line bg-surface/95 p-3 shadow-card backdrop-blur">
+              <div className="sticky top-[36px] z-20 flex flex-wrap items-center gap-2 rounded-card border border-border bg-card/95 p-3 shadow-card backdrop-blur">
                 <span className="me-auto text-sm">
                   Editing <strong>draft v{selected.version_number}</strong>
                   {dirty && <span className="ms-2 text-warn">· unsaved changes</span>}
@@ -423,7 +423,7 @@ export function RuleEditor() {
               <Panel title={`Changes vs active v${active!.version_number}`}>
                 <ul className="space-y-1 font-mono text-xs">
                   {changes.map((c) => (
-                    <li key={c} className="rounded bg-sunken px-2 py-1">
+                    <li key={c} className="rounded bg-muted px-2 py-1">
                       {c}
                     </li>
                   ))}
@@ -468,7 +468,7 @@ export function RuleEditor() {
                     </Field>
                   ))}
                 </div>
-                <p className="mt-3 rounded-lg bg-sunken p-2 font-mono text-xs">
+                <p className="mt-3 rounded-lg bg-muted p-2 font-mono text-xs">
                   amount = min({f.hard_cap_pkr}, {f.base_amount_pkr} + min(children, {f.max_children_counted}) × {f.per_child_bonus_pkr}) → 3 children = {pkr(Math.min(f.hard_cap_pkr, f.base_amount_pkr + Math.min(3, f.max_children_counted) * f.per_child_bonus_pkr))}
                 </p>
               </Panel>
@@ -513,7 +513,7 @@ export function RuleEditor() {
 
             <details className="card p-4">
               <summary className="cursor-pointer text-sm font-bold">Read-only JSON (what is hashed and stored)</summary>
-              <pre className="mt-3 max-h-96 overflow-auto rounded-lg bg-sunken p-3 font-mono text-xs">{JSON.stringify(draft, null, 2)}</pre>
+              <pre className="mt-3 max-h-96 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs">{JSON.stringify(draft, null, 2)}</pre>
             </details>
           </div>
         ) : (
@@ -541,7 +541,7 @@ export function RuleEditor() {
           {changes.length > 0 && (
             <ul className="space-y-1 font-mono text-xs">
               {changes.map((c) => (
-                <li key={c} className="rounded bg-sunken px-2 py-1">
+                <li key={c} className="rounded bg-muted px-2 py-1">
                   {c}
                 </li>
               ))}

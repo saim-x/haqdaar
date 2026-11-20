@@ -14,7 +14,7 @@ const ACTOR_TONE: Record<AuditEvent['actor_type'], string> = {
   USER: 'bg-info-soft text-info',
   AI: 'bg-consent-soft text-consent',
   AGENT: 'bg-warn-soft text-warn',
-  SYSTEM: 'bg-sunken text-muted',
+  SYSTEM: 'bg-muted text-muted-foreground',
   API_KEY: 'bg-ok-soft text-ok',
 };
 
@@ -69,7 +69,7 @@ export function AuditEvents() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">
             <caption className="sr-only">Audit events, newest first</caption>
-            <thead className="bg-sunken text-left text-xs uppercase tracking-wide text-muted">
+            <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="w-8 px-2 py-2" />
                 <th className="px-3 py-2">#</th>
@@ -80,13 +80,13 @@ export function AuditEvents() {
                 <th className="px-3 py-2">Event hash</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {q.data.items.map((e) => (
                 <FragmentRow key={e.id} e={e} open={open === e.seq} toggle={() => setOpen(open === e.seq ? null : e.seq)} />
               ))}
             </tbody>
           </table>
-          <div className="flex items-center justify-between border-t border-line px-3 py-2 text-xs text-muted">
+          <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
             <span>
               Showing {q.data.items.length} of {q.data.total}
             </span>
@@ -106,27 +106,27 @@ function FragmentRow({ e, open, toggle }: { e: AuditEvent; open: boolean; toggle
   const isCase = e.resource_type === 'case' && e.resource_id;
   return (
     <>
-      <tr className={cx('hover:bg-sunken/60', e.action.includes('denied') || e.action.includes('forbidden') || e.action.includes('blocked') ? 'bg-danger-soft/50' : '')}>
+      <tr className={cx('hover:bg-muted/60', e.action.includes('denied') || e.action.includes('forbidden') || e.action.includes('blocked') ? 'bg-danger-soft/50' : '')}>
         <td className="px-2 py-2">
-          <button type="button" onClick={toggle} aria-expanded={open} aria-label={`Payload for event ${e.seq}`} className="inline-flex h-7 w-7 items-center justify-center rounded hover:bg-sunken">
+          <button type="button" onClick={toggle} aria-expanded={open} aria-label={`Payload for event ${e.seq}`} className="inline-flex h-7 w-7 items-center justify-center rounded hover:bg-muted">
             {open ? <ChevronDown className="h-4 w-4" aria-hidden /> : <ChevronRight className="h-4 w-4" aria-hidden />}
           </button>
         </td>
         <td className="px-3 py-2 font-mono text-xs">{e.seq}</td>
-        <td className="px-3 py-2 text-xs text-muted">{fmtTime(e.created_at)}</td>
+        <td className="px-3 py-2 text-xs text-muted-foreground">{fmtTime(e.created_at)}</td>
         <td className="px-3 py-2">
           <span className={cx('rounded px-1.5 py-0.5 text-[11px] font-bold', ACTOR_TONE[e.actor_type])}>{e.actor_type}</span>
-          <span className="ms-1 text-xs text-muted">{e.actor_role ?? e.actor_id}</span>
+          <span className="ms-1 text-xs text-muted-foreground">{e.actor_role ?? e.actor_id}</span>
         </td>
         <td className="px-3 py-2 font-mono text-xs font-semibold">{e.action}</td>
         <td className="px-3 py-2 text-xs">
           {e.resource_type}
           {isCase ? (
-            <Link to={`/auditor/cases/${e.resource_id}`} className="ms-1 font-mono text-brand hover:underline">
+            <Link to={`/auditor/cases/${e.resource_id}`} className="ms-1 font-mono text-primary hover:underline">
               {e.resource_id!.slice(0, 14)}
             </Link>
           ) : (
-            e.resource_id && <span className="ms-1 font-mono text-muted">{e.resource_id.slice(0, 14)}</span>
+            e.resource_id && <span className="ms-1 font-mono text-muted-foreground">{e.resource_id.slice(0, 14)}</span>
           )}
         </td>
         <td className="px-3 py-2">
@@ -135,9 +135,9 @@ function FragmentRow({ e, open, toggle }: { e: AuditEvent; open: boolean; toggle
       </tr>
       {open && (
         <tr>
-          <td colSpan={7} className="bg-sunken px-4 py-3">
+          <td colSpan={7} className="bg-muted px-4 py-3">
             <pre className="overflow-x-auto font-mono text-xs">{JSON.stringify(e.payload_json, null, 2)}</pre>
-            <p className="mt-2 font-mono text-[11px] text-muted">
+            <p className="mt-2 font-mono text-[11px] text-muted-foreground">
               prev_hash {e.prev_hash.slice(0, 16)}… → event_hash {e.event_hash.slice(0, 16)}…
             </p>
           </td>

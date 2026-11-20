@@ -124,12 +124,12 @@ export default function StaffApp() {
         <HaqdaarMark className="h-9 w-9 rounded-xl" />
         <div>
           <p className="font-bold leading-tight">Haqdaar</p>
-          <p className="text-xs text-muted">Staff console · prototype</p>
+          <p className="text-xs text-muted-foreground">Staff console · prototype</p>
         </div>
       </div>
       {items.map((g) => (
         <div key={g.group}>
-          <p className="mb-1 px-2 text-[11px] font-bold uppercase tracking-wider text-muted">{g.group}</p>
+          <p className="mb-1 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{g.group}</p>
           <ul className="space-y-0.5">
             {g.items.map((i) => (
               <li key={i.to}>
@@ -138,7 +138,7 @@ export default function StaffApp() {
                   className={({ isActive }) =>
                     cx(
                       'flex min-h-[40px] items-center gap-2.5 rounded-lg px-2 text-sm font-medium transition-colors duration-fast',
-                      isActive ? 'bg-brand-soft font-semibold text-brand' : 'text-muted hover:bg-sunken hover:text-ink',
+                      isActive ? 'bg-primary-soft font-semibold text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                     )
                   }
                 >
@@ -150,10 +150,10 @@ export default function StaffApp() {
           </ul>
         </div>
       ))}
-      <div className="mt-auto space-y-2 border-t border-line pt-4">
+      <div className="mt-auto space-y-2 border-t border-border pt-4">
         <div className="px-2">
           <p className="truncate text-sm font-semibold">{user.full_name}</p>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-muted-foreground">
             {user.role}
             {tenant ? ` · ${tenant.code}` : user.tenant_id ? '' : ' · Platform'}
           </p>
@@ -162,7 +162,7 @@ export default function StaffApp() {
           <button
             type="button"
             onClick={() => setDark((d) => !d)}
-            className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-line text-sm font-medium hover:bg-sunken"
+            className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted"
             aria-pressed={dark}
           >
             {dark ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
@@ -174,7 +174,7 @@ export default function StaffApp() {
               void logout();
               nav('/login');
             }}
-            className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-line text-sm font-medium hover:bg-sunken"
+            className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted"
           >
             <LogOut className="h-4 w-4" aria-hidden />
             Log out
@@ -187,20 +187,20 @@ export default function StaffApp() {
   return (
     <div className="flex min-h-[calc(100dvh-28px)]" lang="en" dir="ltr">
       <Toaster position="top-right" />
-      <aside className="sticky top-[28px] hidden h-[calc(100dvh-28px)] w-64 shrink-0 border-e border-line bg-surface lg:block">{sidebar}</aside>
+      <aside className="sticky top-[28px] hidden h-[calc(100dvh-28px)] w-64 shrink-0 border-e border-border bg-card lg:block">{sidebar}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 start-0 w-72 bg-surface shadow-lift">{sidebar}</aside>
+          <aside className="absolute inset-y-0 start-0 w-72 bg-card shadow-lift">{sidebar}</aside>
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="sticky top-[28px] z-30 flex items-center gap-2 border-b border-line bg-page/95 px-4 py-2 backdrop-blur lg:hidden">
-          <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" className="inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-sunken">
+        <div className="sticky top-[28px] z-30 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-2 backdrop-blur lg:hidden">
+          <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" className="inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted">
             <Menu className="h-5 w-5" aria-hidden />
           </button>
           <span className="font-semibold">Haqdaar staff</span>
-          {tenant && <span className="ms-auto rounded-md bg-sunken px-2 py-0.5 text-xs font-bold">{tenant.code}</span>}
+          {tenant && <span className="ms-auto rounded-md bg-muted px-2 py-0.5 text-xs font-bold">{tenant.code}</span>}
         </div>
         <main className="mx-auto max-w-[1400px] px-4 py-6 lg:px-8">
           <Routes>

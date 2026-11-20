@@ -71,7 +71,7 @@ export function MocksPage() {
               <div className="mb-3 flex items-start justify-between gap-2">
                 <div>
                   <p className="font-bold">{LABEL[m.service_name] ?? m.service_name}</p>
-                  <p className="font-mono text-xs text-muted">/mock/v1/{m.service_name} · simulated</p>
+                  <p className="font-mono text-xs text-muted-foreground">/mock/v1/{m.service_name} · simulated</p>
                 </div>
                 <span className={cx('rounded px-2 py-0.5 text-xs font-bold', MODES.find((x) => x.mode === m.mode)?.tone)}>{m.mode}</span>
               </div>
@@ -85,14 +85,14 @@ export function MocksPage() {
                     title={hint}
                     disabled={set.isPending}
                     onClick={() => set.mutate({ service: m.service_name, mode })}
-                    className={cx('flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-lg border-2 text-[11px] font-bold transition-colors duration-fast', m.mode === mode ? tone : 'border-line text-muted hover:border-line-strong')}
+                    className={cx('flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-lg border-2 text-[11px] font-bold transition-colors duration-fast', m.mode === mode ? tone : 'border-border text-muted-foreground hover:border-input')}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
                     {mode}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-muted">Changed {fmtTime(m.updated_at)}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Changed {fmtTime(m.updated_at)}</p>
             </li>
           ))}
         </ul>

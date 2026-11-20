@@ -40,17 +40,17 @@ export function SwitchInterstitial() {
   const name = lang === 'ur' && family.full_name_ur ? family.full_name_ur : family.full_name;
   const Icon = lang === 'ur' ? ArrowLeft : ArrowRight;
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-page p-6 text-center animate-rise" role="alertdialog" aria-labelledby="switch-title">
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-background p-6 text-center animate-rise" role="alertdialog" aria-labelledby="switch-title">
       <Avatar family={family} size="xl" />
       <h1 id="switch-title" className="max-w-sm text-3xl font-bold leading-snug">
         {t('nowHelping', { name })}
       </h1>
-      <p className="num text-lg text-muted">{family.cnic_masked}</p>
+      <p className="num text-lg text-muted-foreground">{family.cnic_masked}</p>
       <Button size="xl" className="min-w-[240px]" onClick={() => nav('/c', { replace: true })} autoFocus>
         {t('continue')}
         <Icon className="h-7 w-7" aria-hidden />
       </Button>
-      <button type="button" className="min-h-tap px-4 font-semibold text-muted underline" onClick={() => nav('/h', { replace: true })}>
+      <button type="button" className="min-h-tap px-4 font-semibold text-muted-foreground underline" onClick={() => nav('/h', { replace: true })}>
         {t('switchFamily')}
       </button>
     </div>

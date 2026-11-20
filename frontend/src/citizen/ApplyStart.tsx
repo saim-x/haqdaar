@@ -84,10 +84,10 @@ export function ApplyStart() {
       <h1 className="text-2xl font-bold">{t('tileApply')}</h1>
       {programsQ.data?.map((p) => (
         <div key={p.id} className="card flex items-start gap-3 p-4">
-          <HandCoins className="mt-1 h-9 w-9 shrink-0 text-brand" aria-hidden />
+          <HandCoins className="mt-1 h-9 w-9 shrink-0 text-primary" aria-hidden />
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold">{pick(p.name_ur, p.name)}</h2>
-            <p className="mt-1 text-muted">{pick(p.description_ur, p.description)}</p>
+            <p className="mt-1 text-muted-foreground">{pick(p.description_ur, p.description)}</p>
             <Button className="mt-3" size="lg" onClick={() => void start(p)}>
               {t('tileApply')}
             </Button>

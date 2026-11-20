@@ -44,7 +44,7 @@ export function FamilyRoster() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t('helperTitle')}</h1>
-          <p className="text-muted">{user?.full_name}</p>
+          <p className="text-muted-foreground">{user?.full_name}</p>
         </div>
         <Link to="/h/new">
           <Button size="lg" icon={<UserPlus className="h-6 w-6" aria-hidden />}>
@@ -55,17 +55,17 @@ export function FamilyRoster() {
 
       <label className="relative block">
         <span className="sr-only">{t('helperSearch')}</span>
-        <Search className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" aria-hidden />
+        <Search className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('helperSearch')}
-          className="min-h-tap-lg w-full rounded-control border-2 border-line-strong bg-surface ps-11 pe-4 text-lg"
+          className="min-h-tap-lg w-full rounded-control border-2 border-input bg-card ps-11 pe-4 text-lg"
         />
       </label>
 
       {list.length === 0 ? (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-line-strong p-8 text-center">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-card border-2 border-dashed border-input p-8 text-center">
           <p className="text-lg">{t('noFamilies')}</p>
           <Link to="/h/new">
             <Button size="lg" icon={<UserPlus className="h-6 w-6" aria-hidden />}>
@@ -86,15 +86,15 @@ export function FamilyRoster() {
                   disabled={locked}
                   onClick={() => nav(`/h/switch/${f.citizen_id}`)}
                   className={cx(
-                    'flex w-full items-center gap-3 rounded-card border-2 bg-surface p-3 pe-16 text-start shadow-card transition-colors duration-fast',
-                    current ? 'border-brand' : 'border-line hover:border-brand/60',
-                    locked && 'cursor-not-allowed bg-sunken',
+                    'flex w-full items-center gap-3 rounded-card border-2 bg-card p-3 pe-16 text-start shadow-card transition-colors duration-fast',
+                    current ? 'border-primary' : 'border-border hover:border-primary/60',
+                    locked && 'cursor-not-allowed bg-muted',
                   )}
                 >
                   <Avatar family={f} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-lg font-bold">{name}</span>
-                    <span className="num block text-sm text-muted">
+                    <span className="num block text-sm text-muted-foreground">
                       {f.cnic_masked ?? '—'} {f.district ? `· ${f.district}` : ''}
                     </span>
                     <span className="mt-1 flex flex-wrap gap-1.5">

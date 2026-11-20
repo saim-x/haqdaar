@@ -98,9 +98,9 @@ export function LoginPage() {
   return (
     <div className="min-h-[calc(100dvh-28px)] lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* Brand panel */}
-      <section className="relative overflow-hidden bg-brand text-brand-ink">
+      <section className="relative overflow-hidden bg-primary text-primary-foreground">
         <AjrakPattern className="text-white/[0.07]" />
-        <div className="absolute -bottom-32 -end-24 h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden />
+        <div className="absolute -bottom-32 -end-24 h-80 w-80 rounded-full bg-highlight/25 blur-3xl" aria-hidden />
         <div className="relative flex h-full flex-col gap-8 px-6 py-8 sm:px-10 lg:min-h-[calc(100dvh-28px)] lg:justify-between lg:py-12">
           <div className="flex items-center gap-3">
             <HaqdaarMark className="h-12 w-12 bg-white/15 shadow-none" />
@@ -132,12 +132,12 @@ export function LoginPage() {
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold">{t('loginTitle')}</h2>
-            <p className="mt-1 text-muted">{t('loginSubtitle')}</p>
+            <p className="mt-1 text-muted-foreground">{t('loginSubtitle')}</p>
           </div>
           <button
             type="button"
             onClick={() => langStore.set(lang === 'ur' ? 'en' : 'ur')}
-            className="min-h-tap shrink-0 rounded-full border-2 border-line px-4 text-sm font-semibold hover:border-line-strong"
+            className="min-h-tap shrink-0 rounded-full border-2 border-border px-4 text-sm font-semibold hover:border-input"
           >
             {t('switchLang')}
           </button>
@@ -145,13 +145,13 @@ export function LoginPage() {
 
         <Link
           to="/scam-check"
-          className="group mb-6 flex items-center gap-4 rounded-2xl border border-accent/30 bg-warn-soft p-4 transition-colors hover:border-accent"
+          className="group mb-6 flex items-center gap-4 rounded-2xl border border-highlight/30 bg-warn-soft p-4 transition-colors hover:border-highlight"
         >
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-white">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-highlight text-white">
             <MessageSquareWarning className="h-6 w-6" aria-hidden />
           </span>
           <span className="flex-1 font-semibold">{t('checkMessageNoLogin')}</span>
-          <Chevron className="h-5 w-5 text-accent transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden />
+          <Chevron className="h-5 w-5 text-highlight transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden />
         </Link>
 
         {error && (
@@ -168,7 +168,7 @@ export function LoginPage() {
           </TabsList>
 
           <TabsContent value="demo" className="mt-5 space-y-6">
-            <p className="flex items-center gap-2 text-sm text-muted">
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
               {t('demoLoginHint')}
             </p>
@@ -181,28 +181,28 @@ export function LoginPage() {
                     disabled={demo.isPending}
                     aria-busy={demo.isPending && demo.variables === p.key}
                     className={cn(
-                      'group flex w-full items-center gap-4 rounded-2xl border-2 bg-surface p-3.5 text-start transition-[border-color,transform] duration-fast hover:border-brand active:scale-[0.99] disabled:opacity-60',
-                      i === 0 ? 'border-brand/40' : 'border-line',
+                      'group flex w-full items-center gap-4 rounded-2xl border-2 bg-card p-3.5 text-start transition-[border-color,transform] duration-fast hover:border-primary active:scale-[0.99] disabled:opacity-60',
+                      i === 0 ? 'border-primary/40' : 'border-border',
                     )}
                   >
-                    <span className={cn('inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', i === 0 ? 'bg-brand text-brand-ink' : 'bg-brand-soft text-brand')}>
+                    <span className={cn('inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', i === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary-soft text-primary')}>
                       <p.icon className="h-6 w-6" aria-hidden />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-baseline gap-x-2">
                         <span className="text-lg font-bold">{lang === 'ur' && p.nameUr ? p.nameUr : p.name}</span>
-                        <span className="text-xs font-semibold uppercase tracking-wide text-muted" lang="en">{p.role}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground" lang="en">{p.role}</span>
                       </span>
-                      <span className="block text-sm text-muted">{lang === 'ur' && p.storyUr ? p.storyUr : p.story}</span>
+                      <span className="block text-sm text-muted-foreground">{lang === 'ur' && p.storyUr ? p.storyUr : p.story}</span>
                     </span>
-                    <Chevron className="h-5 w-5 shrink-0 text-muted group-hover:text-brand" aria-hidden />
+                    <Chevron className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden />
                   </button>
                 </li>
               ))}
             </ul>
 
             <div dir="ltr" lang="en">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Department staff and auditor</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Department staff and auditor</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {STAFF_PERSONAS.map((p) => (
                   <button
@@ -210,12 +210,12 @@ export function LoginPage() {
                     type="button"
                     onClick={() => { setError(null); demo.mutate(p.key); }}
                     disabled={demo.isPending}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-start font-sans transition-colors duration-fast hover:border-line-strong hover:bg-sunken disabled:opacity-60"
+                    className="group flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-start font-sans transition-colors duration-fast hover:border-input hover:bg-muted disabled:opacity-60"
                   >
-                    <p.icon className="h-5 w-5 shrink-0 text-muted group-hover:text-brand" aria-hidden />
+                    <p.icon className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold">{p.name}</span>
-                      <span className="block truncate text-xs text-muted">{p.role} · {p.story}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{p.role} · {p.story}</span>
                     </span>
                   </button>
                 ))}
@@ -224,7 +224,7 @@ export function LoginPage() {
           </TabsContent>
 
           <TabsContent value="phone" className="mt-5">
-            <Card className="rounded-2xl border-line shadow-none">
+            <Card className="rounded-2xl border-border shadow-none">
               <CardContent className="p-5">
                 <form onSubmit={submitPhone} className="space-y-4">
                   <div className="space-y-1.5">
@@ -235,7 +235,7 @@ export function LoginPage() {
                     <div className="space-y-1.5">
                       <Label htmlFor="otp" className="font-semibold">{t('codeLabel')}</Label>
                       <Input id="otp" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" dir="ltr" autoFocus className="num h-14 rounded-xl text-center text-2xl tracking-[0.5em]" />
-                      <p className="text-sm text-muted">{t('smsHint')}</p>
+                      <p className="text-sm text-muted-foreground">{t('smsHint')}</p>
                     </div>
                   )}
                   <Button type="submit" size="lg" block loading={otpReq.isPending || otpVerify.isPending} disabled={!!challenge && code.length !== 6}>
@@ -247,7 +247,7 @@ export function LoginPage() {
           </TabsContent>
 
           <TabsContent value="staff" className="mt-5">
-            <Card className="rounded-2xl border-line shadow-none">
+            <Card className="rounded-2xl border-border shadow-none">
               <CardContent className="p-5">
                 <form onSubmit={(e) => { e.preventDefault(); staff.mutate(); }} className="space-y-4">
                   <div className="space-y-1.5">

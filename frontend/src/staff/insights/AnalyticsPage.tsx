@@ -41,7 +41,7 @@ export function AnalyticsPage() {
                         <Icon className="h-4 w-4" aria-hidden />
                         {meta.short}
                       </span>
-                      <span className="h-3 rounded-sm bg-sunken">
+                      <span className="h-3 rounded-sm bg-muted">
                         <span className={cx('block h-3 rounded-sm', toneClasses[meta.tone].solid)} style={{ width: `${(n / max) * 100}%` }} />
                       </span>
                       <span className="text-end font-mono font-semibold">{n}</span>
@@ -53,9 +53,9 @@ export function AnalyticsPage() {
         </Panel>
         <Panel title="Top risk flags">
           {a.top_flags.length === 0 ? (
-            <p className="text-muted">No flags raised.</p>
+            <p className="text-muted-foreground">No flags raised.</p>
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-border">
               {a.top_flags.map((f) => (
                 <li key={f.code} className="flex items-center justify-between py-2 text-sm">
                   <span className="font-mono">{f.code}</span>

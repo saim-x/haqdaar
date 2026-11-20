@@ -79,14 +79,14 @@ export function Queue() {
               onClick={() => setFilter(f.id)}
               className={cx(
                 'min-h-[32px] rounded-full border px-3 text-xs font-semibold',
-                filter === f.id ? 'border-brand bg-brand text-brand-ink' : 'border-line bg-surface text-muted hover:border-line-strong hover:text-ink',
+                filter === f.id ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-input hover:text-foreground',
               )}
             >
               {f.label}
             </button>
           ))}
         </div>
-        <span className="ms-auto text-sm text-muted">{q.data ? `${q.data.total} cases` : ''}</span>
+        <span className="ms-auto text-sm text-muted-foreground">{q.data ? `${q.data.total} cases` : ''}</span>
       </div>
 
       {q.isLoading ? (
@@ -100,14 +100,14 @@ export function Queue() {
           {lead && (
             <Link
               to={`/staff/cases/${lead.id}`}
-              className="group relative block overflow-hidden rounded-xl border border-danger/30 bg-gradient-to-br from-danger-soft/70 via-surface to-surface p-5 transition-shadow duration-fast hover:shadow-lift"
+              className="group relative block overflow-hidden rounded-xl border border-danger/30 bg-gradient-to-br from-danger-soft/70 via-card to-card p-5 transition-shadow duration-fast hover:shadow-lift"
               aria-label={`Top priority case ${lead.reference_code}`}
             >
               <div className="flex flex-wrap items-start gap-4">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-wider text-danger">Start here · highest priority</p>
                   <p className="mt-1 text-2xl font-bold">
-                    <span className="font-mono">{lead.reference_code}</span> <span className="text-muted">·</span> {lead.applicant_name}
+                    <span className="font-mono">{lead.reference_code}</span> <span className="text-muted-foreground">·</span> {lead.applicant_name}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <PriorityBadge band={lead.priority_band} score={lead.priority_score} />
@@ -119,19 +119,19 @@ export function Queue() {
                 </div>
                 <div className="w-56">
                   <ConfidenceBar value={lead.latest_confidence} label="Weakest-link confidence" />
-                  <p className="mt-2 text-xs text-muted">Waiting {timeAgo(lead.submitted_at)}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Waiting {timeAgo(lead.submitted_at)}</p>
                 </div>
               </div>
             </Link>
           )}
 
           {rest.length > 0 && (
-            <div className="overflow-hidden rounded-xl border border-line bg-surface">
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
               <div className="relative overflow-x-auto">
                 <Table className="min-w-[900px]">
                   <caption className="sr-only">Cases awaiting review</caption>
-                  <TableHeader className="bg-sunken/60 [&_th]:text-start [&_th]:h-10 [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted">
-                    <TableRow className="border-line hover:bg-transparent">
+                  <TableHeader className="bg-muted/60 [&_th]:text-start [&_th]:h-10 [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
+                    <TableRow className="border-border hover:bg-transparent">
                       <th className="px-3 py-2 font-semibold">Priority</th>
                       <th className="px-3 py-2 font-semibold">Reference · applicant</th>
                       <th className="px-3 py-2 font-semibold">Status</th>
@@ -146,15 +146,15 @@ export function Queue() {
                   </TableHeader>
                   <TableBody>
                     {rest.map((c) => (
-                      <TableRow key={c.id} className="cursor-pointer border-line hover:bg-sunken/60" onClick={() => nav(`/staff/cases/${c.id}`)}>
+                      <TableRow key={c.id} className="cursor-pointer border-border hover:bg-muted/60" onClick={() => nav(`/staff/cases/${c.id}`)}>
                         <td className="px-3 py-3">
                           <PriorityBadge band={c.priority_band} score={c.priority_score} />
                         </td>
                         <td className="px-3 py-3">
-                          <Link to={`/staff/cases/${c.id}`} className="font-mono font-semibold text-brand hover:underline" onClick={(e) => e.stopPropagation()}>
+                          <Link to={`/staff/cases/${c.id}`} className="font-mono font-semibold text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                             {c.reference_code}
                           </Link>
-                          <p className="flex items-center gap-1 text-muted">
+                          <p className="flex items-center gap-1 text-muted-foreground">
                             {c.status === 'ON_HOLD_CONSENT' && <Lock className="h-3.5 w-3.5 text-consent" aria-hidden />}
                             {c.applicant_name} <span className="font-mono text-xs">{c.cnic_masked}</span>
                           </p>
@@ -176,7 +176,7 @@ export function Queue() {
                         <td className="w-40 px-3 py-3">
                           <ConfidenceBar value={c.latest_confidence} compact />
                         </td>
-                        <td className="px-3 py-3 text-muted">{timeAgo(c.submitted_at)}</td>
+                        <td className="px-3 py-3 text-muted-foreground">{timeAgo(c.submitted_at)}</td>
                         <td className="px-3 py-3">
                           {c.status === 'PENDING_SECOND_APPROVAL' ? (
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-info">
@@ -184,19 +184,19 @@ export function Queue() {
                               Needs 2nd officer
                             </span>
                           ) : (
-                            c.assigned_officer?.full_name ?? <span className="text-muted">—</span>
+                            c.assigned_officer?.full_name ?? <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-muted">
+                        <td className="px-3 py-3 text-muted-foreground">
                           <ChevronRight className="h-4 w-4" aria-hidden />
                         </td>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                <div className="pointer-events-none absolute inset-y-0 end-0 w-8 bg-gradient-to-l from-surface to-transparent lg:hidden" aria-hidden />
+                <div className="pointer-events-none absolute inset-y-0 end-0 w-8 bg-gradient-to-l from-card to-transparent lg:hidden" aria-hidden />
               </div>
-              <p className="border-t border-line px-3 py-2 text-xs text-muted">
+              <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
                 {items.length} open · the table scrolls sideways on small screens
               </p>
             </div>

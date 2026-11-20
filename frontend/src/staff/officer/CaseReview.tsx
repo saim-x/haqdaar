@@ -44,7 +44,7 @@ const SOURCE_TONE: Record<string, string> = {
   BENEFITS_REGISTRY: 'bg-info-soft text-info',
   DOCUMENT_QR: 'bg-ok-soft text-ok',
   DOCUMENT_VERIFIER: 'bg-ok-soft text-ok',
-  SELF_DECLARED: 'bg-sunken text-muted',
+  SELF_DECLARED: 'bg-muted text-muted-foreground',
   CONSENT_ENGINE: 'bg-consent-soft text-consent',
 };
 
@@ -62,7 +62,7 @@ export function FactsTable({ facts }: { facts: Record<string, FactValue> }) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] text-sm">
         <caption className="sr-only">Canonical facts with sources</caption>
-        <thead className="text-left text-xs uppercase tracking-wide text-muted">
+        <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="py-1.5 pe-3 font-semibold">Fact</th>
             <th className="py-1.5 pe-3 font-semibold">Value</th>
@@ -70,13 +70,13 @@ export function FactsTable({ facts }: { facts: Record<string, FactValue> }) {
             <th className="py-1.5 font-semibold">Other values</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-line">
+        <tbody className="divide-y divide-border">
           {rows.map(([k, f]) => (
             <tr key={k} className={cx(f.conflict && 'bg-warn-soft')}>
               <td className="py-2 pe-3 font-mono text-xs">{k}</td>
               <td className="py-2 pe-3 font-semibold">
                 {f.state === 'UNKNOWN' ? (
-                  <span className="inline-flex items-center gap-1 text-muted">
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
                     <CircleHelp className="h-3.5 w-3.5" aria-hidden />
                     UNKNOWN{f.missing_reason ? ` (${f.missing_reason})` : ''}
                   </span>
@@ -91,10 +91,10 @@ export function FactsTable({ facts }: { facts: Record<string, FactValue> }) {
                 )}
               </td>
               <td className="py-2 pe-3">
-                {f.source ? <span className={cx('rounded px-1.5 py-0.5 text-[11px] font-semibold', SOURCE_TONE[f.source] ?? 'bg-sunken')}>{f.source}</span> : <span className="text-muted">—</span>}
+                {f.source ? <span className={cx('rounded px-1.5 py-0.5 text-[11px] font-semibold', SOURCE_TONE[f.source] ?? 'bg-muted')}>{f.source}</span> : <span className="text-muted-foreground">—</span>}
                 {f.entered_by === 'HELPER' && <span className="ms-1 rounded bg-warn-soft px-1.5 py-0.5 text-[11px] font-semibold text-warn">by helper</span>}
               </td>
-              <td className="py-2 text-xs text-muted">
+              <td className="py-2 text-xs text-muted-foreground">
                 {f.alternatives.map((a, i) => (
                   <span key={i} className="me-2 inline-block">
                     {fmtVal(a.value)} <span className="font-mono">({a.source})</span>
@@ -113,7 +113,7 @@ export function RuleTrace({ trace }: { trace: RuleTraceItem[] }) {
   const icon = { PASS: CircleCheck, FAIL: CircleX, UNKNOWN: HelpCircle };
   const tone = { PASS: 'text-ok', FAIL: 'text-danger', UNKNOWN: 'text-warn' };
   return (
-    <ul className="divide-y divide-line">
+    <ul className="divide-y divide-border">
       {trace.map((r) => {
         const I = icon[r.result];
         return (
@@ -122,9 +122,9 @@ export function RuleTrace({ trace }: { trace: RuleTraceItem[] }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm">
                 <span className="font-mono text-xs font-semibold">{r.rule_id}</span>{' '}
-                <span className={cx('text-xs font-bold', tone[r.result])}>{r.result}</span> <span className="text-muted">· {r.label_en}</span>
+                <span className={cx('text-xs font-bold', tone[r.result])}>{r.result}</span> <span className="text-muted-foreground">· {r.label_en}</span>
               </p>
-              <p className="break-words text-xs text-muted [overflow-wrap:anywhere]">
+              <p className="break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
                 actual <span className="font-mono">{fmtVal(r.actual)}</span> · rule <span className="font-mono">{String(r.expected)}</span>
               </p>
             </div>
@@ -160,7 +160,7 @@ function DocImage({ docId }: { docId: string }) {
   }, [docId]);
   if (error) return <p className="rounded-lg bg-danger-soft p-3 text-sm font-semibold text-danger">Image not available: {error}</p>;
   if (!url) return <PageLoader />;
-  return <img src={url} alt="Uploaded document (mock specimen)" className="mx-auto max-h-[60vh] rounded-lg border border-line" />;
+  return <img src={url} alt="Uploaded document (mock specimen)" className="mx-auto max-h-[60vh] rounded-lg border border-border" />;
 }
 
 function ConsentBlocked({ reference }: { reference?: string }) {
@@ -168,10 +168,10 @@ function ConsentBlocked({ reference }: { reference?: string }) {
     <div role="alert" className="mx-auto max-w-xl rounded-card border-2 border-consent/40 bg-consent-soft p-8 text-center">
       <Lock className="mx-auto mb-3 h-12 w-12 text-consent" aria-hidden />
       <h1 className="text-2xl font-bold">Citizen withdrew consent. Access is blocked and logged.</h1>
-      <p className="mt-2 text-muted">
+      <p className="mt-2 text-muted-foreground">
         All personal data on {reference ?? 'this case'} is hidden. The case is paused (ON_HOLD_CONSENT) and this attempt now appears in the citizen&apos;s own access log.
       </p>
-      <Link to="/staff/queue" className="mt-5 inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-line-strong px-4 font-semibold">
+      <Link to="/staff/queue" className="mt-5 inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-input px-4 font-semibold">
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Back to queue
       </Link>
@@ -237,14 +237,14 @@ export function CaseReview() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Link to="/staff/queue" className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted hover:bg-sunken hover:text-ink">
+        <Link to="/staff/queue" className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Queue
         </Link>
         <h1 className="font-mono text-2xl font-bold">{c.reference_code}</h1>
         <StatusBadge status={c.status} variant="staff" />
         {c.priority_band && <PriorityBadge band={c.priority_band} score={c.priority_score} />}
-        <span className="text-muted">
+        <span className="text-muted-foreground">
           {c.citizen?.full_name} · <span className="font-mono text-sm">{c.citizen?.cnic_masked}</span> · {c.citizen?.district}
         </span>
         {c.submitted_via_helper && <span className="rounded bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">Submitted by helper</span>}
@@ -254,8 +254,8 @@ export function CaseReview() {
         {/* LEFT: evidence */}
         <div className="min-w-0 space-y-5">
           {c.ai_case_note && (
-            <section className="overflow-hidden rounded-xl border border-info/30 bg-surface">
-              <div className="flex items-center gap-2 border-b border-line bg-info-soft px-4 py-3">
+            <section className="overflow-hidden rounded-xl border border-info/30 bg-card">
+              <div className="flex items-center gap-2 border-b border-border bg-info-soft px-4 py-3">
                 <Sparkles className="h-4 w-4 text-info" aria-hidden />
                 <h2 className="text-sm font-bold uppercase tracking-wide text-info">AI case handoff · system said &quot;I am not sure&quot;</h2>
               </div>
@@ -303,7 +303,7 @@ export function CaseReview() {
                 {c.flags!.map((f) => (
                   <li key={f.code} className="flex flex-wrap items-start gap-2">
                     <FlagChip flag={f} />
-                    <span className="text-sm text-muted">{f.detail}</span>
+                    <span className="text-sm text-muted-foreground">{f.detail}</span>
                   </li>
                 ))}
               </ul>
@@ -318,7 +318,7 @@ export function CaseReview() {
                 <ConfidenceBar value={conf.data_consistency} threshold={threshold} label="Data consistency" />
                 <ConfidenceBar value={conf.consent_assurance} threshold={threshold} label="Consent assurance" />
               </div>
-              <div className="mt-4 flex items-center justify-between rounded-lg bg-sunken px-3 py-2 text-sm">
+              <div className="mt-4 flex items-center justify-between rounded-lg bg-muted px-3 py-2 text-sm">
                 <span>
                   Overall = <span className="font-mono">min(pillars)</span>
                 </span>
@@ -347,15 +347,15 @@ export function CaseReview() {
                       <span className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', s.status === 'FAILED' ? 'bg-danger' : s.status === 'RETRIED' ? 'bg-warn' : 'bg-ok')} aria-hidden />
                       <div className="min-w-0 flex-1">
                         <p>
-                          <span className="font-mono text-xs font-semibold">{s.tool}</span> <span className="text-xs text-muted">{s.duration_ms} ms · {s.status}</span>
+                          <span className="font-mono text-xs font-semibold">{s.tool}</span> <span className="text-xs text-muted-foreground">{s.duration_ms} ms · {s.status}</span>
                         </p>
-                        <p className="text-xs text-muted">{s.summary}</p>
+                        <p className="text-xs text-muted-foreground">{s.summary}</p>
                       </div>
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="text-sm text-muted">No agent steps recorded.</p>
+                <p className="text-sm text-muted-foreground">No agent steps recorded.</p>
               )}
             </Panel>
           </div>
@@ -364,7 +364,7 @@ export function CaseReview() {
             {c.documents.length ? (
               <ul className="grid gap-3 md:grid-cols-2">
                 {c.documents.map((d) => (
-                  <li key={d.id} className="rounded-lg border border-line p-3">
+                  <li key={d.id} className="rounded-lg border border-border p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold">{d.doc_type}</p>
                       <span
@@ -381,7 +381,7 @@ export function CaseReview() {
                         <li key={ck.check} className="flex items-center gap-1.5">
                           {ck.passed ? <Check className="h-3.5 w-3.5 text-ok" aria-label="passed" /> : <CircleX className="h-3.5 w-3.5 text-danger" aria-label="failed" />}
                           <span className="font-mono">{ck.check}</span>
-                          <span className="text-muted">
+                          <span className="text-muted-foreground">
                             {ck.value !== null && ck.value !== undefined ? String(ck.value) : '—'} / {String(ck.threshold ?? '')}
                           </span>
                         </li>
@@ -394,7 +394,7 @@ export function CaseReview() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted">No documents uploaded. The CNIC check falls back to registry; officer may request a photo.</p>
+              <p className="text-sm text-muted-foreground">No documents uploaded. The CNIC check falls back to registry; officer may request a photo.</p>
             )}
           </Panel>
 
@@ -402,13 +402,13 @@ export function CaseReview() {
             <ol className="space-y-2 text-sm">
               {c.timeline.map((t, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="w-36 shrink-0 font-mono text-xs text-muted">{fmtTime(t.at)}</span>
+                  <span className="w-36 shrink-0 font-mono text-xs text-muted-foreground">{fmtTime(t.at)}</span>
                   <span>{t.label_en}</span>
                 </li>
               ))}
               {(c.notes ?? []).map((n) => (
                 <li key={n.id} className="flex gap-3">
-                  <span className="w-36 shrink-0 font-mono text-xs text-muted">{fmtTime(n.created_at)}</span>
+                  <span className="w-36 shrink-0 font-mono text-xs text-muted-foreground">{fmtTime(n.created_at)}</span>
                   <span>
                     <span className="font-semibold">{n.author_label ?? 'System'}:</span> {n.body}
                     {n.is_visible_to_citizen && <span className="ms-1 text-xs text-info">(visible to citizen)</span>}
@@ -423,8 +423,8 @@ export function CaseReview() {
               <p className="font-urdu text-lg" lang="ur" dir="rtl">
                 {c.citizen_explanation.headline_ur}
               </p>
-              <p className="mt-1 text-muted">{c.citizen_explanation.headline_en}</p>
-              <p className="mt-2 text-xs text-muted">Never accusatory: internal flags such as TAMPER_SUSPECTED are not shown to the citizen.</p>
+              <p className="mt-1 text-muted-foreground">{c.citizen_explanation.headline_en}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Never accusatory: internal flags such as TAMPER_SUSPECTED are not shown to the citizen.</p>
             </Panel>
           )}
         </div>
@@ -445,7 +445,7 @@ export function CaseReview() {
 
           <section className="card p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Decision</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Decision</h2>
               <span className="text-sm">
                 Amount <span className="font-mono font-bold">{pkr(c.approved_amount_pkr)}</span>
               </span>
@@ -472,7 +472,7 @@ export function CaseReview() {
                 Assign to me
               </Button>
             )}
-            {c.assigned_officer && <p className="mb-3 text-sm text-muted">Assigned to {c.assigned_officer.full_name}</p>}
+            {c.assigned_officer && <p className="mb-3 text-sm text-muted-foreground">Assigned to {c.assigned_officer.full_name}</p>}
 
             {decidable ? (
               <>
@@ -482,7 +482,7 @@ export function CaseReview() {
                       ['APPROVE', 'Approve', 'border-ok text-ok'],
                       ['REQUEST_INFO', 'Request info', 'border-info text-info'],
                       ['REJECT', 'Reject', 'border-danger text-danger'],
-                      ['ESCALATE', 'Escalate', 'border-line-strong text-ink'],
+                      ['ESCALATE', 'Escalate', 'border-input text-foreground'],
                     ] as const
                   ).map(([a, label, tone]) => (
                     <button
@@ -495,7 +495,7 @@ export function CaseReview() {
                         setReasons([]);
                         decide.reset();
                       }}
-                      className={cx('min-h-[44px] rounded-lg border-2 px-2 text-sm font-bold transition-colors duration-fast', action === a ? `${tone} bg-sunken` : 'border-line text-muted hover:border-line-strong')}
+                      className={cx('min-h-[44px] rounded-lg border-2 px-2 text-sm font-bold transition-colors duration-fast', action === a ? `${tone} bg-muted` : 'border-border text-muted-foreground hover:border-input')}
                     >
                       {label}
                     </button>
@@ -513,7 +513,7 @@ export function CaseReview() {
                           <label key={r} className="flex min-h-[32px] items-center gap-2 text-sm">
                             <input
                               type="checkbox"
-                              className="h-4 w-4 accent-brand"
+                              className="h-4 w-4 accent-primary"
                               checked={reasons.includes(r)}
                               onChange={(e) => setReasons((x) => (e.target.checked ? [...x, r] : x.filter((y) => y !== r)))}
                             />
@@ -544,7 +544,7 @@ export function CaseReview() {
                 )}
               </>
             ) : (
-              <p className="rounded-lg bg-sunken p-3 text-sm text-muted">No officer decision needed in status {c.status}.</p>
+              <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">No officer decision needed in status {c.status}.</p>
             )}
           </section>
 
@@ -554,15 +554,15 @@ export function CaseReview() {
             </Button>
             <dl className="mt-3 space-y-1.5 text-xs">
               <div className="flex justify-between gap-2">
-                <dt className="text-muted">Engine route</dt>
+                <dt className="text-muted-foreground">Engine route</dt>
                 <dd>{c.latest_route ? <ReasonChip code={c.latest_route} /> : '—'}</dd>
               </div>
               <div className="flex justify-between gap-2">
-                <dt className="text-muted">Ask-more rounds</dt>
+                <dt className="text-muted-foreground">Ask-more rounds</dt>
                 <dd className="font-mono">{c.ask_more_rounds ?? 0} / 2</dd>
               </div>
               <div className="flex justify-between gap-2">
-                <dt className="text-muted">Rule hash</dt>
+                <dt className="text-muted-foreground">Rule hash</dt>
                 <dd>
                   <Hash value={c.rule_version?.content_hash} />
                 </dd>
@@ -589,7 +589,7 @@ export function CaseReview() {
       >
         <textarea rows={4} value={noteText} onChange={(e) => setNoteText(e.target.value)} className={cx(inputCls, 'py-2')} aria-label="Note" />
         <label className="mt-2 flex items-center gap-2 text-sm">
-          <input type="checkbox" className="h-4 w-4 accent-brand" checked={noteVisible} onChange={(e) => setNoteVisible(e.target.checked)} />
+          <input type="checkbox" className="h-4 w-4 accent-primary" checked={noteVisible} onChange={(e) => setNoteVisible(e.target.checked)} />
           Visible to citizen
         </label>
       </Modal>
@@ -598,7 +598,7 @@ export function CaseReview() {
         {docOpen && (
           <div>
             <DocImage docId={docOpen} />
-            <p className="mt-2 text-xs text-muted">Served only after a server-side consent check; the access is logged and visible to the citizen.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Served only after a server-side consent check; the access is logged and visible to the citizen.</p>
           </div>
         )}
       </Modal>

@@ -63,15 +63,15 @@ function WizardInner({ draft, programCode, programId }: { draft: DraftRow; progr
               type="button"
               onClick={back}
               aria-label={t('back')}
-              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-line-strong bg-surface"
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-input bg-card"
             >
               <BackIcon className="h-6 w-6" aria-hidden />
             </button>
           )}
           <div className="flex-1" aria-hidden>
-            <Progress value={((index + 1) / steps.length) * 100} className="h-3 rounded-full bg-line rtl:-scale-x-100 [&>div]:rounded-full [&>div]:bg-brand" />
+            <Progress value={((index + 1) / steps.length) * 100} className="h-3 rounded-full bg-border rtl:-scale-x-100 [&>div]:rounded-full [&>div]:bg-primary" />
           </div>
-          <span className="num shrink-0 rounded-full bg-sunken px-2.5 py-1 text-sm font-bold text-muted">
+          <span className="num shrink-0 rounded-full bg-muted px-2.5 py-1 text-sm font-bold text-muted-foreground">
             {index + 1}/{steps.length}
           </span>
         </div>
@@ -101,7 +101,7 @@ function Frame({ step, children, extraAudio }: { step: StepDef; children: ReactN
           <h1 id="q" className="text-[1.75rem] font-bold leading-snug">
             {t(step.question)}
           </h1>
-          {step.hint && <p className="mt-1 text-lg text-muted">{t(step.hint)}</p>}
+          {step.hint && <p className="mt-1 text-lg text-muted-foreground">{t(step.hint)}</p>}
         </div>
         <AudioButton clip={step.clip} text={text} label={t(step.question)} />
       </div>
@@ -172,10 +172,10 @@ function ConsentStep({ step, draft, programId, nextId }: BodyProps) {
         <ShieldCheck className="mb-2 h-10 w-10 text-consent" aria-hidden />
         <p className="text-lg leading-relaxed">{t('q_consent_body')}</p>
       </div>
-      <dl className="card divide-y divide-line">
+      <dl className="card divide-y divide-border">
         {rows.map((r) => (
           <div key={r.label} className="flex flex-col gap-0.5 p-4">
-            <dt className="text-sm font-semibold text-muted">{r.label}</dt>
+            <dt className="text-sm font-semibold text-muted-foreground">{r.label}</dt>
             <dd className="font-semibold">{r.value}</dd>
           </div>
         ))}
@@ -335,7 +335,7 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
             onChange={(e) => setValue(e.target.value)}
             aria-labelledby="q"
             autoComplete="off"
-            className="min-h-[64px] w-full rounded-2xl border-2 border-line-strong/60 bg-surface px-4 text-2xl focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/20"
+            className="min-h-[64px] w-full rounded-2xl border-2 border-input/60 bg-card px-4 text-2xl focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
           />
         </>
       );
@@ -344,9 +344,9 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
       const d = value.replace(/\D/g, '');
       body = (
         <>
-          <output aria-live="polite" aria-labelledby="q" className="num block rounded-control border-2 border-line-strong bg-surface px-4 py-3 text-center text-3xl font-bold tracking-wider">
-            {d ? formatCnic(d) : <span className="text-muted">XXXXX-XXXXXXX-X</span>}
-            <span className="ms-2 text-base font-medium text-muted">({d.length}/13)</span>
+          <output aria-live="polite" aria-labelledby="q" className="num block rounded-control border-2 border-input bg-card px-4 py-3 text-center text-3xl font-bold tracking-wider">
+            {d ? formatCnic(d) : <span className="text-muted-foreground">XXXXX-XXXXXXX-X</span>}
+            <span className="ms-2 text-base font-medium text-muted-foreground">({d.length}/13)</span>
           </output>
           {voice}
           <Keypad onDigit={(k) => d.length < 13 && setValue(d + k)} onBackspace={() => setValue(d.slice(0, -1))} />
@@ -360,19 +360,19 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
       const age = year.length === 4 ? new Date().getFullYear() - Number(year) : null;
       body = (
         <>
-          <output aria-live="polite" className="num block rounded-control border-2 border-line-strong bg-surface px-4 py-3 text-center text-4xl font-bold">
-            {year || <span className="text-muted">YYYY</span>}
+          <output aria-live="polite" className="num block rounded-control border-2 border-input bg-card px-4 py-3 text-center text-4xl font-bold">
+            {year || <span className="text-muted-foreground">YYYY</span>}
           </output>
-          {age !== null && age > 0 && age < 120 && <p className="text-center text-xl font-semibold text-brand">{t('q_dob_age', { n: age })}</p>}
+          {age !== null && age > 0 && age < 120 && <p className="text-center text-xl font-semibold text-primary">{t('q_dob_age', { n: age })}</p>}
           {voice}
           <Keypad onDigit={(k) => year.length < 4 && setValue(year + k)} onBackspace={() => setValue(year.slice(0, -1))} />
-          <label className="block text-muted">
+          <label className="block text-muted-foreground">
             <span className="mb-1 block text-sm">{lang === 'ur' ? 'پوری تاریخ معلوم ہو تو (اختیاری)' : 'Exact date if known (optional)'}</span>
             <input
               type="date"
               value={value.length === 10 ? value : ''}
               onChange={(e) => setValue(e.target.value || year)}
-              className="min-h-tap w-full rounded-control border-2 border-line-strong bg-surface px-3"
+              className="min-h-tap w-full rounded-control border-2 border-input bg-card px-3"
               dir="ltr"
             />
           </label>
@@ -394,13 +394,13 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
                   onClick={() => setValue(d.value)}
                   className={cx(
                     'flex min-h-[76px] w-full flex-col items-start justify-center rounded-2xl border-2 border-b-[5px] p-3 pe-12 text-start transition-[transform,border-color] duration-fast active:translate-y-[2px] active:border-b-2',
-                    value === d.value ? 'border-brand bg-brand-soft ring-2 ring-brand/30' : 'border-line bg-surface',
+                    value === d.value ? 'border-primary bg-primary-soft ring-2 ring-primary/30' : 'border-border bg-card',
                   )}
                 >
                   <span className="font-urdu text-xl font-bold" lang="ur">
                     {d.ur}
                   </span>
-                  <span className="text-sm text-muted" lang="en">
+                  <span className="text-sm text-muted-foreground" lang="en">
                     {d.value}
                   </span>
                 </button>
@@ -439,12 +439,12 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
                     onClick={() => setValue(String(b.value))}
                     className={cx(
                       'flex min-h-[70px] w-full items-center gap-3 rounded-2xl border-2 border-b-[5px] p-3 pe-14 text-start transition-[transform,border-color] duration-fast active:translate-y-[2px] active:border-b-2',
-                      Number(value) === b.value ? 'border-brand bg-brand-soft ring-2 ring-brand/30' : 'border-line bg-surface',
+                      Number(value) === b.value ? 'border-primary bg-primary-soft ring-2 ring-primary/30' : 'border-border bg-card',
                     )}
                   >
                     <span className="flex gap-0.5" aria-hidden>
                       {Array.from({ length: i + 1 }).map((_, k) => (
-                        <span key={k} className="inline-block h-7 w-3 rounded-sm bg-accent" />
+                        <span key={k} className="inline-block h-7 w-3 rounded-sm bg-highlight" />
                       ))}
                     </span>
                     <span className="text-xl font-bold">{pick(b.ur, b.en)}</span>
@@ -460,8 +460,8 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
             </div>
           ) : (
             <>
-              <output aria-live="polite" className="num block rounded-control border-2 border-line-strong bg-surface px-4 py-3 text-center text-4xl font-bold">
-                {value ? formatPkr(Number(value), lang) : <span className="text-muted">0</span>}
+              <output aria-live="polite" className="num block rounded-control border-2 border-input bg-card px-4 py-3 text-center text-4xl font-bold">
+                {value ? formatPkr(Number(value), lang) : <span className="text-muted-foreground">0</span>}
               </output>
               <Keypad
                 onDigit={(k) => value.length < 7 && setValue(value === '0' ? k : value + k)}
@@ -489,8 +489,8 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
               <span className="num text-lg font-medium opacity-80">{own}</span>
             </Button>
           )}
-          <output aria-live="polite" className="num block rounded-control border-2 border-line-strong bg-surface px-4 py-3 text-center text-3xl font-bold">
-            {d || <span className="text-muted">03XX XXXXXXX</span>}
+          <output aria-live="polite" className="num block rounded-control border-2 border-input bg-card px-4 py-3 text-center text-3xl font-bold">
+            {d || <span className="text-muted-foreground">03XX XXXXXXX</span>}
           </output>
           <Keypad onDigit={(k) => d.length < 13 && setValue(d + k)} onBackspace={() => setValue(d.slice(0, -1))} />
         </>

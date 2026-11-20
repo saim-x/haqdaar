@@ -19,18 +19,18 @@ export function Modal({ open, onClose, title, children, footer, size = 'md', des
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         className={cn(
-          'max-h-[88vh] w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-2xl border-line p-0',
+          'max-h-[88vh] w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-2xl border-border p-0',
           size === 'sm' && 'max-w-sm',
           size === 'md' && 'max-w-lg',
           size === 'lg' && 'max-w-3xl',
         )}
       >
-        <DialogHeader className="border-b border-line px-5 py-4 pe-12">
+        <DialogHeader className="border-b border-border px-5 py-4 pe-12">
           <DialogTitle className="text-lg font-bold leading-snug">{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : <DialogDescription className="sr-only">{title}</DialogDescription>}
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <DialogFooter className="border-t border-line bg-sunken/50 px-5 py-3">{footer}</DialogFooter>}
+        {footer && <DialogFooter className="border-t border-border bg-muted/50 px-5 py-3">{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>
   );
