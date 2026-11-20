@@ -237,4 +237,24 @@ def _redact_summary(summary: Any) -> Any:
     return {key: value for key, value in summary.items() if key in keep}
 
 
-__all__ = ["router"]
+def mock_service_statuses(db: Any) -> list[dict[str, Any]]:
+    """Current chaos mode of every simulated DPI service, for the public honesty page.
+
+    ``/transparency`` needs the same seven rows the admin console shows, but it is a
+    public route and must not reach into ``app.mocks`` itself. Keeping the read here
+    means ``app.mocks`` is imported by exactly one API module — the sanctioned seam —
+    and the invariants test keeps enforcing that.
+
+    Returns plain dicts (``service_name``/``mode``/``latency_ms``/``failure_rate``/
+    ``updated_at``); never leaks ORM objects. A failure degrades to an empty list
+    rather than breaking the honesty page.
+    """
+    try:
+        mock_config.ensure_defaults(db)
+        return mock_config.list_service_configs(db)
+    except Exception:  # noqa: BLE001 - the disclosure page must still render
+        logger.warning("cannot read mock service statuses", exc_info=True)
+        return []
+
+
+__all__ = ["mock_service_statuses", "router"]
