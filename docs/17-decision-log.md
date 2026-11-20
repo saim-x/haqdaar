@@ -89,6 +89,11 @@
   3. `rule.draft_updated` is added to the docs/09 §5.3 action set — that list is mandatory, not exhaustive; same-style additions are permitted.
 - **Rationale:** Reading (1) is the verbatim spec; (2) honours the anti-fraud intent of E-7/docs/06 §6 while preserving PII minimisation and the anti-IDOR tenant rule; (3) is additive audit bookkeeping.
 
+## ADR-017: Given-Name Protection in Name-Similarity Checks (Shared-Surname Populations)
+- **Context:** DPI's evaluation set exposed that full-string token-set similarity lets a Photoshopped **given** name pass a 0.80 threshold whenever the surname is shared — the demo population heavily shares "Bibi" ("Zainab Bibi" vs "Sakina Bibi" = 0.818 on full string).
+- **Decision (approved):** DPI's `doc_verify` printed-vs-QR cross-check uses `min(full_name_ratio, given_name_ratio)` after honorific stripping (verified samples: Zainab/Sakina 0.667, Fatima/Fatima 1.0, Mst. Fatima/Fatima 1.0, Muhammad/Mohammad Akram 0.875). EN evaluates adding the same guard to `entity_resolution.name_sim` adopted **iff** the full 25+ case regression suite stays green (golden path must remain 1.0). Also recorded: scam classifier adds `MIN_MEANINGFUL_WORDS = 5` alongside the spec's `< 15 chars` rule so "Bhai payment bhej dena" resolves to `CANNOT_TELL` per demo scene 3; RAG fake-mode embeddings are 64-dim per docs/04 §4.5 and `cosine` returns 0.0 (not truncated) on dimension mismatch.
+- **Rationale:** Tamper and identity-jacking protection for a surname-colliding population; conservative direction — can only increase human review, never auto-approvals.
+
 ---
 
 ## Change Control Protocol (During Hackathon)
