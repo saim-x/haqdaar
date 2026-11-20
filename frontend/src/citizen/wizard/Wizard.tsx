@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, HelpCircle, ShieldCheck, Smartphone, Undo2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
 import { ApiError } from '../../shared/api/client';
 import { programs } from '../../shared/api/endpoints';
 import type { DraftAnswer } from '../../shared/api/types';
@@ -67,18 +68,10 @@ function WizardInner({ draft, programCode, programId }: { draft: DraftRow; progr
               <BackIcon className="h-6 w-6" aria-hidden />
             </button>
           )}
-          <ol className="flex flex-1 items-center gap-1" aria-hidden>
-            {steps.map((s, i) => (
-              <li
-                key={s.id}
-                className={cx(
-                  'h-2.5 flex-1 rounded-full transition-colors duration-base',
-                  i < index ? 'bg-brand' : i === index ? 'bg-accent' : 'bg-line',
-                )}
-              />
-            ))}
-          </ol>
-          <span className="num shrink-0 text-sm font-semibold text-muted">
+          <div className="flex-1" aria-hidden>
+            <Progress value={((index + 1) / steps.length) * 100} className="h-3 rounded-full bg-line rtl:-scale-x-100 [&>div]:rounded-full [&>div]:bg-brand" />
+          </div>
+          <span className="num shrink-0 rounded-full bg-sunken px-2.5 py-1 text-sm font-bold text-muted">
             {index + 1}/{steps.length}
           </span>
         </div>
@@ -342,7 +335,7 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
             onChange={(e) => setValue(e.target.value)}
             aria-labelledby="q"
             autoComplete="off"
-            className="min-h-tap-lg w-full rounded-control border-2 border-line-strong bg-surface px-4 text-2xl"
+            className="min-h-[64px] w-full rounded-2xl border-2 border-line-strong/60 bg-surface px-4 text-2xl focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/20"
           />
         </>
       );
@@ -400,8 +393,8 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
                   aria-checked={value === d.value}
                   onClick={() => setValue(d.value)}
                   className={cx(
-                    'flex min-h-[72px] w-full flex-col items-start justify-center rounded-control border-2 p-3 pe-12 text-start transition-colors duration-fast',
-                    value === d.value ? 'border-brand bg-brand-soft' : 'border-line bg-surface',
+                    'flex min-h-[76px] w-full flex-col items-start justify-center rounded-2xl border-2 border-b-[5px] p-3 pe-12 text-start transition-[transform,border-color] duration-fast active:translate-y-[2px] active:border-b-2',
+                    value === d.value ? 'border-brand bg-brand-soft ring-2 ring-brand/30' : 'border-line bg-surface',
                   )}
                 >
                   <span className="font-urdu text-xl font-bold" lang="ur">
@@ -445,8 +438,8 @@ function AnswerStep({ step, draft, onNext, nextId }: BodyProps) {
                     aria-checked={Number(value) === b.value}
                     onClick={() => setValue(String(b.value))}
                     className={cx(
-                      'flex min-h-[68px] w-full items-center gap-3 rounded-control border-2 p-3 pe-14 text-start',
-                      Number(value) === b.value ? 'border-brand bg-brand-soft' : 'border-line bg-surface',
+                      'flex min-h-[70px] w-full items-center gap-3 rounded-2xl border-2 border-b-[5px] p-3 pe-14 text-start transition-[transform,border-color] duration-fast active:translate-y-[2px] active:border-b-2',
+                      Number(value) === b.value ? 'border-brand bg-brand-soft ring-2 ring-brand/30' : 'border-line bg-surface',
                     )}
                   >
                     <span className="flex gap-0.5" aria-hidden>
