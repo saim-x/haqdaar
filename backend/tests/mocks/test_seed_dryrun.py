@@ -46,6 +46,21 @@ class _FakeMetadata:
         self.tables: _AutoTables = _AutoTables()
 
 
+def _stub_audit_writer(monkeypatch: pytest.MonkeyPatch, stub: Any) -> None:
+    """Replace the seeder's audit writer everywhere it is bound.
+
+    ``seed_showcase`` does ``from app.mocks.seed import _record_audit`` at import
+    time, so patching ``seed_module._record_audit`` alone leaves that reference
+    pointing at the real writer — which then runs a ``select(table.c.seq, ...)``
+    against the fake metadata and dies on the missing ``.c``. Patch every module
+    that holds its own binding.
+    """
+    from app.mocks import seed_showcase
+
+    monkeypatch.setattr(seed_module, "_record_audit", stub)
+    monkeypatch.setattr(seed_showcase, "_record_audit", stub)
+
+
 class _FakeSession:
     def __init__(self) -> None:
         self.inserted: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -78,11 +93,7 @@ def seeded(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> tuple[dict[str, An
     audits: list[dict[str, Any]] = []
 
     monkeypatch.setattr(seed_module, "_metadata", lambda: metadata)
-    monkeypatch.setattr(
-        seed_module,
-        "_record_audit",
-        lambda db, meta, **kwargs: audits.append(kwargs),
-    )
+    _stub_audit_writer(monkeypatch, lambda db, meta, **kwargs: audits.append(kwargs))
     monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
 
     summary = seed_module.seed_all(session, reset=False, with_rag=False)
@@ -201,7 +212,7 @@ def test_seed_is_deterministic(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -
         metadata = _FakeMetadata()
         session = _FakeSession()
         monkeypatch.setattr(seed_module, "_metadata", lambda: metadata)
-        monkeypatch.setattr(seed_module, "_record_audit", lambda *a, **k: None)
+        _stub_audit_writer(monkeypatch, lambda *a, **k: None)
         monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
         seed_module.seed_all(session, reset=False, with_rag=False)
         return {

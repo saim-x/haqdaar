@@ -119,6 +119,48 @@ class TestDemoDocuments:
         assert doc_verify.verify_image(payload, "SPOUSE_DEATH_CERTIFICATE").status == "VERIFIED"
 
 
+class TestSpecimenSecretContract:
+    """The committed specimens are pre-signed: their secret is part of their content.
+
+    The generator signs with ``qr_sign.DEFAULT_QR_SECRET``, which is also what the
+    live stack uses. If anyone regenerates the artifacts under a different secret,
+    every genuine card silently becomes ``TAMPER_SUSPECTED`` — the worst possible
+    failure for AC-04.4. These tests make that drift loud.
+    """
+
+    def test_committed_specimens_verify_under_the_default_secret(self) -> None:
+        from app.ai import qr_sign
+
+        assert qr_sign.qr_secret() == qr_sign.DEFAULT_QR_SECRET
+
+        manifest = _manifest(DEMO_DIR)
+        genuine = [
+            entry
+            for entry in manifest["files"]
+            if entry["expected_verdict"] == "VERIFIED"
+        ]
+        assert genuine, "the demo set must contain at least one genuine specimen"
+
+        for entry in genuine:
+            payload = (DEMO_DIR / entry["file"]).read_bytes()
+            result = doc_verify.verify_image(payload, entry["doc_type"])
+            assert result.status == "VERIFIED", (
+                f"{entry['file']} is signed with a secret the verifier no longer "
+                f"uses; regenerate app/data/demo_docs or restore QR_HMAC_SECRET"
+            )
+
+    def test_a_wrong_secret_is_reported_as_tamper_not_verified(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The signature check must actually bite — otherwise the guard above is vacuous."""
+        monkeypatch.setenv("QR_HMAC_SECRET", "a-different-secret-entirely")
+        payload = (DEMO_DIR / "fatima_cnic_genuine.jpg").read_bytes()
+        result = doc_verify.verify_image(payload)
+        assert result.status == "TAMPER_SUSPECTED"
+        qr_check = next(c for c in result.checks if c.check == "qr_signature")
+        assert not qr_check.passed
+
+
 class TestQualityGate:
     def test_tiny_image_needs_a_retake(self) -> None:
         import cv2
