@@ -1,62 +1,48 @@
 import { useQuery } from '@tanstack/react-query';
 import { liveQuery } from 'dexie';
-import { ChevronLeft, ChevronRight, FilePlus2, FolderOpen, MessageCircleQuestion, ShieldCheck, ShieldQuestion } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, FilePlus2, FolderOpen, MessageCircleQuestion, PenLine, ShieldCheck, ShieldQuestion, type LucideIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { cases } from '../shared/api/endpoints';
 import { currentCitizenId } from '../shared/auth/session';
 import { useAuth } from '../shared/auth/store';
 import { useT } from '../shared/i18n';
 import { db, type DraftRow } from '../shared/offline/db';
-import { OPEN_STATUSES } from '../shared/status';
+import { OPEN_STATUSES, STATUS, toneClasses } from '../shared/status';
+import { AjrakPattern } from '../shared/ui/AjrakPattern';
 import { AudioButton } from '../shared/ui/AudioButton';
-import { cx } from '../shared/ui/cx';
-import { StatusBadge } from '../shared/ui/StatusBadge';
 import { useAutoRead } from './useAutoRead';
 
-function Tile({
-  to,
-  label,
-  clip,
-  icon,
-  tone,
-  lead,
-  wide,
-}: {
-  to: string;
-  label: string;
-  clip: string;
-  icon: ReactNode;
-  tone: string;
-  lead?: boolean;
-  wide?: boolean;
-}) {
+/** Tactile pictogram tile: chunky bottom edge that presses down, tinted icon well, audio label. */
+function Tile({ to, label, clip, icon: Icon, well, tint, wide }: { to: string; label: string; clip: string; icon: LucideIcon; well: string; tint: string; wide?: boolean }) {
   return (
-    <div className={cx('relative', (lead || wide) && 'col-span-2')}>
+    <div className="relative">
       <Link
         to={to}
-        className={cx(
-          'flex h-full flex-col justify-between rounded-card border-2 p-4 shadow-card transition-transform duration-fast active:scale-[0.98]',
-          tone,
-          lead ? 'min-h-[168px]' : 'min-h-[150px]',
+        className={cn(
+          'flex h-full rounded-3xl border-2 border-b-[6px] p-4 transition-transform duration-fast active:translate-y-[3px] active:border-b-2',
+          wide ? 'min-h-[96px] flex-row items-center gap-4' : 'min-h-[156px] flex-col justify-between',
+          tint,
         )}
       >
-        <span className={cx('inline-flex items-center justify-center rounded-2xl', lead ? 'h-16 w-16' : 'h-14 w-14')}>{icon}</span>
-        <span className={cx('block font-bold leading-snug', lead ? 'text-2xl pe-16' : 'text-lg pe-12')}>{label}</span>
+        <span className={cn('inline-flex h-14 w-14 items-center justify-center rounded-2xl', well)}>
+          <Icon className="h-8 w-8" aria-hidden />
+        </span>
+        <span className="block pe-12 text-lg font-bold leading-snug">{label}</span>
       </Link>
-      <div className="absolute bottom-3 end-3">
-        <AudioButton clip={clip} text={label} size="md" label={label} />
+      <div className={cn('absolute end-3', wide ? 'top-1/2 -translate-y-1/2' : 'bottom-4')}>
+        <AudioButton clip={clip} text={label} size="md" label={label} className="!h-11 !w-11" />
       </div>
     </div>
   );
 }
 
 export function CitizenHome() {
-  const { t, pick } = useT();
+  const { t, pick, lang } = useT();
   const { user, actingFor } = useAuth();
   const citizenId = currentCitizenId();
   const [drafts, setDrafts] = useState<DraftRow[]>([]);
-
   const casesQ = useQuery({ queryKey: ['cases', citizenId], queryFn: cases.list });
 
   useEffect(() => {
@@ -70,81 +56,86 @@ export function CitizenHome() {
   useAutoRead('home_intro', t('homeAudio'));
 
   const name = actingFor?.name ?? user?.full_name ?? '';
-  const latest = casesQ.data?.find((c) => c.case_type === 'BENEFIT_APPLICATION' && c.status !== 'DRAFT') ?? casesQ.data?.[0];
+  const firstName = name.replace(/^(Mst\.?|Mrs\.?)\s+/i, '').split(' ')[0] ?? '';
+  const latest = casesQ.data?.find((c) => c.case_type === 'BENEFIT_APPLICATION' && c.status !== 'DRAFT');
   const openCase = casesQ.data?.find((c) => OPEN_STATUSES.includes(c.status) && c.status !== 'DRAFT');
   const draft = drafts[0];
-  const Chevron = document.documentElement.dir === 'rtl' ? ChevronLeft : ChevronRight;
+  const Chevron = lang === 'ur' ? ChevronLeft : ChevronRight;
+  const meta = latest ? STATUS[latest.status] : null;
+  const tone = meta ? toneClasses[meta.tone] : null;
+
+  // The hero changes with the citizen's situation: continue a draft, follow a case, or start.
+  const hero = draft
+    ? { to: `/c/apply/${draft.localId}`, title: t('continueDraft'), sub: t('savedLocally'), icon: PenLine, clip: 'continue_draft' }
+    : openCase
+      ? { to: `/c/cases/${openCase.id}`, title: t('tileCases'), sub: t(STATUS[openCase.status].label), icon: FolderOpen, clip: 'tile_cases' }
+      : { to: '/c/apply', title: t('tileApply'), sub: pick('سہارا بیوہ امدادی گرانٹ', 'Sahara Widow Support Grant'), icon: FilePlus2, clip: 'tile_apply' };
 
   return (
     <div className="space-y-5 animate-rise">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-muted">{t('homeGreeting', { name: name.split(' ')[0] || '' })}</p>
-          <h1 className="text-3xl font-bold leading-tight">{t('appName')}</h1>
+      <div className="flex items-center gap-3">
+        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xl font-bold text-accent" aria-hidden>
+          {firstName.slice(0, 1)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-muted">{lang === 'ur' ? 'السلام علیکم' : 'Assalam-o-Alaikum'}</p>
+          <h1 className="truncate text-2xl font-bold leading-tight">{firstName}</h1>
         </div>
         <AudioButton clip="home_intro" text={t('homeAudio')} />
       </div>
 
-      {draft && (
+      {/* Lead action */}
+      <div className="relative">
         <Link
-          to={`/c/apply/${draft.localId}`}
-          className="flex items-center gap-3 rounded-card border-2 border-warn/50 bg-warn-soft p-4 font-semibold"
+          to={hero.to}
+          className="relative block overflow-hidden rounded-3xl border-b-[6px] border-[rgb(var(--action-primary-press))] bg-brand p-5 text-brand-ink transition-transform duration-fast active:translate-y-[3px] active:border-b-2"
         >
-          <FilePlus2 className="h-7 w-7 shrink-0 text-warn" aria-hidden />
-          <span className="flex-1">{t('continueDraft')}</span>
-          <Chevron className="h-5 w-5" aria-hidden />
+          <AjrakPattern className="text-white/[0.08]" />
+          <span className="relative flex items-start gap-4">
+            <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+              <hero.icon className="h-9 w-9" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1 pe-12 pt-1">
+              <span className="block text-2xl font-bold leading-tight">{hero.title}</span>
+              <span className="mt-1 block text-white/85">{hero.sub}</span>
+            </span>
+          </span>
         </Link>
-      )}
+        <div className="absolute end-4 top-4">
+          <AudioButton clip={hero.clip} text={`${hero.title}. ${hero.sub}`} size="md" className="!h-11 !w-11 !border-white/40 !bg-white/15 !text-white" />
+        </div>
+      </div>
 
-      {latest && (
-        <Link to={`/c/cases/${latest.id}`} className="card flex items-center gap-3 p-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-muted">{t('latestStatus')}</p>
-            <p className="truncate font-semibold">{pick(latest.program.name_ur, latest.program.name)}</p>
-            <StatusBadge status={latest.status} className="mt-2" />
-          </div>
+      {latest && meta && tone && (
+        <Link to={`/c/cases/${latest.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5">
+          <span className={cn('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', tone.soft, tone.text)}>
+            <meta.icon className="h-6 w-6" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold text-muted">{t('latestStatus')}</span>
+            <span className={cn('block truncate font-bold', tone.text)}>{t(meta.label)}</span>
+          </span>
           <Chevron className="h-5 w-5 shrink-0 text-muted" aria-hidden />
         </Link>
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Tile
-          lead
-          to={openCase ? `/c/cases/${openCase.id}` : '/c/apply'}
-          label={openCase ? t('tileCases') : t('tileApply')}
-          clip={openCase ? 'tile_cases' : 'tile_apply'}
-          tone="border-brand bg-brand text-brand-ink"
-          icon={<FilePlus2 className="h-12 w-12" aria-hidden />}
-        />
-        <Tile
-          to={openCase ? '/c/apply' : '/c/cases'}
-          label={openCase ? t('tileApply') : t('tileCases')}
-          clip={openCase ? 'tile_apply' : 'tile_cases'}
-          tone="border-line bg-surface text-ink"
-          icon={<FolderOpen className="h-10 w-10 text-info" aria-hidden />}
-        />
-        <Tile
-          to="/scam-check"
-          label={t('tileScam')}
-          clip="tile_scam"
-          tone="border-line bg-surface text-ink"
-          icon={<ShieldQuestion className="h-10 w-10 text-accent" aria-hidden />}
-        />
-        <Tile
-          to="/c/consent"
-          label={t('tileData')}
-          clip="tile_data"
-          wide
-          tone="border-line bg-surface text-ink"
-          icon={<ShieldCheck className="h-10 w-10 text-consent" aria-hidden />}
-        />
+        {openCase || draft ? (
+          <Tile to="/c/apply" label={t('tileApply')} clip="tile_apply" icon={FilePlus2} well="bg-brand-soft text-brand" tint="border-line bg-surface" />
+        ) : (
+          <Tile to="/c/cases" label={t('tileCases')} clip="tile_cases" icon={FolderOpen} well="bg-info-soft text-info" tint="border-line bg-surface" />
+        )}
+        <Tile to="/scam-check" label={t('tileScam')} clip="tile_scam" icon={ShieldQuestion} well="bg-warn-soft text-accent" tint="border-line bg-surface" />
+        <div className="col-span-2">
+          <Tile to="/c/consent" label={t('tileData')} clip="tile_data" icon={ShieldCheck} well="bg-consent-soft text-consent" tint="border-line bg-surface" wide />
+        </div>
       </div>
 
       <Link
         to="/c/ask"
-        className="flex min-h-tap-lg items-center gap-3 rounded-card border-2 border-ink/80 bg-ink px-5 py-4 text-lg font-semibold text-page shadow-card"
+        className="flex min-h-tap-lg items-center gap-3 rounded-2xl border-2 border-dashed border-line-strong/50 px-4 py-3 font-semibold text-ink hover:border-brand hover:text-brand"
       >
-        <MessageCircleQuestion className="h-7 w-7 shrink-0" aria-hidden />
+        <MessageCircleQuestion className="h-6 w-6 shrink-0" aria-hidden />
         <span className="flex-1">{t('askQuestion')}</span>
         <Chevron className="h-5 w-5" aria-hidden />
       </Link>

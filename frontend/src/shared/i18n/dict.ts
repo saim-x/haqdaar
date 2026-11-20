@@ -47,6 +47,11 @@ export const dict = {
   tabDemo: { ur: 'ڈیمو', en: 'Demo' },
   tabPhone: { ur: 'فون', en: 'Phone' },
   tabStaff: { ur: 'عملہ', en: 'Staff' },
+  deskTitle: { ur: 'شہری ایپ', en: 'Citizen app' },
+  deskBody: { ur: 'یہ ایپ سستے فون اور کمزور سگنل کے لیے بنائی گئی ہے۔ اصل تجربے کے لیے فون سائز میں دیکھیں۔', en: 'Built for low-cost phones on weak signal. View it at phone size for the real experience.' },
+  deskTip1: { ur: 'ہر سوال الگ اسکرین پر، بڑے بٹن', en: 'One question per screen, large buttons' },
+  deskTip2: { ur: 'ہر اسکرین بول کر سناتی ہے', en: 'Every screen reads itself aloud' },
+  deskTip3: { ur: 'انٹرنیٹ کے بغیر بھی محفوظ', en: 'Saves progress without internet' },
   // Login
   loginTitle: { ur: 'حقدار میں خوش آمدید', en: 'Welcome to Haqdaar' },
   loginSubtitle: { ur: 'سہارا بیوہ امدادی گرانٹ — آواز اور تصویروں کے ساتھ درخواست دیں', en: 'Sahara Widow Support Grant — apply with voice and pictures' },

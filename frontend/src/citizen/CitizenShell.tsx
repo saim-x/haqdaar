@@ -1,4 +1,4 @@
-import { Feather, Languages, LogIn, LogOut, Repeat, Volume2, VolumeX } from 'lucide-react';
+import { AudioLines, Feather, Languages, LogIn, LogOut, Repeat, Smartphone, Volume2, VolumeX, WifiOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../shared/auth/session';
@@ -7,6 +7,7 @@ import { langStore, useT } from '../shared/i18n';
 import { settingsStore, useSettings } from '../shared/settings';
 import { ConnectivityIcon, ConnectivityStrip } from '../shared/ui/ConnectivityPill';
 import { cx } from '../shared/ui/cx';
+import { AjrakPattern, HaqdaarMark } from '../shared/ui/AjrakPattern';
 
 function IconToggle({ pressed, onClick, label, children }: { pressed?: boolean; onClick: () => void; label: string; children: ReactNode }) {
   return (
@@ -32,8 +33,33 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
   const settings = useSettings();
   const nav = useNavigate();
 
+  const tips = [
+    { icon: Smartphone, text: t('deskTip1') },
+    { icon: AudioLines, text: t('deskTip2') },
+    { icon: WifiOff, text: t('deskTip3') },
+  ];
+
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-28px)] max-w-xl flex-col">
+    <div className="relative min-h-[calc(100dvh-28px)] lg:flex lg:items-start lg:justify-center lg:gap-14 lg:bg-sunken lg:px-8 lg:py-8">
+      {/* Desktop only: the citizen app is phone-first, so on wide screens it sits in a framed
+          column beside a short context panel instead of floating in empty space. */}
+      <AjrakPattern className="hidden text-line-strong/[0.09] lg:block" />
+      <aside className="sticky top-[60px] hidden w-[320px] shrink-0 lg:block">
+        <HaqdaarMark className="h-14 w-14" />
+        <h2 className="mt-6 text-3xl font-bold leading-tight">{t('deskTitle')}</h2>
+        <p className="mt-3 text-muted">{t('deskBody')}</p>
+        <ul className="mt-6 space-y-3">
+          {tips.map((tip) => (
+            <li key={tip.text} className="flex items-start gap-3">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-brand ring-1 ring-line">
+                <tip.icon className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="pt-1.5 text-sm font-medium">{tip.text}</span>
+            </li>
+          ))}
+        </ul>
+      </aside>
+      <div className="relative mx-auto flex min-h-[calc(100dvh-28px)] w-full max-w-xl flex-col bg-page lg:mx-0 lg:min-h-[calc(100dvh-28px-4rem)] lg:max-w-[440px] lg:overflow-clip lg:rounded-[2rem] lg:border lg:border-line lg:shadow-lift">
       <header className="sticky top-[28px] z-40 border-b border-line bg-page/95 backdrop-blur supports-[backdrop-filter]:bg-page/80">
         <div className="flex items-center gap-2 px-3 py-2">
           <Link
@@ -41,11 +67,7 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
             className="flex items-center gap-2 rounded-full pe-2 text-lg font-bold text-brand"
             aria-label={t('home')}
           >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-brand-ink" aria-hidden>
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M7 5v14M17 5v14M7 12h10" />
-              </svg>
-            </span>
+            <HaqdaarMark className="h-9 w-9 rounded-xl" />
             <span>{t('appName')}</span>
           </Link>
           <div className="ms-auto flex min-w-0 items-center gap-0.5">
@@ -106,9 +128,10 @@ export function CitizenShell({ children, public: isPublic = false }: { children:
           </div>
         )}
       </header>
-      <main id="main" className="flex-1 px-4 pb-28 pt-4">
+      <main id="main" className="flex-1 px-4 pb-16 pt-5">
         {children}
       </main>
+      </div>
     </div>
   );
 }
