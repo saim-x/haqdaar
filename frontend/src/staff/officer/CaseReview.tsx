@@ -167,7 +167,7 @@ function ConsentBlocked({ reference }: { reference?: string }) {
   return (
     <div role="alert" className="mx-auto max-w-xl rounded-card border-2 border-consent/40 bg-consent-soft p-8 text-center">
       <Lock className="mx-auto mb-3 h-12 w-12 text-consent" aria-hidden />
-      <h1 className="text-2xl font-bold">Citizen withdrew consent — access blocked and logged.</h1>
+      <h1 className="text-2xl font-bold">Citizen withdrew consent. Access is blocked and logged.</h1>
       <p className="mt-2 text-muted">
         All personal data on {reference ?? 'this case'} is hidden. The case is paused (ON_HOLD_CONSENT) and this attempt now appears in the citizen&apos;s own access log.
       </p>
@@ -394,7 +394,7 @@ export function CaseReview() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted">No documents uploaded — CNIC check falls back to registry; officer may request a photo.</p>
+              <p className="text-sm text-muted">No documents uploaded. The CNIC check falls back to registry; officer may request a photo.</p>
             )}
           </Panel>
 
@@ -528,7 +528,7 @@ export function CaseReview() {
                     </label>
                     {decideErr && (
                       <p role="alert" className="rounded-lg bg-danger-soft p-2 text-sm font-semibold text-danger">
-                        {decideErr.code === 'SAME_OFFICER' ? '403 SAME_OFFICER — a different officer must give the second approval.' : `${decideErr.code}: ${decideErr.message}`}
+                        {decideErr.code === 'SAME_OFFICER' ? '403 SAME_OFFICER: a different officer must give the second approval.' : `${decideErr.code}: ${decideErr.message}`}
                       </p>
                     )}
                     <Button

@@ -7,7 +7,7 @@ export function PrototypeBanner({ forceEnglish = false }: { forceEnglish?: boole
   const { t, lang } = useT();
   const l = forceEnglish ? 'en' : lang;
   const text = forceEnglish
-    ? 'PROTOTYPE — Not an official government service. Identity, payment & data services are simulated.'
+    ? 'PROTOTYPE. Not an official government service. Identity, payment & data services are simulated.'
     : t('prototypeBanner');
   return (
     <div

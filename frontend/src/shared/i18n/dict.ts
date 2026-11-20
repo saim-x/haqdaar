@@ -5,8 +5,8 @@ export const dict = {
   // Global
   appName: { ur: 'حقدار', en: 'Haqdaar' },
   prototypeBanner: {
-    ur: 'پروٹوٹائپ — یہ سرکاری سروس نہیں ہے۔ تمام شناختی اور ادائیگی کے نظام نقلی ہیں۔',
-    en: 'PROTOTYPE — Not an official government service. Identity, payment & data services are simulated.',
+    ur: 'پروٹوٹائپ۔ یہ سرکاری سروس نہیں ہے۔ تمام شناختی اور ادائیگی کے نظام نقلی ہیں۔',
+    en: 'PROTOTYPE. Not an official government service. Identity, payment & data services are simulated.',
   },
   prototypeLink: { ur: 'تفصیلات', en: 'Real vs Simulated' },
   listen: { ur: 'سنیں', en: 'Listen' },
@@ -29,8 +29,8 @@ export const dict = {
 
   // Connectivity pill
   online: { ur: 'آن لائن', en: 'Online' },
-  offlineSaved: { ur: 'آف لائن — {n} چیزیں محفوظ، سگنل آنے پر خود بھیجی جائیں گی', en: 'Offline — {n} saved, will send automatically' },
-  offlineNone: { ur: 'آف لائن — آپ کا کام اس فون پر محفوظ ہے', en: 'Offline — your work is saved on this phone' },
+  offlineSaved: { ur: 'آف لائن۔ {n} چیزیں محفوظ، سگنل آنے پر خود بھیجی جائیں گی', en: 'Offline — {n} saved, will send automatically' },
+  offlineNone: { ur: 'آف لائن۔ آپ کا کام اس فون پر محفوظ ہے', en: 'Offline. Your work is saved on this phone' },
   syncing: { ur: 'بھیجا جا رہا ہے…', en: 'Syncing…' },
   needsAttention: { ur: '{n} چیز توجہ چاہتی ہے', en: '{n} item needs attention' },
 
@@ -54,7 +54,7 @@ export const dict = {
   deskTip3: { ur: 'انٹرنیٹ کے بغیر بھی محفوظ', en: 'Saves progress without internet' },
   // Login
   loginTitle: { ur: 'حقدار میں خوش آمدید', en: 'Welcome to Haqdaar' },
-  loginSubtitle: { ur: 'سہارا بیوہ امدادی گرانٹ — آواز اور تصویروں کے ساتھ درخواست دیں', en: 'Sahara Widow Support Grant — apply with voice and pictures' },
+  loginSubtitle: { ur: 'سہارا بیوہ امدادی گرانٹ۔ آواز اور تصویروں کے ساتھ درخواست دیں', en: 'Sahara Widow Support Grant. Apply with voice and pictures' },
   demoLogin: { ur: 'پروٹوٹائپ ڈیمو لاگ ان', en: 'Prototype demo login' },
   demoLoginHint: { ur: 'ججز کے لیے ایک ٹیپ لاگ ان۔ تمام افراد فرضی ہیں۔', en: 'One-tap login for judges. Every person here is fictional.' },
   phoneLogin: { ur: 'فون نمبر سے لاگ ان', en: 'Log in with phone' },
@@ -133,7 +133,7 @@ export const dict = {
   photoUnverifiable: { ur: 'تصویر محفوظ ہو گئی۔ افسر اسے دیکھے گا۔', en: 'Photo saved. An officer will look at it.' },
   photoQueued: { ur: 'تصویر اس فون پر محفوظ ہے۔ سگنل آنے پر بھیجی جائے گی۔', en: 'Photo saved on this phone. It will be sent when signal returns.' },
   submit: { ur: 'درخواست جمع کرائیں', en: 'Submit application' },
-  submitOffline: { ur: 'آف لائن محفوظ — سگنل آنے پر خود جمع ہو جائے گی', en: 'Saved offline — will submit automatically when signal returns' },
+  submitOffline: { ur: 'آف لائن محفوظ۔ سگنل آنے پر خود جمع ہو جائے گی', en: 'Saved offline. Will submit automatically when signal returns' },
   submitted: { ur: 'درخواست جمع ہو گئی', en: 'Application submitted' },
   missingStep: { ur: 'یہ معلومات ابھی باقی ہے', en: 'This is still missing' },
   edit: { ur: 'تبدیل کریں', en: 'Change' },
@@ -149,11 +149,11 @@ export const dict = {
   st_HUMAN_REVIEW: { ur: 'افسر جانچ کرے گا', en: 'An officer will check' },
   st_IN_REVIEW: { ur: 'افسر جائزہ لے رہا ہے', en: 'An officer is reviewing' },
   st_PENDING_SECOND_APPROVAL: { ur: 'حتمی منظوری جاری ہے', en: 'Final check in progress' },
-  st_ON_HOLD_CONSENT: { ur: 'رکی ہوئی — اجازت واپس لی گئی', en: 'Paused — permission withdrawn' },
+  st_ON_HOLD_CONSENT: { ur: 'رکی ہوئی۔ اجازت واپس لی گئی', en: 'Paused. Permission withdrawn' },
   st_APPROVED: { ur: 'منظور! رقم بھیجی جا رہی ہے', en: 'Approved! Sending payment' },
   st_PAYMENT_INITIATED: { ur: 'رقم بھیجی جا رہی ہے', en: 'Sending payment' },
   st_PAID: { ur: 'رقم بھیج دی گئی', en: 'Money sent' },
-  st_PAYMENT_FAILED: { ur: 'ادائیگی میں مسئلہ — افسر کو اطلاع دی گئی', en: 'Payment issue — officer notified' },
+  st_PAYMENT_FAILED: { ur: 'ادائیگی میں مسئلہ۔ افسر کو اطلاع دی گئی', en: 'Payment issue. Officer notified' },
   st_REJECTED: { ur: 'منظور نہیں ہوئی', en: 'Not approved' },
   st_WITHDRAWN: { ur: 'واپس لے لی گئی', en: 'Withdrawn' },
   st_CLOSED: { ur: 'مکمل', en: 'Completed' },
@@ -222,7 +222,7 @@ export const dict = {
   checking: { ur: 'چیک ہو رہا ہے…', en: 'Checking…' },
   v_VERIFIED_OFFICIAL: { ur: 'تصدیق شدہ سرکاری پیغام', en: 'Verified official message' },
   v_LIKELY_SCAM: { ur: 'غالباً دھوکہ ہے', en: 'Likely scam' },
-  v_CANNOT_TELL: { ur: 'یقین سے نہیں کہہ سکتے — محتاط رہیں', en: 'Cannot tell — be careful' },
+  v_CANNOT_TELL: { ur: 'یقین سے نہیں کہہ سکتے۔ محتاط رہیں', en: 'Cannot tell. Be careful' },
   v_LIKELY_SAFE: { ur: 'غالباً محفوظ', en: 'Likely safe' },
   redFlags: { ur: 'خطرے کی نشانیاں', en: 'Warning signs' },
   advice: { ur: 'مشورہ', en: 'Advice' },
@@ -259,7 +259,7 @@ export const dict = {
   continue: { ur: 'جاری رکھیں', en: 'Continue' },
   switchFamily: { ur: 'خاندان بدلیں', en: 'Switch family' },
   helpingStrip: { ur: 'مدد: {name}', en: 'Helping: {name}' },
-  consentExpiredRenew: { ur: 'اجازت ختم — تجدید کریں', en: 'Consent expired — renew' },
+  consentExpiredRenew: { ur: 'اجازت ختم۔ تجدید کریں', en: 'Consent expired. Renew' },
   consentWithdrawnLocked: { ur: 'اجازت واپس لی گئی', en: 'Consent withdrawn' },
   activeCases: { ur: '{n} فعال درخواست', en: '{n} active case' },
   familyName: { ur: 'پورا نام', en: 'Full name' },
@@ -279,7 +279,7 @@ export const dict = {
   saveFamily: { ur: 'محفوظ کریں', en: 'Save' },
   familyAdded: { ur: 'خاندان شامل ہو گیا', en: 'Family added' },
   noFamilies: { ur: 'ابھی کوئی خاندان نہیں۔ پہلا خاندان شامل کریں۔', en: 'No families yet. Add your first family.' },
-  accessBlocked: { ur: 'رسائی بند — شہری نے اجازت واپس لے لی ہے', en: 'Access blocked — the citizen withdrew permission' },
+  accessBlocked: { ur: 'رسائی بند۔ شہری نے اجازت واپس لے لی ہے', en: 'Access blocked. The citizen withdrew permission' },
   accessBlockedBody: { ur: 'یہ کوشش ریکارڈ ہو گئی ہے اور شہری کو نظر آئے گی۔', en: 'This attempt was recorded and is visible to the citizen.' },
 } as const;
 

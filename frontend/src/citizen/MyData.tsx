@@ -117,7 +117,7 @@ export function MyData() {
       >
         {correct.isSuccess ? (
           <p className="text-lg font-semibold text-ok">
-            {correct.data.status === 'APPLIED' ? t('correctionApplied') : `${t('correctionSent')} — ${t('correctionPending')}`}
+            {correct.data.status === 'APPLIED' ? t('correctionApplied') : `${t('correctionSent')}. ${t('correctionPending')}`}
           </p>
         ) : (
           <div className="space-y-3">

@@ -64,7 +64,7 @@ export function VoiceCapture({ fieldKey, parse, allowUnknown, onConfirm }: { fie
     setState('error');
     const msg = heard
       ? lang === 'ur'
-        ? `ہم نے سنا: "${heard}" — مگر جواب سمجھ نہیں آیا۔ دوبارہ بولیں یا بٹن دبائیں۔`
+        ? `ہم نے سنا: "${heard}"، مگر جواب سمجھ نہیں آیا۔ دوبارہ بولیں یا بٹن دبائیں۔`
         : `We heard "${heard}" but could not find an answer in it. Try again or use the buttons.`
       : t('voiceFailed');
     setError(msg);

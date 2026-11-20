@@ -400,7 +400,7 @@ export function RuleEditor() {
                   <>
                     <p className="flex items-center gap-1.5 font-bold">
                       <CircleX className="h-4 w-4" aria-hidden />
-                      {errors.length} validation error{errors.length > 1 ? 's' : ''} — cannot publish until fixed (marked below)
+                      {errors.length} validation error{errors.length > 1 ? 's' : ''}. Fix the marked fields before publishing.
                     </p>
                     {errorMap.other.length > 0 && (
                       <ul className="mt-1 list-inside list-disc">

@@ -37,7 +37,7 @@ export function Corrections() {
                 </p>
                 <p className="text-sm text-muted">
                   Requested <span className="font-mono font-semibold text-ink">{String(c.requested_value)}</span>
-                  {c.reason ? ` — “${c.reason}”` : ''} · {fmtTime(c.created_at)}
+                  {c.reason ? `: “${c.reason}”` : ''} · {fmtTime(c.created_at)}
                 </p>
               </div>
               <div className="flex gap-2">
