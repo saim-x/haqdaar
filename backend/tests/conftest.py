@@ -13,12 +13,14 @@ The environment is configured **before** any ``app.*`` import so that
 
 from __future__ import annotations
 
+import importlib
 import os
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -298,3 +300,57 @@ def seeded_ids(prepared_database: str) -> dict[str, Any]:
 @pytest.fixture()
 def unique_key() -> str:
     return f"test-{uuid.uuid4().hex[:16]}"
+
+
+# --- simulated DPI services, in process -------------------------------------
+
+
+class InProcessMockTransport(httpx.BaseTransport):
+    """Route the agent's outbound mock calls back into the in-process ASGI app.
+
+    ``app/agent/mock_client.py`` speaks HTTP to ``MOCK_BASE_URL``; in a test the same
+    routes are already mounted on the app under ``/mock``. Delegating to the
+    ``TestClient`` keeps a drill on the real client, the real retry policy and the
+    real mock handlers without binding a port.
+    """
+
+    def __init__(self, test_client: Any) -> None:
+        self._client = test_client
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        response = self._client.request(
+            request.method,
+            request.url.path,
+            params=request.url.params,
+            headers=request.headers,
+            content=request.read(),
+        )
+        return httpx.Response(
+            response.status_code,
+            headers=response.headers,
+            content=response.content,
+            request=request,
+        )
+
+
+@pytest.fixture()
+def in_process_mocks(monkeypatch: pytest.MonkeyPatch, client: Any) -> Iterator[None]:
+    """Point the case agent's ``MockClient`` at the in-process app.
+
+    Use this whenever a test drives the pipeline through the API rather than through
+    a live uvicorn server (see ``tests/integration/test_golden_path_and_rules.py``
+    for the live-server variant).
+    """
+    case_agent = importlib.import_module("app.agent.case_agent")
+    mock_client_module = importlib.import_module("app.agent.mock_client")
+    transport = InProcessMockTransport(client)
+
+    def factory(base_url: str, **kwargs: Any) -> Any:
+        kwargs.pop("transport", None)
+        kwargs.pop("sleep", None)
+        return mock_client_module.MockClient(
+            base_url, transport=transport, sleep=lambda _seconds: None
+        )
+
+    monkeypatch.setattr(case_agent, "MockClient", factory)
+    yield

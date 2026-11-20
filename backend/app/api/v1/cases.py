@@ -34,7 +34,7 @@ from app.schemas.facts import (
     missing_facts,
     normalize_fact,
 )
-from app.schemas.serializers import case_to_dict, status_label
+from app.schemas.serializers import case_to_dict, decision_evidence, status_label
 from app.security import audit
 from app.security.consent import enforce_consent
 from app.security.errors import NotFoundError, ValidationError
@@ -569,6 +569,7 @@ def get_case(
                 if latest_decision.created_at
                 else None,
             }
+        body.update(decision_evidence(latest_decision))
     db.commit()
 
     etag = weak_etag(body)

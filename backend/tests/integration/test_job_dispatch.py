@@ -22,11 +22,9 @@ from __future__ import annotations
 
 import importlib
 import inspect
-from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import httpx
 import pytest
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -165,52 +163,6 @@ def test_run_handler_normalizes_before_calling(
 
 
 # -- end to end through the dispatcher -----------------------------------
-class _InProcessTransport(httpx.BaseTransport):
-    """Route the agent's outbound mock calls back into the in-process ASGI app.
-
-    ``MockClient`` speaks HTTP to ``MOCK_BASE_URL``; in a test the same routes are
-    already mounted on the app under ``/mock``. Delegating to the ``TestClient``
-    keeps the drill on the real client, the real retry policy and the real mock
-    handlers without binding a port.
-    """
-
-    def __init__(self, test_client: Any) -> None:
-        self._client = test_client
-
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
-        response = self._client.request(
-            request.method,
-            request.url.path,
-            params=request.url.params,
-            headers=request.headers,
-            content=request.read(),
-        )
-        return httpx.Response(
-            response.status_code,
-            headers=response.headers,
-            content=response.content,
-            request=request,
-        )
-
-
-@pytest.fixture()
-def in_process_mocks(monkeypatch: pytest.MonkeyPatch, client: Any) -> Iterator[None]:
-    """Point the case agent's ``MockClient`` at the in-process app."""
-    case_agent = importlib.import_module("app.agent.case_agent")
-    mock_client_module = importlib.import_module("app.agent.mock_client")
-    transport = _InProcessTransport(client)
-
-    def factory(base_url: str, **kwargs: Any) -> Any:
-        kwargs.pop("transport", None)
-        kwargs.pop("sleep", None)
-        return mock_client_module.MockClient(
-            base_url, transport=transport, sleep=lambda _seconds: None
-        )
-
-    monkeypatch.setattr(case_agent, "MockClient", factory)
-    yield
-
-
 def _auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
@@ -239,7 +191,7 @@ def _ensure_department_consent(client: Any, token: str, tenant_id: Any) -> None:
         json={
             "recipient_type": "DEPARTMENT",
             "recipient_tenant_id": str(tenant_id),
-            "categories": ["IDENTITY", "HOUSEHOLD", "DOCUMENTS"],
+            "categories": ["IDENTITY", "HOUSEHOLD", "DOCUMENTS", "CASE_HISTORY"],
             "purposes": ["BENEFIT_APPLICATION"],
             "assurance_level": "SELF_OTP",
         },

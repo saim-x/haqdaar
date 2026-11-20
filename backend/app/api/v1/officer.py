@@ -31,7 +31,12 @@ from app.models.enums import (
 )
 from app.models.identity import Citizen, User
 from app.models.programs import Program, RuleVersion
-from app.schemas.serializers import case_card, case_to_dict, document_to_dict
+from app.schemas.serializers import (
+    case_card,
+    case_to_dict,
+    decision_evidence,
+    document_to_dict,
+)
 from app.security import audit
 from app.security.consent import enforce_consent
 from app.security.errors import (
@@ -363,6 +368,16 @@ def officer_case(case_id: uuid.UUID, actor: OfficerActor, db: DbSession) -> dict
     }
     body["documents"] = [document_to_dict(doc) for doc in documents]
     body["rule_stale"] = _rule_is_stale(db, case, program)
+
+    latest_decision = db.execute(
+        select(Decision)
+        .where(Decision.case_id == case.id)
+        .order_by(Decision.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    body.update(decision_evidence(latest_decision))
+    body["latest_decision_id"] = str(latest_decision.id) if latest_decision else None
+
     db.commit()
     return body
 
