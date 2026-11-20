@@ -14,8 +14,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from enum import Enum
 
-from app.engine.anomalies import FlagSeverity, RiskFlag
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.engine.anomalies import FlagSeverity, RiskFlag
 
 __all__ = [
     "ConfidenceComponents",

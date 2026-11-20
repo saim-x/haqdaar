@@ -31,15 +31,16 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
 from app.agent import deps
 from app.db import get_db
 from app.engine.rules_dsl import RuleSetSchema, validate_rules_json
 from app.engine.twin import replay_from_rows
 from app.models import Case, Decision, Program, RuleVersion, SimulationRun
 from app.security.deps import require_roles
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 __all__ = ["router"]
 

@@ -15,6 +15,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from app.engine.facts import Fact, FactBundle, FactSource, FactState
 from app.engine.rules_dsl import (
     BenefitFormula,
@@ -23,7 +25,6 @@ from app.engine.rules_dsl import (
     RuleOperator,
     RuleSetSchema,
 )
-from pydantic import BaseModel, ConfigDict
 
 __all__ = [
     "BenefitComputation",

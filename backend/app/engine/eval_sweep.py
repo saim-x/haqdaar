@@ -18,6 +18,8 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from app.engine.anomalies import FLAG_CATALOGUE, FlagCode, RiskFlag
 from app.engine.confidence import (
     ConfidenceComponents,
@@ -29,7 +31,6 @@ from app.engine.evaluator import evaluate_ruleset
 from app.engine.facts import FACT_REGISTRY, Fact, FactBundle, FactSource, known_fact
 from app.engine.router import RouteAction, route_case
 from app.engine.rules_dsl import CostMatrix, RuleSetSchema
-from pydantic import BaseModel, ConfigDict
 
 __all__ = [
     "DEFAULT_THRESHOLDS",

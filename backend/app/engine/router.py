@@ -17,12 +17,13 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from app.engine.anomalies import FlagSeverity, RiskFlag
 from app.engine.confidence import ConfidenceComponents, weakest_pillar
 from app.engine.evaluator import EvaluationResult, RuleResult
 from app.engine.facts import FactBundle
 from app.engine.rules_dsl import Policy
-from pydantic import BaseModel, ConfigDict
 
 __all__ = [
     "ESCALATION_REASON_CODES",

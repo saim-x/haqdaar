@@ -15,6 +15,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from app.engine.anomalies import RiskFlag
 from app.engine.confidence import (
     ConfidenceComponents,
@@ -27,7 +29,6 @@ from app.engine.explainer import CitizenExplanation, build_explanation
 from app.engine.facts import FactBundle
 from app.engine.router import RouteDecision, route_case
 from app.engine.rules_dsl import RuleSetSchema
-from pydantic import BaseModel, ConfigDict
 
 __all__ = ["ENGINE_VERSION", "EngineResult", "evaluate_and_route"]
 
