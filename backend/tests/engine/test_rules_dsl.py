@@ -24,7 +24,7 @@ def _codes(report_errors: tuple[dict[str, str], ...]) -> set[str]:
 
 def test_sahara_v1_validates(sahara_v1: RuleSetSchema) -> None:
     assert sahara_v1.program_code == "SAHARA_WIDOW_GRANT"
-    assert len(sahara_v1.eligibility_rules) == 8
+    assert len(sahara_v1.eligibility_rules) == 9
     assert sahara_v1.policy.auto_approve_confidence_threshold == 0.90
     assert sahara_v1.policy.cost_matrix.wrong_approval_cost == 100
 
