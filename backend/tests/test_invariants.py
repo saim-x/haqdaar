@@ -344,3 +344,33 @@ def test_no_raw_cnic_or_phone_in_log_statements() -> None:
             if any(token in lowered for token in suspicious):
                 offenders.append(f"{path.relative_to(BACKEND_DIR)}:{line_number}: {stripped[:90]}")
     assert not offenders, "raw PII in a log statement:\n" + "\n".join(offenders)
+
+
+# --- 6. the honesty page discloses every simulated subsystem ---------------
+
+
+def test_transparency_discloses_every_simulated_subsystem() -> None:
+    """RULE-5/RULE-6: ``/transparency`` must name every simulated service.
+
+    The payload is also the source of the README table and the frontend page, so
+    this pins the shape the frontend reads (``components[]`` with
+    ``component``/``status``/``details``) and the eleven docs/15 §1 rows.
+    """
+    from app.api.v1.transparency import COMPONENTS
+
+    assert len(COMPONENTS) == 11, "docs/15 §1 lists eleven components"
+
+    allowed = {"REAL", "SIMULATED", "SYNTHETIC"}
+    for row in COMPONENTS:
+        assert set(row) >= {"component", "status", "details"}, row
+        assert row["status"] in allowed, row
+        assert row["details"].strip(), row
+
+    simulated = " ".join(
+        row["component"] for row in COMPONENTS if row["status"] == "SIMULATED"
+    )
+    for service in ("Identity Registry", "Civil Death", "Household Survey", "Payment", "SMS"):
+        assert service in simulated, f"{service} is simulated but not disclosed"
+
+    # Every mock mount the API exposes must be covered by a SIMULATED row.
+    assert any(row["status"] == "SYNTHETIC" for row in COMPONENTS), "synthetic data row missing"
