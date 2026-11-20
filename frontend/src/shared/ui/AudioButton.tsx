@@ -19,7 +19,7 @@ export function AudioButton({ clip, text, lang, size = 'lg', className, label, t
   const { t, lang: uiLang } = useT();
   const l = lang ?? uiLang;
   const playing = usePlayingId() === `${clip ?? ''}|${text}`;
-  const dim = size === 'lg' ? 'h-14 w-14' : 'h-12 w-12';
+  const dim = size === 'lg' ? 'h-12 w-12' : 'h-11 w-11';
 
   return (
     <button
@@ -32,8 +32,8 @@ export function AudioButton({ clip, text, lang, size = 'lg', className, label, t
       aria-label={`${playing ? t('stop') : t('listen')}${label ? `: ${label}` : ''}`}
       aria-pressed={playing}
       className={cx(
-        'inline-flex shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-fast',
-        playing ? 'border-primary bg-primary text-primary-foreground' : 'border-primary/30 bg-primary-soft text-primary hover:border-primary',
+        'inline-flex shrink-0 items-center justify-center rounded-full border transition-colors duration-fast',
+        playing ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary',
         dim,
         className,
       )}

@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-primary-hover [--press:var(--action-primary-press)]",
         destructive: "bg-danger text-white hover:bg-danger-hover [--press:var(--feedback-error-press)]",
         success: "bg-ok text-white hover:brightness-110 [--press:var(--feedback-success-press)]",
-        outline: "border-2 border-input/60 bg-card text-foreground hover:border-input hover:bg-muted [--press:var(--border-press)]",
+        outline: "border border-border bg-card text-foreground shadow-xs hover:bg-accent [--press:var(--border-press)]",
         secondary: "bg-muted text-foreground hover:bg-border [--press:var(--border-press)]",
         ghost: "text-foreground hover:bg-muted",
         link: "text-primary underline-offset-4 hover:underline",
@@ -27,7 +27,7 @@ const buttonVariants = cva(
       },
       tactile: {
         // Chunky press-down feedback for large citizen controls (warm, tactile direction).
-        true: "shadow-[0_4px_0_0_rgb(var(--press))] active:translate-y-[3px] active:shadow-[0_1px_0_0_rgb(var(--press))]",
+        true: "shadow-[0_2px_0_0_rgb(var(--press))] active:translate-y-px active:shadow-none",
         false: "",
       },
     },
