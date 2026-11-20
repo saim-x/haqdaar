@@ -149,6 +149,23 @@ def decision_to_dict(decision: Decision) -> dict[str, Any]:
     }
 
 
+def decision_evidence(decision: Decision | None) -> dict[str, Any]:
+    """The officer's evidence trail: canonical facts and the rule-by-rule trace.
+
+    docs/05 §3.2 gives officers and auditors "full facts, trace, flags, notes".
+    Both live on the append-only ``decisions`` row: ``input_snapshot_json`` holds the
+    tri-state canonical facts the engine actually saw, ``rule_trace_json`` the
+    per-rule outcome. Nothing is recomputed here — the officer reviews exactly what
+    the engine decided on, which is what makes an override auditable.
+    """
+    if decision is None:
+        return {"facts": {}, "rule_trace": []}
+    return {
+        "facts": decision.input_snapshot_json or {},
+        "rule_trace": decision.rule_trace_json or [],
+    }
+
+
 def case_to_dict(
     case: Case,
     *,
@@ -271,6 +288,7 @@ __all__ = [
     "case_card",
     "case_to_dict",
     "citizen_brief",
+    "decision_evidence",
     "decision_to_dict",
     "document_to_dict",
     "grant_to_dict",

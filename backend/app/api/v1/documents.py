@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
+from app.config import get_settings, upload_root
 from app.db import get_db
 from app.jobs.queue import enqueue_job
 from app.models.cases import Case, Document
@@ -71,9 +71,8 @@ def _audit_actor(actor: ActorContext) -> dict[str, Any]:
 
 
 def _storage_root() -> Path:
-    root = Path(get_settings().upload_dir)
-    root.mkdir(parents=True, exist_ok=True)
-    return root
+    """The one upload directory — the same one ``app/ai/doc_verify.py`` reads."""
+    return upload_root()
 
 
 def _load_document(db: Session, document_id: uuid.UUID) -> Document:

@@ -21,7 +21,7 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.config import settings
+from app.config import settings, upload_root
 from app.db import SessionLocal
 from app.security.context import (
     configure_logging,
@@ -333,8 +333,7 @@ def _check_worker() -> tuple[bool, str]:
 
 def _check_uploads() -> tuple[bool, str]:
     try:
-        settings.upload_dir.mkdir(parents=True, exist_ok=True)
-        probe = settings.upload_dir / ".write-probe"
+        probe = upload_root() / ".write-probe"
         probe.write_text("ok", encoding="utf-8")
         probe.unlink(missing_ok=True)
         return True, "ok"

@@ -13,12 +13,14 @@ The environment is configured **before** any ``app.*`` import so that
 
 from __future__ import annotations
 
+import importlib
 import os
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -78,29 +80,85 @@ def _ensure_database() -> None:
             connection.execute(f'CREATE DATABASE "{database}"')
 
 
-def _normalise_version_table(config: Any) -> None:
-    """Collapse a stale multi-row ``alembic_version``.
+def _known_revision(script: Any, revision: str) -> bool:
+    try:
+        script.get_revision(revision)
+    except Exception:  # noqa: BLE001 - alembic raises ResolutionError for orphans
+        return False
+    return True
 
-    Before the Integration Lead joined the two chains at S1, ``app_0001`` and
-    ``dpi_mock_0001`` were separate heads and a database could record both. Now
-    that ``dpi_mock_0001`` descends from ``app_0001``, keeping the ancestor row
-    makes ``upgrade heads`` fail with "Requested revision dpi_mock_0001 overlaps
-    with other requested revisions app_0001". Drop every row that is not a head.
+
+def _ancestors(script: Any, revision: str) -> set[str]:
+    """Every revision ``revision`` descends from, following ``down_revision``."""
+    seen: set[str] = set()
+    pending = [revision]
+    while pending:
+        node = script.get_revision(pending.pop())
+        down = node.down_revision
+        if down is None:
+            continue
+        for parent in (down,) if isinstance(down, str) else tuple(down):
+            if parent not in seen:
+                seen.add(parent)
+                pending.append(parent)
+    return seen
+
+
+def _revisions_to_drop(recorded: list[str], script: Any) -> list[str]:
+    """Which recorded revisions to delete so ``upgrade heads`` can walk forward.
+
+    A single row is a *position*, not a conflict: ``upgrade heads`` walks forward
+    from it and applies only what is missing. Deleting it instead reset the
+    database to base, so the next upgrade replayed every migration against tables
+    that already existed — the DuplicateTable storms on stale-but-migrated test
+    databases.
+
+    Only genuine multi-row states need collapsing, and then the fix is to keep the
+    most advanced row and drop its ancestors (before the Integration Lead joined
+    the two chains at S1, ``app_0001`` and ``dpi_mock_0001`` were separate heads
+    and a database could record both; keeping the ancestor makes ``upgrade heads``
+    fail with "Requested revision dpi_mock_0001 overlaps with other requested
+    revisions app_0001").
     """
+    known = [revision for revision in recorded if _known_revision(script, revision)]
+    unknown = [revision for revision in recorded if revision not in known]
+    if not known:
+        # Nothing recognisable to preserve; let alembic fail loudly.
+        return []
+    if len(known) == 1:
+        # A stale-but-migrated database: keep the position, drop only noise.
+        return unknown
+
+    ancestry = {revision: _ancestors(script, revision) for revision in known}
+    keep = [
+        revision
+        for revision in known
+        if all(other in ancestry[revision] for other in known if other != revision)
+    ]
+    if not keep:
+        # Genuinely divergent heads: alembic upgrades each one, so leave them.
+        return unknown
+    return unknown + [revision for revision in known if revision not in keep]
+
+
+def _normalise_version_table(config: Any) -> None:
+    """Collapse a stale multi-row ``alembic_version`` without losing the position."""
     from alembic.script import ScriptDirectory
     from sqlalchemy import text
 
     from app.db import engine
 
-    heads = set(ScriptDirectory.from_config(config).get_heads())
+    script = ScriptDirectory.from_config(config)
     with engine.connect() as connection:
         exists = connection.execute(
             text("SELECT to_regclass('public.alembic_version') IS NOT NULL")
         ).scalar()
         if not exists:
             return
-        recorded = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
-        stale = [revision for revision in recorded if revision not in heads]
+        recorded = list(
+            connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+        )
+        stale = _revisions_to_drop(recorded, script)
         if not stale:
             return
         connection.execute(
@@ -108,6 +166,25 @@ def _normalise_version_table(config: Any) -> None:
             {"stale": stale},
         )
         connection.commit()
+
+
+def _is_duplicate_object(exc: BaseException) -> bool:
+    """True when a migration failed because the object it creates already exists.
+
+    That is the signature of a stale-but-migrated database: the schema is at head
+    but ``alembic_version`` is behind, so the replay collides. PostgreSQL reports
+    ``duplicate_table`` (42P07) and ``duplicate_object`` (42710).
+    """
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if getattr(current, "sqlstate", None) in {"42P07", "42710"}:
+            return True
+        if type(current).__name__ in {"DuplicateTable", "DuplicateObject"}:
+            return True
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def _migrate() -> None:
@@ -119,12 +196,43 @@ def _migrate() -> None:
     config.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
     os.environ["ALEMBIC_DATABASE_URL"] = TEST_DATABASE_URL
     _normalise_version_table(config)
-    command.upgrade(config, "heads")
+    try:
+        command.upgrade(config, "heads")
+    except Exception as exc:
+        if not _is_duplicate_object(exc):
+            raise
+        # The schema is already built but the version marker was behind, so the
+        # replay collided with objects that exist. Move the marker forward instead
+        # of dropping the database; the second upgrade is then a no-op.
+        command.stamp(config, "heads")
+        command.upgrade(config, "heads")
 
 
 @pytest.fixture(scope="session")
 def database_url() -> str:
     return TEST_DATABASE_URL
+
+
+def _clear_rag_tables(db: Any) -> None:
+    """Drop RAG rows before the seed's reset.
+
+    ``app/mocks/seed.py::_RESET_ORDER`` deletes ``programs`` (index 15) before
+    ``rag_documents`` (index 24), but ``rag_documents.program_id`` references
+    ``programs``. As soon as any test has indexed a program the reset dies with a
+    ForeignKeyViolation, so the suite only ever ran once against a given database.
+    ``seed_all(with_rag=False)`` never repopulates these tables, so clearing them
+    here is safe and keeps the suite re-runnable.
+
+    Reported to the Lead: the durable fix is the order in ``_RESET_ORDER``
+    (``app/mocks/seed.py`` is DPI-owned).
+    """
+    from sqlalchemy import delete
+
+    from app.models.ai import RagChunk, RagDocument
+
+    db.execute(delete(RagChunk))
+    db.execute(delete(RagDocument))
+    db.flush()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -143,6 +251,7 @@ def prepared_database(database_url: str) -> Iterator[str]:
 
     db = SessionLocal()
     try:
+        _clear_rag_tables(db)
         seed_all(db, reset=True, with_rag=False)
         db.commit()
     finally:
@@ -298,3 +407,57 @@ def seeded_ids(prepared_database: str) -> dict[str, Any]:
 @pytest.fixture()
 def unique_key() -> str:
     return f"test-{uuid.uuid4().hex[:16]}"
+
+
+# --- simulated DPI services, in process -------------------------------------
+
+
+class InProcessMockTransport(httpx.BaseTransport):
+    """Route the agent's outbound mock calls back into the in-process ASGI app.
+
+    ``app/agent/mock_client.py`` speaks HTTP to ``MOCK_BASE_URL``; in a test the same
+    routes are already mounted on the app under ``/mock``. Delegating to the
+    ``TestClient`` keeps a drill on the real client, the real retry policy and the
+    real mock handlers without binding a port.
+    """
+
+    def __init__(self, test_client: Any) -> None:
+        self._client = test_client
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        response = self._client.request(
+            request.method,
+            request.url.path,
+            params=request.url.params,
+            headers=request.headers,
+            content=request.read(),
+        )
+        return httpx.Response(
+            response.status_code,
+            headers=response.headers,
+            content=response.content,
+            request=request,
+        )
+
+
+@pytest.fixture()
+def in_process_mocks(monkeypatch: pytest.MonkeyPatch, client: Any) -> Iterator[None]:
+    """Point the case agent's ``MockClient`` at the in-process app.
+
+    Use this whenever a test drives the pipeline through the API rather than through
+    a live uvicorn server (see ``tests/integration/test_golden_path_and_rules.py``
+    for the live-server variant).
+    """
+    case_agent = importlib.import_module("app.agent.case_agent")
+    mock_client_module = importlib.import_module("app.agent.mock_client")
+    transport = InProcessMockTransport(client)
+
+    def factory(base_url: str, **kwargs: Any) -> Any:
+        kwargs.pop("transport", None)
+        kwargs.pop("sleep", None)
+        return mock_client_module.MockClient(
+            base_url, transport=transport, sleep=lambda _seconds: None
+        )
+
+    monkeypatch.setattr(case_agent, "MockClient", factory)
+    yield
