@@ -56,6 +56,33 @@
 
 ---
 
+## ADR-011: Pinned Cross-Agent Helper Import Paths
+- **Context:** The four-agent consolidation (BE/EN/DPI/FE) exchanges functions between owners; docs `14` names the functions but not module locations, which would desync parallel agents.
+- **Decision (Integration Lead pins):** `app/notify.py::create_notification(...)` (BE); `app/jobs/handlers.py` maps job types to lazily-imported handlers: `PROCESS_CASE → app.agent.case_agent.run_case_agent(db, case_id, *, correlation_id=None)`, `CHECK_COMPLAINT → app.agent.case_agent.check_complaint_agent(db, case_id)`, `VERIFY_DOCUMENT → app.ai.doc_verify.verify_document(db, document_id)`, `REINDEX_RAG → app.ai.rag.reindex_program_rules(db, program_id)`; `app.ai.benchmarks.py::scam_metrics()/doc_metrics()` (DPI, consumed by `/eval/dashboard`); `app.engine.entity_resolution.py::name_sim(a, b)` (EN, consumed by doc_verify cross-check at threshold 0.80).
+- **Rationale:** Zero-ambiguity integration; mismatches surface at the merge gate, not at runtime.
+
+## ADR-012: OTP Delivery via `notifications` Row (Simulated SMS)
+- **Context:** Doc `09` requires OTPs to be delivered to the simulated SMS inbox, but `notifications.verification_code` is UNIQUE and formatted `HQ-XXXXX` for official codes — it cannot safely hold arbitrary 6-digit OTPs (uniqueness collisions).
+- **Decision:** `POST /auth/otp/request` additionally inserts a `notifications` row (`channel='SMS_SIMULATED'`, citizen `phone`, the 6-digit code inside `body_ur`/`body_en`); the `verification_code` column carries a unique generated `HQ-` code (not displayed as the OTP). `GET /mock/v1/sms/inbox/{phone}` reads these rows.
+- **Rationale:** Keeps schema exactly per doc `04` while powering the Device Simulator; OTP plaintext never appears in logs.
+
+## ADR-013: Single Whitelisted Import for Mock Chaos Administration
+- **Context:** Invariant 4 forbids `app/api/` importing `app/mocks/models.py` or querying `mock_*` tables, yet doc `14` assigns `/api/v1/admin_mocks.py` (chaos controls + demo reset) to the mock owner.
+- **Decision:** Mock service configuration is exposed only through functions in `app/mocks/config.py`; `tests/test_invariants.py` whitelists exactly one import pair: `app/api/v1/admin_mocks.py → app.mocks.config` (no `models`/`db`/session imports anywhere in `app/api/`). All case-flow modules remain strictly HTTP-only over `MOCK_BASE_URL`.
+- **Rationale:** Preserves the automatable simulation boundary for the case pipeline while allowing platform-admin chaos control without HTTP gymnastics.
+
+## ADR-014: Alembic Migration Ownership Split
+- **Context:** BE owns models/migrations; DPI owns the `mock_*` ORM models — parallel migration chains would conflict.
+- **Decision:** `backend/alembic/versions/` is BE-owned except exactly one mock-tables migration owned by DPI, whose `down_revision` is rebased onto BE's tip at merge time (coordinated by the Integration Lead).
+- **Rationale:** Parallel work with a single linear migration history and zero chain conflicts.
+
+## ADR-015: Mandatory Children-Count Rule (R09_CHILDREN_KNOWN) — Grant Never Auto-Approved with Provisional Amount
+- **Context:** Agent EN's M0 review (Fri 20 Nov, ~21:50 PKT) exposed a spec gap: Sahara v1's 8 rules never reference `children_under_18`, so a case with UNKNOWN children could clear every rule and AUTO_APPROVE paying the provisional base PKR 12,000 — finalizing a payment on an amount known to be incomplete, contrary to the "no silent guessing" principle (SP-3). (Docs/06 §2.4 correctly withheld the child bonus, but no routing constraint prevented payment.)
+- **Decision (Integration Lead, approved):** Add rule `R09_CHILDREN_KNOWN` (`fact: children_under_18`, `op: gte`, `value: 0`, `on_fail: HUMAN`, `on_unknown: ASK`, `required_for_auto: true`) to docs/06 §2.1 Sahara v1; DPI mirrors an equivalent children-known rule in the Guzara Allowance v1 seed. Any rule referencing a fact forces tri-state exposure: UNKNOWN children now routes ASK_MORE → (after 2 rounds) HUMAN_REVIEW — never AUTO_APPROVE. Provisional amounts remain visible to officers/AI notes only. Data-only fix using existing DSL semantics; zero engine or routing-order changes.
+- Also recorded from the EN review: (a) docs/04 §5 has 20 fact keys, not 19 — the agent briefs said 19; the 20th (`citizen_has_active_dept_consent`) is non-tri-state; (b) `CNIC_NOT_IN_REGISTRY` (named in docs/06 §5.2) is a 13th HIGH anomaly code missing from the §6 table — implemented as HIGH; (c) canonicalization maps `"Mst. Fatima Bibi"` vs `"Fatima Bibi"` to similarity 1.0 (→ identity 0.98 band), not 0.93 as the §3.2 example implied — accepted: variant spelling is logged transparently in provenance, Fatima's golden path still auto-approves, and the 0.70–0.84 band is exercised by non-canonical pairs (e.g., "Zainab Bibi" vs "Zubaida Bibi" ≈ 0.77); (d) identity resolution of the Fatima canonicalization quantity is surfaced in the rule trace so officers/auditors see the raw→canonical mapping.
+
+---
+
 ## Change Control Protocol (During Hackathon)
 1. Minor bug fixes within a single agent's owned files need no ADR.
 2. Any change to a DB column (`04`), API contract (`05`), canonical fact key (`04 §5`), or routing threshold (`06`) MUST be proposed to the Integration Lead, updated in the relevant doc, and logged as `ADR-011+` here before merging.
