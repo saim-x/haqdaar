@@ -28,10 +28,11 @@ import re
 import struct
 import time
 import uuid
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator, Protocol, Sequence, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from app.ai import guardrails, urdu_nlp
 
@@ -49,7 +50,7 @@ COST_TABLE: dict[str, tuple[float, float]] = {
     "fake": (0.0, 0.0),
 }
 
-EMBEDDING_DIM = 256
+EMBEDDING_DIM = 64
 
 
 # --------------------------------------------------------------------------- #
@@ -205,7 +206,7 @@ def _emit(
         "succeeded": succeeded,
         "error_code": error_code,
         "case_id": context.case_id,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": datetime.now(UTC),
     }
 
     try:
@@ -564,31 +565,17 @@ def _parse_field(field_key: str, text: str) -> ParsedFieldResult:
 # deterministic embeddings
 # --------------------------------------------------------------------------- #
 def _hash_embedding(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
-    """Hashing vectoriser: shared words ⇒ high cosine similarity, no network."""
-    vector = [0.0] * dim
-    normalized = urdu_nlp.normalize_text(text or "").lower()
-    words = re.findall(r"[\w\u0600-\u06ff]+", normalized)
-    if not words:
-        return vector
+    """Deterministic hashed TF-IDF vector (docs/04 §4.5, 64 dims in fake mode).
 
-    for position, word in enumerate(words):
-        digest = hashlib.blake2b(word.encode("utf-8"), digest_size=8).digest()
-        index = int.from_bytes(digest[:4], "big") % dim
-        sign = 1.0 if digest[4] % 2 == 0 else -1.0
-        weight = 1.0 / math.sqrt(1.0 + position * 0.05)
-        vector[index] += sign * weight
-        # bigram signal keeps word order meaningful
-        if position:
-            bigram = f"{words[position - 1]}_{word}"
-            b_digest = hashlib.blake2b(bigram.encode("utf-8"), digest_size=8).digest()
-            b_index = int.from_bytes(b_digest[:4], "big") % dim
-            b_sign = 1.0 if b_digest[4] % 2 == 0 else -1.0
-            vector[b_index] += b_sign * 0.5 * weight
+    Delegates to :mod:`app.ai.text_index`, which weights each content word by its
+    inverse document frequency over the policy corpus and drops stopwords. A
+    question whose content words never appear in the corpus therefore produces a
+    zero vector — which is what lets the RAG abstention gate mean something
+    without a real embedding model.
+    """
+    from app.ai import text_index
 
-    norm = math.sqrt(sum(value * value for value in vector))
-    if norm == 0:
-        return vector
-    return [round(value / norm, 6) for value in vector]
+    return [round(value, 6) for value in text_index.hash_tfidf(text, dim)]
 
 
 def cosine(a: Sequence[float], b: Sequence[float]) -> float:
@@ -984,7 +971,7 @@ class LiveOpenAIProvider:
     def synthesize_urdu_tts(self, text: str) -> bytes:
         started = time.perf_counter()
         cache_dir = _tts_cache_dir()
-        digest = hashlib.sha256(f"{self.tts_voice}:{text}".encode("utf-8")).hexdigest()
+        digest = hashlib.sha256(f"{self.tts_voice}:{text}".encode()).hexdigest()
         cached = cache_dir / f"{digest}.mp3"
         if cached.exists():
             _emit(
@@ -1173,14 +1160,14 @@ def reset_provider() -> None:
 
 
 __all__ = [
-    "AIProvider",
     "COST_TABLE",
-    "CircuitBreaker",
     "EMBEDDING_DIM",
+    "PROMPT_VERSION",
+    "AIProvider",
+    "CircuitBreaker",
     "FakeDeterministicProvider",
     "LiveOpenAIProvider",
     "OCRResult",
-    "PROMPT_VERSION",
     "ParsedFieldResult",
     "ProviderError",
     "RAGSynthesisResult",

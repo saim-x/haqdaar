@@ -27,9 +27,10 @@ import json
 import logging
 import re
 import threading
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 from app.ai import guardrails, urdu_nlp
 
@@ -660,13 +661,13 @@ __all__ = [
     "MIN_MEANINGFUL_CHARS",
     "MIN_MEANINGFUL_WORDS",
     "MODEL_VERSION",
-    "NotificationRecord",
     "PROGRAM_AMOUNT_CAP",
-    "RedFlag",
     "SCAM_THRESHOLD",
-    "ScamVerdict",
     "UNSURE_THRESHOLD",
     "VERIFIED_OFFICIAL",
+    "NotificationRecord",
+    "RedFlag",
+    "ScamVerdict",
     "classify",
     "detect_red_flags",
     "extract_code",

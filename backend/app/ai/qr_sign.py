@@ -27,7 +27,8 @@ import hashlib
 import hmac
 import json
 import os
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 #: Fields covered by the HMAC, in canonical (sorted) order.
 CANONICAL_FIELDS: tuple[str, ...] = ("cnic", "dob", "doc_type", "full_name", "issuer")

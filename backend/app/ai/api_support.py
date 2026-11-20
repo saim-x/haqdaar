@@ -11,7 +11,8 @@ implementation the moment it appears.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from typing import Any
 
 logger = logging.getLogger("haqdaar.ai.api_support")
 

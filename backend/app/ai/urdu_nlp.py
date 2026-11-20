@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Iterable, Sequence
 
 # --------------------------------------------------------------------------- #
 # digits
@@ -839,7 +839,6 @@ def tokens(text: str) -> Sequence[str]:
 
 __all__ = [
     "ENGLISH_MONTHS",
-    "NumberParse",
     "ROMAN_SCALES",
     "ROMAN_UNITS",
     "SINDH_DISTRICTS",
@@ -847,6 +846,7 @@ __all__ = [
     "URDU_MONTHS",
     "URDU_SCALES",
     "URDU_UNITS",
+    "NumberParse",
     "first_match",
     "format_cnic",
     "format_pkr",

@@ -27,12 +27,13 @@ import logging
 import os
 import re
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
-from app.ai import guardrails, qr_sign
+from app.ai import qr_sign
 from app.ai.provider import OCRResult, get_provider, telemetry
 
 logger = logging.getLogger("haqdaar.ai.doc_verify")
@@ -623,7 +624,7 @@ def _write_case_note(
             "checks": [check.as_dict() for check in verification.checks],
         },
         "is_visible_to_citizen": False,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": datetime.now(UTC),
     }
     try:
         allowed = {column.name for column in table.columns}
@@ -678,7 +679,7 @@ def verify_document(db: Any, document_id: Any) -> dict[str, Any]:
         ):
             verification = verify_image(image_bytes, doc_type)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     update: dict[str, Any] = {
         "verify_status": verification.status,
         "verify_confidence": round(verification.confidence, 3),
@@ -733,8 +734,6 @@ def verify_many(image_bytes_list: Sequence[bytes], doc_type: str = "CNIC_FRONT")
 
 
 __all__ = [
-    "CheckResult",
-    "DocVerification",
     "LAPLACIAN_THRESHOLD",
     "MIN_DIMENSION",
     "NAME_SIMILARITY_THRESHOLD",
@@ -745,6 +744,8 @@ __all__ = [
     "TAMPER_SUSPECTED",
     "UNVERIFIABLE",
     "VERIFIED",
+    "CheckResult",
+    "DocVerification",
     "check_cross_reference",
     "check_image_quality",
     "check_ocr",

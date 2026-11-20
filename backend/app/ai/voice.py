@@ -363,7 +363,9 @@ def transcribe_and_parse(
 
 
 def _local_parse(field_key: str, transcript: str) -> ParsedFieldResult:
-    from app.ai.provider import _parse_field  # local import keeps the public surface small
+    from app.ai.provider import (
+        _parse_field,  # local import keeps the public surface small
+    )
 
     return _parse_field(field_key, urdu_nlp.normalize_text(transcript))
 
@@ -386,7 +388,7 @@ def synthesize(db: Any, text: str, *, lang: str = "ur", tenant_id: Any = None) -
 
 
 def cache_key(text: str, voice: str = "ur-PK-UzmaNeural") -> str:
-    return hashlib.sha256(f"{voice}:{text}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{voice}:{text}".encode()).hexdigest()
 
 
 __all__ = [
