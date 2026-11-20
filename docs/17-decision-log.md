@@ -56,6 +56,28 @@
 
 ---
 
+## ADR-011: Pinned Cross-Agent Helper Import Paths
+- **Context:** The four-agent consolidation (BE/EN/DPI/FE) exchanges functions between owners; docs `14` names the functions but not module locations, which would desync parallel agents.
+- **Decision (Integration Lead pins):** `app/notify.py::create_notification(...)` (BE); `app/jobs/handlers.py` maps job types to lazily-imported handlers: `PROCESS_CASE → app.agent.case_agent.run_case_agent(db, case_id, *, correlation_id=None)`, `CHECK_COMPLAINT → app.agent.case_agent.check_complaint_agent(db, case_id)`, `VERIFY_DOCUMENT → app.ai.doc_verify.verify_document(db, document_id)`, `REINDEX_RAG → app.ai.rag.reindex_program_rules(db, program_id)`; `app.ai.benchmarks.py::scam_metrics()/doc_metrics()` (DPI, consumed by `/eval/dashboard`); `app.engine.entity_resolution.py::name_sim(a, b)` (EN, consumed by doc_verify cross-check at threshold 0.80).
+- **Rationale:** Zero-ambiguity integration; mismatches surface at the merge gate, not at runtime.
+
+## ADR-012: OTP Delivery via `notifications` Row (Simulated SMS)
+- **Context:** Doc `09` requires OTPs to be delivered to the simulated SMS inbox, but `notifications.verification_code` is UNIQUE and formatted `HQ-XXXXX` for official codes — it cannot safely hold arbitrary 6-digit OTPs (uniqueness collisions).
+- **Decision:** `POST /auth/otp/request` additionally inserts a `notifications` row (`channel='SMS_SIMULATED'`, citizen `phone`, the 6-digit code inside `body_ur`/`body_en`); the `verification_code` column carries a unique generated `HQ-` code (not displayed as the OTP). `GET /mock/v1/sms/inbox/{phone}` reads these rows.
+- **Rationale:** Keeps schema exactly per doc `04` while powering the Device Simulator; OTP plaintext never appears in logs.
+
+## ADR-013: Single Whitelisted Import for Mock Chaos Administration
+- **Context:** Invariant 4 forbids `app/api/` importing `app/mocks/models.py` or querying `mock_*` tables, yet doc `14` assigns `/api/v1/admin_mocks.py` (chaos controls + demo reset) to the mock owner.
+- **Decision:** Mock service configuration is exposed only through functions in `app/mocks/config.py`; `tests/test_invariants.py` whitelists exactly one import pair: `app/api/v1/admin_mocks.py → app.mocks.config` (no `models`/`db`/session imports anywhere in `app/api/`). All case-flow modules remain strictly HTTP-only over `MOCK_BASE_URL`.
+- **Rationale:** Preserves the automatable simulation boundary for the case pipeline while allowing platform-admin chaos control without HTTP gymnastics.
+
+## ADR-014: Alembic Migration Ownership Split
+- **Context:** BE owns models/migrations; DPI owns the `mock_*` ORM models — parallel migration chains would conflict.
+- **Decision:** `backend/alembic/versions/` is BE-owned except exactly one mock-tables migration owned by DPI, whose `down_revision` is rebased onto BE's tip at merge time (coordinated by the Integration Lead).
+- **Rationale:** Parallel work with a single linear migration history and zero chain conflicts.
+
+---
+
 ## Change Control Protocol (During Hackathon)
 1. Minor bug fixes within a single agent's owned files need no ADR.
 2. Any change to a DB column (`04`), API contract (`05`), canonical fact key (`04 §5`), or routing threshold (`06`) MUST be proposed to the Integration Lead, updated in the relevant doc, and logged as `ADR-011+` here before merging.
