@@ -32,13 +32,14 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.agent import deps
 from app.db import get_db
 from app.engine.rules_dsl import RuleSetSchema, validate_rules_json
-from app.engine.twin import replay_from_rows
+from app.engine.twin import TwinCase, replay
 from app.models import Case, Decision, Program, RuleVersion, SimulationRun
 from app.security.deps import require_roles
 
@@ -170,8 +171,17 @@ def _active_version(db: Session, program: Program) -> RuleVersion | None:
     return db.get(RuleVersion, program.active_rule_version_id)
 
 
-def _ruleset(version: RuleVersion) -> RuleSetSchema:
-    return RuleSetSchema.model_validate(version.rules_json)
+def _ruleset_or_422(version: RuleVersion) -> RuleSetSchema:
+    """Parse a stored ``rules_json``, reporting a bad row as 422, never a 500.
+
+    A version written before a DSL change (or hand-edited in the database) must
+    surface as ``422 RULE_VALIDATION_FAILED`` with ``details.errors`` — the same
+    contract publish and validate honour (docs/05 §2).
+    """
+    report = validate_rules_json(version.rules_json)
+    if not report.valid or report.ruleset is None:
+        raise _validation_failed(report.errors)
+    return report.ruleset
 
 
 # -- list ----------------------------------------------------------------
@@ -357,13 +367,13 @@ def simulate_rule_version(
             "موازنے کے لیے کوئی فعال قواعد موجود نہیں۔",
         )
 
-    requested = int((payload or {}).get("sample_size") or sample_size)
-    requested = max(1, min(requested, MAX_SAMPLE_SIZE))
+    requested = _requested_sample_size(payload, sample_size)
+    baseline_rules = _ruleset_or_422(baseline)
+    candidate_rules = _ruleset_or_422(version)
 
     rows = _historical_decision_rows(db, program, requested)
-    result = replay_from_rows(
-        _ruleset(baseline), _ruleset(version), rows, sample_size=requested
-    )
+    cases, skipped = _replay_cases(rows)
+    result = replay(baseline_rules, candidate_rules, cases, sample_size=requested)
 
     run = SimulationRun(
         id=uuid.uuid4(),
@@ -389,10 +399,50 @@ def simulate_rule_version(
             "sample_size": result.sample_size,
             "flipped_count": result.flipped_count,
             "budget_delta_pkr": result.budget_delta_pkr,
+            "skipped_rows": len(skipped),
+            "skipped_case_ids": skipped[:20],
         },
     )
     db.commit()
     return {"simulation_run_id": str(run.id), **result.to_json()}
+
+
+def _requested_sample_size(payload: dict[str, Any] | None, fallback: int) -> int:
+    """``sample_size`` from the body, else the query default, clamped to the cap."""
+    raw = (payload or {}).get("sample_size")
+    if raw is None:
+        raw = fallback
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise _error(
+            status.HTTP_400_BAD_REQUEST,
+            "VALIDATION_ERROR",
+            "sample_size must be an integer.",
+            "sample_size عددی ہونا چاہیے۔",
+            details={"fields": ["sample_size"]},
+        ) from None
+    return max(1, min(value, MAX_SAMPLE_SIZE))
+
+
+def _replay_cases(
+    rows: list[dict[str, Any]],
+) -> tuple[list[TwinCase], list[str]]:
+    """Adapt stored decision rows, quarantining any that cannot be replayed.
+
+    A historical row written by an older code path (or edited in the database)
+    must never turn a read-only preview into a 500. Bad rows are skipped and
+    reported in the audit payload, so the data problem stays visible instead of
+    silently shrinking the sample.
+    """
+    cases: list[TwinCase] = []
+    skipped: list[str] = []
+    for row in rows:
+        try:
+            cases.append(TwinCase.from_decision_row(row))
+        except (AttributeError, KeyError, TypeError, ValueError, ValidationError):
+            skipped.append(str(row.get("case_id") or "unknown"))
+    return cases, skipped
 
 
 def _historical_decision_rows(
