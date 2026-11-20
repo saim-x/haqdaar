@@ -66,10 +66,9 @@ export interface User {
 export interface Citizen {
   id: string;
   full_name: string;
-  cnic_digits: string | null;
-  phone: string | null;
+  cnic_masked: string | null;
+  phone_masked: string | null;
   district: string | null;
-  dob: string | null;
   avatar_color: string;
 }
 
@@ -101,25 +100,48 @@ export interface Program {
   description_ur: string;
   required_documents: DocumentType[];
   wizard_schema: WizardStepDef[];
-  active_rule_version_id: string | null;
+  active_rule_version_id?: string | null;
 }
 
+/** `GET /programs` → `wizard_schema[]`. Server-driven wizard definition. */
 export interface WizardStepDef {
-  key: string;
+  step: string;
+  type:
+    | 'CONSENT'
+    | 'TEXT'
+    | 'CNIC'
+    | 'DATE'
+    | 'DISTRICT'
+    | 'COUNTER'
+    | 'MONEY'
+    | 'PHONE'
+    | 'DOCUMENT'
+    | 'REVIEW';
   fact_key?: string;
-  label_en: string;
-  label_ur: string;
-  audio_key?: string;
-  input: 'text' | 'cnic' | 'date' | 'district' | 'counter' | 'income' | 'phone' | 'document' | 'review' | 'consent';
   required?: boolean;
-  optional?: boolean;
+  allow_unknown?: boolean;
+  voice?: boolean;
+  audio_key?: string;
+  options?: string[];
+  min?: number;
+  max?: number;
+  bands?: number[];
+  doc_type?: DocumentType;
 }
 
-/** Draft answer shape — docs/04 §5 fact object, wizard subset. */
+/**
+ * Draft answer — docs/04 §5 fact object. The wizard PATCHes the narrow
+ * `{value, confirmed, missing_reason}` subset; the server echoes the full object.
+ */
 export interface DraftAnswer {
   value: string | number | boolean | null;
-  confirmed: boolean;
+  confirmed?: boolean;
+  state?: FactState;
+  source?: string | null;
+  source_confidence?: number;
   entered_by?: 'CITIZEN' | 'HELPER' | 'SYSTEM';
+  alternatives?: { value: string | number | boolean | null; source: string; entered_by: string }[];
+  conflict?: boolean;
   missing_reason?: string | null;
 }
 
@@ -215,6 +237,8 @@ export interface CaseView {
   program: { code: string; name: string; name_ur: string };
   case_type?: CaseType;
   status: CaseStatus;
+  /** docs/04 §3.3 — the citizen-facing status string, server-supplied. */
+  status_label?: { label_en: string; label_ur: string };
   previous_status?: CaseStatus | null;
   approved_amount_pkr: number | null;
   wizard_step: string | null;
@@ -227,6 +251,7 @@ export interface CaseView {
   decided_at?: string | null;
   created_at?: string;
   updated_at?: string;
+  parent_case_id?: string | null;
   // Officer/auditor-only fields (absent on the citizen view).
   facts?: Record<string, FactObject>;
   rule_trace?: RuleTraceEntry[];
@@ -234,10 +259,12 @@ export interface CaseView {
   ai_case_note?: AiCaseNote | null;
   latest_confidence?: number | null;
   latest_route?: RouteAction | null;
+  latest_rule_version_id?: string | null;
   latest_rule_version?: { id: string; version_number: number; content_hash: string } | null;
   active_rule_version?: { id: string; version_number: number; content_hash: string } | null;
   priority_band?: PriorityBand;
   priority_score?: number;
+  assigned_officer_id?: string | null;
   assigned_officer?: { id: string; full_name: string } | null;
   first_approver_id?: string | null;
   applicant?: { full_name: string; cnic_masked: string; district: string | null };
@@ -245,6 +272,18 @@ export interface CaseView {
   escalation_reasons?: string[];
   ask_more_rounds?: number;
   requested_fields?: string[];
+  tenant_id?: string;
+  citizen_id?: string;
+  submitted_by_user_id?: string | null;
+  submitted_via_helper?: boolean;
+  rule_stale?: boolean;
+}
+
+/** `GET /officer/cases/{case_id}` — CaseView plus the review-only extras. */
+export interface OfficerCaseReview extends CaseView {
+  citizen: { id: string; full_name: string; district: string | null; cnic_masked: string } | null;
+  notes: TraceNote[];
+  rule_stale: boolean;
 }
 
 export interface AgentStep {
@@ -265,11 +304,13 @@ export interface CaseListResponse {
 
 export interface ConsentGrant {
   id: string;
+  citizen_id?: string;
   recipient_type: ConsentRecipientType;
-  recipient_label: string;
-  recipient_label_ur?: string;
   recipient_tenant_id: string | null;
   recipient_user_id: string | null;
+  /** Embedded by the server so the UI never has to resolve a tenant id itself. */
+  recipient_tenant?: { code: string; name: string; name_ur: string } | null;
+  recipient_user?: { id: string; full_name: string } | null;
   categories: DataCategory[];
   purposes: ConsentPurpose[];
   status: ConsentStatus;
@@ -277,13 +318,17 @@ export interface ConsentGrant {
   granted_at: string;
   expires_at: string | null;
   withdrawn_at: string | null;
+  /** Present on `POST /consent/grants` — cases resumed from `ON_HOLD_CONSENT`. */
+  resumed_case_ids?: string[];
 }
 
 export interface ConsentAccessLog {
   id: string;
-  actor_label: string;
-  actor_label_ur?: string;
+  citizen_id: string;
+  citizen_name: string | null;
   actor_role: Role;
+  actor_label: string;
+  tenant_id: string | null;
   category: DataCategory;
   purpose: ConsentPurpose;
   resource_ref: string;
@@ -305,22 +350,23 @@ export interface HelperFamily {
 }
 
 export interface QueueItem {
-  case_id: string;
+  id: string;
   reference_code: string;
-  applicant_name: string;
+  status: CaseStatus;
+  status_label: { label_en: string; label_ur: string };
+  program: { code: string; name: string; name_ur: string };
+  citizen_name: string;
   cnic_masked: string;
   district: string | null;
-  status: CaseStatus;
-  priority_band: PriorityBand;
   priority_score: number;
+  priority_band: PriorityBand;
   latest_confidence: number | null;
   latest_route: RouteAction | null;
-  escalation_reasons: string[];
-  waiting_since: string;
-  assigned_officer: string | null;
+  reason_codes: string[];
+  assigned_officer_id: string | null;
+  submitted_at: string | null;
+  created_at: string;
   rule_stale: boolean;
-  active_rule_version: number | null;
-  evaluated_rule_version: number | null;
 }
 
 export interface QueueResponse {
@@ -328,8 +374,10 @@ export interface QueueResponse {
   total: number;
   limit: number;
   offset: number;
+  sort: string;
 }
 
+/** One eligibility rule inside `rules_json.eligibility_rules[]`. */
 export interface RuleCondition {
   id: string;
   fact: string;
@@ -337,21 +385,38 @@ export interface RuleCondition {
   value: string | number | boolean | null;
   on_fail: string;
   on_unknown: string;
-  reason_en: string;
-  reason_ur: string;
+  label_en: string;
+  label_ur: string;
+  ask_prompt_en: string | null;
+  ask_prompt_ur: string | null;
+  fail_reason_en: string;
+  fail_reason_ur: string;
+  pass_reason_en: string;
+  pass_reason_ur: string;
+  required_for_auto: boolean;
 }
 
 export interface RulesJson {
-  version: string;
+  schema_version: string;
   program_code: string;
-  conditions: RuleCondition[];
-  benefit: {
-    base_amount_pkr: number;
-    per_child_amount_pkr: number;
-    cap_amount_pkr: number;
+  policy: {
+    cost_matrix: {
+      ask_more_cost: number;
+      wrong_approval_cost: number;
+      missed_fraud_multiplier: number;
+      unnecessary_human_review_cost: number;
+    };
+    max_ask_more_rounds: number;
+    auto_approve_max_amount_pkr: number;
+    auto_approve_confidence_threshold: number;
   };
-  confidence_threshold: number;
-  districts?: string[];
+  benefit_formula: {
+    base_amount_pkr: number;
+    per_child_bonus_pkr: number;
+    max_children_counted: number;
+    hard_cap_pkr: number;
+  };
+  eligibility_rules: RuleCondition[];
 }
 
 export interface RuleVersion {
@@ -359,18 +424,28 @@ export interface RuleVersion {
   program_id: string;
   version_number: number;
   status: RuleStatus;
-  rules_json: RulesJson;
   content_hash: string;
   change_note: string | null;
-  created_by: string | null;
-  published_by: string | null;
-  published_at: string | null;
-  created_at: string;
+  rules_json: RulesJson;
+  created_by?: string | null;
+  published_by?: string | null;
+  published_at?: string | null;
+  created_at?: string;
+}
+
+/** `GET /admin/programs/{program_id}/rules`. */
+export interface RulesResponse {
+  program_id: string;
+  program_code: string;
+  active_rule_version_id: string | null;
+  versions: RuleVersion[];
 }
 
 export interface RuleValidationResult {
   valid: boolean;
   errors: { field: string; message_en: string; message_ur: string }[];
+  content_hash?: string;
+  rule_count?: number;
 }
 
 export interface TwinFlippedCase {
@@ -404,7 +479,7 @@ export interface AuditEvent {
   resource_type: string;
   resource_id: string | null;
   request_id: string | null;
-  payload_json: Record<string, unknown>;
+  payload: Record<string, unknown>;
   prev_hash: string;
   event_hash: string;
   created_at: string;
@@ -421,26 +496,23 @@ export interface ChainVerifyResult {
   valid: boolean;
   checked_count: number;
   first_broken_seq: number | null;
+  verified_at: string;
 }
 
-export interface DecisionTrace {
-  decision_id: string;
-  case_id: string;
-  reference_code: string;
+/** One row of `GET /auditor/cases/{case_id}/trace` → `decisions[]`. */
+export interface TraceDecision {
+  id: string;
   decision_source: 'AI_ENGINE' | 'OFFICER' | 'SECOND_OFFICER';
-  actor_name: string | null;
-  rule_version_number: number;
+  rule_version_id: string;
   rule_content_hash: string;
-  input_snapshot_json: Record<string, FactObject>;
   input_snapshot_hash: string;
-  rule_trace_json: RuleTraceEntry[];
   confidence_components: ConfidenceComponents;
   confidence_overall: number;
   route_action: RouteAction;
   outcome_status: CaseStatus;
   escalation_reasons: string[];
   model_versions: Record<string, string>;
-  citizen_explanation: CitizenExplanation;
+  citizen_explanation: CitizenExplanation | null;
   computed_amount_pkr: number | null;
   officer_reason_codes: string[] | null;
   officer_note: string | null;
@@ -448,10 +520,37 @@ export interface DecisionTrace {
   created_at: string;
 }
 
+export interface TraceNote {
+  id: string;
+  note_type: string;
+  body: string;
+  metadata: Record<string, unknown>;
+  is_visible_to_citizen: boolean;
+  created_at: string;
+}
+
+/** `GET /auditor/cases/{case_id}/trace`. */
+export interface DecisionTrace {
+  case: {
+    id: string;
+    reference_code: string;
+    status: CaseStatus;
+    case_type: CaseType;
+    tenant_id: string;
+    citizen: { id: string; full_name: string; cnic_masked: string } | null;
+    facts: Record<string, DraftAnswer>;
+  };
+  decisions: TraceDecision[];
+  agent_steps: AgentStep[];
+  notes: TraceNote[];
+  events: AuditEvent[];
+}
+
 export interface ScamRedFlag {
   code: string;
   label_en: string;
   label_ur: string;
+  severity?: 'HARD' | 'SOFT';
 }
 
 export interface ScamCheckResult {
@@ -484,43 +583,74 @@ export interface Notification {
   created_at: string;
 }
 
-export interface MyDataGroup {
-  category: DataCategory;
-  label_en: string;
-  label_ur: string;
-  fields: {
-    field_key: string;
-    label_en: string;
-    label_ur: string;
-    value: string | number | boolean | null;
-    source: string;
-    source_type: 'SELF_DECLARED' | 'REGISTRY';
-    updated_at: string | null;
+/** One provenance-tagged value inside `GET /me/data`. */
+export interface MyDataValue {
+  value: string | number | boolean | null;
+  source: string;
+}
+
+/** `GET /me/data` — grouped view of everything stored about the citizen. */
+export interface MyDataResponse {
+  citizen_id: string;
+  identity: Record<string, MyDataValue>;
+  household: Record<string, MyDataValue>;
+  case_history: {
+    id: string;
+    reference_code: string;
+    status: CaseStatus;
+    case_type: CaseType;
+    created_at: string;
   }[];
+  documents: {
+    id: string;
+    doc_type: DocumentType;
+    verify_status: DocVerifyStatus;
+    verify_confidence: number;
+    mime_type: string;
+    size_bytes: number;
+    created_at: string;
+    retake_reason_en: string | null;
+    retake_reason_ur: string | null;
+  }[];
+  consents: ConsentGrant[];
+  corrections: CorrectionRequest[];
+  provenance_note_en: string;
+  provenance_note_ur: string;
 }
 
 export interface CorrectionRequest {
   id: string;
   field_key: string;
   source_type: 'SELF_DECLARED' | 'REGISTRY';
-  old_value: unknown;
   requested_value: unknown;
-  reason: string | null;
   status: 'APPLIED' | 'PENDING_OFFICER' | 'APPROVED' | 'REJECTED';
+  applied: boolean;
+  message_en: string;
+  message_ur: string;
   created_at: string;
 }
 
 export interface Job {
   id: string;
   job_type: string;
+  dedup_key: string | null;
   status: JobStatus;
   attempts: number;
   max_attempts: number;
   run_after: string;
+  locked_at: string | null;
   last_error: string | null;
-  payload_json: Record<string, unknown>;
+  payload: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+export interface JobListResponse {
+  items: Job[];
+  total: number;
+  limit: number;
+  offset: number;
+  queue_depth: Record<JobStatus, number>;
 }
 
 export interface MockServiceConfig {
@@ -529,6 +659,14 @@ export interface MockServiceConfig {
   latency_ms: number;
   failure_rate: number;
   updated_at: string;
+}
+
+/** `GET /admin/mocks`. */
+export interface MocksResponse {
+  simulated: boolean;
+  service_mode: string;
+  services: MockServiceConfig[];
+  count: number;
 }
 
 export interface ApiKeyRecord {
@@ -555,6 +693,8 @@ export interface EvalDashboard {
     expected_cost: number;
   }[];
   active_threshold: number;
+  knee_threshold: number;
+  sample_size: number;
   scam_classifier: {
     test_size: number;
     precision: number;
@@ -583,18 +723,26 @@ export interface EvalDashboard {
     llm_cost_usd_24h: number;
     llm_failure_rate: number;
   };
+  benchmarks_available: boolean;
+  program: { id: string; code: string; name: string } | null;
+  dataset_note: string;
+  generated_at: string;
 }
 
 export interface TenantAnalytics {
-  tenant: { id: string; code: string; name: string };
+  tenant_id: string;
   cases_by_status: Record<string, number>;
-  avg_time_to_decision_hours: number;
+  total_cases: number;
+  decided_cases: number;
+  avg_time_to_decision_seconds: number;
   auto_approve_pct: number;
   disbursed_pkr: number;
   top_flags: { code: string; count: number }[];
+  open_cases: number;
 }
 
 export interface VoiceParseResult {
+  field_key: string;
   transcript: string;
   parsed_value: string | number | boolean | null;
   confidence: number;
@@ -602,6 +750,10 @@ export interface VoiceParseResult {
   readback_en: string;
   needs_retry: boolean;
   missing_reason?: string | null;
+  provider?: string;
+  model?: string;
+  lang?: string;
+  mime_type?: string;
 }
 
 export interface RagCitation {
@@ -617,13 +769,26 @@ export interface RagAnswer {
   answer: string;
   citations: RagCitation[];
   top_score: number;
+  lang?: string;
+  provider?: string;
+  model?: string;
+  guardrail_triggered?: boolean;
+  retrieved?: number;
 }
 
+/** `GET /transparency` — the Real vs Simulated table (docs/15 §1). */
 export interface TransparencyPayload {
-  components: {
-    component: string;
-    status: 'REAL' | 'SIMULATED' | 'SYNTHETIC';
-    details: string;
+  prototype: boolean;
+  banner: string;
+  synthetic_data: { cnic_prefix: string; note: string };
+  ai_provider: string;
+  demo_mode: boolean;
+  subsystems: {
+    name: string;
+    name_ur: string;
+    real: boolean;
+    detail: string;
   }[];
-  mock_services: MockServiceConfig[];
+  mock_statuses: Record<string, string>;
+  mock_statuses_note: string;
 }

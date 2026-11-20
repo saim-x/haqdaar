@@ -130,7 +130,7 @@ export default function QueuePage() {
             </thead>
             <tbody>
               {query.data.items.map((item: QueueItem) => (
-                <tr key={item.case_id} className="border-b border-ink/5 last:border-0 hover:bg-teal-50/40">
+                <tr key={item.id} className="border-b border-ink/5 last:border-0 hover:bg-teal-50/40">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1.5">
                       <PriorityBand band={item.priority_band} />
@@ -138,13 +138,13 @@ export default function QueuePage() {
                     </div>
                   </td>
                   <td className="px-3 py-2">
-                    <Link to={`/staff/cases/${item.case_id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">
+                    <Link to={`/staff/cases/${item.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">
                       {item.reference_code}
                     </Link>
                     {item.rule_stale && (
                       <span
                         className="ms-1.5 inline-flex items-center gap-0.5 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-bold text-amber-700"
-                        title={`Evaluated with v${item.evaluated_rule_version ?? '?'}; current is v${item.active_rule_version ?? '?'}`}
+                        title="Evaluated with an older rule version — re-evaluate before deciding"
                       >
                         <IconWarning size={10} />
                         stale
@@ -152,25 +152,25 @@ export default function QueuePage() {
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <p className="font-semibold text-ink">{item.applicant_name}</p>
+                    <p className="font-semibold text-ink">{item.citizen_name}</p>
                     <p className="num text-[11px] text-ink-soft">{item.cnic_masked}</p>
                   </td>
                   <td className="px-3 py-2 text-xs text-ink-soft">{item.status}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">
-                      {item.escalation_reasons.slice(0, 2).map((code) => (
+                      {item.reason_codes.slice(0, 2).map((code) => (
                         <Chip key={code} tone="danger">
                           {code}
                         </Chip>
                       ))}
-                      {item.escalation_reasons.length > 2 && <Chip>+{item.escalation_reasons.length - 2}</Chip>}
+                      {item.reason_codes.length > 2 && <Chip>+{item.reason_codes.length - 2}</Chip>}
                     </div>
                   </td>
                   <td className="px-3 py-2">
                     <ConfidenceBar value={item.latest_confidence} />
                   </td>
-                  <td className="num px-3 py-2 text-xs text-ink-soft">{waitingFor(item.waiting_since)}</td>
-                  <td className="px-3 py-2 text-xs text-ink-soft">{item.assigned_officer ?? '—'}</td>
+                  <td className="num px-3 py-2 text-xs text-ink-soft">{waitingFor(item.submitted_at ?? item.created_at)}</td>
+                  <td className="px-3 py-2 text-xs text-ink-soft">{item.assigned_officer_id ? 'assigned' : '—'}</td>
                 </tr>
               ))}
             </tbody>

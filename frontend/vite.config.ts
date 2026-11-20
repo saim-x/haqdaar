@@ -25,9 +25,10 @@ function manualChunks(id: string): string | undefined {
   // the entry ends up statically importing `staff-*.js` and the budget gate
   // (correctly) fails.
   if (norm.includes('/src/shared/')) return 'shared';
-  if (norm.includes('/src/staff/admin/')) return 'admin';
-  if (norm.includes('/src/staff/auditor/')) return 'auditor';
-  if (norm.includes('/src/staff/')) return 'staff';
+  // Staff/admin/auditor are NOT named here on purpose. Naming them makes Rollup
+  // hoist Vite's shared `__vite__mapDeps` helper into the staff chunk, which the
+  // entry then imports statically — the budget gate catches that as a leak.
+  // Left unnamed, Rollup splits them at the React.lazy() boundary instead.
   return undefined;
 }
 

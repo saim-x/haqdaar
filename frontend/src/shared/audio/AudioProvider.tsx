@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { STORAGE_KEYS } from '../config';
-import { audioUrl, loadManifest } from './manifest';
+import { audioUrl, loadManifest, resolveAudioKey } from './manifest';
 
 /**
  * One shared <audio> element for the whole app.
@@ -107,8 +107,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     async (key: string | null | undefined, fallbackText?: string | null) => {
       if (key) {
         const manifest = await loadManifest();
-        if (key in manifest) {
-          await playUrl(audioUrl(key));
+        const resolved = resolveAudioKey(key);
+        if (resolved in manifest) {
+          await playUrl(audioUrl(resolved));
           return;
         }
       }

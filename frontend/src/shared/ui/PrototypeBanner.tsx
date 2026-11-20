@@ -11,6 +11,7 @@ export function PrototypeBanner() {
   return (
     <div
       role="note"
+      data-testid="prototype-banner"
       aria-label={t('banner.text')}
       className="sticky top-0 z-50 flex h-7 items-center justify-center gap-2 bg-amber-400 px-2 text-[11px] font-semibold leading-none text-[#3B2A00] sm:text-xs"
     >

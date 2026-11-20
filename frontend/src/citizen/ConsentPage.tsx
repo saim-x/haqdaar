@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ConsentAccessLog, ConsentGrant } from '../shared/api/types';
+import { grantRecipientLabel } from '../shared/lib/consent';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { TapButton } from '../shared/ui/TapButton';
@@ -96,7 +97,7 @@ export function ConsentPage() {
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-base font-bold text-ink">
-                  {lang === 'ur' ? grant.recipient_label_ur ?? grant.recipient_label : grant.recipient_label}
+                  {grantRecipientLabel(grant, lang)}
                 </p>
                 <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-teal-700">
                   {grant.recipient_type === 'DEPARTMENT' ? (lang === 'ur' ? 'محکمہ' : 'Department') : lang === 'ur' ? 'مددگار' : 'Helper'}
@@ -158,7 +159,7 @@ export function ConsentPage() {
               <li key={grant.id} className="card flex items-center gap-2 p-3 opacity-70">
                 <IconCross size={16} className="text-[#B42318]" />
                 <span className="min-w-0 flex-1 truncate text-sm text-ink">
-                  {lang === 'ur' ? grant.recipient_label_ur ?? grant.recipient_label : grant.recipient_label}
+                  {grantRecipientLabel(grant, lang)}
                 </span>
                 <span className="text-[10px] font-bold uppercase text-ink-soft">{grant.status}</span>
               </li>
@@ -184,7 +185,7 @@ export function ConsentPage() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-ink">
-                  {lang === 'ur' ? log.actor_label_ur ?? log.actor_label : log.actor_label}
+                  {log.actor_label}
                 </p>
                 <p className="text-[11px] text-ink-soft">
                   {lang === 'ur' ? CATEGORY_LABELS[log.category]?.ur ?? log.category : CATEGORY_LABELS[log.category]?.en ?? log.category}

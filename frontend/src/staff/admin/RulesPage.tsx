@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
-import type { Program, RuleCondition, RuleValidationResult, RuleVersion, RulesJson, TwinResult } from '../../shared/api/types';
+import type {
+  Program,
+  RuleCondition,
+  RuleValidationResult,
+  RuleVersion,
+  RulesJson,
+  RulesResponse,
+  TwinResult,
+} from '../../shared/api/types';
 import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
 
 const FACT_KEYS = [
@@ -25,21 +33,29 @@ const FACT_KEYS = [
   'payout_phone',
   'cnic_doc_verified',
   'death_cert_doc_verified',
+  'citizen_has_active_dept_consent',
 ];
 
-const OPS = ['<=', '<', '>=', '>', '==', '!=', 'in', 'not_in', 'is_true', 'is_false'];
-const OUTCOMES = ['PASS', 'FAIL', 'ASK', 'HUMAN_REVIEW'];
+const OPS = ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in', 'not_in', 'is_true', 'is_false'];
+const OUTCOMES = ['PASS', 'FAIL', 'ASK', 'HUMAN'];
 
 function emptyCondition(): RuleCondition {
   return {
-    id: `rule_${Math.random().toString(36).slice(2, 8)}`,
+    id: `R${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
     fact: 'monthly_income_pkr',
-    op: '<=',
+    op: 'lte',
     value: 40000,
     on_fail: 'FAIL',
     on_unknown: 'ASK',
-    reason_en: '',
-    reason_ur: '',
+    label_en: '',
+    label_ur: '',
+    ask_prompt_en: null,
+    ask_prompt_ur: null,
+    fail_reason_en: '',
+    fail_reason_ur: '',
+    pass_reason_en: '',
+    pass_reason_ur: '',
+    required_for_auto: true,
   };
 }
 
@@ -68,20 +84,20 @@ export default function RulesPage() {
 
   const versions = useQuery({
     queryKey: ['rule-versions', programId],
-    queryFn: () => api.get<{ items: RuleVersion[] }>(`/admin/programs/${programId}/rules`),
+    queryFn: () => api.get<RulesResponse>(`/admin/programs/${programId}/rules`),
     enabled: programId.length > 0,
   });
 
   useEffect(() => {
-    if (!selectedId && versions.data?.items[0]) {
-      const first = versions.data.items[0];
+    if (!selectedId && versions.data?.versions[0]) {
+      const first = versions.data.versions[0];
       setSelectedId(first.id);
       setDraft(first.rules_json);
     }
   }, [versions.data, selectedId]);
 
   const selected = useMemo(
-    () => versions.data?.items.find((v) => v.id === selectedId) ?? null,
+    () => versions.data?.versions.find((v) => v.id === selectedId) ?? null,
     [versions.data, selectedId],
   );
 
@@ -102,7 +118,7 @@ export default function RulesPage() {
       setValidation(res);
       setMessage(
         res.valid
-          ? { tone: 'ok', text: 'Validation passed.' }
+          ? { tone: 'ok', text: `Validation passed — ${res.rule_count ?? '?'} rules, hash ${res.content_hash?.slice(0, 12) ?? ''}…` }
           : { tone: 'danger', text: `${res.errors.length} validation error(s).` },
       );
     },
@@ -139,24 +155,30 @@ export default function RulesPage() {
     onError: (err) => setMessage({ tone: 'danger', text: errorMessage(err, 'en') }),
   });
 
-  function updateCondition(index: number, patch: Partial<RuleCondition>) {
+  function updateRule(index: number, patch: Partial<RuleCondition>) {
     setDraft((prev) => {
       if (!prev) return prev;
-      const conditions = prev.conditions.map((c, i) => (i === index ? { ...c, ...patch } : c));
-      return { ...prev, conditions };
+      const eligibility_rules = prev.eligibility_rules.map((c, i) => (i === index ? { ...c, ...patch } : c));
+      return { ...prev, eligibility_rules };
     });
   }
 
-  function addCondition() {
-    setDraft((prev) => (prev ? { ...prev, conditions: [...prev.conditions, emptyCondition()] } : prev));
+  function addRule() {
+    setDraft((prev) =>
+      prev ? { ...prev, eligibility_rules: [...prev.eligibility_rules, emptyCondition()] } : prev,
+    );
   }
 
-  function removeCondition(index: number) {
-    setDraft((prev) => (prev ? { ...prev, conditions: prev.conditions.filter((_, i) => i !== index) } : prev));
+  function removeRule(index: number) {
+    setDraft((prev) =>
+      prev ? { ...prev, eligibility_rules: prev.eligibility_rules.filter((_, i) => i !== index) } : prev,
+    );
   }
 
   if (programs.isLoading) return <Loading />;
   if (programs.error) return <ErrorState error={programs.error} />;
+
+  const activeId = versions.data?.active_rule_version_id ?? null;
 
   return (
     <div className="space-y-4">
@@ -210,9 +232,9 @@ export default function RulesPage() {
 
       <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
         <Card className="h-fit">
-          <CardTitle hint={`${versions.data?.items.length ?? 0} versions`}>Version history</CardTitle>
+          <CardTitle hint={`${versions.data?.versions.length ?? 0} versions`}>Version history</CardTitle>
           <ul className="space-y-1">
-            {versions.data?.items.map((v) => (
+            {versions.data?.versions.map((v) => (
               <li key={v.id}>
                 <button
                   type="button"
@@ -231,8 +253,11 @@ export default function RulesPage() {
                     <Chip tone={v.status === 'PUBLISHED' ? 'ok' : v.status === 'DRAFT' ? 'warn' : 'neutral'}>
                       {v.status}
                     </Chip>
+                    {v.id === activeId && <Chip tone="ok">active</Chip>}
                   </span>
-                  <span className="mt-0.5 block truncate font-mono text-[10px] text-ink-soft">{v.content_hash.slice(0, 16)}…</span>
+                  <span className="mt-0.5 block truncate font-mono text-[10px] text-ink-soft">
+                    {v.content_hash.slice(0, 16)}…
+                  </span>
                   {v.change_note && <span className="mt-0.5 block truncate text-[10px] text-ink-soft">{v.change_note}</span>}
                 </button>
               </li>
@@ -241,24 +266,32 @@ export default function RulesPage() {
         </Card>
 
         <div className="space-y-4">
-          {!draft && <Card><p className="text-xs text-ink-soft">Select a version to edit, or create a new draft.</p></Card>}
+          {!draft && (
+            <Card>
+              <p className="text-xs text-ink-soft">Select a version to edit, or create a new draft.</p>
+            </Card>
+          )}
 
           {draft && (
             <>
               <Card>
                 <CardTitle hint={readOnly ? 'read-only — published versions are immutable' : 'form editor'}>
-                  Conditions
+                  Eligibility rules
                 </CardTitle>
                 <div className="space-y-2">
-                  {draft.conditions.map((condition, index) => (
-                    <div key={condition.id} className="rounded-lg border border-ink/10 p-2">
+                  {draft.eligibility_rules.map((rule, index) => (
+                    <div key={rule.id} className="rounded-lg border border-ink/10 p-2">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="font-mono text-[10px] font-bold text-teal-700">{rule.id}</span>
+                        {rule.required_for_auto && <Chip tone="neutral">required for auto</Chip>}
+                      </div>
                       <div className="grid gap-1.5 sm:grid-cols-4">
                         <label className="text-[10px] font-bold uppercase text-ink-soft">
                           Fact
                           <select
-                            value={condition.fact}
+                            value={rule.fact}
                             disabled={readOnly}
-                            onChange={(e) => updateCondition(index, { fact: e.target.value })}
+                            onChange={(e) => updateRule(index, { fact: e.target.value })}
                             className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                           >
                             {FACT_KEYS.map((k) => (
@@ -271,9 +304,9 @@ export default function RulesPage() {
                         <label className="text-[10px] font-bold uppercase text-ink-soft">
                           Op
                           <select
-                            value={condition.op}
+                            value={rule.op}
                             disabled={readOnly}
-                            onChange={(e) => updateCondition(index, { op: e.target.value })}
+                            onChange={(e) => updateRule(index, { op: e.target.value })}
                             className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                           >
                             {OPS.map((o) => (
@@ -286,9 +319,9 @@ export default function RulesPage() {
                         <label className="text-[10px] font-bold uppercase text-ink-soft">
                           Value
                           <input
-                            value={String(condition.value ?? '')}
+                            value={String(rule.value ?? '')}
                             disabled={readOnly}
-                            onChange={(e) => updateCondition(index, { value: e.target.value })}
+                            onChange={(e) => updateRule(index, { value: e.target.value })}
                             className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                           />
                         </label>
@@ -296,9 +329,9 @@ export default function RulesPage() {
                           <label className="text-[10px] font-bold uppercase text-ink-soft">
                             On fail
                             <select
-                              value={condition.on_fail}
+                              value={rule.on_fail}
                               disabled={readOnly}
-                              onChange={(e) => updateCondition(index, { on_fail: e.target.value })}
+                              onChange={(e) => updateRule(index, { on_fail: e.target.value })}
                               className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                             >
                               {OUTCOMES.map((o) => (
@@ -311,9 +344,9 @@ export default function RulesPage() {
                           <label className="text-[10px] font-bold uppercase text-ink-soft">
                             On unknown
                             <select
-                              value={condition.on_unknown}
+                              value={rule.on_unknown}
                               disabled={readOnly}
-                              onChange={(e) => updateCondition(index, { on_unknown: e.target.value })}
+                              onChange={(e) => updateRule(index, { on_unknown: e.target.value })}
                               className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                             >
                               {OUTCOMES.map((o) => (
@@ -327,21 +360,40 @@ export default function RulesPage() {
                       </div>
                       <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
                         <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Reason (English)
+                          Label (English)
                           <input
-                            value={condition.reason_en}
+                            value={rule.label_en}
                             disabled={readOnly}
-                            onChange={(e) => updateCondition(index, { reason_en: e.target.value })}
+                            onChange={(e) => updateRule(index, { label_en: e.target.value })}
                             className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                           />
                         </label>
                         <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Reason (اردو)
+                          Label (اردو)
                           <input
                             dir="rtl"
-                            value={condition.reason_ur}
+                            value={rule.label_ur}
                             disabled={readOnly}
-                            onChange={(e) => updateCondition(index, { reason_ur: e.target.value })}
+                            onChange={(e) => updateRule(index, { label_ur: e.target.value })}
+                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                          />
+                        </label>
+                        <label className="text-[10px] font-bold uppercase text-ink-soft">
+                          Fail reason (English)
+                          <input
+                            value={rule.fail_reason_en}
+                            disabled={readOnly}
+                            onChange={(e) => updateRule(index, { fail_reason_en: e.target.value })}
+                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                          />
+                        </label>
+                        <label className="text-[10px] font-bold uppercase text-ink-soft">
+                          Fail reason (اردو)
+                          <input
+                            dir="rtl"
+                            value={rule.fail_reason_ur}
+                            disabled={readOnly}
+                            onChange={(e) => updateRule(index, { fail_reason_ur: e.target.value })}
                             className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                           />
                         </label>
@@ -349,7 +401,7 @@ export default function RulesPage() {
                       {!readOnly && (
                         <button
                           type="button"
-                          onClick={() => removeCondition(index)}
+                          onClick={() => removeRule(index)}
                           className="mt-1 text-[10px] font-bold text-[#B42318] hover:underline"
                         >
                           Remove
@@ -359,8 +411,12 @@ export default function RulesPage() {
                   ))}
                 </div>
                 {!readOnly && (
-                  <button type="button" onClick={addCondition} className="mt-2 rounded bg-ink/5 px-2 py-1 text-[11px] font-bold text-ink-soft">
-                    + Add condition
+                  <button
+                    type="button"
+                    onClick={addRule}
+                    className="mt-2 rounded bg-ink/5 px-2 py-1 text-[11px] font-bold text-ink-soft"
+                  >
+                    + Add rule
                   </button>
                 )}
               </Card>
@@ -371,19 +427,25 @@ export default function RulesPage() {
                   {(
                     [
                       ['base_amount_pkr', 'Base PKR'],
-                      ['per_child_amount_pkr', 'Per child PKR'],
-                      ['cap_amount_pkr', 'Cap PKR'],
+                      ['per_child_bonus_pkr', 'Per child PKR'],
+                      ['max_children_counted', 'Max children'],
+                      ['hard_cap_pkr', 'Hard cap PKR'],
                     ] as const
                   ).map(([key, label]) => (
                     <label key={key} className="text-[10px] font-bold uppercase text-ink-soft">
                       {label}
                       <input
                         type="number"
-                        value={draft.benefit[key]}
+                        value={draft.benefit_formula[key]}
                         disabled={readOnly}
                         onChange={(e) =>
                           setDraft((prev) =>
-                            prev ? { ...prev, benefit: { ...prev.benefit, [key]: Number(e.target.value) } } : prev,
+                            prev
+                              ? {
+                                  ...prev,
+                                  benefit_formula: { ...prev.benefit_formula, [key]: Number(e.target.value) },
+                                }
+                              : prev,
                           )
                         }
                         className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
@@ -391,16 +453,45 @@ export default function RulesPage() {
                     </label>
                   ))}
                   <label className="text-[10px] font-bold uppercase text-ink-soft">
-                    Confidence threshold
+                    Auto-approve threshold
                     <input
                       type="number"
                       step="0.01"
                       min="0.5"
                       max="0.99"
-                      value={draft.confidence_threshold}
+                      value={draft.policy.auto_approve_confidence_threshold}
                       disabled={readOnly}
                       onChange={(e) =>
-                        setDraft((prev) => (prev ? { ...prev, confidence_threshold: Number(e.target.value) } : prev))
+                        setDraft((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                policy: {
+                                  ...prev.policy,
+                                  auto_approve_confidence_threshold: Number(e.target.value),
+                                },
+                              }
+                            : prev,
+                        )
+                      }
+                      className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                    />
+                  </label>
+                  <label className="text-[10px] font-bold uppercase text-ink-soft">
+                    Auto-approve max PKR
+                    <input
+                      type="number"
+                      value={draft.policy.auto_approve_max_amount_pkr}
+                      disabled={readOnly}
+                      onChange={(e) =>
+                        setDraft((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                policy: { ...prev.policy, auto_approve_max_amount_pkr: Number(e.target.value) },
+                              }
+                            : prev,
+                        )
                       }
                       className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
                     />

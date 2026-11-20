@@ -19,13 +19,16 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Tenant analytics" subtitle={`${data.tenant.name} (${data.tenant.code})`} />
+      <PageHeader
+        title="Tenant analytics"
+        subtitle={`${data.total_cases} cases · ${data.decided_cases} decided · tenant ${data.tenant_id.slice(0, 8)}`}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Disbursed" value={`PKR ${data.disbursed_pkr.toLocaleString()}`} />
         <Kpi label="Auto-approve" value={`${data.auto_approve_pct.toFixed(1)}%`} />
-        <Kpi label="Avg time to decision" value={`${data.avg_time_to_decision_hours.toFixed(1)}h`} />
-        <Kpi label="Total cases" value={String(Object.values(data.cases_by_status).reduce((a, b) => a + b, 0))} />
+        <Kpi label="Avg time to decision" value={`${(data.avg_time_to_decision_seconds / 3600).toFixed(1)}h`} />
+        <Kpi label="Open cases" value={String(data.open_cases)} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
-import type { MockMode, MockServiceConfig } from '../../shared/api/types';
+import type { MocksResponse, MockMode, MockServiceConfig } from '../../shared/api/types';
 import { Card, CardTitle, ErrorState, Loading, PageHeader } from '../ui';
 
 const MODES: MockMode[] = ['NORMAL', 'SLOW', 'FLAKY', 'DOWN'];
@@ -26,7 +26,7 @@ export default function MocksPage() {
 
   const query = useQuery({
     queryKey: ['admin-mocks'],
-    queryFn: () => api.get<{ items: MockServiceConfig[] }>('/admin/mocks'),
+    queryFn: () => api.get<MocksResponse>('/admin/mocks'),
   });
 
   const update = useMutation({
@@ -84,7 +84,7 @@ export default function MocksPage() {
       {message && <div className="rounded-lg border border-ink/15 bg-white px-3 py-2 text-xs font-semibold text-ink">{message}</div>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {query.data?.items.map((service) => (
+        {query.data?.services.map((service) => (
           <Card key={service.service_name}>
             <CardTitle hint={service.service_name}>{service.service_name.replace(/_/g, ' ')}</CardTitle>
             <div className="mb-2 flex flex-wrap gap-1">
