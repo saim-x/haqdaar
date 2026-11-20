@@ -245,7 +245,7 @@ def _emit(
             action="ai.call",
             resource_type=context.resource_type,
             resource_id=context.resource_id,
-            payload_json={
+            payload={
                 "task_type": task_type,
                 "model": model_name,
                 "latency_ms": int(latency_ms),

@@ -146,13 +146,19 @@ def record_audit(
     action: str,
     resource_type: str,
     resource_id: str | None = None,
-    tenant_id: Any = None,
-    actor_type: str = "USER",
+    actor_type: str = "SYSTEM",
     actor_id: Any = None,
     actor_role: str | None = None,
+    tenant_id: Any = None,
+    request_id: str | None = None,
     payload: dict[str, Any] | None = None,
 ) -> None:
-    """Write an audit event through A1's hash-chained writer when present."""
+    """Write an audit event through A1's hash-chained writer when present.
+
+    The signature mirrors ``app.security.audit.record`` exactly — including the
+    ``payload`` keyword (not ``payload_json``, which is the column name) — so this
+    shim binds to the real implementation at S1 with zero rework.
+    """
     if db is None:
         return
     try:  # pragma: no cover - depends on A1 landing
@@ -160,14 +166,15 @@ def record_audit(
 
         audit_module.record(
             db,
-            tenant_id=tenant_id,
-            actor_type=actor_type,
-            actor_id=str(actor_id) if actor_id is not None else None,
-            actor_role=actor_role,
             action=action,
             resource_type=resource_type,
             resource_id=resource_id,
-            payload_json=payload or {},
+            actor_type=actor_type,
+            actor_id=str(actor_id) if actor_id is not None else None,
+            actor_role=actor_role,
+            tenant_id=tenant_id,
+            request_id=request_id,
+            payload=payload or {},
         )
         return
     except Exception as exc:
