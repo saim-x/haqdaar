@@ -28,6 +28,16 @@ export function EvalDashboardPage() {
         subtitle="Why the system acts alone only above 0.90, how often it is wrong, and how often it raises false alarms. Scored on a labelled synthetic benchmark with independently injected noise."
       />
 
+      {d.dataset_note && (
+        <p role="status" className="mb-4 rounded-card border border-warn/40 bg-warn-soft p-3 text-sm text-warn">
+          {d.dataset_note}
+        </p>
+      )}
+      {d.benchmarks_available === false && (
+        <p role="status" className="mb-4 rounded-card border border-line bg-sunken p-3 text-sm text-muted">
+          Scam and document benchmarks are not published yet; their cards show “—” until the AI services report metrics.
+        </p>
+      )}
       <section className="card mb-5 p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">

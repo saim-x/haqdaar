@@ -276,13 +276,14 @@ export function RuleEditor() {
     onSuccess: (rv) => {
       setPublishOpen(false);
       setNote('');
-      setSelectedId(rv.id);
+      setSelectedId(rv.id ?? null);
       invalidate();
       void qc.invalidateQueries({ queryKey: ['programs'] });
     },
     onError: (e) => {
       const err = e as ApiError;
-      if (err.code === 'RULE_VALIDATION_FAILED') setErrors((err.details?.errors as { path: string; message: string }[]) ?? []);
+      if (err.code === 'RULE_VALIDATION_FAILED')
+        setErrors(((err.details?.errors as { path?: string; message?: string; message_en?: string }[]) ?? []).map((x) => ({ path: String(x.path ?? ''), message: x.message ?? x.message_en ?? 'Invalid' })));
     },
   });
 
@@ -290,8 +291,9 @@ export function RuleEditor() {
     const m: Record<number, Record<string, string>> = {};
     const other: string[] = [];
     for (const e of errors ?? []) {
-      const r = e.path.match(/^eligibility_rules\[(\d+)\]\.(\w+)/);
-      if (r) (m[Number(r[1])] ??= {})[r[2]] = e.message;
+      // Accepts "eligibility_rules[3].fact" (contract) and "eligibility_rules.3.fact" (pydantic loc).
+      const r = e.path.match(/^eligibility_rules(?:\[(\d+)\]|\.(\d+))\.(\w+)/);
+      if (r) (m[Number(r[1] ?? r[2])] ??= {})[r[3]] = e.message;
       else other.push(`${e.path}: ${e.message}`);
     }
     return { rules: m, other };

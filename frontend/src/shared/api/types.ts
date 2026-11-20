@@ -660,6 +660,9 @@ export interface EvalDashboard {
     pipeline_latency_ms: { p50: number; p95: number };
     llm: { calls: number; cost_usd: number; failure_rate: number; fallback_count: number };
   };
+  /** false until A4's scam / document benchmarks exist. */
+  benchmarks_available?: boolean;
+  dataset_note?: string | null;
 }
 
 export interface TenantAnalytics {

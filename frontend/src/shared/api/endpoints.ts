@@ -1,14 +1,70 @@
-import { request, uuid } from './client';
+import { ApiError, request, uuid } from './client';
 import type * as T from './types';
 
 // One typed function per endpoint in docs/05-api-contracts.md.
 // List endpoints tolerate either a bare array or the pagination envelope, so the
 // UI keeps working whichever shape the backend settles on.
 
-export function asList<X>(data: X[] | T.Page<X> | { items: X[] } | null | undefined): X[] {
+export function asList<X>(data: X[] | T.Page<X> | { items?: X[]; versions?: X[] } | null | undefined): X[] {
   if (!data) return [];
   if (Array.isArray(data)) return data;
-  return data.items ?? [];
+  return (data as { items?: X[] }).items ?? (data as { versions?: X[] }).versions ?? [];
+}
+
+type RawValidationError = { path?: string | (string | number)[]; message?: string; message_en?: string; code?: string };
+function normalizeErrors(raw: unknown): T.RuleValidationResult['errors'] {
+  return ((raw as RawValidationError[] | undefined) ?? []).map((e) => ({
+    path: Array.isArray(e.path) ? e.path.join('.') : String(e.path ?? ''),
+    message: e.message ?? e.message_en ?? e.code ?? 'Invalid',
+  }));
+}
+
+/** Accepts both the docs/05 shape and the flat payload served by backend/app/api/v1/eval.py. */
+function normalizeEval(raw: Record<string, any>): T.EvalDashboard { // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (raw.threshold_sweep) return raw as T.EvalDashboard;
+  const pts = (raw.decision_router_sweep ?? []) as Record<string, number>[];
+  const lo = raw.live_operations ?? {};
+  const sc = raw.scam_classifier ?? {};
+  const cm = sc.confusion_matrix ?? {};
+  const dv = raw.document_verifier ?? {};
+  const byRoute = lo.by_route ?? {};
+  return {
+    threshold_sweep: {
+      active_threshold: raw.active_threshold ?? 0.9,
+      sample_size: raw.sample_size ?? 0,
+      points: pts.map((p) => ({
+        threshold: p.threshold,
+        auto_approve_rate: p.auto_approve_rate,
+        false_approval_rate: p.false_approval_rate,
+        human_review_load: p.human_review_load ?? p.human_review_rate,
+        expected_total_cost: p.expected_total_cost ?? p.expected_cost,
+      })),
+    },
+    scam: {
+      precision: sc.precision ?? NaN,
+      recall: sc.recall ?? NaN,
+      f1: sc.f1 ?? NaN,
+      confusion_matrix: { tp: cm.tp ?? 0, fp: cm.fp ?? 0, tn: cm.tn ?? 0, fn: cm.fn ?? 0 },
+      hard_negative_fpr: sc.hard_negative_fpr ?? NaN,
+      test_size: sc.test_size ?? 0,
+      disputed_count: sc.disputed_count ?? 0,
+    },
+    documents: {
+      sample_size: dv.sample_size ?? 0,
+      genuine_verified_rate: dv.genuine_verified_rate ?? NaN,
+      tamper_catch_rate: dv.tamper_catch_rate ?? NaN,
+      false_tamper_rate: dv.false_tamper_rate ?? NaN,
+      blurry_retake_rate: dv.blurry_retake_rate ?? NaN,
+    },
+    live: {
+      route_distribution: { AUTO_APPROVE: byRoute.AUTO_APPROVE ?? 0, ASK_MORE: byRoute.ASK_MORE ?? 0, HUMAN_REVIEW: byRoute.HUMAN_REVIEW ?? 0, WAIT_EXTERNAL: byRoute.WAIT_EXTERNAL ?? 0 },
+      officer_override_rate: lo.officer_override_rate ?? 0,
+      pipeline_latency_ms: { p50: lo.latency_p50_ms ?? 0, p95: lo.latency_p95_ms ?? 0 },
+      llm: { calls: lo.llm_calls_24h ?? 0, cost_usd: lo.llm_cost_usd_24h ?? 0, failure_rate: lo.llm_failure_rate ?? 0, fallback_count: lo.llm_fallback_count ?? 0 },
+    },
+    benchmarks_available: raw.benchmarks_available ?? true,
+    dataset_note: raw.dataset_note ?? null,
+  };
 }
 
 type ListResp<X> = X[] | T.Page<X>;
@@ -134,7 +190,14 @@ export const admin = {
     request<T.RuleVersion>(`/admin/programs/${programId}/rules`, { method: 'POST', body: rules_json ? { rules_json } : {} }),
   updateDraft: (id: string, rules_json: T.RuleSet) =>
     request<T.RuleVersion>(`/admin/rules/${id}`, { method: 'PUT', body: { rules_json } }),
-  validate: (id: string) => request<T.RuleValidationResult>(`/admin/rules/${id}/validate`, { method: 'POST', body: {} }),
+  // Backend answers 422 RULE_VALIDATION_FAILED for invalid drafts; surface it as a result, not an error.
+  validate: (id: string) =>
+    request<T.RuleValidationResult>(`/admin/rules/${id}/validate`, { method: 'POST', body: {} })
+      .then((r) => ({ valid: r.valid ?? true, errors: normalizeErrors(r.errors) }))
+      .catch((e: unknown) => {
+        if (e instanceof ApiError && e.code === 'RULE_VALIDATION_FAILED') return { valid: false, errors: normalizeErrors(e.details?.errors) };
+        throw e;
+      }),
   simulate: (id: string, sample_size = 200) =>
     request<T.TwinResult>(`/admin/rules/${id}/simulate`, { method: 'POST', body: { sample_size } }),
   publish: (id: string, change_note: string) =>
@@ -197,7 +260,7 @@ export const ai = {
 
 // ---------- Eval, analytics, transparency, device sim ----------
 export const insights = {
-  eval: () => request<T.EvalDashboard>('/eval/dashboard'),
+  eval: () => request<Record<string, any>>('/eval/dashboard').then(normalizeEval), // eslint-disable-line @typescript-eslint/no-explicit-any
   analytics: () => request<T.TenantAnalytics>('/analytics/tenant'),
   transparency: () => request<T.TransparencyResponse>('/transparency'),
   smsInbox: (phone: string) =>

@@ -133,7 +133,7 @@ export function Hash({ value, className }: { value: string | null | undefined; c
   );
 }
 
-export const pct = (v: number | null | undefined, digits = 0) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(digits)}%`);
+export const pct = (v: number | null | undefined, digits = 0) => (v === null || v === undefined || Number.isNaN(v) ? '—' : `${(v * 100).toFixed(digits)}%`);
 export const pkr = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `PKR ${new Intl.NumberFormat('en-PK').format(v)}`);
 
 export function fmtTime(iso: string | null | undefined) {
