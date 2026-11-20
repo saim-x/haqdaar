@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pytest
+from sqlalchemy import Column, MetaData, String, Table
 
 from app.ai import doc_verify
 
@@ -177,6 +178,17 @@ class TestNameSimilarity:
 
 
 class TestVerifyDocumentWiring:
-    def test_missing_document_raises(self, db) -> None:
-        with pytest.raises(Exception):
+    def test_missing_document_raises(self, db, monkeypatch) -> None:
+        """An unknown document id is a LookupError, not a crash.
+
+        ``_table`` is patched to a minimal stand-in so this exercises the
+        not-found branch rather than the pre-S1 absence of ``app.models``.
+        """
+        documents = Table(
+            "documents",
+            MetaData(),
+            Column("id", String, primary_key=True),
+        )
+        monkeypatch.setattr(doc_verify, "_table", lambda name: documents)
+        with pytest.raises(LookupError):
             doc_verify.verify_document(db, "00000000-0000-0000-0000-000000000000")

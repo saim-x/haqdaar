@@ -167,7 +167,7 @@ def test_historical_cases_span_the_digital_twin_band(
     spd = [
         row
         for row in session.inserted["decisions"]
-        if not row["id"] == sd.uid("decision:showcase_101")
+        if row["id"] != sd.uid("decision:showcase_101")
     ]
     incomes = [
         row["input_snapshot_json"]["monthly_income_pkr"]["value"]

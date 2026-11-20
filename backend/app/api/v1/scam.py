@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -118,7 +118,7 @@ def _persist(
         "explanation_en": verdict.explanation_en,
         "user_disputed": False,
         "dispute_note": None,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": datetime.now(UTC),
     }
     try:
         api_support.insert_row(db, "scam_checks", row)
