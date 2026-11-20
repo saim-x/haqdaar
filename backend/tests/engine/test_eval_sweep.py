@@ -290,3 +290,136 @@ def test_load_labelled_cases_reads_jsonl(
     assert len(cases) == 3
     assert [case.case_id for case in cases] == ["eval-0", "eval-1", "eval-2"]
     assert sweep(cases, sahara_v1).sample_size == 3
+
+
+# -- from_record: the three evidence fields the enriched set carries ----------
+def _fact(value, source, confidence, *, entered_by="SYSTEM"):
+    return {
+        "state": "KNOWN",
+        "value": value,
+        "source": source,
+        "source_confidence": confidence,
+        "entered_by": entered_by,
+        "alternatives": [],
+        "conflict": False,
+        "missing_reason": None,
+    }
+
+
+def _unknown_fact(reason="NOT_PROVIDED"):
+    return {
+        "state": "UNKNOWN",
+        "value": None,
+        "source": None,
+        "source_confidence": 0.0,
+        "entered_by": "SYSTEM",
+        "alternatives": [],
+        "conflict": False,
+        "missing_reason": reason,
+    }
+
+
+def _enriched_record(**overrides):
+    """A record shaped like ``backend/app/data/eval_cases.jsonl``."""
+    record = {
+        "case_id": "EVAL-0002",
+        "program_code": "SAHARA_WIDOW_GRANT",
+        "split": "train",
+        "noise": [],
+        "consent_assurance": 1.0,
+        "truly_eligible": True,
+        "children_unknown": False,
+        "expected_amount_pkr": 15000,
+        "facts": {
+            "applicant_cnic": _fact("9990010000901", "DOCUMENT_QR", 0.97),
+            "applicant_full_name": _fact("Sakina Bibi", "IDENTITY_REGISTRY", 0.93),
+            "applicant_dob": _fact("1992-04-12", "IDENTITY_REGISTRY", 0.95),
+            "cnic_doc_verified": _fact(True, "DOCUMENT_VERIFIER", 0.94),
+            "death_cert_doc_verified": _fact(True, "DOCUMENT_VERIFIER", 0.93),
+        },
+    }
+    record.update(overrides)
+    return record
+
+
+def test_from_record_uses_an_explicit_identity_confidence() -> None:
+    case = LabelledCase.from_record(_enriched_record(identity_confidence=0.25))
+    assert case.confidence.identity == 0.25
+
+
+def test_from_record_derives_identity_from_the_registry_name_similarity() -> None:
+    """docs/06 §3.2 pillar 1: similarity >= 0.85 is the exact-match band."""
+    case = LabelledCase.from_record(_enriched_record())
+    assert case.confidence.identity == 0.98
+
+
+def test_from_record_spelling_drift_lands_in_the_variant_band() -> None:
+    record = _enriched_record()
+    record["facts"]["applicant_full_name"] = _fact(
+        "Sakinaa Bibi", "IDENTITY_REGISTRY", 0.71
+    )
+    assert LabelledCase.from_record(record).confidence.identity == 0.93
+
+
+def test_from_record_registry_miss_is_ambiguous_identity() -> None:
+    record = _enriched_record(registry_not_found=True)
+    for key in ("applicant_full_name", "applicant_dob"):
+        record["facts"][key] = _unknown_fact()
+    assert LabelledCase.from_record(record).confidence.identity == 0.25
+
+
+def test_from_record_derives_documents_from_the_verified_facts() -> None:
+    """docs/06 §3.2 pillar 2: min(verify_confidence) over the required documents."""
+    case = LabelledCase.from_record(_enriched_record())
+    assert case.confidence.documents == 0.93
+
+
+def test_from_record_unverified_document_is_needs_retake() -> None:
+    record = _enriched_record()
+    record["facts"]["cnic_doc_verified"] = _fact(False, "DOCUMENT_VERIFIER", 0.94)
+    assert LabelledCase.from_record(record).confidence.documents == 0.40
+
+
+def test_from_record_uses_an_explicit_documents_list() -> None:
+    record = _enriched_record(
+        documents=[{"doc_type": "CNIC_FRONT", "status": "TAMPER_SUSPECTED"}]
+    )
+    assert LabelledCase.from_record(record).confidence.documents == 0.10
+
+
+def test_from_record_uses_the_consent_assurance_score() -> None:
+    """Verbal consent is 0.82 and caps the weakest-link overall below 0.90."""
+    case = LabelledCase.from_record(_enriched_record(consent_assurance=0.82))
+    assert case.confidence.consent_assurance == 0.82
+    assert case.confidence.overall == 0.82
+
+
+def test_from_record_falls_back_to_the_consent_method() -> None:
+    record = _enriched_record()
+    record.pop("consent_assurance")
+    record["consent_method"] = "VERBAL_WITNESSED"
+    assert LabelledCase.from_record(record).confidence.consent_assurance == 0.82
+
+
+def test_from_record_without_consent_evidence_is_not_strong_consent() -> None:
+    record = _enriched_record()
+    record.pop("consent_assurance")
+    assert LabelledCase.from_record(record).confidence.consent_assurance == 0.82
+
+
+def test_the_shipped_eval_set_loads_and_sweeps() -> None:
+    """The real ``backend/app/data/eval_cases.jsonl`` must satisfy the adapter."""
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "app" / "data" / "eval_cases.jsonl"
+    if not path.exists():  # pragma: no cover - the file is DPI-owned
+        pytest.skip("eval_cases.jsonl not present in this tree")
+
+    cases = load_labelled_cases(path)
+    assert len(cases) >= 100
+    for case in cases:
+        assert 0.0 <= case.confidence.overall <= 1.0
+        # Every pillar must come from evidence, never from a silent default.
+        assert case.confidence.identity in {0.25, 0.30, 0.75, 0.78, 0.93, 0.98}
+        assert case.confidence.documents in {0.10, 0.40, 0.55, 0.93}
+        assert case.confidence.consent_assurance in {0.82, 1.0}
