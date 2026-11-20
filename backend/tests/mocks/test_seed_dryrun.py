@@ -309,3 +309,41 @@ def test_eval_cases_include_unknown_children_with_honest_labels() -> None:
     assert any(row["truly_eligible"] for row in unknown)
     assert all(row["expected_amount_pkr"] is None for row in unknown)
     assert all(row["facts"]["children_under_18"]["state"] == "UNKNOWN" for row in unknown)
+
+
+def test_eval_cases_include_a_registry_miss_slice() -> None:
+    """docs/06 §5.2 Case A "Not found" must occur in the corpus as evidence.
+
+    The registry holding no record is recorded as UNKNOWN identity facts, never as
+    a guessed name or a fabricated "alive", so EN derives CNIC_NOT_IN_REGISTRY
+    from the absence. The label stays honest: eligibility is not established.
+    """
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "app" / "data" / "eval_cases.jsonl"
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+    miss = [row for row in rows if row.get("registry_not_found")]
+    assert 3 <= len(miss) <= 6, len(miss)
+    for row in miss:
+        assert row["identity_confidence"] == 0.25
+        assert row["truly_eligible"] is False
+        assert row["expected_amount_pkr"] is None
+        for key in (
+            "applicant_full_name",
+            "applicant_dob",
+            "applicant_age_years",
+            "applicant_is_alive",
+        ):
+            fact = row["facts"][key]
+            assert fact["state"] == "UNKNOWN", key
+            assert fact["value"] is None, key
+            assert fact["source"] is None, key
+            # NOT_PROVIDED, not USER_UNKNOWN: the citizen did supply the CNIC.
+            assert fact["missing_reason"] == "NOT_PROVIDED", key
+            assert fact["entered_by"] == "SYSTEM", key
+
+    # The slice must not swallow the rest of the corpus.
+    assert len(rows) == 120
+    assert sum(1 for row in rows if row["truly_eligible"]) >= 40
