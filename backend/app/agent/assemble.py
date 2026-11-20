@@ -21,6 +21,8 @@ from typing import Any
 from app.engine.anomalies import (
     DocumentCheck,
     FlagCode,
+    PayoutUsage,
+    PriorCase,
     RiskFlag,
     run_anomaly_checks,
     sort_flags,
@@ -380,6 +382,10 @@ def assemble_facts(
     consent_method: str = "SELF_OTP",
     entered_by: EnteredBy = EnteredBy.CITIZEN,
     extra_flags: Sequence[RiskFlag] = (),
+    prior_cases: Sequence[PriorCase] = (),
+    payout_usages: Sequence[PayoutUsage] = (),
+    helper_submissions_last_60_minutes: int | None = None,
+    payout_title_similarity: float | None = None,
     civil_registry_queried: bool = True,
     benefits_registry_queried: bool = True,
     today: date | None = None,
@@ -581,9 +587,14 @@ def assemble_facts(
         applicant_is_alive=(
             matched.is_alive if matched is not None else None
         ),
+        prior_cases=prior_cases,
+        program_code=program_code,
         payout_alias=_as_str(_draft_entry(draft, "payout_phone")[0]),
+        payout_usages=payout_usages,
         self_declared_income_pkr=self_declared_income,
         survey_income_pkr=survey_income,
+        payout_title_similarity=payout_title_similarity,
+        helper_submissions_last_60_minutes=helper_submissions_last_60_minutes,
         consent_method=consent_method,
         today=today,
     )
