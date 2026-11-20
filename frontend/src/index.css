@@ -23,6 +23,10 @@
   --action-primary-hover: 22 101 52;
   --action-primary-text: 255 255 255;
   --action-primary-soft: 220 239 226;
+  --action-primary-press: 10 52 28;
+  --feedback-error-press: 127 29 29;
+  --feedback-success-press: 20 83 45;
+  --border-press: 214 205 190;
   --accent: 180 83 9;
   --feedback-success: 21 128 61;
   --feedback-success-soft: 220 252 231;
@@ -56,6 +60,10 @@
   --action-primary-hover: 40 160 86;
   --action-primary-text: 255 255 255;
   --action-primary-soft: 22 56 36;
+  --action-primary-press: 14 70 38;
+  --feedback-error-press: 127 29 29;
+  --feedback-success-press: 21 128 61;
+  --border-press: 10 9 8;
   --accent: 251 146 60;
   --feedback-success: 74 222 128;
   --feedback-success-soft: 20 50 32;

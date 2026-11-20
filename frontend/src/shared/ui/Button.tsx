@@ -1,27 +1,23 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { cx } from './cx';
+import { forwardRef, type ReactNode } from 'react';
+import { Button as UIButton, type ButtonProps as UIButtonProps } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Spinner } from './Spinner';
+
+// App-level Button built on shadcn/ui's Button (cva variants). Keeps the app's API so
+// every screen picks up the shadcn styling without touching call sites.
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
-const variants: Record<Variant, string> = {
-  primary: 'bg-brand text-brand-ink hover:bg-brand-hover active:bg-brand-hover',
-  secondary: 'bg-surface text-ink border-2 border-line-strong hover:bg-sunken active:bg-sunken',
-  ghost: 'bg-transparent text-ink hover:bg-sunken active:bg-sunken',
-  danger: 'bg-danger text-white hover:bg-danger-hover active:bg-danger-hover',
-  success: 'bg-ok text-white hover:opacity-90',
+const VARIANT: Record<Variant, UIButtonProps['variant']> = {
+  primary: 'default',
+  secondary: 'outline',
+  ghost: 'ghost',
+  danger: 'destructive',
+  success: 'success',
 };
 
-// sm keeps the 24px WCAG minimum but staff-only; citizen UI uses lg/xl (>= 56px).
-const sizes: Record<Size, string> = {
-  sm: 'min-h-[32px] px-3 text-sm gap-1.5 rounded-lg',
-  md: 'min-h-tap px-4 text-base gap-2 rounded-control',
-  lg: 'min-h-tap-lg px-5 text-lg gap-2.5 rounded-control font-semibold',
-  xl: 'min-h-[72px] px-6 text-xl gap-3 rounded-card font-bold',
-};
-
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends Omit<UIButtonProps, 'variant' | 'size' | 'tactile'> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
@@ -30,27 +26,23 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', loading, icon, block, className, children, disabled, ...rest },
+  { variant = 'primary', size = 'md', loading, icon, block, className, children, ...rest },
   ref,
 ) {
   return (
-    <button
+    <UIButton
       ref={ref}
+      variant={VARIANT[variant]}
+      size={size}
+      // Large citizen controls get the tactile press; ghost buttons stay flat.
+      tactile={(size === 'lg' || size === 'xl') && variant !== 'ghost'}
       // Loading keeps full strength (it is "happening", not "unavailable").
-      disabled={disabled}
       aria-busy={loading || undefined}
-      className={cx(
-        'inline-flex items-center justify-center select-none transition-colors duration-fast ease-out',
-        'disabled:opacity-50 disabled:pointer-events-none',
-        variants[variant],
-        sizes[size],
-        block && 'w-full',
-        className,
-      )}
+      className={cn(block && 'w-full', className)}
       {...rest}
     >
       {loading ? <Spinner className="h-5 w-5" /> : icon}
       {children}
-    </button>
+    </UIButton>
   );
 });

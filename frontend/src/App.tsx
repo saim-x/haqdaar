@@ -5,6 +5,7 @@ import { homePathFor, useAuth } from './shared/auth/store';
 import { applyDocumentLang, useLang } from './shared/i18n';
 import { PageLoader } from './shared/ui/Spinner';
 import { PrototypeBanner } from './shared/ui/PrototypeBanner';
+import { Toaster } from '@/components/ui/sonner';
 import { CitizenShell } from './citizen/CitizenShell';
 import { LoginPage } from './pages/LoginPage';
 import { CitizenHome } from './citizen/CitizenHome';
@@ -60,6 +61,7 @@ export function App() {
     return (
       <>
         <PrototypeBanner forceEnglish />
+        <Toaster position="top-right" />
         <Suspense fallback={<PageLoader />}>
           <RequireRole roles={['OFFICER', 'ADMIN', 'AUDITOR']}>
             <StaffApp />

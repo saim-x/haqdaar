@@ -1,6 +1,6 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { X } from 'lucide-react';
-import { cx } from './cx';
+import type { ReactNode } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface Props {
   open: boolean;
@@ -10,54 +10,28 @@ interface Props {
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
   closeLabel?: string;
+  description?: string;
 }
 
-/** Accessible dialog built on <dialog>: focus trap, Esc to close, focus restore. */
-export function Modal({ open, onClose, title, children, footer, size = 'md', closeLabel = 'Close' }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) d.showModal();
-    if (!open && d.open) d.close();
-  }, [open]);
-
+/** shadcn/ui Dialog (Radix): focus trap, Esc, scroll lock, focus restore, RTL-aware. */
+export function Modal({ open, onClose, title, children, footer, size = 'md', description }: Props) {
   return (
-    <dialog
-      ref={ref}
-      onClose={onClose}
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-      aria-labelledby="modal-title"
-      className={cx(
-        'w-[calc(100vw-2rem)] rounded-card border border-line bg-surface p-0 text-ink shadow-lift backdrop:bg-black/50',
-        size === 'sm' && 'max-w-sm',
-        size === 'md' && 'max-w-lg',
-        size === 'lg' && 'max-w-3xl',
-      )}
-    >
-      {open && (
-        <div className="flex max-h-[85vh] flex-col animate-rise">
-          <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-            <h2 id="modal-title" className="text-lg font-semibold leading-snug">
-              {title}
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={closeLabel}
-              className="-m-2 inline-flex h-10 w-10 items-center justify-center rounded-full text-muted hover:bg-sunken"
-            >
-              <X className="h-5 w-5" aria-hidden />
-            </button>
-          </div>
-          <div className="overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-4">{footer}</div>}
-        </div>
-      )}
-    </dialog>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        className={cn(
+          'max-h-[88vh] w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-2xl border-line p-0',
+          size === 'sm' && 'max-w-sm',
+          size === 'md' && 'max-w-lg',
+          size === 'lg' && 'max-w-3xl',
+        )}
+      >
+        <DialogHeader className="border-b border-line px-5 py-4 pe-12">
+          <DialogTitle className="text-lg font-bold leading-snug">{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : <DialogDescription className="sr-only">{title}</DialogDescription>}
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto px-5 py-4">{children}</div>
+        {footer && <DialogFooter className="border-t border-line bg-sunken/50 px-5 py-3">{footer}</DialogFooter>}
+      </DialogContent>
+    </Dialog>
   );
 }
