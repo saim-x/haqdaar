@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TSTAMPTZ, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TSTAMPTZ, TimestampMixin, UUIDPrimaryKeyMixin, utcnow
 
 
 class Job(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -43,7 +43,7 @@ class IdempotencyKey(Base):
     request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     response_status: Mapped[int] = mapped_column(Integer, nullable=False)
     response_body: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(TSTAMPTZ, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TSTAMPTZ, nullable=False, default=utcnow)
 
 
 class WorkerHeartbeat(Base):
