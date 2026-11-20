@@ -110,8 +110,27 @@ def _now() -> datetime:
 
 
 def _next_reference_code(db: Session) -> str:
-    number = db.execute(select(CASE_REF_SEQ.next_value())).scalar_one()
-    return f"HQ-{_now().year}-{int(number):06d}"
+    """Draw a reference code that no case is using yet.
+
+    The demo seeder inserts historical cases with explicit codes
+    (``HQ-YYYY-000101`` …) and a database migrated before the sequence start was
+    fixed still begins at 1, so a freshly drawn number can land inside the seeded
+    range. Keep drawing until the code is free; ``uq_cases_reference_code`` is the
+    backstop.
+    """
+    year = _now().year
+    for _ in range(1000):
+        number = int(db.execute(select(CASE_REF_SEQ.next_value())).scalar_one())
+        code = f"HQ-{year}-{number:06d}"
+        taken = db.execute(
+            select(Case.id).where(Case.reference_code == code).limit(1)
+        ).scalar_one_or_none()
+        if taken is None:
+            return code
+    raise ValidationError(
+        message_en="Could not allocate a case reference. Please try again.",
+        message_ur="درخواست کا حوالہ نمبر مختص نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
+    )
 
 
 def _load_case(db: Session, case_id: uuid.UUID) -> Case:
