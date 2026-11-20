@@ -75,8 +75,8 @@ export default defineConfig(({ mode }) => {
           // service worker can skip precaching them (they are not citizen assets).
           chunkFileNames(chunk) {
             const ids = chunk.moduleIds.map((m) => m.replace(/\\/g, '/'));
-            if (ids.length && ids.every((m) => m.includes('/src/staff/') || m.includes('/node_modules/')) && ids.some((m) => m.includes('/src/staff/')))
-              return 'assets/staff-[name]-[hash].js';
+            const citizenSide = ids.some((m) => /\/src\/(citizen|helper|pages)\//.test(m));
+            if (!citizenSide && ids.some((m) => m.includes('/src/staff/'))) return 'assets/staff-[name]-[hash].js';
             if (ids.some((m) => m.includes('/src/shared/devmock/'))) return 'assets/devmock-[name]-[hash].js';
             return 'assets/[name]-[hash].js';
           },

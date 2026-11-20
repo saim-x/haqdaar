@@ -25,6 +25,7 @@ import { logout } from '../shared/auth/session';
 import { homePathFor, useAuth } from '../shared/auth/store';
 import { cx } from '../shared/ui/cx';
 import { HaqdaarMark } from '../shared/ui/AjrakPattern';
+import { Toaster } from '@/components/ui/sonner';
 import { Queue } from './officer/Queue';
 import { CaseReview } from './officer/CaseReview';
 import { Corrections } from './officer/Corrections';
@@ -185,6 +186,7 @@ export default function StaffApp() {
 
   return (
     <div className="flex min-h-[calc(100dvh-28px)]" lang="en" dir="ltr">
+      <Toaster position="top-right" />
       <aside className="sticky top-[28px] hidden h-[calc(100dvh-28px)] w-64 shrink-0 border-e border-line bg-surface lg:block">{sidebar}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">

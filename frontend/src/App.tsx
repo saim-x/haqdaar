@@ -5,13 +5,12 @@ import { homePathFor, useAuth } from './shared/auth/store';
 import { applyDocumentLang, useLang } from './shared/i18n';
 import { PageLoader } from './shared/ui/Spinner';
 import { PrototypeBanner } from './shared/ui/PrototypeBanner';
-import { Toaster } from '@/components/ui/sonner';
 import { CitizenShell } from './citizen/CitizenShell';
-import { LoginPage } from './pages/LoginPage';
-import { CitizenHome } from './citizen/CitizenHome';
 
 // Route-level code splitting keeps the citizen entry bundle small on 2G/3G
 // (AC-24.3). Every chunk is still precached by the service worker for offline use.
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const CitizenHome = lazy(() => import('./citizen/CitizenHome').then((m) => ({ default: m.CitizenHome })));
 const ApplyStart = lazy(() => import('./citizen/ApplyStart').then((m) => ({ default: m.ApplyStart })));
 const Wizard = lazy(() => import('./citizen/wizard/Wizard').then((m) => ({ default: m.Wizard })));
 const CasesList = lazy(() => import('./citizen/CasesList').then((m) => ({ default: m.CasesList })));
@@ -61,7 +60,6 @@ export function App() {
     return (
       <>
         <PrototypeBanner forceEnglish />
-        <Toaster position="top-right" />
         <Suspense fallback={<PageLoader />}>
           <RequireRole roles={['OFFICER', 'ADMIN', 'AUDITOR']}>
             <StaffApp />
