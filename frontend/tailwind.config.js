@@ -1,3 +1,5 @@
+import animate from 'tailwindcss-animate';
+
 /** @type {import('tailwindcss').Config} */
 // Every colour is a semantic token backed by a CSS variable in src/index.css.
 // Components never use raw hex values: switching theme = editing index.css once.
@@ -7,6 +9,8 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      borderColor: { DEFAULT: token('border-default') },
+      ringColor: { DEFAULT: token('focus-ring') },
       colors: {
         page: token('surface-page'),
         surface: token('surface-raised'),
@@ -58,5 +62,5 @@ export default {
       minWidth: { tap: '48px', 'tap-lg': '56px' },
     },
   },
-  plugins: [],
+  plugins: [animate],
 };
