@@ -99,6 +99,11 @@
 - **Decision (Lead):** Canonical manifest = top-level `{key: text}` (+ optional `_meta` for voice/language data). Canonical key registry = **FE's 31 UI keys, DPI renames/retargets its texts accordingly and authors the missing 6 scam/home/intro texts** + DPI's extra keys retained (`status_*` ×16, `doc_*`/`retake_*` ×7, `readback_confirm`, `needs_retry`, `offline_saved`, `network_error`, `submit_confirm`, `consent_grant_confirm`, `consent_withdrawn`, `consent_required`, `unknown_ok`) for FE to adopt at status/doc-feedback/readback call sites (optional; silent-degrade unchanged). `tts_pregen` table updated to emit the merged registry.
 - **Rationale:** The consumer's call sites define the contract; producer metadata moves under `_meta`; one artifact both agents trust. MP3 generation (blocked by edge-tts 403) is tracked separately by the Lead.
 
+## ADR-019: `consent_access_logs.actor_user_id` Becomes Nullable
+- **Context:** EN's S2 review found that the case agent (actor_type=AGENT, no user) makes `enforce_consent`-driven access-log inserts that violated the `actor_user_id` NOT NULL FK; the old `actor.user_id or uuid.UUID(int=0)` fallback wrote a sentinel that breached `fk_consent_access_logs_actor_user_id_users`, and the isolated-session handler swallowed the insert — so every consent access written by the agent was silently DROPPED. That silently destroys Challenge-06 evidence (invariant 5: every citizen-data read logs).
+- **Decision (Integration Lead):** `consent_access_logs.actor_user_id` is NULLABLE (docs/04 §4.4 updated). `AGENT`/`SYSTEM` rows carry `actor_user_id = NULL` with `actor_role= 'AGENT'` and a descriptive `actor_label` (e.g. "Case Agent"), mirroring `audit_events.actor_id` semantics. BE ships the migration (down_revision = current head after the S2 merges) + model + code change; the sentinel-UUID fallback is removed.
+- **Rationale:** RESTores the evidence chain for agent consent reads; aligns consent logging with the audit table's existing nullability pattern; no UI impact (citizen view filters on non-null label columns).
+
 ---
 
 ## Change Control Protocol (During Hackathon)

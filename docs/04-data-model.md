@@ -374,7 +374,7 @@ erDiagram
 |---|---|---|---|
 | `id` | UUID | PK | |
 | `citizen_id` | UUID | NOT NULL FK → `citizens.id` | |
-| `actor_user_id` | UUID | NOT NULL FK → `users.id` | |
+| `actor_user_id` | UUID | NULLABLE FK → `users.id` | NULL for `AGENT`/`SYSTEM` actors (ADR-019; mirrors `audit_events.actor_id` semantics) |
 | `actor_role` | VARCHAR(20) | NOT NULL | |
 | `actor_label` | VARCHAR(120) | NOT NULL | e.g. `"Helper Ayesha"` or `"Social Protection Dept"` |
 | `tenant_id` | UUID | NULLABLE | |
