@@ -94,6 +94,11 @@
 - **Decision (approved):** DPI's `doc_verify` printed-vs-QR cross-check uses `min(full_name_ratio, given_name_ratio)` after honorific stripping (verified samples: Zainab/Sakina 0.667, Fatima/Fatima 1.0, Mst. Fatima/Fatima 1.0, Muhammad/Mohammad Akram 0.875). EN evaluates adding the same guard to `entity_resolution.name_sim` adopted **iff** the full 25+ case regression suite stays green (golden path must remain 1.0). Also recorded: scam classifier adds `MIN_MEANINGFUL_WORDS = 5` alongside the spec's `< 15 chars` rule so "Bhai payment bhej dena" resolves to `CANNOT_TELL` per demo scene 3; RAG fake-mode embeddings are 64-dim per docs/04 §4.5 and `cosine` returns 0.0 (not truncated) on dimension mismatch.
 - **Rationale:** Tamper and identity-jacking protection for a surname-colliding population; conservative direction — can only increase human review, never auto-approvals.
 
+## ADR-018: Audio Prompt Registry — Canonical Manifest Shape and Key Names
+- **Context:** FE (consumer) and DPI (producer) independently invented disjoint key names for the same Urdu prompts (FE `wizard_applicant_full_name`… vs DPI `step_full_name`…), and DPI shipped `manifest.json` as an envelope (`{voice, voice_alt, language, count, keys, files}`) while the pinned contract was a top-level `{key: text}` map. Result: had the two merged silently, every audio prompt in the UI would be a no-op.
+- **Decision (Lead):** Canonical manifest = top-level `{key: text}` (+ optional `_meta` for voice/language data). Canonical key registry = **FE's 31 UI keys, DPI renames/retargets its texts accordingly and authors the missing 6 scam/home/intro texts** + DPI's extra keys retained (`status_*` ×16, `doc_*`/`retake_*` ×7, `readback_confirm`, `needs_retry`, `offline_saved`, `network_error`, `submit_confirm`, `consent_grant_confirm`, `consent_withdrawn`, `consent_required`, `unknown_ok`) for FE to adopt at status/doc-feedback/readback call sites (optional; silent-degrade unchanged). `tts_pregen` table updated to emit the merged registry.
+- **Rationale:** The consumer's call sites define the contract; producer metadata moves under `_meta`; one artifact both agents trust. MP3 generation (blocked by edge-tts 403) is tracked separately by the Lead.
+
 ---
 
 ## Change Control Protocol (During Hackathon)
