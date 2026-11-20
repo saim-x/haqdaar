@@ -183,6 +183,8 @@ def require_roles(*roles: UserRole | str):
 
     _guard.rbac_guard = True  # marker used by tests/test_invariants.py
     _guard.allowed_roles = allowed
+    # Declaration order, for route-surface contract tests that introspect guards.
+    _guard.roles = tuple(str(role) for role in roles)
     return _guard
 
 
