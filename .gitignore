@@ -32,3 +32,6 @@ playwright-report/
 .DS_Store
 *.log
 *.tmp
+
+# Test upload scratch
+.pytest-uploads/
