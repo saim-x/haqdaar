@@ -1,0 +1,105 @@
+# Haqdaar — local stack (prototype)
+#
+# Every service is parameterised by HOST_DB_PORT / HOST_API_PORT so several
+# worktrees can run side by side. The integration stack on `main` uses the
+# defaults (5432 / 8000); agent worktrees override them in their own `.env`.
+#
+#   docker compose up --build          # api + worker + db
+#   docker compose up -d db            # just Postgres, for `pytest`
+#
+# All data is synthetic: CNICs start with 99900 and every government service
+# under /mock/v1/* is simulated.
+
+name: haqdaar
+
+services:
+  db:
+    image: postgres:16
+    container_name: haqdaar-db-${COMPOSE_PROJECT_SUFFIX:-main}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-haqdaar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-haqdaar}
+      POSTGRES_DB: ${POSTGRES_DB:-haqdaar}
+    ports:
+      - "${HOST_DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-haqdaar} -d ${POSTGRES_DB:-haqdaar}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Stage 1 is skipped when the frontend has not been built yet.
+        BUILD_FRONTEND: ${BUILD_FRONTEND:-true}
+    container_name: haqdaar-api-${COMPOSE_PROJECT_SUFFIX:-main}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-haqdaar}:${POSTGRES_PASSWORD:-haqdaar}@db:5432/${POSTGRES_DB:-haqdaar}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      QR_HMAC_SECRET: ${QR_HMAC_SECRET:-dev-qr-secret-change-me}
+      MOCK_BASE_URL: ${MOCK_BASE_URL:-http://127.0.0.1:8000/mock}
+      AI_PROVIDER: ${AI_PROVIDER:-fake}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
+      OPENAI_STT_MODEL: ${OPENAI_STT_MODEL:-whisper-1}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      UPLOAD_DIR: /data/uploads
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      APP_ENV: ${APP_ENV:-dev}
+      RUN_EMBEDDED_WORKER: ${RUN_EMBEDDED_WORKER:-false}
+    ports:
+      - "${HOST_API_PORT:-8000}:8000"
+    volumes:
+      - uploads:/data/uploads
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.mocks.seed --if-empty &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_FRONTEND: "false"
+    container_name: haqdaar-worker-${COMPOSE_PROJECT_SUFFIX:-main}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-haqdaar}:${POSTGRES_PASSWORD:-haqdaar}@db:5432/${POSTGRES_DB:-haqdaar}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      QR_HMAC_SECRET: ${QR_HMAC_SECRET:-dev-qr-secret-change-me}
+      MOCK_BASE_URL: ${MOCK_BASE_URL:-http://127.0.0.1:8000/mock}
+      AI_PROVIDER: ${AI_PROVIDER:-fake}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      UPLOAD_DIR: /data/uploads
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      APP_ENV: ${APP_ENV:-dev}
+    volumes:
+      - uploads:/data/uploads
+    command: ["python", "-m", "app.jobs.worker"]
+
+volumes:
+  db_data:
+  uploads:
