@@ -47,6 +47,7 @@ from app.models import (
     Case,
     CaseNote,
     Citizen,
+    ConsentGrant,
     Decision,
     Document,
     Payment,
@@ -425,7 +426,7 @@ def _step_assemble_facts_and_decide(ctx: _Context) -> None:
         active_benefits=parse_active_benefits(ctx.benefits_payload),
         documents=ctx.documents,
         program_code=ctx.program.code,
-        consent_method=_consent_method(ctx.case),
+        consent_method=_consent_method(ctx.db, ctx.case),
         prior_cases=ctx.prior_cases,
         payout_usages=ctx.payout_usages,
         helper_submissions_last_60_minutes=ctx.helper_submissions,
@@ -447,11 +448,26 @@ def _step_assemble_facts_and_decide(ctx: _Context) -> None:
     )
 
 
-def _consent_method(case: Any) -> str:
-    """The citizen's own OTP unless the wizard recorded a weaker method."""
-    method = _draft_value(case.draft_answers or {}, "consent_method")
-    if method in ConsentMethod.__members__:
-        return str(method)
+def _consent_method(db: Session, case: Any) -> str:
+    """Assurance comes from the consent grant, never from a wizard answer.
+
+    ``consent_method`` is not a canonical fact key (docs/04 §5 is frozen); the
+    citizen's assurance level lives on ``consent_grants.assurance_level`` and
+    uses the same three values as :class:`ConsentMethod`.
+    """
+    citizen_id = getattr(case, "citizen_id", None)
+    if citizen_id is not None:
+        assurance = db.execute(
+            select(ConsentGrant.assurance_level)
+            .where(
+                ConsentGrant.citizen_id == citizen_id,
+                ConsentGrant.status == "ACTIVE",
+            )
+            .order_by(ConsentGrant.granted_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if assurance in ConsentMethod.__members__:
+            return str(assurance)
     return ConsentMethod.SELF_OTP.value
 
 

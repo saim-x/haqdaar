@@ -11,12 +11,20 @@ Purity: stdlib + pydantic only.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    ValidationError,
+    model_validator,
+)
 
 from app.engine.facts import FACT_REGISTRY, FactValueType
 
@@ -240,6 +248,21 @@ class RuleSetSchema(BaseModel):
     eligibility_rules: list[EligibilityRule] = Field(min_length=1)
     benefit_formula: BenefitFormula
 
+    #: The exact JSON document this schema was validated from. ``content_hash`` must
+    #: cover what is stored in ``rule_versions.rules_json`` (docs/04 §4.2), not the
+    #: normalised model dump — the two differ whenever the document carries an int
+    #: where the model holds a float, and a hash that disagrees with the stored row
+    #: breaks the audit proof on every decision.
+    _raw_payload: dict[str, Any] | None = PrivateAttr(default=None)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _capture_raw_payload(cls, data: Any, handler: Any) -> RuleSetSchema:
+        instance = handler(data)
+        if isinstance(data, dict):
+            object.__setattr__(instance, "_raw_payload", copy.deepcopy(data))
+        return instance
+
     @model_validator(mode="after")
     def _unique_rule_ids(self) -> RuleSetSchema:
         if not self.program_code.strip():
@@ -259,8 +282,11 @@ class RuleSetSchema(BaseModel):
         return None
 
     def canonical_json(self) -> str:
+        payload = self._raw_payload
+        if payload is None:
+            payload = self.model_dump(mode="json")
         return json.dumps(
-            self.model_dump(mode="json"),
+            payload,
             sort_keys=True,
             separators=(",", ":"),
             ensure_ascii=False,
@@ -275,7 +301,12 @@ class RuleSetSchema(BaseModel):
         policy = self.policy.model_copy(
             update={"auto_approve_confidence_threshold": threshold}
         )
-        return self.model_copy(update={"policy": policy})
+        variant = self.model_copy(update={"policy": policy})
+        if self._raw_payload is not None:
+            raw = copy.deepcopy(self._raw_payload)
+            raw.setdefault("policy", {})["auto_approve_confidence_threshold"] = threshold
+            object.__setattr__(variant, "_raw_payload", raw)
+        return variant
 
 
 class RuleValidationReport(BaseModel):

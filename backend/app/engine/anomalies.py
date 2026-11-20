@@ -94,7 +94,12 @@ _SEVERITY_ORDER = {FlagSeverity.HIGH: 0, FlagSeverity.MEDIUM: 1, FlagSeverity.LO
 
 
 class RiskFlag(BaseModel):
-    """One active risk flag, stored in ``cases.flags_json``."""
+    """One active risk flag, stored in ``cases.flags_json``.
+
+    Serialised shape (agreed with DPI, ADR-018): ``code``, ``severity``, ``detail_en``,
+    ``detail_ur``, ``evidence``. ``to_json()`` and the model's field names are the same
+    by construction, so a stored flag round-trips through ``model_validate``.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -103,6 +108,32 @@ class RiskFlag(BaseModel):
     detail_en: str
     detail_ur: str
     evidence: dict[str, Any] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_legacy_detail(cls, data: Any) -> Any:
+        """Read older flag shapes without failing an entire Digital Twin replay.
+
+        We always *write* ``detail_en``/``detail_ur``. Rows seeded before that
+        agreement carry either a single ``detail`` string or no detail at all; a
+        missing explanation is a data-quality gap, not a reason to 500 the replay.
+        The last resort is the flag code itself, which still identifies the flag.
+        """
+        if not isinstance(data, dict):
+            return data
+        normalised = dict(data)
+        legacy = normalised.pop("detail", None)
+        if legacy is not None:
+            normalised.setdefault("detail_en", legacy)
+            normalised.setdefault("detail_ur", legacy)
+        if "detail_en" not in normalised:
+            code = normalised.get("code")
+            fallback = code.value if isinstance(code, FlagCode) else str(code or "")
+            normalised["detail_en"] = fallback
+            normalised.setdefault("detail_ur", fallback)
+        if "detail_ur" not in normalised:
+            normalised["detail_ur"] = normalised["detail_en"]
+        return normalised
 
     @model_validator(mode="after")
     def _severity_matches_catalogue(self) -> RiskFlag:
@@ -118,7 +149,7 @@ class RiskFlag(BaseModel):
         return {
             "code": self.code.value,
             "severity": self.severity.value,
-            "detail": self.detail_en,
+            "detail_en": self.detail_en,
             "detail_ur": self.detail_ur,
             "evidence": self.evidence,
         }

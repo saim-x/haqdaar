@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.engine.anomalies import RiskFlag
 from app.engine.confidence import ConfidenceComponents
@@ -50,20 +50,30 @@ class TwinCase(BaseModel):
     confidence: ConfidenceComponents
     ask_more_rounds: int = 0
     hours_waiting: float = 0.0
+    #: Flag codes found on the stored row that are not in the catalogue. A replay
+    #: must survive historical rows written before a code was renamed or removed;
+    #: dropping them silently would hide the data problem, so they are reported.
+    ignored_flag_codes: tuple[str, ...] = ()
 
     @classmethod
     def from_decision_row(cls, row: dict[str, Any]) -> TwinCase:
         """Adapt a ``decisions`` row (docs/04 §4.3) into a replay input."""
+        flags: list[RiskFlag] = []
+        ignored: list[str] = []
+        for raw in row.get("flags_json") or ():
+            try:
+                flags.append(RiskFlag.model_validate(raw))
+            except ValidationError:
+                ignored.append(str(raw.get("code") if isinstance(raw, dict) else raw))
         return cls(
             case_id=str(row["case_id"]),
             reference_code=str(row.get("reference_code") or ""),
             facts=FactBundle.from_snapshot(row["input_snapshot_json"]),
-            flags=tuple(
-                RiskFlag.model_validate(flag) for flag in row.get("flags_json") or ()
-            ),
+            flags=tuple(flags),
             confidence=ConfidenceComponents.model_validate(row["confidence_components"]),
             ask_more_rounds=int(row.get("ask_more_rounds") or 0),
             hours_waiting=float(row.get("hours_waiting") or 0.0),
+            ignored_flag_codes=tuple(ignored),
         )
 
 

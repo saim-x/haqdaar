@@ -75,7 +75,59 @@ def test_severity_cannot_be_downgraded_by_a_caller() -> None:
 
 def test_flag_json_shape() -> None:
     payload = _flag(FlagCode.DATA_CONFLICT_INCOME).to_json()
-    assert set(payload) == {"code", "severity", "detail", "detail_ur", "evidence"}
+    assert set(payload) == {"code", "severity", "detail_en", "detail_ur", "evidence"}
+
+
+def test_flag_json_round_trips_through_the_model() -> None:
+    """ADR-018: the persisted shape must validate back into RiskFlag (twin.py replay)."""
+    flag = _flag(FlagCode.TAMPER_SUSPECTED)
+    assert RiskFlag.model_validate(flag.to_json()) == flag
+
+
+def test_flag_json_round_trips_with_evidence() -> None:
+    flag = RiskFlag(
+        code=FlagCode.DATA_CONFLICT_INCOME,
+        severity=FlagSeverity.MEDIUM,
+        detail_en="Declared income differs from registry.",
+        detail_ur="اعلان کردہ آمدنی رجسٹری سے مختلف ہے۔",
+        evidence={"declared": 28000, "registry": 41000},
+    )
+    restored = RiskFlag.model_validate(flag.to_json())
+    assert restored == flag
+    assert restored.evidence == {"declared": 28000, "registry": 41000}
+
+
+def test_legacy_detail_key_is_accepted() -> None:
+    """Rows written before ADR-018 carry a single `detail` string."""
+    restored = RiskFlag.model_validate(
+        {"code": "TAMPER_SUSPECTED", "severity": "HIGH", "detail": "Printed name mismatch."}
+    )
+    assert restored.code is FlagCode.TAMPER_SUSPECTED
+    assert restored.detail_en == "Printed name mismatch."
+    assert restored.detail_ur == "Printed name mismatch."
+
+
+def test_bare_code_and_severity_is_accepted() -> None:
+    """The seeder writes {'code': ..., 'severity': ...} with no detail fields."""
+    restored = RiskFlag.model_validate({"code": "DATA_CONFLICT_INCOME", "severity": "MEDIUM"})
+    assert restored.code is FlagCode.DATA_CONFLICT_INCOME
+    assert restored.severity is FlagSeverity.MEDIUM
+    assert restored.detail_en == "DATA_CONFLICT_INCOME"
+    assert restored.detail_ur == "DATA_CONFLICT_INCOME"
+
+
+def test_legacy_detail_does_not_override_explicit_bilingual_detail() -> None:
+    restored = RiskFlag.model_validate(
+        {
+            "code": "TAMPER_SUSPECTED",
+            "severity": "HIGH",
+            "detail": "legacy",
+            "detail_en": "explicit en",
+            "detail_ur": "explicit ur",
+        }
+    )
+    assert restored.detail_en == "explicit en"
+    assert restored.detail_ur == "explicit ur"
 
 
 def test_sort_flags_is_severity_then_code() -> None:
