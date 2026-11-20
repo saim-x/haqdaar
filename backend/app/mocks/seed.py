@@ -177,7 +177,7 @@ def _record_audit(
             action=action,
             resource_type=resource_type,
             resource_id=resource_id,
-            payload_json=payload,
+            payload=payload,
         )
         return
     except Exception:

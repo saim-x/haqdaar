@@ -62,7 +62,7 @@ def _audit(db: Any, user: Any, action: str, payload: dict[str, Any]) -> None:
         action=action,
         resource_type="mock_service_config",
         resource_id=None,
-        payload_json=payload,
+        payload=payload,
     )
 
 

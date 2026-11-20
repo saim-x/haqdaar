@@ -262,7 +262,7 @@ class TestInjection:
         assert audit_spy, "the guardrail event must be persisted"
         event = audit_spy[0]
         assert event["action"] == "ai.guardrail_triggered"
-        assert event["payload_json"]["kind"] == "scam_message_injection"
+        assert event["payload"]["kind"] == "scam_message_injection"
         assert event["actor_type"] == "AI"
 
     def test_injection_alone_does_not_make_a_message_a_scam(self) -> None:

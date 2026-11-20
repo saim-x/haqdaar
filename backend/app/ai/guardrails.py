@@ -274,7 +274,7 @@ def record_guardrail_event(
             action="ai.guardrail_triggered",
             resource_type=resource_type,
             resource_id=resource_id,
-            payload_json=payload,
+            payload=payload,
         )
         return
     except Exception as exc:  # pragma: no cover

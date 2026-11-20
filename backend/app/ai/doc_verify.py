@@ -584,7 +584,7 @@ def _record_audit(db: Any, *, tenant_id: Any, document_id: Any, payload: dict[st
             action="document.verified",
             resource_type="document",
             resource_id=str(document_id),
-            payload_json=payload,
+            payload=payload,
         )
     except Exception as exc:  # pragma: no cover
         logger.warning("document.verified audit skipped: %s", exc)
