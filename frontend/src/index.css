@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Urdu UI face — docs/11 §2.4 decision: Noto Sans Arabic (not Nastaliq) because
+ * Nastaliq is heavy and slow to render on cheap Android screens.
+ * The ~35 KB WOFF2 subset lives at /fonts/NotoSansArabic-subset.woff2.
+ * If the file is absent the system Arabic stack below renders identically enough
+ * that no layout breaks — the font is an enhancement, never a dependency.
+ */
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/NotoSansArabic-subset.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+0020-007E;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+    font-family: 'Noto Sans Arabic', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    /* Urdu needs a little more line height than Latin to stay legible. */
+    line-height: 1.65;
+    min-height: 100dvh;
+  }
+
+  /* Never let a stray horizontal scroll appear on a 390 px phone. */
+  #root {
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+
+  :focus-visible {
+    outline: 3px solid #0f766e;
+    outline-offset: 2px;
+  }
+
+  /* Numbers stay LTR even inside an RTL paragraph. */
+  .num {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  /* Big, forgiving inputs for shaky hands. */
+  input[type='text'],
+  input[type='tel'],
+  input[type='number'],
+  input[type='date'],
+  textarea {
+    @apply min-h-primary w-full rounded-2xl border-2 border-ink/25 bg-white px-4 text-lg text-ink;
+  }
+
+  input:focus,
+  textarea:focus {
+    @apply border-teal-600 outline-none ring-2 ring-teal-600/30;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-ink/10 bg-white shadow-card;
+  }
+
+  .screen {
+    @apply mx-auto w-full max-w-[520px] px-4 pb-28 pt-4;
+  }
+
+  .screen-title {
+    @apply text-2xl font-bold leading-snug text-ink;
+  }
+
+  .screen-hint {
+    @apply mt-1 text-base text-ink-soft;
+  }
+
+  .tap {
+    @apply min-h-tap min-w-tap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
