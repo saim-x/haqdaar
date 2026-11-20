@@ -12,7 +12,14 @@ import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { clearDraft, db, draftKey, loadDraft, saveDraft } from '../shared/offline/db';
 import { discardRow, enqueue } from '../shared/offline/outbox';
 import { compressImage } from '../shared/lib/image';
-import { digitsOnly, formatCnic, isCompleteCnic, isCompletePhone, toE164Pk } from '../shared/lib/cnic';
+import {
+  digitsOnly,
+  formatCnic,
+  isCompleteCnic,
+  isCompletePhone,
+  nationalPhoneDigits,
+  toE164Pk,
+} from '../shared/lib/cnic';
 import { uuid } from '../shared/lib/uuid';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ProgressDots } from '../shared/ui/ProgressDots';
@@ -79,6 +86,22 @@ const STEP_HINT: Partial<Record<StepKey, DictKey>> = {
 
 const DEPT_CATEGORIES = ['IDENTITY', 'HOUSEHOLD', 'DOCUMENTS', 'PAYMENT', 'CASE_HISTORY'] as const;
 
+/**
+ * docs/04 §5 — these facts are derived by the document verifier, never declared
+ * by a citizen. The wizard keeps them locally for the review screen, but the
+ * draft endpoint rejects the whole payload with `NOT_SELF_DECLARABLE` if they
+ * travel, so they are stripped before every write.
+ */
+const DERIVED_FACTS = new Set(['cnic_doc_verified', 'death_cert_doc_verified']);
+
+function declarableAnswers(answers: DraftAnswers): DraftAnswers {
+  const out: DraftAnswers = {};
+  for (const [key, answer] of Object.entries(answers)) {
+    if (!DERIVED_FACTS.has(key)) out[key] = answer;
+  }
+  return out;
+}
+
 function valueOf(answers: DraftAnswers, key: string): DraftAnswer | undefined {
   return answers[key];
 }
@@ -130,6 +153,7 @@ export function ApplyWizard() {
   const [error, setError] = useState<string | null>(null);
   const [queued, setQueued] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
   const [exactIncome, setExactIncome] = useState(false);
   const [exactDigits, setExactDigits] = useState('');
   const [uploading, setUploading] = useState<'cnic' | 'death' | null>(null);
@@ -237,7 +261,7 @@ export function ApplyWizard() {
     async (nextStep: string, nextAnswers: DraftAnswers) => {
       await persist(nextStep, nextAnswers);
       if (!serverCaseId) return;
-      const body = { wizard_step: nextStep, answers: nextAnswers };
+      const body = { wizard_step: nextStep, answers: declarableAnswers(nextAnswers) };
       try {
         await api.patch(`/cases/${serverCaseId}/draft`, body);
       } catch (err) {
@@ -322,17 +346,26 @@ export function ApplyWizard() {
     setBusy(true);
     setError(null);
     try {
-      const tenantId = session?.tenant?.id ?? null;
-      await api.post<ConsentGrant>('/consent/grants', {
-        recipient_type: 'DEPARTMENT',
-        recipient_tenant_id: tenantId,
-        recipient_user_id: null,
-        categories: [...DEPT_CATEGORIES],
-        purposes: ['BENEFIT_APPLICATION', 'PAYMENT_DISBURSEMENT'],
-        assurance_level: 'SELF_OTP',
-      });
+      // A citizen has no endpoint to discover a department tenant id, so the
+      // grant can only be (re)issued to a department already on record. When
+      // there is none, the gate is an acknowledgement: POST /cases does not
+      // require a pre-existing grant.
+      const onRecord = grants.data?.items.find(
+        (g) => g.recipient_type === 'DEPARTMENT' && g.recipient_tenant_id,
+      );
+      const tenantId = onRecord?.recipient_tenant_id ?? session?.tenant?.id ?? null;
+      if (tenantId) {
+        await api.post<ConsentGrant>('/consent/grants', {
+          recipient_type: 'DEPARTMENT',
+          recipient_tenant_id: tenantId,
+          recipient_user_id: null,
+          categories: [...DEPT_CATEGORIES],
+          purposes: ['BENEFIT_APPLICATION', 'PAYMENT_DISBURSEMENT'],
+          assurance_level: 'SELF_OTP',
+        });
+        void queryClient.invalidateQueries({ queryKey: ['consent', 'grants'] });
+      }
       setConsentGranted(true);
-      void queryClient.invalidateQueries({ queryKey: ['consent', 'grants'] });
     } catch (err) {
       setError(errorMessage(err, lang));
     } finally {
@@ -366,7 +399,10 @@ export function ApplyWizard() {
   /* -------------------------------------------------------------- documents */
 
   async function handleFile(file: File) {
-    const docType = pendingDocType.current;
+    // The hidden input can also be triggered without the button (keyboard, AT),
+    // so fall back to the step's document type instead of uploading "null".
+    const docType =
+      pendingDocType.current ?? (step === 'cnic_doc' ? 'CNIC_FRONT' : 'SPOUSE_DEATH_CERTIFICATE');
     setUploading(docType === 'CNIC_FRONT' ? 'cnic' : 'death');
     setUploadNote(null);
     setError(null);
@@ -434,8 +470,9 @@ export function ApplyWizard() {
         );
         return;
       }
-      await api.patch(`/cases/${id}/draft`, { wizard_step: 'review', answers });
-      await api.post(`/cases/${id}/submit`, {});
+      await api.patch(`/cases/${id}/draft`, { wizard_step: 'review', answers: declarableAnswers(answers) });
+      const view = await api.post<CaseView>(`/cases/${id}/submit`, {});
+      setReference(view.reference_code);
       await clearDraft(citizenId, caseId);
       setSubmitted(true);
       void queryClient.invalidateQueries({ queryKey: ['cases'] });
@@ -444,7 +481,7 @@ export function ApplyWizard() {
         await enqueue({
           method: 'PATCH',
           path: `/cases/${serverCaseId}/draft`,
-          body: { wizard_step: 'review', answers },
+          body: { wizard_step: 'review', answers: declarableAnswers(answers) },
           citizenId,
           actForCitizenId,
           label: lang === 'ur' ? 'درخواست کا مسودہ' : 'Application draft',
@@ -530,6 +567,11 @@ export function ApplyWizard() {
             <IconCheck size={44} />
           </span>
           <h1 className="mt-4 text-xl font-bold text-ink">{t('wizard.submitted')}</h1>
+          {reference && (
+            <p className="num mt-2 text-lg font-bold tracking-wide text-teal-800" data-testid="wizard-reference">
+              {reference}
+            </p>
+          )}
           <p className="mt-2 text-sm leading-relaxed text-ink-soft">
             {queued
               ? t('wizard.review.offlineNote')
@@ -554,7 +596,7 @@ export function ApplyWizard() {
   const hintKey = STEP_HINT[step];
 
   return (
-    <div className="screen pb-28">
+    <div className="screen pb-28" data-testid="wizard" data-step={step}>
       <div className="mb-3 mt-1">
         <ProgressDots total={total} current={stepIndex} />
       </div>
@@ -617,6 +659,7 @@ export function ApplyWizard() {
             disabled={busy || consentGranted}
             icon={<IconCheck size={22} />}
             onClick={() => void grantConsent()}
+            data-testid="consent-grant"
           >
             {consentGranted ? t('wizard.consent.grant') : busy ? t('common.loading') : t('wizard.consent.grant')}
           </TapButton>
@@ -791,7 +834,7 @@ export function ApplyWizard() {
       {/* -------------------------------------------------------------- payout */}
       {step === 'payout_phone' && (
         <section className="card p-4">
-          {session?.user.phone && (
+          {session?.user.phone && !session.user.phone.includes('*') && (
             <button
               type="button"
               onClick={() => setAnswer('payout_phone', toE164Pk(session.user.phone ?? ''))}
@@ -802,9 +845,9 @@ export function ApplyWizard() {
             </button>
           )}
           <DigitPad
-            value={digitsOnly(textOf(answers, 'payout_phone'))}
+            value={nationalPhoneDigits(textOf(answers, 'payout_phone'))}
             onChange={(next) => setAnswer('payout_phone', next ? toE164Pk(next) : '')}
-            maxDigits={11}
+            maxDigits={10}
             format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
             audioKey="wizard_payout_phone"
             audioText={title}
@@ -820,6 +863,7 @@ export function ApplyWizard() {
             type="file"
             accept="image/jpeg,image/png,image/webp"
             capture="environment"
+            data-testid="wizard-file"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -993,6 +1037,7 @@ export function ApplyWizard() {
             disabled={busy}
             icon={<IconCheck size={22} />}
             onClick={() => void submit()}
+            data-testid="wizard-submit"
           >
             {busy ? t('common.loading') : t('wizard.review.submit')}
           </TapButton>
@@ -1009,6 +1054,7 @@ export function ApplyWizard() {
               disabled={stepIndex === 0}
               icon={<IconArrowLeft size={18} className="rtl:rotate-180" />}
               onClick={goBack}
+              data-testid="wizard-back"
             >
               {t('common.back')}
             </TapButton>
@@ -1017,6 +1063,7 @@ export function ApplyWizard() {
               disabled={!canAdvance}
               icon={<IconArrowRight size={20} className="rtl:rotate-180" />}
               onClick={goNext}
+              data-testid="wizard-next"
             >
               {t('common.next')}
             </TapButton>

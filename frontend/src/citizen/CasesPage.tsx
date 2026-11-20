@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
+import { ApiError } from '../shared/api/errors';
 import type { CaseListResponse } from '../shared/api/types';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
@@ -8,6 +9,7 @@ import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge } from '../shared/ui/StatusBadge';
 import { TapLink } from '../shared/ui/TapButton';
 import { IconChevron, IconDocument } from '../shared/ui/Icons';
+import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 
 /** My Applications — docs/11 §3.1 tile 2, F-10. */
 export function CasesPage() {
@@ -19,6 +21,12 @@ export function CasesPage() {
     queryFn: () => api.get<CaseListResponse>('/cases'),
     refetchInterval: 30_000,
   });
+
+  // A helper whose citizen withdrew consent gets a zero-PII lock screen, not a
+  // generic error (AC-13.2).
+  if (query.error instanceof ApiError && query.error.isConsentRevoked) {
+    return <ConsentRevokedNotice backTo="/h" />;
+  }
 
   return (
     <div className="screen">

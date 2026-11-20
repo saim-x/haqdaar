@@ -199,6 +199,7 @@ export function LoginPage() {
             <li key={persona.key}>
               <button
                 type="button"
+                data-persona={persona.key}
                 onClick={() => void handleDemo(persona.key)}
                 disabled={busy !== null}
                 className="flex min-h-primary w-full items-center gap-3 rounded-2xl border-2 border-ink/15 bg-white px-3 py-2 text-start transition hover:border-teal-600 hover:bg-teal-50 disabled:opacity-60"

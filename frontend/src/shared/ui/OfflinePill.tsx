@@ -25,6 +25,10 @@ export function OfflinePill({ compact = false }: { compact?: boolean }) {
       <button
         type="button"
         onClick={retryNow}
+        data-testid="offline-pill"
+        // Compact mode shows a bare count, which is meaningless to a screen
+        // reader (and collides with the keypad's "0"), so name the state.
+        aria-label={`${t('common.offline')} — ${pending} · ${t('common.queued')}`}
         className="inline-flex min-h-tap items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700"
         title={t('common.queued')}
       >

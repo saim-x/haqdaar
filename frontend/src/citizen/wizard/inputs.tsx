@@ -54,7 +54,7 @@ export function DigitPad({
         <AudioButton audioKey={audioKey} text={audioText} />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2" data-testid="digit-pad">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
           <button
             key={digit}

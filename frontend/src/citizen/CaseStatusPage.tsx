@@ -57,7 +57,16 @@ export function CaseStatusPage() {
   if (!data) return null;
 
   const explanation = data.citizen_explanation;
-  const headline = explanation ? pick(explanation.headline_ur, explanation.headline_en) : t(statusLabelKey(data.status));
+  // docs/04 §3.3 — the server owns the citizen-facing status string; the local
+  // dictionary is only a fallback for a cached payload from an older build.
+  const serverLabel = data.status_label
+    ? lang === 'ur'
+      ? data.status_label.label_ur
+      : data.status_label.label_en
+    : null;
+  const headline = explanation
+    ? pick(explanation.headline_ur, explanation.headline_en)
+    : (serverLabel ?? t(statusLabelKey(data.status)));
   const reasons = explanation ? (lang === 'ur' ? explanation.reasons_ur : explanation.reasons_en) : [];
   const nextStep = explanation ? pick(explanation.next_step_ur, explanation.next_step_en) : '';
   const canComplain = ['APPROVED', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_INITIATED'].includes(data.status);

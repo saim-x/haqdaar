@@ -5,7 +5,10 @@
 /*
  * Urdu UI face — docs/11 §2.4 decision: Noto Sans Arabic (not Nastaliq) because
  * Nastaliq is heavy and slow to render on cheap Android screens.
- * The ~35 KB WOFF2 subset lives at /fonts/NotoSansArabic-subset.woff2.
+ * The subset at /fonts/NotoSansArabic-subset.woff2 is 54 KB: one variable file
+ * covering weights 400–700, cut to the Urdu alphabet, both digit sets, and the
+ * Latin range the UI actually prints (PKR, reference codes). It is a static
+ * asset, so it never counts against the 150 KB JS budget.
  * If the file is absent the system Arabic stack below renders identically enough
  * that no layout breaks — the font is an enhancement, never a dependency.
  */

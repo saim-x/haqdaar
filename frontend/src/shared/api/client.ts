@@ -10,7 +10,7 @@
  *  - `X-Request-ID` passthrough so a UI error can be traced in the audit log
  *  - single-flight refresh on 401, then one retry
  */
-import { API_BASE, USE_MOCK_API } from '../config';
+import { API_BASE } from '../config';
 import { ApiError, type ApiErrorCode, type ApiErrorEnvelope } from './errors';
 import { uuid } from '../lib/uuid';
 
@@ -155,11 +155,6 @@ async function execute<T>(path: string, opts: RequestOptions, token: string | nu
 
 /** Core request. Resolves with the envelope; throws `ApiError` on 4xx/5xx. */
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<ApiResponse<T>> {
-  if (USE_MOCK_API) {
-    const { mockRequest } = await import('./mockApi');
-    return mockRequest<T>(path, opts);
-  }
-
   const token = opts.anonymous ? null : (bridge?.getAccessToken() ?? null);
   try {
     return await execute<T>(path, opts, token);

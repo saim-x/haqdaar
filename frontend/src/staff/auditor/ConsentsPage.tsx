@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { ConsentAccessLog, ConsentGrant } from '../../shared/api/types';
+import { grantRecipientLabel } from '../../shared/lib/consent';
 import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
 
 /** Consent audit — docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access. */
@@ -11,7 +12,7 @@ export default function ConsentsPage() {
   const query = useQuery({
     queryKey: ['auditor-consents', citizenId],
     queryFn: () =>
-      api.get<{ grants: ConsentGrant[]; access_logs: ConsentAccessLog[] }>(
+      api.get<{ grants: ConsentGrant[]; access_logs: ConsentAccessLog[]; events: unknown[] }>(
         `/auditor/consents${citizenId ? `?citizen_id=${encodeURIComponent(citizenId)}` : ''}`,
       ),
   });
@@ -51,7 +52,7 @@ export default function ConsentsPage() {
           <tbody>
             {query.data?.grants.map((grant) => (
               <tr key={grant.id} className="border-b border-ink/5">
-                <td className="py-1 font-semibold text-ink">{grant.recipient_label}</td>
+                <td className="py-1 font-semibold text-ink">{grantRecipientLabel(grant, 'en')}</td>
                 <td className="py-1">{grant.recipient_type}</td>
                 <td className="py-1">{grant.categories.join(', ')}</td>
                 <td className="py-1">{grant.assurance_level}</td>

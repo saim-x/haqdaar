@@ -1,24 +1,68 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
-import { errorMessage } from '../shared/api/errors';
-import type { CorrectionRequest, MyDataGroup } from '../shared/api/types';
+import { ApiError, errorMessage } from '../shared/api/errors';
+import type { CorrectionRequest, MyDataResponse, MyDataValue } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconBadge, IconCheck, IconDocument, IconLock, IconRefresh, IconShield } from '../shared/ui/Icons';
+import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 
-interface MyDataResponse {
-  groups: MyDataGroup[];
+/** Human labels for the canonical fact keys the server returns in `/me/data`. */
+const FIELD_LABELS: Record<string, { ur: string; en: string }> = {
+  full_name: { ur: 'پورا نام', en: 'Full name' },
+  cnic_masked: { ur: 'شناختی کارڈ نمبر', en: 'CNIC number' },
+  phone_masked: { ur: 'فون نمبر', en: 'Phone number' },
+  district: { ur: 'ضلع', en: 'District' },
+  dob: { ur: 'تاریخ پیدائش', en: 'Date of birth' },
+  household_size: { ur: 'گھر میں افراد', en: 'People in household' },
+  children_under_18: { ur: '18 سال سے کم بچے', en: 'Children under 18' },
+  monthly_income_pkr: { ur: 'ماہانہ آمدنی', en: 'Monthly income' },
+  poverty_score: { ur: 'غربت سکور', en: 'Poverty score' },
+  payout_phone: { ur: 'رقم والا فون', en: 'Payout phone' },
+};
+
+const DOC_STATUS_LABELS: Record<string, { ur: string; en: string }> = {
+  VERIFIED: { ur: 'تصدیق شدہ', en: 'Verified' },
+  PENDING: { ur: 'جانچ جاری', en: 'Checking' },
+  NEEDS_RETAKE: { ur: 'دوبارہ تصویر چاہیے', en: 'Retake needed' },
+  UNVERIFIABLE: { ur: 'پڑھا نہیں جا سکا', en: 'Could not read' },
+  TAMPER_SUSPECTED: { ur: 'جانچ ضروری', en: 'Needs a check' },
+};
+
+const DOC_TYPE_LABELS: Record<string, { ur: string; en: string }> = {
+  CNIC_FRONT: { ur: 'شناختی کارڈ کی تصویر', en: 'CNIC photo' },
+  SPOUSE_DEATH_CERTIFICATE: { ur: 'وفات کا سرٹیفکیٹ', en: 'Death certificate' },
+  OTHER: { ur: 'دستاویز', en: 'Document' },
+};
+
+function prettyKey(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const CATEGORY_ICON: Record<string, typeof IconDocument> = {
-  IDENTITY: IconBadge,
-  HOUSEHOLD: IconShield,
-  DOCUMENTS: IconDocument,
-  PAYMENT: IconLock,
-  CASE_HISTORY: IconRefresh,
-};
+function fieldLabel(key: string, lang: 'ur' | 'en'): string {
+  const known = FIELD_LABELS[key];
+  if (known) return lang === 'ur' ? known.ur : known.en;
+  return prettyKey(key);
+}
+
+function fmtDate(iso: string | null, lang: 'ur' | 'en'): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(lang === 'ur' ? 'ur-PK' : 'en-PK', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+interface Group {
+  key: string;
+  label_ur: string;
+  label_en: string;
+  icon: typeof IconDocument;
+  fields: [string, MyDataValue][];
+}
 
 /**
  * My Data — docs/11 §3.3, F-11.
@@ -63,7 +107,36 @@ export function MyDataPage() {
     }
   }
 
-  const groups = data.data?.groups ?? [];
+  const groups: Group[] = [];
+  if (data.data) {
+    const identity = Object.entries(data.data.identity ?? {});
+    const household = Object.entries(data.data.household ?? {});
+    if (identity.length) {
+      groups.push({
+        key: 'identity',
+        label_ur: 'شناخت',
+        label_en: 'Identity',
+        icon: IconBadge,
+        fields: identity,
+      });
+    }
+    if (household.length) {
+      groups.push({
+        key: 'household',
+        label_ur: 'گھریلو معلومات',
+        label_en: 'Household',
+        icon: IconShield,
+        fields: household,
+      });
+    }
+  }
+
+  if (data.error instanceof ApiError && data.error.isConsentRevoked) {
+    return <ConsentRevokedNotice backTo="/h" />;
+  }
+
+  const documents = data.data?.documents ?? [];
+  const corrections = data.data?.corrections ?? [];
 
   return (
     <div className="screen">
@@ -83,7 +156,7 @@ export function MyDataPage() {
         <div role="status" className="mb-3 flex items-start gap-2 rounded-2xl border-2 border-[#0F7B3F]/40 bg-[#0F7B3F]/10 px-4 py-3">
           <IconCheck size={20} className="mt-0.5 shrink-0 text-[#0F7B3F]" />
           <p className="text-sm font-semibold text-[#0F7B3F]">
-            {sent.status === 'APPLIED'
+            {sent.applied
               ? lang === 'ur'
                 ? 'آپ کی درستگی فوراً لگ گئی ہے۔'
                 : 'Your correction was applied immediately.'
@@ -113,27 +186,26 @@ export function MyDataPage() {
 
       <div className="space-y-3">
         {groups.map((group) => {
-          const Icon = CATEGORY_ICON[group.category] ?? IconDocument;
+          const Icon = group.icon;
           return (
-            <section key={group.category} className="card overflow-hidden p-0">
+            <section key={group.key} className="card overflow-hidden p-0">
               <div className="flex items-center gap-2 border-b border-ink/10 bg-ink/[0.03] px-4 py-2.5">
                 <Icon size={18} className="text-teal-700" />
                 <h2 className="flex-1 text-sm font-bold text-ink">{lang === 'ur' ? group.label_ur : group.label_en}</h2>
                 <AudioButton
-                  audioKey={`mydata_${group.category.toLowerCase()}`}
+                  audioKey={`mydata_${group.key}`}
                   text={lang === 'ur' ? group.label_ur : group.label_en}
                 />
               </div>
               <ul className="divide-y divide-ink/5">
-                {group.fields.map((field) => {
-                  const registry = field.source_type === 'REGISTRY';
+                {group.fields.map(([fieldKey, field]) => {
+                  const registry = field.source !== 'SELF_DECLARED';
+                  const label = fieldLabel(fieldKey, lang);
                   return (
-                    <li key={field.field_key} className="px-4 py-3">
+                    <li key={fieldKey} className="px-4 py-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-                            {lang === 'ur' ? field.label_ur : field.label_en}
-                          </p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">{label}</p>
                           <p className="num mt-0.5 break-words text-base font-bold text-ink">
                             {field.value === null || field.value === '' ? '—' : String(field.value)}
                           </p>
@@ -150,8 +222,8 @@ export function MyDataPage() {
                         type="button"
                         onClick={() =>
                           setCorrecting({
-                            fieldKey: field.field_key,
-                            label: lang === 'ur' ? field.label_ur : field.label_en,
+                            fieldKey,
+                            label,
                             current: field.value === null ? '' : String(field.value),
                           })
                         }
@@ -166,6 +238,62 @@ export function MyDataPage() {
             </section>
           );
         })}
+
+        {documents.length > 0 && (
+          <section className="card overflow-hidden p-0">
+            <div className="flex items-center gap-2 border-b border-ink/10 bg-ink/[0.03] px-4 py-2.5">
+              <IconDocument size={18} className="text-teal-700" />
+              <h2 className="flex-1 text-sm font-bold text-ink">
+                {lang === 'ur' ? 'دستاویزات' : 'Documents'}
+              </h2>
+            </div>
+            <ul className="divide-y divide-ink/5">
+              {documents.map((doc) => {
+                const status = DOC_STATUS_LABELS[doc.verify_status] ?? { ur: doc.verify_status, en: doc.verify_status };
+                const typeLabel = DOC_TYPE_LABELS[doc.doc_type] ?? { ur: doc.doc_type, en: doc.doc_type };
+                const ok = doc.verify_status === 'VERIFIED';
+                return (
+                  <li key={doc.id} className="flex items-center gap-2 px-4 py-3">
+                    <span
+                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
+                        ok ? 'bg-[#0F7B3F]/10 text-[#0F7B3F]' : 'bg-amber-500/15 text-amber-700'
+                      }`}
+                    >
+                      {ok ? <IconCheck size={15} /> : <IconRefresh size={15} />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink">{lang === 'ur' ? typeLabel.ur : typeLabel.en}</p>
+                      <p className="text-[11px] text-ink-soft">
+                        {lang === 'ur' ? status.ur : status.en} · <span className="num">{fmtDate(doc.created_at, lang)}</span>
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {corrections.length > 0 && (
+          <section className="card overflow-hidden p-0">
+            <div className="flex items-center gap-2 border-b border-ink/10 bg-ink/[0.03] px-4 py-2.5">
+              <IconLock size={18} className="text-teal-700" />
+              <h2 className="flex-1 text-sm font-bold text-ink">
+                {lang === 'ur' ? 'درستگی کی درخواستیں' : 'Correction requests'}
+              </h2>
+            </div>
+            <ul className="divide-y divide-ink/5">
+              {corrections.map((c) => (
+                <li key={c.id} className="px-4 py-3">
+                  <p className="text-sm font-semibold text-ink">{fieldLabel(c.field_key, lang)}</p>
+                  <p className="text-[11px] text-ink-soft">
+                    {lang === 'ur' ? c.message_ur : c.message_en}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
 
       {correcting && (

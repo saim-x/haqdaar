@@ -18,7 +18,7 @@ export function TransparencyPage() {
     staleTime: 60_000,
   });
 
-  const rows = query.data?.components ?? [];
+  const rows = query.data?.subsystems ?? [];
 
   return (
     <div className="screen">
@@ -32,6 +32,13 @@ export function TransparencyPage() {
 
       <div className="card mb-4 border-2 border-amber-400/60 bg-amber-50 p-3">
         <p className="text-xs font-semibold leading-relaxed text-[#3B2A00]">{t('transparency.noRealData')}</p>
+        {query.data?.synthetic_data && (
+          <p className="mt-1 text-[11px] leading-relaxed text-[#3B2A00]/80">
+            {lang === 'ur'
+              ? `تمام شناختی کارڈ نمبر ${query.data.synthetic_data.cnic_prefix} سے شروع ہوتے ہیں۔`
+              : `Every CNIC starts with the fictional prefix ${query.data.synthetic_data.cnic_prefix}.`}
+          </p>
+        )}
       </div>
 
       <div className="card overflow-hidden p-0">
@@ -44,23 +51,25 @@ export function TransparencyPage() {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.component} className="border-b border-ink/5 last:border-0">
+              <tr key={row.name} className="border-b border-ink/5 last:border-0">
                 <td className="px-3 py-2">
-                  <p className="font-semibold text-ink">{row.component}</p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{row.details}</p>
+                  <p className="font-semibold text-ink">{lang === 'ur' ? row.name_ur : row.name}</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{row.detail}</p>
                 </td>
                 <td className="px-3 py-2 align-top">
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      row.status === 'REAL'
-                        ? 'bg-[#0F7B3F]/10 text-[#0F7B3F]'
-                        : row.status === 'SIMULATED'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-[#6D28D9]/10 text-[#6D28D9]'
+                      row.real ? 'bg-[#0F7B3F]/10 text-[#0F7B3F]' : 'bg-amber-100 text-amber-700'
                     }`}
                   >
-                    {row.status === 'REAL' ? <IconCheck size={10} /> : <IconWarning size={10} />}
-                    {row.status}
+                    {row.real ? <IconCheck size={10} /> : <IconWarning size={10} />}
+                    {row.real
+                      ? lang === 'ur'
+                        ? 'اصلی'
+                        : 'REAL'
+                      : lang === 'ur'
+                        ? 'نقلی'
+                        : 'SIMULATED'}
                   </span>
                 </td>
               </tr>
@@ -75,6 +84,10 @@ export function TransparencyPage() {
           </tbody>
         </table>
       </div>
+
+      {query.data?.mock_statuses_note && (
+        <p className="mt-3 text-center text-[11px] text-ink-soft">{query.data.mock_statuses_note}</p>
+      )}
 
       <p className="mt-4 text-center text-[11px] text-ink-soft">
         {lang === 'ur'

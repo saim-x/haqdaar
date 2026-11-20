@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
-import type { Job, JobStatus } from '../../shared/api/types';
+import type { JobListResponse, JobStatus } from '../../shared/api/types';
 import { Card, Chip, ErrorState, Loading, PageHeader } from '../ui';
 
 const STATUSES: (JobStatus | '')[] = ['', 'PENDING', 'RUNNING', 'FAILED_RETRY', 'DEAD', 'COMPLETED'];
@@ -23,7 +23,7 @@ export default function JobsPage() {
 
   const query = useQuery({
     queryKey: ['admin-jobs', status],
-    queryFn: () => api.get<{ items: Job[] }>(`/admin/jobs${status ? `?status=${status}` : ''}`),
+    queryFn: () => api.get<JobListResponse>(`/admin/jobs${status ? `?status=${status}` : ''}`),
     refetchInterval: 10_000,
   });
 

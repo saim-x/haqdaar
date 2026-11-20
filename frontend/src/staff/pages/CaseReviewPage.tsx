@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
-import type { CaseView, FactObject, RuleTraceEntry } from '../../shared/api/types';
+import type { DraftAnswer, OfficerCaseReview, RuleTraceEntry } from '../../shared/api/types';
 import { Card, CardTitle, Chip, ConfidenceBar, ErrorState, Loading, PageHeader } from '../ui';
 import { IconLock, IconWarning } from '../../shared/ui/Icons';
 
@@ -35,18 +35,19 @@ function sourceTone(source: string | null): 'ok' | 'info' | 'warn' | 'neutral' {
   return 'neutral';
 }
 
-function FactRow({ factKey, fact }: { factKey: string; fact: FactObject }) {
+function FactRow({ factKey, fact }: { factKey: string; fact: DraftAnswer }) {
+  const unknown = fact.state === 'UNKNOWN' || (fact.value === null && fact.missing_reason);
   return (
     <tr className={`border-b border-ink/5 last:border-0 ${fact.conflict ? 'bg-amber-50' : ''}`}>
       <td className="px-2 py-1.5 font-mono text-[11px] text-ink-soft">{factKey}</td>
       <td className="px-2 py-1.5 text-xs font-semibold text-ink">
-        {fact.state === 'UNKNOWN' ? <span className="text-ink-soft">UNKNOWN</span> : String(fact.value ?? '—')}
+        {unknown ? <span className="text-ink-soft">UNKNOWN</span> : String(fact.value ?? '—')}
         {fact.missing_reason && <span className="ms-1 text-[10px] text-ink-soft">({fact.missing_reason})</span>}
       </td>
       <td className="px-2 py-1.5">
-        <Chip tone={sourceTone(fact.source)}>{fact.source ?? '—'}</Chip>
+        <Chip tone={sourceTone(fact.source ?? null)}>{fact.source ?? '—'}</Chip>
       </td>
-      <td className="px-2 py-1.5 text-[11px] text-ink-soft">{fact.entered_by}</td>
+      <td className="px-2 py-1.5 text-[11px] text-ink-soft">{fact.entered_by ?? '—'}</td>
       <td className="px-2 py-1.5">
         {fact.conflict ? <Chip tone="danger">conflict</Chip> : <span className="text-[11px] text-ink-soft">—</span>}
       </td>
@@ -78,12 +79,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const queryClient = useQueryClient();
   const [action, setAction] = useState<ActionKey>('APPROVE');
   const [reasonCodes, setReasonCodes] = useState<string[]>([]);
+  const [requestedFields, setRequestedFields] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [banner, setBanner] = useState<{ tone: 'ok' | 'danger' | 'warn'; text: string } | null>(null);
 
   const query = useQuery({
     queryKey: ['officer-case', id],
-    queryFn: () => api.get<CaseView>(`/cases/${id}`),
+    queryFn: () => api.get<OfficerCaseReview>(`/officer/cases/${id}`),
     retry: (count, err) => !(err instanceof ApiError && err.isConsentRevoked) && count < 2,
   });
 
@@ -93,6 +95,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
         action,
         reason_codes: reasonCodes,
         note,
+        requested_fields: action === 'REQUEST_INFO' ? requestedFields : [],
+        override_amount_pkr: null,
       }),
     onSuccess: () => {
       setBanner({ tone: 'ok', text: `Decision recorded: ${action}.` });
@@ -132,12 +136,12 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const consentRevoked = query.error instanceof ApiError && query.error.isConsentRevoked;
   const caseData = query.data;
 
-  const facts = useMemo(() => Object.entries(caseData?.facts ?? {}), [caseData]);
+  const facts = useMemo(
+    () => Object.entries(caseData?.draft_answers ?? {}),
+    [caseData],
+  );
   const highFlags = (caseData?.flags ?? []).filter((f) => f.severity === 'HIGH');
-  const ruleStale =
-    caseData?.latest_rule_version && caseData?.active_rule_version
-      ? caseData.latest_rule_version.version_number !== caseData.active_rule_version.version_number
-      : false;
+  const ruleStale = caseData?.rule_stale === true;
 
   if (query.isLoading) return <Loading label="Loading case…" />;
 
@@ -168,13 +172,16 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   if (!caseData) return <ErrorState error={new Error('Case not found')} />;
 
   const needsReason = action === 'REJECT' || action === 'APPROVE';
-  const canSubmit = !needsReason || (reasonCodes.length > 0 && note.trim().length > 0);
+  const needsFields = action === 'REQUEST_INFO';
+  const canSubmit =
+    (!needsReason || (reasonCodes.length > 0 && note.trim().length > 0)) &&
+    (!needsFields || requestedFields.length > 0);
 
   return (
     <div>
       <PageHeader
         title={caseData.reference_code}
-        subtitle={`${caseData.applicant?.full_name ?? 'Applicant'} · ${caseData.applicant?.cnic_masked ?? ''} · ${caseData.status}`}
+        subtitle={`${caseData.citizen?.full_name ?? 'Applicant'} · ${caseData.citizen?.cnic_masked ?? ''} · ${caseData.status}`}
         actions={
           <>
             <button
@@ -210,8 +217,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
       {ruleStale && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border-2 border-amber-400/60 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
           <IconWarning size={14} />
-          Evaluated with v{caseData.latest_rule_version?.version_number}; current is v
-          {caseData.active_rule_version?.version_number}.
+          This case was evaluated with an older rule version. Re-evaluate before deciding so the
+          decision is reproducible against the active rules.
           <button
             type="button"
             onClick={() => reevaluate.mutate()}
@@ -280,21 +287,72 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           </Card>
 
           <Card className="overflow-x-auto">
-            <CardTitle hint="PASS / FAIL / UNKNOWN">Rule trace</CardTitle>
-            <table className="w-full min-w-[520px] text-left">
-              <thead>
-                <tr className="border-b border-ink/10 text-[10px] uppercase tracking-wide text-ink-soft">
-                  <th className="px-2 py-1">Rule</th>
-                  <th className="px-2 py-1">Result</th>
-                  <th className="px-2 py-1">Reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(caseData.rule_trace ?? []).map((entry) => (
-                  <TraceRow key={entry.rule_id} entry={entry} />
-                ))}
-              </tbody>
-            </table>
+            <CardTitle
+              hint={
+                (caseData.rule_trace?.length ?? 0) > 0
+                  ? 'PASS / FAIL / UNKNOWN'
+                  : 'route + confidence + flags'
+              }
+            >
+              Why this route
+            </CardTitle>
+            {(caseData.rule_trace?.length ?? 0) > 0 ? (
+              <table className="w-full min-w-[520px] text-left">
+                <thead>
+                  <tr className="border-b border-ink/10 text-[10px] uppercase tracking-wide text-ink-soft">
+                    <th className="px-2 py-1">Rule</th>
+                    <th className="px-2 py-1">Result</th>
+                    <th className="px-2 py-1">Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(caseData.rule_trace ?? []).map((entry) => (
+                    <TraceRow key={entry.rule_id} entry={entry} />
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-ink-soft">Route</span>
+                  <Chip
+                    tone={
+                      caseData.latest_route === 'AUTO_APPROVE'
+                        ? 'ok'
+                        : caseData.latest_route === 'HUMAN_REVIEW'
+                          ? 'warn'
+                          : 'info'
+                    }
+                  >
+                    {caseData.latest_route ?? '—'}
+                  </Chip>
+                  <span className="text-ink-soft">Confidence</span>
+                  <span className="num font-bold text-ink">
+                    {caseData.latest_confidence !== null && caseData.latest_confidence !== undefined
+                      ? caseData.latest_confidence.toFixed(3)
+                      : '—'}
+                  </span>
+                  <span className="text-ink-soft">Priority</span>
+                  <span className="num font-bold text-ink">
+                    {caseData.priority_band ?? '—'} ({caseData.priority_score ?? '—'})
+                  </span>
+                </div>
+                {(caseData.flags?.length ?? 0) > 0 && (
+                  <ul className="space-y-1">
+                    {(caseData.flags ?? []).map((flag) => (
+                      <li key={flag.code} className="text-[11px] text-ink">
+                        <span className="font-mono font-semibold">{flag.code}</span>
+                        {flag.detail && <span className="text-ink-soft"> — {flag.detail}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-[11px] text-ink-soft">
+                  Per-rule PASS/FAIL/UNKNOWN is recorded on the decision and is available to auditors
+                  in the decision-trace inspector.
+                </p>
+              </div>
+            )}
           </Card>
 
           <Card>
@@ -422,6 +480,33 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               })}
             </div>
 
+            {action === 'REQUEST_INFO' && (
+              <>
+                <p className="mb-1 text-[11px] font-bold uppercase text-ink-soft">
+                  Fields to ask for <span className="text-[#B42318]">*</span>
+                </p>
+                <div className="mb-3 flex flex-wrap gap-1">
+                  {Object.keys(caseData.draft_answers ?? {}).map((key) => {
+                    const on = requestedFields.includes(key);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() =>
+                          setRequestedFields((prev) => (on ? prev.filter((f) => f !== key) : [...prev, key]))
+                        }
+                        className={`rounded px-1.5 py-1 font-mono text-[10px] font-semibold ${
+                          on ? 'bg-amber-400 text-[#3B2A00]' : 'bg-ink/5 text-ink-soft'
+                        }`}
+                      >
+                        {key}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             <label htmlFor="note" className="mb-1 block text-[11px] font-bold uppercase text-ink-soft">
               Note {needsReason && <span className="text-[#B42318]">*</span>}
             </label>
@@ -450,7 +535,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             </button>
             {!canSubmit && (
               <p className="mt-1.5 text-[11px] text-ink-soft">
-                Approve and Reject need at least one reason code and a note.
+                Approve and Reject need at least one reason code and a note. Request info needs at
+                least one field.
               </p>
             )}
           </Card>

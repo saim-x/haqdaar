@@ -35,12 +35,24 @@ export function digitsOnlyPhone(input: string): string {
   return input.replace(/\D+/g, '').slice(0, 11);
 }
 
+/**
+ * The 10 national digits a keypad edits: `+923001234567`, `03001234567` and
+ * `3001234567` all become `3001234567`. Feeding the keypad the E.164 digits
+ * instead would spend two of its slots on the country code and drop real digits.
+ */
+export function nationalPhoneDigits(input: string): string {
+  const d = input.replace(/\D+/g, '');
+  if (d.startsWith('92')) return d.slice(2, 12);
+  if (d.startsWith('0')) return d.slice(1, 11);
+  return d.slice(0, 10);
+}
+
 /** `3001234567` or `03001234567` → `+923001234567`. */
 export function toE164Pk(input: string): string {
-  const d = digitsOnlyPhone(input);
-  if (d.startsWith('92')) return `+${d}`;
-  if (d.startsWith('0')) return `+92${d.slice(1)}`;
-  return `+92${d}`;
+  const d = input.replace(/\D+/g, '');
+  if (d.startsWith('92')) return `+${d.slice(0, 12)}`;
+  if (d.startsWith('0')) return `+92${d.slice(1, 11)}`;
+  return `+92${d.slice(0, 10)}`;
 }
 
 export function formatPhonePk(input: string | null | undefined): string {
