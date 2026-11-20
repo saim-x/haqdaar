@@ -93,8 +93,22 @@ class Settings(BaseSettings):
 
     @property
     def mock_api_root(self) -> str:
-        """``MOCK_BASE_URL`` without the trailing ``/mock`` path segment."""
-        return self.mock_base_url.rstrip("/")
+        """Host root of the simulated DPI services (no ``/mock`` suffix).
+
+        ``app/agent/mock_client.py`` requests absolute paths such as
+        ``/mock/v1/identity/lookup``, so the httpx base URL must be the host root.
+        Both ``http://host:8000`` and the documented ``http://host:8000/mock`` are
+        accepted in ``.env`` and normalised here.
+        """
+        base = self.mock_base_url.rstrip("/")
+        if base.endswith("/mock"):
+            base = base[: -len("/mock")]
+        return base
+
+    @property
+    def MOCK_BASE_URL(self) -> str:  # noqa: N802 - uppercase alias used by app/agent
+        """Uppercase alias so ``settings.MOCK_BASE_URL`` works for teammates."""
+        return self.mock_api_root
 
 
 @lru_cache

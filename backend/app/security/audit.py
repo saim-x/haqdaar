@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -31,6 +32,8 @@ from app.models.base import utcnow
 from app.models.enums import ActorType
 from app.security.context import get_request_id
 from app.security.masking import redact_payload
+
+logger = logging.getLogger(__name__)
 
 GENESIS = "GENESIS"
 AUDIT_SEQ_NAME = "audit_events_seq_seq"
@@ -82,8 +85,18 @@ def record(
     tenant_id: uuid.UUID | str | None = None,
     request_id: str | None = None,
     payload: dict[str, Any] | None = None,
+    actor_user_id: str | uuid.UUID | None = None,
 ) -> AuditEvent:
-    """Append one hash-chained audit event inside the caller's transaction."""
+    """Append one hash-chained audit event inside the caller's transaction.
+
+    ``actor_user_id`` is accepted as an alias for ``actor_id`` (the case agent and
+    rule editor call it that way); it also implies ``actor_type=USER``.
+    """
+    if actor_id is None and actor_user_id is not None:
+        actor_id = actor_user_id
+        if actor_type == ActorType.SYSTEM:
+            actor_type = ActorType.USER
+
     # Serialize chain-tip reads for the duration of this transaction.
     db.execute(
         text("SELECT pg_advisory_xact_lock(:lock_key)"),
@@ -120,6 +133,27 @@ def record(
     db.add(event)
     db.flush()
     return event
+
+
+def record_isolated(**kwargs: Any) -> AuditEvent | None:
+    """Write one audit event in its own short-lived session and commit immediately.
+
+    Used for denials that must survive the caller's rollback (ADR-008): a ``403``
+    or ``404`` response must never erase the evidence that access was blocked.
+    """
+    from app.db import SessionLocal  # local import keeps module import order simple
+
+    db = SessionLocal()
+    try:
+        event = record(db, **kwargs)
+        db.commit()
+        return event
+    except Exception:  # noqa: BLE001 - a failed audit write must not mask the denial
+        db.rollback()
+        logger.exception("audit.record_isolated failed")
+        return None
+    finally:
+        db.close()
 
 
 def verify_chain(db: Session) -> dict[str, Any]:
@@ -169,5 +203,6 @@ __all__ = [
     "canonical_payload",
     "compute_event_hash",
     "record",
+    "record_isolated",
     "verify_chain",
 ]

@@ -8,10 +8,14 @@ are absolute:
 * A resource that belongs to another tenant or citizen returns ``404 NOT_FOUND``
   (never ``403``, which would leak existence) plus an ``auth.cross_scope_denied``
   audit event.
+
+``ActorContext.role`` is a plain string so the department agent (``"AGENT"``,
+docs/09 §4.1) can be represented without widening the frozen ``user_role`` enum.
 """
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -25,12 +29,19 @@ from app.models.enums import ActorType, ConsentRecipientType, ConsentStatus, Use
 from app.models.identity import ApiKey, Citizen, ConsentGrant, User
 from app.security import audit
 from app.security.context import get_request_id, set_actor_context
-from app.security.errors import ForbiddenError, NotFoundError, UnauthorizedError
+from app.security.errors import (
+    ConsentRevokedError,
+    ForbiddenError,
+    NotFoundError,
+    UnauthorizedError,
+)
 from app.security.jwt import decode_access_token
-from app.security.masking import mask_phone
 
 ACT_FOR_HEADER = "X-Act-For-Citizen"
 API_KEY_HEADER = "X-API-Key"
+
+#: Roles that read citizen data through a DEPARTMENT consent grant.
+DEPARTMENT_ACTOR_ROLES = frozenset({UserRole.OFFICER.value, "AGENT"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +49,7 @@ class ActorContext:
     """The verified identity behind a request. Built only from a JWT or API key."""
 
     user_id: uuid.UUID | None
-    role: UserRole
+    role: UserRole | str
     tenant_id: uuid.UUID | None = None
     citizen_id: uuid.UUID | None = None
     label: str = ""
@@ -48,6 +59,16 @@ class ActorContext:
     act_for_citizen_id: uuid.UUID | None = None
     scopes: tuple[str, ...] = field(default_factory=tuple)
     is_platform_admin: bool = False
+
+    @property
+    def role_value(self) -> str:
+        """Normalised role string (``"CITIZEN"``, ``"OFFICER"``, ``"AGENT"``…)."""
+        return str(self.role)
+
+    @property
+    def id(self) -> uuid.UUID | None:
+        """Alias used by routers that treat the dependency result as the user."""
+        return self.user_id if self.user_id is not None else self.api_key_id
 
     @property
     def effective_citizen_id(self) -> uuid.UUID | None:
@@ -150,12 +171,12 @@ def get_optional_actor(request: Request, db: Session = Depends(get_db)) -> Actor
 
 def require_roles(*roles: UserRole | str):
     """Dependency factory: allow only the listed roles, else ``403 FORBIDDEN``."""
-    allowed = frozenset(UserRole(role) for role in roles)
+    allowed = frozenset(str(role) for role in roles)
 
     def _guard(actor: ActorContext = Depends(get_current_actor)) -> ActorContext:
-        if actor.role not in allowed:
+        if actor.role_value not in allowed:
             raise ForbiddenError(
-                details={"required_roles": sorted(r.value for r in allowed), "role": actor.role.value}
+                details={"required_roles": sorted(allowed), "role": actor.role_value}
             )
         return actor
 
@@ -183,7 +204,7 @@ def assert_tenant_scope(
     resource_id: str | uuid.UUID | None = None,
 ) -> None:
     """404 (never 403) when a resource lives outside the actor's tenant."""
-    if actor.is_platform_admin or actor.role is UserRole.AUDITOR:
+    if actor.is_platform_admin or actor.role_value == UserRole.AUDITOR.value:
         return
     if resource_tenant_id is None or actor.tenant_id is None:
         _deny_cross_scope(db, actor, resource_type, resource_id)
@@ -197,26 +218,18 @@ def _deny_cross_scope(
     resource_type: str,
     resource_id: str | uuid.UUID | None,
 ) -> None:
+    """Persist the denial in an isolated session so the 404 rollback cannot erase it."""
     audit.record_isolated(
         action="auth.cross_scope_denied",
         resource_type=resource_type,
         resource_id=resource_id,
         actor_type=actor.actor_type,
         actor_id=actor.actor_id_str,
-        actor_role=actor.role.value,
+        actor_role=actor.role_value,
         tenant_id=actor.tenant_id,
-        payload={
-            "actor_tenant_id": str(actor.tenant_id) if actor.tenant_id else None,
-            "resource_tenant_id": None,
-            "role": actor.role.value,
-        },
+        payload={"role": actor.role_value, "actor_tenant_id": str(actor.tenant_id or "")},
     )
     raise NotFoundError()
-
-
-def tenant_filter(actor: ActorContext):
-    """SQLAlchemy criterion restricting a tenant-scoped table to the actor's tenant."""
-    return actor.tenant_id
 
 
 # --- Helper act-for-citizen -------------------------------------------------
@@ -243,12 +256,12 @@ def resolve_citizen_scope(
     * HELPER: requires an active ``HELPER`` grant; unknown citizen -> 404,
       withdrawn/expired grant -> 403 CONSENT_REVOKED (logged).
     """
-    if actor.role is UserRole.CITIZEN:
+    if actor.role_value == UserRole.CITIZEN.value:
         if actor.citizen_id is None:
             raise NotFoundError()
         return actor.citizen_id
 
-    if actor.role is not UserRole.HELPER:
+    if actor.role_value != UserRole.HELPER.value:
         raise ForbiddenError()
 
     if act_for_citizen_id is None:
@@ -277,36 +290,28 @@ def resolve_citizen_scope(
         raise NotFoundError()
 
     if grant.status != ConsentStatus.ACTIVE.value:
-        from app.security.consent import log_denied_access  # local import avoids a cycle
-
-        log_denied_access(
-            citizen_id=act_for_citizen_id,
-            actor=actor,
-            category="CASE_HISTORY",
-            purpose="HELPER_ASSISTANCE",
-            resource_ref=f"citizen:{act_for_citizen_id}",
-            denial_reason="CONSENT_REVOKED",
-        )
-        from app.security.errors import ConsentRevokedError
-
-        raise ConsentRevokedError(details={"reason": "CONSENT_REVOKED"})
+        _deny_helper_grant(actor, act_for_citizen_id, "CONSENT_REVOKED")
 
     if grant.expires_at is not None and grant.expires_at < datetime.now(UTC):
-        from app.security.consent import log_denied_access
-
-        log_denied_access(
-            citizen_id=act_for_citizen_id,
-            actor=actor,
-            category="CASE_HISTORY",
-            purpose="HELPER_ASSISTANCE",
-            resource_ref=f"citizen:{act_for_citizen_id}",
-            denial_reason="CONSENT_EXPIRED",
-        )
-        from app.security.errors import ConsentRevokedError
-
-        raise ConsentRevokedError(details={"reason": "CONSENT_EXPIRED"})
+        _deny_helper_grant(actor, act_for_citizen_id, "CONSENT_EXPIRED")
 
     return act_for_citizen_id
+
+
+def _deny_helper_grant(
+    actor: ActorContext, citizen_id: uuid.UUID, reason: str
+) -> None:
+    from app.security.consent import log_denied_access  # local import avoids a cycle
+
+    log_denied_access(
+        citizen_id=citizen_id,
+        actor=actor,
+        category="CASE_HISTORY",
+        purpose="HELPER_ASSISTANCE",
+        resource_ref=f"citizen:{citizen_id}",
+        denial_reason=reason,
+    )
+    raise ConsentRevokedError(details={"reason": reason})
 
 
 # --- Public API key auth ----------------------------------------------------
@@ -320,11 +325,13 @@ class ApiKeyContext:
     rate_limit_per_min: int
     name: str
 
+    @property
+    def id(self) -> uuid.UUID:
+        return self.api_key_id
+
 
 def get_api_key_context(request: Request, db: Session = Depends(get_db)) -> ApiKeyContext:
     """Validate ``X-API-Key``. Revoked or unknown keys get ``401 UNAUTHORIZED``."""
-    import hashlib
-
     raw = request.headers.get(API_KEY_HEADER)
     if not raw:
         raise UnauthorizedError(
@@ -372,20 +379,24 @@ def require_scopes(*required: str):
 
 def actor_label_for(actor: ActorContext) -> str:
     """Human label used in ``consent_access_logs`` (never a raw phone number)."""
-    if actor.role is UserRole.HELPER:
+    role = actor.role_value
+    if role == UserRole.HELPER.value:
         return f"Helper {actor.label}".strip()
-    if actor.role is UserRole.OFFICER:
+    if role == UserRole.OFFICER.value:
         return f"Officer {actor.label}".strip()
-    if actor.role is UserRole.AUDITOR:
+    if role == UserRole.AUDITOR.value:
         return "Auditor (oversight)"
-    if actor.role is UserRole.ADMIN:
+    if role == UserRole.ADMIN.value:
         return f"Admin {actor.label}".strip()
+    if role == "AGENT":
+        return f"Department agent ({actor.label})".strip()
     return actor.label or "Citizen"
 
 
 __all__ = [
     "ACT_FOR_HEADER",
     "API_KEY_HEADER",
+    "DEPARTMENT_ACTOR_ROLES",
     "ActorContext",
     "ApiKeyContext",
     "actor_label_for",
@@ -398,7 +409,4 @@ __all__ = [
     "require_roles",
     "require_scopes",
     "resolve_citizen_scope",
-    "tenant_filter",
 ]
-
-_ = mask_phone  # re-exported for routers that render masked contact info

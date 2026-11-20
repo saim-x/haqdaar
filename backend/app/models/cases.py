@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    Sequence,
     String,
     Text,
     text,
@@ -21,6 +22,10 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, CreatedAtMixin, TSTAMPTZ, TimestampMixin, UUIDPrimaryKeyMixin
+
+#: Human-readable case references (``HQ-2026-000142``). A sequence keeps them
+#: gap-free under concurrency without inventing a column.
+CASE_REF_SEQ = Sequence("case_reference_seq", start=1000)
 
 
 class Case(Base, UUIDPrimaryKeyMixin, TimestampMixin):
