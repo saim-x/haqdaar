@@ -1,298 +1,449 @@
 {
- "voice": "ur-PK-UzmaNeural",
- "voice_alt": "ur-PK-AsadNeural",
- "language": "ur-PK",
- "count": 48,
- "keys": {
-  "consent_intro": "حقدار میں خوش آمدید۔ درخواست دینے سے پہلے ہم آپ سے اجازت لیں گے کہ سوشل پروٹیکشن ڈیپارٹمنٹ آپ کا شناختی کارڈ، گھریلو سروے اور دستاویزات دیکھ سکے۔ آپ کبھی بھی یہ اجازت واپس لے سکتی ہیں۔",
-  "consent_grant_confirm": "آپ نے اجازت دے دی ہے۔ شکریہ۔ اب ہم آپ کی درخواست شروع کرتے ہیں۔",
-  "consent_required": "درخواست جاری رکھنے کے لیے اجازت دینا ضروری ہے۔",
-  "consent_withdrawn": "آپ نے اجازت واپس لے لی ہے۔ آپ کی درخواست روک دی گئی ہے۔",
-  "step_full_name": "براہ کرم اپنا پورا نام بولیں یا لکھیں۔",
-  "step_cnic": "براہ کرم اپنے شناختی کارڈ کے تیرہ ہندسے بولیں یا کی پیڈ سے لکھیں۔",
-  "step_dob": "براہ کرم اپنی تاریخ پیدائش بتائیں۔",
-  "step_spouse_name": "براہ کرم اپنے شوہر کا نام بولیں یا لکھیں۔",
-  "step_spouse_cnic": "براہ کرم اپنے شوہر کے شناختی کارڈ کے ہندسے بتائیں۔ اگر معلوم نہ ہو تو مجھے نہیں معلوم کا بٹن دبا دیں۔",
-  "step_district": "براہ کرم اپنا ضلع منتخب کریں۔",
-  "step_children": "آپ کے اٹھارہ سال سے کم کتنے بچے ہیں؟",
-  "step_household_size": "آپ کے گھر میں کل کتنے افراد رہتے ہیں؟",
-  "step_income": "آپ کے گھر کی ماہانہ آمدنی تقریباً کتنی ہے؟",
-  "step_payout_phone": "وہ موبائل نمبر بتائیں جس پر رقم بھیجنی ہے۔",
-  "step_doc_cnic": "براہ کرم اپنے شناختی کارڈ کے سامنے والے حصے کی تصویر لیں۔",
-  "step_doc_death_cert": "براہ کرم اپنے شوہر کے وفات سرٹیفکیٹ کی تصویر لیں۔",
-  "step_review": "براہ کرم اپنی معلومات ایک بار سن لیں اور پھر درخواست جمع کروائیں۔",
-  "submit_confirm": "آپ کی درخواست جمع ہو گئی ہے۔ ہم آپ کو پیغام بھیجیں گے۔",
-  "readback_confirm": "کیا یہ درست ہے؟",
-  "needs_retry": "ہم ٹھیک سے سمجھ نہیں سکے۔ براہ کرم دوبارہ بولیں یا کی پیڈ استعمال کریں۔",
-  "unknown_ok": "کوئی بات نہیں، آپ بعد میں بھی بتا سکتی ہیں۔",
-  "doc_verified": "آپ کی دستاویز درست ہے۔ شکریہ۔",
-  "retake_blurry": "تصویر دھندلی ہے۔ فون کو دونوں ہاتھوں سے سہارا دے کر اچھی روشنی میں دوبارہ تصویر لیں۔",
-  "retake_qr_missing": "ہم دستاویز کا سیکیورٹی کوڈ نہیں پڑھ سکے۔ براہ کرم زیادہ واضح تصویر لیں۔",
-  "doc_unverifiable": "ہم اس دستاویز کی تصدیق نہیں کر سکے۔ براہ کرم دوبارہ کوشش کریں۔",
-  "doc_tamper_review": "اس دستاویز میں کچھ فرق ہے، اس لیے ایک افسر اسے دیکھے گا۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
-  "offline_saved": "انٹرنیٹ نہیں ہے۔ آپ کی معلومات محفوظ ہو گئی ہیں اور انٹرنیٹ آنے پر خود بھیج دی جائیں گی۔",
-  "network_error": "نیٹ ورک میں مسئلہ ہے۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں۔",
-  "status_draft": "آپ کی درخواست محفوظ ہے۔",
-  "status_submitted": "آپ کی درخواست جمع ہو گئی ہے۔ جانچ جاری ہے۔",
-  "status_processing": "آپ کی درخواست کی جانچ جاری ہے۔",
-  "status_waiting_external": "ایک سرکاری نظام عارضی طور پر سست ہے۔ ہم نے سب کچھ محفوظ کر لیا ہے اور خودکار طور پر جاری رکھیں گے۔",
-  "status_needs_info": "آپ کی درخواست مکمل کرنے کے لیے مزید معلومات درکار ہیں۔",
-  "status_human_review": "ایک افسر آپ کی درخواست کا جائزہ لے گا۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
-  "status_in_review": "ایک افسر اب آپ کی درخواست دیکھ رہا ہے۔",
-  "status_pending_second_approval": "حتمی منظوری جاری ہے۔",
-  "status_on_hold_consent": "آپ نے اجازت واپس لی تھی، اس لیے درخواست روکی گئی ہے۔",
-  "status_approved": "مبارک ہو! آپ کی درخواست منظور ہو گئی ہے۔ رقم بھیجی جا رہی ہے۔",
-  "status_payment_initiated": "رقم بھیجی جا رہی ہے۔",
-  "status_paid": "رقم آپ کے اکاؤنٹ میں پہنچ گئی ہے۔",
-  "status_payment_failed": "ادائیگی میں مسئلہ آیا ہے۔ ایک افسر آپ سے رابطہ کرے گا۔",
-  "status_rejected": "آپ کی درخواست منظور نہیں ہوئی۔ وجوہات درخواست میں لکھی ہیں۔",
-  "status_withdrawn": "آپ نے درخواست واپس لے لی ہے۔",
-  "status_closed": "آپ کا کیس مکمل ہو گیا ہے۔",
-  "scam_verified_official": "یہ پیغام حقدار کی سرکاری اطلاع سے مطابقت رکھتا ہے۔ یہ محفوظ ہے۔",
-  "scam_likely_scam": "یہ پیغام فراڈ لگتا ہے۔ پیسے نہ بھیجیں، او ٹی پی یا پن شیئر نہ کریں، اور کوئی لنک نہ کھولیں۔",
-  "scam_cannot_tell": "ہم اس پیغام کے بارے میں یقین سے نہیں کہہ سکتے۔ کچھ کرنے سے پہلے مددگار یا سرکاری ہیلپ لائن سے تصدیق کریں۔",
-  "scam_likely_safe": "اس پیغام میں فراڈ کی عام نشانیاں نہیں ملیں۔ پھر بھی احتیاط رکھیں۔"
- },
- "files": {
-  "consent_intro": {
-   "file": "consent_intro.mp3",
-   "sha256": "994317b98a98c5ecda258b098f09d3c2a388f957581f4ddf2373a539f2036960",
-   "status": "pending"
-  },
-  "consent_grant_confirm": {
-   "file": "consent_grant_confirm.mp3",
-   "sha256": "c62e053676a5352e6cbfa36bd71aa0a3b35c50257a45485ad8e030342718bbaa",
-   "status": "pending"
-  },
-  "consent_required": {
-   "file": "consent_required.mp3",
-   "sha256": "34c7afb5a2bf513ca2c6c3b744383ea3de179c86a47068fe09c288b1f3f7204f",
-   "status": "pending"
-  },
-  "consent_withdrawn": {
-   "file": "consent_withdrawn.mp3",
-   "sha256": "e95ff8ebb4253299be89b8b8ea7a597b8f4e55f02b3c4059fdde99fce73ce15b",
-   "status": "pending"
-  },
-  "step_full_name": {
-   "file": "step_full_name.mp3",
-   "sha256": "c380268675c558ac38c48c5b3d1aa7cb7fe63e09e243e6520a2c2042ca38d900",
-   "status": "pending"
-  },
-  "step_cnic": {
-   "file": "step_cnic.mp3",
-   "sha256": "74d33f4659f5cb72119a5d6a054a3730abafa666bb2ecf92f7c5355b81f7f418",
-   "status": "pending"
-  },
-  "step_dob": {
-   "file": "step_dob.mp3",
-   "sha256": "63e96e7b70ed56240ef0a309aa0e98383c0fd650249ff8f87ac9561e9f4b7e02",
-   "status": "pending"
-  },
-  "step_spouse_name": {
-   "file": "step_spouse_name.mp3",
-   "sha256": "c0dee5f024cd07419b02fe7278fd16ac7055ca4581f15c40fd71d756dc4cf2c8",
-   "status": "pending"
-  },
-  "step_spouse_cnic": {
-   "file": "step_spouse_cnic.mp3",
-   "sha256": "d92f040e7f83b54ff6e0f05b3f16dbb51e2af771e6629133fdc92cbf1a5710f2",
-   "status": "pending"
-  },
-  "step_district": {
-   "file": "step_district.mp3",
-   "sha256": "dbd53337314350416f67b495702832ff41696501b565c43f475ea30b8b24bef7",
-   "status": "pending"
-  },
-  "step_children": {
-   "file": "step_children.mp3",
-   "sha256": "3d344058811da0c6bcadc8bae7ae63e8f996d54e6fa2abe501efbb358492c4c0",
-   "status": "pending"
-  },
-  "step_household_size": {
-   "file": "step_household_size.mp3",
-   "sha256": "ba23b0f5ab80dd0f641d96a64b71aec45630c04ce1d2f74673e4063e620c8aae",
-   "status": "pending"
-  },
-  "step_income": {
-   "file": "step_income.mp3",
-   "sha256": "e78fe33af5ce4c12b3e5cf0e5963c977932b2f0f0ff37680119a6d6ed03287d5",
-   "status": "pending"
-  },
-  "step_payout_phone": {
-   "file": "step_payout_phone.mp3",
-   "sha256": "7f5f306377081d652ef1a958c0b337f5f8fef318ee5ba716a73b94f21b683649",
-   "status": "pending"
-  },
-  "step_doc_cnic": {
-   "file": "step_doc_cnic.mp3",
-   "sha256": "50f0515b7374b42198d6cc284a7b43a5f987091606f8ab7fc3000ea4f0611fbd",
-   "status": "pending"
-  },
-  "step_doc_death_cert": {
-   "file": "step_doc_death_cert.mp3",
-   "sha256": "b465740f83615d93a05453878e22ef6921192f802d3904944e3f4d4f11ce7971",
-   "status": "pending"
-  },
-  "step_review": {
-   "file": "step_review.mp3",
-   "sha256": "00f1b3f94950c63573ae2371bbf7904f57aeaa583302288582553d669a65e03e",
-   "status": "pending"
-  },
-  "submit_confirm": {
-   "file": "submit_confirm.mp3",
-   "sha256": "4bfe0b5713a43a450dde459221a5e3f42aee444d586f3d229d0af64078e29809",
-   "status": "pending"
-  },
-  "readback_confirm": {
-   "file": "readback_confirm.mp3",
-   "sha256": "89d5e998ae170f1c8ab393fc81aff28c561bdeb7770f1ee4d5424899efaad1bf",
-   "status": "pending"
-  },
-  "needs_retry": {
-   "file": "needs_retry.mp3",
-   "sha256": "6372a6e6bb361cd2c11169952f4682405d19a214c46b8844635bbded1e50b006",
-   "status": "pending"
-  },
-  "unknown_ok": {
-   "file": "unknown_ok.mp3",
-   "sha256": "7269eaa86cce58331f112dcf9d3fe40a911ada44519dccaace3fe36503f5bc83",
-   "status": "pending"
-  },
-  "doc_verified": {
-   "file": "doc_verified.mp3",
-   "sha256": "fb530aef41cd5a4c919cb6268d83346d0b2a47e6503c1acaf4bc97d9027a4ca5",
-   "status": "pending"
-  },
-  "retake_blurry": {
-   "file": "retake_blurry.mp3",
-   "sha256": "ab5fa861d61028165ed3d7451f67cb4f922061d8f803d904bc49a5a277541e36",
-   "status": "pending"
-  },
-  "retake_qr_missing": {
-   "file": "retake_qr_missing.mp3",
-   "sha256": "24cbfe3d3ef510ba89fdf622a3274874c374ad130778a53e546a06605dfa808f",
-   "status": "pending"
-  },
-  "doc_unverifiable": {
-   "file": "doc_unverifiable.mp3",
-   "sha256": "258118fb9f256ca7f1d27bc6ea3064822f460c864d6bbb69782c8b8124cb322d",
-   "status": "pending"
-  },
-  "doc_tamper_review": {
-   "file": "doc_tamper_review.mp3",
-   "sha256": "e58c283dd317df2991b193d70a34b5f64748aa29d864f3305d5395fc917762d3",
-   "status": "pending"
-  },
-  "offline_saved": {
-   "file": "offline_saved.mp3",
-   "sha256": "6f03802e48d482e6db2ae2b795635fbb712d24c1335c59c4291695960b6fb1d5",
-   "status": "pending"
-  },
-  "network_error": {
-   "file": "network_error.mp3",
-   "sha256": "ec3dba093e94760206043461f5fef24f329f8e8e56b190e048bcf5650d5bc508",
-   "status": "pending"
-  },
-  "status_draft": {
-   "file": "status_draft.mp3",
-   "sha256": "37f8e6fc5fefb61c30346fd7d0c38effad681b3bd8c264ceb2d03844c3b7e714",
-   "status": "pending"
-  },
-  "status_submitted": {
-   "file": "status_submitted.mp3",
-   "sha256": "cf6b1adefd0f38e3721884c30860b6db5ddd7f885499815e8ce29f93c0c4fea4",
-   "status": "pending"
-  },
-  "status_processing": {
-   "file": "status_processing.mp3",
-   "sha256": "8c31d2241624cedc9529e93c9efec49ffa58ee039402a6ec6a62488a309ac960",
-   "status": "pending"
-  },
-  "status_waiting_external": {
-   "file": "status_waiting_external.mp3",
-   "sha256": "89b74103f7d9986d19924956c2adeec70a9828ae2baefc50e23bbaf1f613abb2",
-   "status": "pending"
-  },
-  "status_needs_info": {
-   "file": "status_needs_info.mp3",
-   "sha256": "96793f824bd6b9139561f7a67a289db59dc79f36e897f1600d6aa94ecb764e88",
-   "status": "pending"
-  },
-  "status_human_review": {
-   "file": "status_human_review.mp3",
-   "sha256": "f0ff4d72e3444de57cef434717f3a673cb796b96afe94ccc36435b2c3c792731",
-   "status": "pending"
-  },
-  "status_in_review": {
-   "file": "status_in_review.mp3",
-   "sha256": "04eb8f1387ffb13810e077e8744efb41dd7efa60a576cad6b8ae6354bced449c",
-   "status": "pending"
-  },
-  "status_pending_second_approval": {
-   "file": "status_pending_second_approval.mp3",
-   "sha256": "99c8ec6870002c58d9fd8237ec4ea7f89441f655857b8e2b61f90c6148509ab4",
-   "status": "pending"
-  },
-  "status_on_hold_consent": {
-   "file": "status_on_hold_consent.mp3",
-   "sha256": "4748d61cbb4596fb11419cfa6ecddfb862d725bcda1bc190ab7241ec41b2455a",
-   "status": "pending"
-  },
-  "status_approved": {
-   "file": "status_approved.mp3",
-   "sha256": "1baf514000b33f3462a7e8a11162461d849efab81d85dfb409a281fd148bb982",
-   "status": "pending"
-  },
-  "status_payment_initiated": {
-   "file": "status_payment_initiated.mp3",
-   "sha256": "c4320f4488482043c20435d56d997375f6ad30812999168e382a42017cb98ef5",
-   "status": "pending"
-  },
-  "status_paid": {
-   "file": "status_paid.mp3",
-   "sha256": "d2a349b0ec544a9e0a0f4468a42372e379589ecc41ed2d42b790920d9270be70",
-   "status": "pending"
-  },
-  "status_payment_failed": {
-   "file": "status_payment_failed.mp3",
-   "sha256": "40115959e9713aa8df465a16c0220da650b5e7ad9efff942cc28066bc1553220",
-   "status": "pending"
-  },
-  "status_rejected": {
-   "file": "status_rejected.mp3",
-   "sha256": "2a537d076e9fe508fcb740c204c0993fccff15951854af2da1e3aeb078b500f2",
-   "status": "pending"
-  },
-  "status_withdrawn": {
-   "file": "status_withdrawn.mp3",
-   "sha256": "bbfaac5b8ee848c963653104485d69fa0ebb14e111bb2fbbc4d75cf4bd51f734",
-   "status": "pending"
-  },
-  "status_closed": {
-   "file": "status_closed.mp3",
-   "sha256": "6c50b5843ed56b5932b336dd9a30c7edc6fdc93779b1c521ecff5692b308a288",
-   "status": "pending"
-  },
-  "scam_verified_official": {
-   "file": "scam_verified_official.mp3",
-   "sha256": "9f9d4af7d595d30a7fd08d3d8022bfd652d29d9ca05d11826204b98c568bfc34",
-   "status": "pending"
-  },
-  "scam_likely_scam": {
-   "file": "scam_likely_scam.mp3",
-   "sha256": "585d34035c7958001b706687465aadb9b8829bc085ab2e12292ea5bf9229869e",
-   "status": "pending"
-  },
-  "scam_cannot_tell": {
-   "file": "scam_cannot_tell.mp3",
-   "sha256": "e421ed293b1862147321071ad199be8af52bfbafbb8c5694e694d5b974a59dd8",
-   "status": "pending"
-  },
-  "scam_likely_safe": {
-   "file": "scam_likely_safe.mp3",
-   "sha256": "e1799f3d8db33319ca08e8f885a767eb6eb2af287b8c1be9758bd349cb024363",
-   "status": "pending"
+ "wizard_consent": "حقدار میں خوش آمدید۔ درخواست دینے سے پہلے ہم آپ سے اجازت لیں گے کہ سوشل پروٹیکشن ڈیپارٹمنٹ آپ کا شناختی کارڈ، گھریلو سروے اور دستاویزات دیکھ سکے۔ آپ کبھی بھی یہ اجازت واپس لے سکتی ہیں۔",
+ "wizard_applicant_full_name": "براہ کرم اپنا پورا نام بولیں یا لکھیں۔",
+ "wizard_applicant_cnic": "براہ کرم اپنے شناختی کارڈ کے تیرہ ہندسے بولیں یا کی پیڈ سے لکھیں۔",
+ "wizard_applicant_dob": "براہ کرم اپنی تاریخ پیدائش بتائیں۔",
+ "wizard_spouse_full_name": "براہ کرم اپنے شوہر کا نام بولیں یا لکھیں۔",
+ "wizard_spouse_cnic": "براہ کرم اپنے شوہر کے شناختی کارڈ کے ہندسے بتائیں۔ اگر معلوم نہ ہو تو مجھے نہیں معلوم کا بٹن دبا دیں۔",
+ "wizard_applicant_district": "براہ کرم اپنا ضلع منتخب کریں۔",
+ "wizard_children_under_18": "آپ کے اٹھارہ سال سے کم کتنے بچے ہیں؟",
+ "wizard_household_size": "آپ کے گھر میں کل کتنے افراد رہتے ہیں؟",
+ "wizard_monthly_income_pkr": "آپ کے گھر کی ماہانہ آمدنی تقریباً کتنی ہے؟",
+ "wizard_income": "آپ کے گھر کی ماہانہ آمدنی تقریباً کتنی ہے؟",
+ "wizard_payout_phone": "وہ موبائل نمبر بتائیں جس پر رقم بھیجنی ہے۔",
+ "wizard_cnic_doc": "براہ کرم اپنے شناختی کارڈ کے سامنے والے حصے کی تصویر لیں۔",
+ "wizard_death_cert_doc": "براہ کرم اپنے شوہر کے وفات سرٹیفکیٹ کی تصویر لیں۔",
+ "wizard_review": "براہ کرم اپنی معلومات ایک بار سن لیں اور پھر درخواست جمع کروائیں۔",
+ "wizard_queued": "انٹرنیٹ نہ ہونے کی وجہ سے آپ کی درخواست قطار میں محفوظ ہے اور انٹرنیٹ آنے پر خود بھیج دی جائے گی۔",
+ "wizard_submitted": "آپ کی درخواست جمع ہو گئی ہے۔ ہم آپ کو پیغام بھیجیں گے۔",
+ "home_apply": "نئی درخواست دینے کے لیے یہاں دبائیں۔",
+ "home_cases": "اپنی درخواستوں کی حالت دیکھنے کے لیے یہاں دبائیں۔",
+ "home_scam": "کسی مشکوک پیغام کی جانچ کے لیے یہاں دبائیں۔",
+ "home_data": "آپ کا ڈیٹا اور اجازتیں دیکھنے کے لیے یہاں دبائیں۔",
+ "ask_intro": "حقدار کے بارے میں کوئی بھی سوال پوچھیں۔",
+ "cases_title": "آپ کی درخواستیں۔",
+ "consent_intro": "حقدار میں خوش آمدید۔ درخواست دینے سے پہلے ہم آپ سے اجازت لیں گے کہ سوشل پروٹیکشن ڈیپارٹمنٹ آپ کا شناختی کارڈ، گھریلو سروے اور دستاویزات دیکھ سکے۔ آپ کبھی بھی یہ اجازت واپس لے سکتی ہیں۔",
+ "consent_access_log": "یہ ریکارڈ دکھاتا ہے کہ کس نے اور کب آپ کا ڈیٹا دیکھا۔",
+ "mydata_intro": "یہ آپ کا ڈیٹا ہے۔ آپ دیکھ سکتی ہیں کہ ہمارے پاس کیا محفوظ ہے۔",
+ "scam_intro": "مشکوک پیغام یہاں لکھیں یا اس کی تصویر بھیجیں، ہم بتائیں گے کہ یہ فراڈ ہے یا نہیں۔",
+ "transparency_intro": "یہ صفحہ بتاتا ہے کہ حقدار میں کیا اصلی ہے اور کیا نقلی۔",
+ "login_welcome": "حقدار میں خوش آمدید۔ اپنا موبائل نمبر ڈال کر لاگ ان کریں۔",
+ "helper_intro": "آپ اپنے گھرانوں کی درخواستیں یہاں سے جمع کروا سکتی ہیں۔",
+ "helper_switch": "آپ اب اس گھرانے کی مدد کر رہی ہیں۔",
+ "helper_add_family": "نیا گھرانہ شامل کرنے کے لیے یہاں دبائیں۔",
+ "mydata_identity": "شناختی معلومات۔",
+ "mydata_household": "گھریلو معلومات۔",
+ "mydata_documents": "دستاویزات۔",
+ "mydata_payment": "ادائیگی کی معلومات۔",
+ "mydata_case_history": "درخواستوں کی تاریخ۔",
+ "scam_verified_official": "یہ پیغام حقدار کی سرکاری اطلاع سے مطابقت رکھتا ہے۔ یہ محفوظ ہے۔",
+ "scam_likely_scam": "یہ پیغام فراڈ لگتا ہے۔ پیسے نہ بھیجیں، او ٹی پی یا پن شیئر نہ کریں، اور کوئی لنک نہ کھولیں۔",
+ "scam_cannot_tell": "ہم اس پیغام کے بارے میں یقین سے نہیں کہہ سکتے۔ کچھ کرنے سے پہلے مددگار یا سرکاری ہیلپ لائن سے تصدیق کریں۔",
+ "scam_likely_safe": "اس پیغام میں فراڈ کی عام نشانیاں نہیں ملیں۔ پھر بھی احتیاط رکھیں۔",
+ "consent_grant_confirm": "آپ نے اجازت دے دی ہے۔ شکریہ۔ اب ہم آپ کی درخواست شروع کرتے ہیں۔",
+ "consent_required": "درخواست جاری رکھنے کے لیے اجازت دینا ضروری ہے۔",
+ "consent_withdrawn": "آپ نے اجازت واپس لے لی ہے۔ آپ کی درخواست روک دی گئی ہے۔",
+ "readback_confirm": "کیا یہ درست ہے؟",
+ "needs_retry": "ہم ٹھیک سے سمجھ نہیں سکے۔ براہ کرم دوبارہ بولیں یا کی پیڈ استعمال کریں۔",
+ "unknown_ok": "کوئی بات نہیں، آپ بعد میں بھی بتا سکتی ہیں۔",
+ "submit_confirm": "آپ کی درخواست جمع ہو گئی ہے۔ ہم آپ کو پیغام بھیجیں گے۔",
+ "doc_verified": "آپ کی دستاویز درست ہے۔ شکریہ۔",
+ "doc_unverifiable": "ہم اس دستاویز کی تصدیق نہیں کر سکے۔ براہ کرم دوبارہ کوشش کریں۔",
+ "doc_tamper_review": "اس دستاویز میں کچھ فرق ہے، اس لیے ایک افسر اسے دیکھے گا۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
+ "doc_needs_retake": "اس دستاویز کی تصویر دوبارہ لینا ضروری ہے۔",
+ "retake_blurry": "تصویر دھندلی ہے۔ فون کو دونوں ہاتھوں سے سہارا دے کر اچھی روشنی میں دوبارہ تصویر لیں۔",
+ "retake_qr_missing": "ہم دستاویز کا سیکیورٹی کوڈ نہیں پڑھ سکے۔ براہ کرم زیادہ واضح تصویر لیں۔",
+ "retake_too_small": "تصویر بہت چھوٹی ہے۔ براہ کرم قریب سے واضح تصویر لیں۔",
+ "offline_saved": "انٹرنیٹ نہیں ہے۔ آپ کی معلومات محفوظ ہو گئی ہیں اور انٹرنیٹ آنے پر خود بھیج دی جائیں گی۔",
+ "network_error": "نیٹ ورک میں مسئلہ ہے۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+ "status_draft": "آپ کی درخواست محفوظ ہے۔",
+ "status_submitted": "آپ کی درخواست جمع ہو گئی ہے۔ جانچ جاری ہے۔",
+ "status_processing": "آپ کی درخواست کی جانچ جاری ہے۔",
+ "status_waiting_external": "ایک سرکاری نظام عارضی طور پر سست ہے۔ ہم نے سب کچھ محفوظ کر لیا ہے اور خودکار طور پر جاری رکھیں گے۔",
+ "status_needs_info": "آپ کی درخواست مکمل کرنے کے لیے مزید معلومات درکار ہیں۔",
+ "status_human_review": "ایک افسر آپ کی درخواست کا جائزہ لے گا۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
+ "status_in_review": "ایک افسر اب آپ کی درخواست دیکھ رہا ہے۔",
+ "status_pending_second_approval": "حتمی منظوری جاری ہے۔",
+ "status_on_hold_consent": "آپ نے اجازت واپس لی تھی، اس لیے درخواست روکی گئی ہے۔",
+ "status_approved": "مبارک ہو! آپ کی درخواست منظور ہو گئی ہے۔ رقم بھیجی جا رہی ہے۔",
+ "status_payment_initiated": "رقم بھیجی جا رہی ہے۔",
+ "status_paid": "رقم آپ کے اکاؤنٹ میں پہنچ گئی ہے۔",
+ "status_payment_failed": "ادائیگی میں مسئلہ آیا ہے۔ ایک افسر آپ سے رابطہ کرے گا۔",
+ "status_rejected": "آپ کی درخواست منظور نہیں ہوئی۔ وجوہات درخواست میں لکھی ہیں۔",
+ "status_withdrawn": "آپ نے درخواست واپس لے لی ہے۔",
+ "status_closed": "آپ کا کیس مکمل ہو گیا ہے۔",
+ "_meta": {
+  "voice": "ur-PK-UzmaNeural",
+  "voice_alt": "ur-PK-AsadNeural",
+  "language": "ur-PK",
+  "count": 73,
+  "fe_keys": 36,
+  "files": {
+   "wizard_consent": {
+    "file": "wizard_consent.mp3",
+    "sha256": "994317b98a98c5ecda258b098f09d3c2a388f957581f4ddf2373a539f2036960",
+    "status": "pending"
+   },
+   "wizard_applicant_full_name": {
+    "file": "wizard_applicant_full_name.mp3",
+    "sha256": "c380268675c558ac38c48c5b3d1aa7cb7fe63e09e243e6520a2c2042ca38d900",
+    "status": "pending"
+   },
+   "wizard_applicant_cnic": {
+    "file": "wizard_applicant_cnic.mp3",
+    "sha256": "74d33f4659f5cb72119a5d6a054a3730abafa666bb2ecf92f7c5355b81f7f418",
+    "status": "pending"
+   },
+   "wizard_applicant_dob": {
+    "file": "wizard_applicant_dob.mp3",
+    "sha256": "63e96e7b70ed56240ef0a309aa0e98383c0fd650249ff8f87ac9561e9f4b7e02",
+    "status": "pending"
+   },
+   "wizard_spouse_full_name": {
+    "file": "wizard_spouse_full_name.mp3",
+    "sha256": "c0dee5f024cd07419b02fe7278fd16ac7055ca4581f15c40fd71d756dc4cf2c8",
+    "status": "pending"
+   },
+   "wizard_spouse_cnic": {
+    "file": "wizard_spouse_cnic.mp3",
+    "sha256": "d92f040e7f83b54ff6e0f05b3f16dbb51e2af771e6629133fdc92cbf1a5710f2",
+    "status": "pending"
+   },
+   "wizard_applicant_district": {
+    "file": "wizard_applicant_district.mp3",
+    "sha256": "dbd53337314350416f67b495702832ff41696501b565c43f475ea30b8b24bef7",
+    "status": "pending"
+   },
+   "wizard_children_under_18": {
+    "file": "wizard_children_under_18.mp3",
+    "sha256": "3d344058811da0c6bcadc8bae7ae63e8f996d54e6fa2abe501efbb358492c4c0",
+    "status": "pending"
+   },
+   "wizard_household_size": {
+    "file": "wizard_household_size.mp3",
+    "sha256": "ba23b0f5ab80dd0f641d96a64b71aec45630c04ce1d2f74673e4063e620c8aae",
+    "status": "pending"
+   },
+   "wizard_monthly_income_pkr": {
+    "file": "wizard_monthly_income_pkr.mp3",
+    "sha256": "e78fe33af5ce4c12b3e5cf0e5963c977932b2f0f0ff37680119a6d6ed03287d5",
+    "status": "pending"
+   },
+   "wizard_income": {
+    "file": "wizard_income.mp3",
+    "sha256": "e78fe33af5ce4c12b3e5cf0e5963c977932b2f0f0ff37680119a6d6ed03287d5",
+    "status": "pending"
+   },
+   "wizard_payout_phone": {
+    "file": "wizard_payout_phone.mp3",
+    "sha256": "7f5f306377081d652ef1a958c0b337f5f8fef318ee5ba716a73b94f21b683649",
+    "status": "pending"
+   },
+   "wizard_cnic_doc": {
+    "file": "wizard_cnic_doc.mp3",
+    "sha256": "50f0515b7374b42198d6cc284a7b43a5f987091606f8ab7fc3000ea4f0611fbd",
+    "status": "pending"
+   },
+   "wizard_death_cert_doc": {
+    "file": "wizard_death_cert_doc.mp3",
+    "sha256": "b465740f83615d93a05453878e22ef6921192f802d3904944e3f4d4f11ce7971",
+    "status": "pending"
+   },
+   "wizard_review": {
+    "file": "wizard_review.mp3",
+    "sha256": "00f1b3f94950c63573ae2371bbf7904f57aeaa583302288582553d669a65e03e",
+    "status": "pending"
+   },
+   "wizard_queued": {
+    "file": "wizard_queued.mp3",
+    "sha256": "0db61c899f08a714490ded558521d6df6083b49074abed63623f76de38d1bb31",
+    "status": "pending"
+   },
+   "wizard_submitted": {
+    "file": "wizard_submitted.mp3",
+    "sha256": "4bfe0b5713a43a450dde459221a5e3f42aee444d586f3d229d0af64078e29809",
+    "status": "pending"
+   },
+   "home_apply": {
+    "file": "home_apply.mp3",
+    "sha256": "7622d71ef435de70904302311acdd4fe1dda58459ba5b3d5c5ceecc56f3897f2",
+    "status": "pending"
+   },
+   "home_cases": {
+    "file": "home_cases.mp3",
+    "sha256": "f36d2bc05912a19277f3feec8b3233907ec7e634dd048528f21de6f9509cd253",
+    "status": "pending"
+   },
+   "home_scam": {
+    "file": "home_scam.mp3",
+    "sha256": "9e9179bc7ee3346f00eae5d2d7f34c2bbf3b01a599871626fa06b3b8fd4ba948",
+    "status": "pending"
+   },
+   "home_data": {
+    "file": "home_data.mp3",
+    "sha256": "2fb70059afd6ed61894e8bde7201f33e5879f54acb5b77242f3819cd34df0aa9",
+    "status": "pending"
+   },
+   "ask_intro": {
+    "file": "ask_intro.mp3",
+    "sha256": "578a603ea214ebe57df07a9bc62e3d6c1dcc918857f4b4b93696a2cc763cffef",
+    "status": "pending"
+   },
+   "cases_title": {
+    "file": "cases_title.mp3",
+    "sha256": "3e778398e288ea2ed2992124ad9ae6b52c60ef003ad6190ae14463f90135f15b",
+    "status": "pending"
+   },
+   "consent_intro": {
+    "file": "consent_intro.mp3",
+    "sha256": "994317b98a98c5ecda258b098f09d3c2a388f957581f4ddf2373a539f2036960",
+    "status": "pending"
+   },
+   "consent_access_log": {
+    "file": "consent_access_log.mp3",
+    "sha256": "4f921d29a4d795df9fc2abc2ba81f71eb10e5f55bd87e901f4013ff614a7fc35",
+    "status": "pending"
+   },
+   "mydata_intro": {
+    "file": "mydata_intro.mp3",
+    "sha256": "ef433e8f6ee9c59cf6fd638374b73cf1260d555ad5ce14a80514df735609c5f3",
+    "status": "pending"
+   },
+   "scam_intro": {
+    "file": "scam_intro.mp3",
+    "sha256": "181d1fa96f8e45d6e0319caf428f985b505b3f0720c306e74da54e6700de453f",
+    "status": "pending"
+   },
+   "transparency_intro": {
+    "file": "transparency_intro.mp3",
+    "sha256": "423a7ab155237bc36ec9f018ef5c5b1d485ca0ff858917f5cb371e164525a1d3",
+    "status": "pending"
+   },
+   "login_welcome": {
+    "file": "login_welcome.mp3",
+    "sha256": "a0b56acc71e3233f59e1a916b3d00ab30bef740771b4a4aadecb171cc4a9639e",
+    "status": "pending"
+   },
+   "helper_intro": {
+    "file": "helper_intro.mp3",
+    "sha256": "7b6711cd7ca25b848d901a6f6ada121e15f423ff5db885919235e6356ef29c63",
+    "status": "pending"
+   },
+   "helper_switch": {
+    "file": "helper_switch.mp3",
+    "sha256": "db888c5fbcc9b77aa00b86904c86cab1c610bad693b10503da5cf1d67ccf9eeb",
+    "status": "pending"
+   },
+   "helper_add_family": {
+    "file": "helper_add_family.mp3",
+    "sha256": "ffea2f240fd2426723032a77c95331004a2873f9ec3a588115e03d57e500f713",
+    "status": "pending"
+   },
+   "mydata_identity": {
+    "file": "mydata_identity.mp3",
+    "sha256": "a9349dbb110f4df289b8547e30e755567a2d2c508fa22b750c9dceb40bf0601c",
+    "status": "pending"
+   },
+   "mydata_household": {
+    "file": "mydata_household.mp3",
+    "sha256": "b21a83e1994bd2a8c8effa76fa20671a564f1a5ddef74ac2e29bebcc8c3e522d",
+    "status": "pending"
+   },
+   "mydata_documents": {
+    "file": "mydata_documents.mp3",
+    "sha256": "279d9294c15ea84a321cd24c8a3b02064e46a0d6c7ee421aeda2a62bead32e35",
+    "status": "pending"
+   },
+   "mydata_payment": {
+    "file": "mydata_payment.mp3",
+    "sha256": "73584b17d41ede44b8cd2e61f5c03f22dd3ab7927050170b89f69072f63a8d75",
+    "status": "pending"
+   },
+   "mydata_case_history": {
+    "file": "mydata_case_history.mp3",
+    "sha256": "063d53ad55987475eec32e45d3c5fe0585326e87a8f30c5decf4eb35fef20947",
+    "status": "pending"
+   },
+   "scam_verified_official": {
+    "file": "scam_verified_official.mp3",
+    "sha256": "9f9d4af7d595d30a7fd08d3d8022bfd652d29d9ca05d11826204b98c568bfc34",
+    "status": "pending"
+   },
+   "scam_likely_scam": {
+    "file": "scam_likely_scam.mp3",
+    "sha256": "585d34035c7958001b706687465aadb9b8829bc085ab2e12292ea5bf9229869e",
+    "status": "pending"
+   },
+   "scam_cannot_tell": {
+    "file": "scam_cannot_tell.mp3",
+    "sha256": "e421ed293b1862147321071ad199be8af52bfbafbb8c5694e694d5b974a59dd8",
+    "status": "pending"
+   },
+   "scam_likely_safe": {
+    "file": "scam_likely_safe.mp3",
+    "sha256": "e1799f3d8db33319ca08e8f885a767eb6eb2af287b8c1be9758bd349cb024363",
+    "status": "pending"
+   },
+   "consent_grant_confirm": {
+    "file": "consent_grant_confirm.mp3",
+    "sha256": "c62e053676a5352e6cbfa36bd71aa0a3b35c50257a45485ad8e030342718bbaa",
+    "status": "pending"
+   },
+   "consent_required": {
+    "file": "consent_required.mp3",
+    "sha256": "34c7afb5a2bf513ca2c6c3b744383ea3de179c86a47068fe09c288b1f3f7204f",
+    "status": "pending"
+   },
+   "consent_withdrawn": {
+    "file": "consent_withdrawn.mp3",
+    "sha256": "e95ff8ebb4253299be89b8b8ea7a597b8f4e55f02b3c4059fdde99fce73ce15b",
+    "status": "pending"
+   },
+   "readback_confirm": {
+    "file": "readback_confirm.mp3",
+    "sha256": "89d5e998ae170f1c8ab393fc81aff28c561bdeb7770f1ee4d5424899efaad1bf",
+    "status": "pending"
+   },
+   "needs_retry": {
+    "file": "needs_retry.mp3",
+    "sha256": "6372a6e6bb361cd2c11169952f4682405d19a214c46b8844635bbded1e50b006",
+    "status": "pending"
+   },
+   "unknown_ok": {
+    "file": "unknown_ok.mp3",
+    "sha256": "7269eaa86cce58331f112dcf9d3fe40a911ada44519dccaace3fe36503f5bc83",
+    "status": "pending"
+   },
+   "submit_confirm": {
+    "file": "submit_confirm.mp3",
+    "sha256": "4bfe0b5713a43a450dde459221a5e3f42aee444d586f3d229d0af64078e29809",
+    "status": "pending"
+   },
+   "doc_verified": {
+    "file": "doc_verified.mp3",
+    "sha256": "fb530aef41cd5a4c919cb6268d83346d0b2a47e6503c1acaf4bc97d9027a4ca5",
+    "status": "pending"
+   },
+   "doc_unverifiable": {
+    "file": "doc_unverifiable.mp3",
+    "sha256": "258118fb9f256ca7f1d27bc6ea3064822f460c864d6bbb69782c8b8124cb322d",
+    "status": "pending"
+   },
+   "doc_tamper_review": {
+    "file": "doc_tamper_review.mp3",
+    "sha256": "e58c283dd317df2991b193d70a34b5f64748aa29d864f3305d5395fc917762d3",
+    "status": "pending"
+   },
+   "doc_needs_retake": {
+    "file": "doc_needs_retake.mp3",
+    "sha256": "cca4ea22bf197e4619e537065ff5e7c0c5b83189f1f7d0215ec398557ed2beea",
+    "status": "pending"
+   },
+   "retake_blurry": {
+    "file": "retake_blurry.mp3",
+    "sha256": "ab5fa861d61028165ed3d7451f67cb4f922061d8f803d904bc49a5a277541e36",
+    "status": "pending"
+   },
+   "retake_qr_missing": {
+    "file": "retake_qr_missing.mp3",
+    "sha256": "24cbfe3d3ef510ba89fdf622a3274874c374ad130778a53e546a06605dfa808f",
+    "status": "pending"
+   },
+   "retake_too_small": {
+    "file": "retake_too_small.mp3",
+    "sha256": "673c396e8d838949ab4a8562d53e1d7bc76176202d1521ece7eb68359d168bc3",
+    "status": "pending"
+   },
+   "offline_saved": {
+    "file": "offline_saved.mp3",
+    "sha256": "6f03802e48d482e6db2ae2b795635fbb712d24c1335c59c4291695960b6fb1d5",
+    "status": "pending"
+   },
+   "network_error": {
+    "file": "network_error.mp3",
+    "sha256": "ec3dba093e94760206043461f5fef24f329f8e8e56b190e048bcf5650d5bc508",
+    "status": "pending"
+   },
+   "status_draft": {
+    "file": "status_draft.mp3",
+    "sha256": "37f8e6fc5fefb61c30346fd7d0c38effad681b3bd8c264ceb2d03844c3b7e714",
+    "status": "pending"
+   },
+   "status_submitted": {
+    "file": "status_submitted.mp3",
+    "sha256": "cf6b1adefd0f38e3721884c30860b6db5ddd7f885499815e8ce29f93c0c4fea4",
+    "status": "pending"
+   },
+   "status_processing": {
+    "file": "status_processing.mp3",
+    "sha256": "8c31d2241624cedc9529e93c9efec49ffa58ee039402a6ec6a62488a309ac960",
+    "status": "pending"
+   },
+   "status_waiting_external": {
+    "file": "status_waiting_external.mp3",
+    "sha256": "89b74103f7d9986d19924956c2adeec70a9828ae2baefc50e23bbaf1f613abb2",
+    "status": "pending"
+   },
+   "status_needs_info": {
+    "file": "status_needs_info.mp3",
+    "sha256": "96793f824bd6b9139561f7a67a289db59dc79f36e897f1600d6aa94ecb764e88",
+    "status": "pending"
+   },
+   "status_human_review": {
+    "file": "status_human_review.mp3",
+    "sha256": "f0ff4d72e3444de57cef434717f3a673cb796b96afe94ccc36435b2c3c792731",
+    "status": "pending"
+   },
+   "status_in_review": {
+    "file": "status_in_review.mp3",
+    "sha256": "04eb8f1387ffb13810e077e8744efb41dd7efa60a576cad6b8ae6354bced449c",
+    "status": "pending"
+   },
+   "status_pending_second_approval": {
+    "file": "status_pending_second_approval.mp3",
+    "sha256": "99c8ec6870002c58d9fd8237ec4ea7f89441f655857b8e2b61f90c6148509ab4",
+    "status": "pending"
+   },
+   "status_on_hold_consent": {
+    "file": "status_on_hold_consent.mp3",
+    "sha256": "4748d61cbb4596fb11419cfa6ecddfb862d725bcda1bc190ab7241ec41b2455a",
+    "status": "pending"
+   },
+   "status_approved": {
+    "file": "status_approved.mp3",
+    "sha256": "1baf514000b33f3462a7e8a11162461d849efab81d85dfb409a281fd148bb982",
+    "status": "pending"
+   },
+   "status_payment_initiated": {
+    "file": "status_payment_initiated.mp3",
+    "sha256": "c4320f4488482043c20435d56d997375f6ad30812999168e382a42017cb98ef5",
+    "status": "pending"
+   },
+   "status_paid": {
+    "file": "status_paid.mp3",
+    "sha256": "d2a349b0ec544a9e0a0f4468a42372e379589ecc41ed2d42b790920d9270be70",
+    "status": "pending"
+   },
+   "status_payment_failed": {
+    "file": "status_payment_failed.mp3",
+    "sha256": "40115959e9713aa8df465a16c0220da650b5e7ad9efff942cc28066bc1553220",
+    "status": "pending"
+   },
+   "status_rejected": {
+    "file": "status_rejected.mp3",
+    "sha256": "2a537d076e9fe508fcb740c204c0993fccff15951854af2da1e3aeb078b500f2",
+    "status": "pending"
+   },
+   "status_withdrawn": {
+    "file": "status_withdrawn.mp3",
+    "sha256": "bbfaac5b8ee848c963653104485d69fa0ebb14e111bb2fbbc4d75cf4bd51f734",
+    "status": "pending"
+   },
+   "status_closed": {
+    "file": "status_closed.mp3",
+    "sha256": "6c50b5843ed56b5932b336dd9a30c7edc6fdc93779b1c521ecff5692b308a288",
+    "status": "pending"
+   }
   }
  }
 }
