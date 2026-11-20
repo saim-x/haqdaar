@@ -266,7 +266,7 @@ By Bayes decision theory, auto-approving a case with true validity probability $
 $$(1 - p) \cdot C_{\text{FP}} < C_{\text{HR}} \implies p > 1 - \frac{C_{\text{HR}}}{C_{\text{FP}}} = 1 - \frac{8}{100} = 0.92$$
 
 Accounting for mild conservatism in weakest-link scores (which lower-bound true validity probability), we set the default Sahara v1 threshold at **$\tau = 0.90$** and **prove it empirically** in `engine/eval_sweep.py`:
-- On our 120-case labelled synthetic evaluation benchmark (`backend/app/data/eval_cases.jsonl`), `eval_sweep.py` sweeps $\tau \in [0.50, 0.55, \dots, 0.95]$ and computes for every point:
+- On our 133-case labelled synthetic evaluation benchmark (`backend/app/data/eval_cases.jsonl`), `eval_sweep.py` sweeps $\tau \in [0.50, 0.55, \dots, 0.95]$ and computes for every point:
   - `auto_approve_rate`
   - `false_approval_rate` (wrong approvals / auto-approvals)
   - `human_review_load` (% sent to officers)

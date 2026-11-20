@@ -135,6 +135,6 @@ Generates realistic PNG/JPEG mock CNIC and Death Certificate specimen cards usin
 
 ## 4. Labelled Evaluation Datasets (Owned by A3 & A4)
 
-1. **`backend/app/data/eval_cases.jsonl` (120 synthetic cases):** Ground-truth `truly_eligible: bool` + realistic noise injected *independently* of the rules engine (misspelled names, missing fields, conflicting survey data, forged docs, verbal consent, subtle fraud) → feeds `engine/eval_sweep.py` for the live cost-of-being-wrong curve.
+1. **`backend/app/data/eval_cases.jsonl` (133 synthetic cases in 19 designed cohorts, incl. a clean-looking-but-ineligible population with hidden ground truth):** Ground-truth `truly_eligible: bool` + realistic noise injected *independently* of the rules engine (misspelled names, missing fields, conflicting survey data, forged docs, verbal consent, subtle fraud) → feeds `engine/eval_sweep.py` for the live cost-of-being-wrong curve.
 2. **`backend/app/data/scam_dataset.jsonl` (240 synthetic messages):** Labelled `SCAM` vs `SAFE` across Roman-Urdu, Urdu, and English, including 35 hard negatives (real bank/family money messages) → trains/evaluates the scikit-learn scam model and computes honest FPR.
 3. **`backend/app/data/doc_eval_set/` (30 synthetic images + `manifest.json`):** Ground-truth labels (`GENUINE_CLEAN`, `GENUINE_COMPRESSED`, `BLURRY`, `FORGED`) → computes real document verifier metrics for the Evaluation Dashboard.
