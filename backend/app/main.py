@@ -161,6 +161,29 @@ _STATUS_DEFAULTS: dict[int, tuple[str, str, str]] = {
 }
 
 
+def _coded_error_response(
+    exc: StarletteHTTPException, code: object, detail: dict[str, object]
+) -> JSONResponse:
+    """Render ``HTTPException(detail={"error": "CODE", ...extras})`` as the envelope.
+
+    Teammate routers raise this shape (``admin_mocks`` does). The code is kept
+    verbatim and the remaining keys become ``details``, so a client sees the same
+    structure as every other error.
+    """
+    _default_code, message_en, message_ur = _STATUS_DEFAULTS.get(
+        exc.status_code,
+        ("INTERNAL_ERROR", "Something went wrong.", "کچھ غلط ہو گیا۔"),
+    )
+    return _envelope(
+        status_code=exc.status_code,
+        code=str(code),
+        message_en=message_en,
+        message_ur=message_ur,
+        details={key: value for key, value in detail.items() if key != "error"},
+        headers=exc.headers or {},
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def _api_error(_request: Request, exc: ApiError) -> JSONResponse:
@@ -189,7 +212,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         detail = exc.detail
         # Teammate routers raise HTTPException(detail={"error": {...}}); pass it through.
         if isinstance(detail, dict) and "error" in detail:
-            error = dict(detail["error"])
+            raw = detail["error"]
+            if not isinstance(raw, dict):
+                return _coded_error_response(exc, raw, detail)
+            error = dict(raw)
             error.setdefault("request_id", get_request_id())
             error.setdefault("details", {})
             return JSONResponse(

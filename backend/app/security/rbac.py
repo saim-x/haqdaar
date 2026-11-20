@@ -170,6 +170,59 @@ def get_optional_actor(request: Request, db: Session = Depends(get_db)) -> Actor
         return None
 
 
+# --- Header-string resolvers ------------------------------------------------
+#
+# ``app.ai.api_support`` (EN/DPI) resolves the caller for the rag/voice/scam and
+# admin_mocks routers by looking these names up on ``app.security.deps`` and
+# calling them with the raw ``Authorization`` header value. They therefore take a
+# string, not a ``Request``, and open their own short-lived session.
+
+
+def _actor_from_authorization(authorization: str | None) -> ActorContext | None:
+    if not authorization:
+        return None
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        return None
+
+    claims = decode_access_token(token.strip())
+    user_id = _as_uuid(claims.get("sub"))
+    if user_id is None:
+        return None
+
+    from app.db import SessionLocal  # local import keeps module import cheap
+
+    db = SessionLocal()
+    try:
+        user = db.get(User, user_id)
+        if user is None or not user.is_active:
+            return None
+        citizen_id = _as_uuid(claims.get("citizen_id"))
+        if citizen_id is None and UserRole(user.role) is UserRole.CITIZEN:
+            citizen_id = db.execute(
+                select(Citizen.id).where(Citizen.user_id == user.id)
+            ).scalar_one_or_none()
+        return _actor_from_user(user, citizen_id=citizen_id)
+    finally:
+        db.close()
+
+
+def get_current_user_optional(authorization: str | None = None) -> ActorContext | None:
+    """The caller behind an ``Authorization`` header, or ``None`` when anonymous."""
+    try:
+        return _actor_from_authorization(authorization)
+    except (UnauthorizedError, ValueError):
+        return None
+
+
+def get_current_user(authorization: str | None = None) -> ActorContext:
+    """Like :func:`get_current_user_optional` but raises ``401 UNAUTHORIZED``."""
+    actor = get_current_user_optional(authorization)
+    if actor is None:
+        raise UnauthorizedError()
+    return actor
+
+
 def require_roles(*roles: UserRole | str):
     """Dependency factory: allow only the listed roles, else ``403 FORBIDDEN``."""
     allowed = frozenset(str(role) for role in roles)
@@ -407,6 +460,8 @@ __all__ = [
     "get_act_for_citizen",
     "get_api_key_context",
     "get_current_actor",
+    "get_current_user",
+    "get_current_user_optional",
     "get_optional_actor",
     "require_any_authenticated",
     "require_roles",
