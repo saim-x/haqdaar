@@ -41,6 +41,12 @@ export function installDevMock() {
     }
 
     const path = url.pathname.replace('/api/v1', '');
+    const fileMatch = method === 'GET' && path.match(/^\/documents\/([^/]+)\/file$/);
+    if (fileMatch) {
+      const doc = db().documents.find((d) => d.id === fileMatch[1]);
+      if (!doc?.data_url) return json(404, { error: { code: 'NOT_FOUND', message_en: 'Image is no longer in memory (dev mock keeps images per session).', message_ur: 'تصویر دستیاب نہیں۔' } });
+      return realFetch(doc.data_url);
+    }
     let body: unknown = null;
     let form: FormData | undefined;
     if (init?.body instanceof FormData) form = init.body;
