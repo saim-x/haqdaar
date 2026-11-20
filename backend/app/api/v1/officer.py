@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -19,6 +19,7 @@ from app.models.cases import Case, CaseNote, Decision
 from app.models.consent import DataCorrectionRequest
 from app.models.enums import (
     CaseStatus,
+    CaseType,
     ConsentPurpose,
     CorrectionStatus,
     DataCategory,
@@ -261,8 +262,27 @@ def officer_queue(
         query = query.where(Case.status == status)
         count_query = count_query.where(Case.status == status)
     else:
-        query = query.where(Case.status.in_(sorted(QUEUE_STATUSES)))
-        count_query = count_query.where(Case.status.in_(sorted(QUEUE_STATUSES)))
+        # Applications wait in the review statuses. A complaint is a short-lived case
+        # that the CHECK_COMPLAINT job usually closes on its own, but while it is open
+        # an officer should be able to see it — that is the whole point of filing one.
+        query = query.where(
+            or_(
+                Case.status.in_(sorted(QUEUE_STATUSES)),
+                and_(
+                    Case.case_type == CaseType.COMPLAINT.value,
+                    Case.status != CaseStatus.CLOSED.value,
+                ),
+            )
+        )
+        count_query = count_query.where(
+            or_(
+                Case.status.in_(sorted(QUEUE_STATUSES)),
+                and_(
+                    Case.case_type == CaseType.COMPLAINT.value,
+                    Case.status != CaseStatus.CLOSED.value,
+                ),
+            )
+        )
 
     if assigned == "me":
         query = query.where(Case.assigned_officer_id == actor.user_id)

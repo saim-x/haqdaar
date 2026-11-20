@@ -36,7 +36,11 @@ os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("RUN_EMBEDDED_WORKER", "false")
 os.environ.setdefault("JWT_SECRET", "test-secret-not-a-real-key")
-os.environ.setdefault("QR_HMAC_SECRET", "test-qr-secret-not-a-real-key")
+# The committed specimen cards under app/data/doc_eval_set and app/data/demo_docs
+# are static artifacts whose QR payloads were signed with the dev default. Using a
+# different secret here makes every genuine card fail its HMAC check and come back
+# TAMPER_SUSPECTED, which is a false accusation, not a test failure worth having.
+os.environ.setdefault("QR_HMAC_SECRET", "dev-qr-secret-change-me")
 os.environ.setdefault("UPLOAD_DIR", str(BACKEND_DIR / ".pytest-uploads"))
 
 PERSONA_KEYS: tuple[str, ...] = (
@@ -74,6 +78,38 @@ def _ensure_database() -> None:
             connection.execute(f'CREATE DATABASE "{database}"')
 
 
+def _normalise_version_table(config: Any) -> None:
+    """Collapse a stale multi-row ``alembic_version``.
+
+    Before the Integration Lead joined the two chains at S1, ``app_0001`` and
+    ``dpi_mock_0001`` were separate heads and a database could record both. Now
+    that ``dpi_mock_0001`` descends from ``app_0001``, keeping the ancestor row
+    makes ``upgrade heads`` fail with "Requested revision dpi_mock_0001 overlaps
+    with other requested revisions app_0001". Drop every row that is not a head.
+    """
+    from alembic.script import ScriptDirectory
+    from sqlalchemy import text
+
+    from app.db import engine
+
+    heads = set(ScriptDirectory.from_config(config).get_heads())
+    with engine.connect() as connection:
+        exists = connection.execute(
+            text("SELECT to_regclass('public.alembic_version') IS NOT NULL")
+        ).scalar()
+        if not exists:
+            return
+        recorded = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+        stale = [revision for revision in recorded if revision not in heads]
+        if not stale:
+            return
+        connection.execute(
+            text("DELETE FROM alembic_version WHERE version_num = ANY(:stale)"),
+            {"stale": stale},
+        )
+        connection.commit()
+
+
 def _migrate() -> None:
     from alembic import command
     from alembic.config import Config
@@ -82,6 +118,7 @@ def _migrate() -> None:
     config.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
     config.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
     os.environ["ALEMBIC_DATABASE_URL"] = TEST_DATABASE_URL
+    _normalise_version_table(config)
     command.upgrade(config, "heads")
 
 
