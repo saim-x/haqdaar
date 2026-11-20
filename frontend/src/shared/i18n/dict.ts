@@ -29,7 +29,7 @@ export const dict = {
 
   // Connectivity pill
   online: { ur: 'آن لائن', en: 'Online' },
-  offlineSaved: { ur: 'آف لائن۔ {n} چیزیں محفوظ، سگنل آنے پر خود بھیجی جائیں گی', en: 'Offline — {n} saved, will send automatically' },
+  offlineSaved: { ur: 'آف لائن۔ {n} چیزیں محفوظ، سگنل آنے پر خود بھیجی جائیں گی', en: 'Offline. {n} saved, will send automatically' },
   offlineNone: { ur: 'آف لائن۔ آپ کا کام اس فون پر محفوظ ہے', en: 'Offline. Your work is saved on this phone' },
   syncing: { ur: 'بھیجا جا رہا ہے…', en: 'Syncing…' },
   needsAttention: { ur: '{n} چیز توجہ چاہتی ہے', en: '{n} item needs attention' },
