@@ -8,12 +8,13 @@ clear error message. The API server and the worker always boot.
 from __future__ import annotations
 
 import importlib
+import uuid
 from collections.abc import Callable, Mapping
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.enums import JobType
+from app.models.enums import CaseStatus, JobType
 
 #: ``job_type -> (module_path, function_name)``. Pinned by docs/14 (A1 contracts).
 HANDLER_REGISTRY: dict[str, tuple[str, str]] = {
@@ -84,10 +85,46 @@ def resolve_handler(job_type: str) -> Callable[..., Any]:
     return handler
 
 
+def _repair_stranded_processing(
+    db: Session, job_type: str, payload: Mapping[str, Any], result: Any
+) -> None:
+    """A ``PROCESS_CASE`` run must never leave its case in ``PROCESSING``.
+
+    ``run_case_agent`` sets the case to ``PROCESSING`` before the nine steps and
+    only restores the decided status on the path that writes a new decision. When
+    the facts are unchanged it dedupes and returns early
+    (``app/agent/case_agent.py::_step_commit_and_dispatch``), so a second
+    ``PROCESS_CASE`` job for an already-decided case strands it in ``PROCESSING``:
+    the citizen sees "in progress" forever and the payment runner refuses the case
+    ("payment requires APPROVED").
+
+    The root fix belongs in the agent (EN-owned, reported as P0). Until it lands the
+    dispatcher enforces the post-condition at the boundary it owns: if the handler
+    returned a decision, the case status is that decision's outcome. On the normal
+    path the status already matches, so this is a no-op.
+    """
+    if job_type != JobType.PROCESS_CASE.value or result is None:
+        return
+    case_id = payload.get("case_id")
+    outcome = getattr(result, "outcome_status", None)
+    if case_id is None or outcome is None:
+        return
+
+    from app.models.cases import Case
+
+    case = db.get(Case, uuid.UUID(str(case_id)))
+    if case is not None and case.status == CaseStatus.PROCESSING.value:
+        case.status = str(outcome)
+        db.flush()
+
+
 def run_handler(db: Session, job_type: str, payload: dict[str, Any]) -> Any:
     """Execute one job payload through its registered handler."""
     handler = resolve_handler(job_type)
-    return handler(db, **normalize_payload(job_type, payload))
+    normalized = normalize_payload(job_type, payload)
+    result = handler(db, **normalized)
+    _repair_stranded_processing(db, job_type, normalized, result)
+    return result
 
 
 __all__ = [

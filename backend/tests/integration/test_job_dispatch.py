@@ -251,6 +251,24 @@ def _submit_application(client: Any, token: str, program_id: str, tenant_id: Any
     return case_id
 
 
+def _drain(db: Any, *, rounds: int = 50) -> None:
+    """Run every due job synchronously, through the same path the worker uses."""
+    queue = importlib.import_module("app.jobs.queue")
+    handlers = importlib.import_module("app.jobs.handlers")
+
+    for _ in range(rounds):
+        job = queue.claim_job(db)
+        if job is None:
+            return
+        payload = dict(job.payload_json or {})
+        try:
+            result = handlers.run_handler(db, job.job_type, payload)
+        except Exception as exc:  # noqa: BLE001 - mirror the worker's failure path
+            queue.mark_failed(db, job, f"{type(exc).__name__}: {exc}")
+        else:
+            queue.mark_completed(db, job, result=result if isinstance(result, dict) else None)
+
+
 def test_process_case_job_leaves_submitted_through_the_dispatcher(
     client: Any, db: Any, seeded_ids: dict[str, Any], in_process_mocks: None
 ) -> None:
@@ -261,6 +279,9 @@ def test_process_case_job_leaves_submitted_through_the_dispatcher(
 
     program_id = str(seeded_ids["programs"][PROGRAM_CODE])
     tenant_id = seeded_ids["tenants"][TENANT_CODE]
+
+    # Other modules leave payment jobs behind; clear them so the claim below is ours.
+    _drain(db)
 
     token = _demo_login(client, "widow_fatima")
     case_id = _submit_application(client, token, program_id, tenant_id)
@@ -276,6 +297,7 @@ def test_process_case_job_leaves_submitted_through_the_dispatcher(
     assert "tenant_id" in (job.payload_json or {}), (
         "this regression only bites when the payload carries tenant_id"
     )
+    assert str((job.payload_json or {}).get("case_id")) == case_id
 
     result = handlers.run_handler(db, job.job_type, dict(job.payload_json or {}))
     queue.mark_completed(db, job, result=result if isinstance(result, dict) else None)
@@ -287,3 +309,47 @@ def test_process_case_job_leaves_submitted_through_the_dispatcher(
     )
     assert case.status in {"APPROVED", "HUMAN_REVIEW", "NEEDS_INFO", "WAITING_EXTERNAL"}
     assert case.latest_route is not None
+
+
+def test_a_replayed_process_case_job_does_not_strand_the_case_in_processing(
+    client: Any, db: Any, seeded_ids: dict[str, Any], in_process_mocks: None
+) -> None:
+    """A duplicate ``PROCESS_CASE`` job must not leave the case stuck in ``PROCESSING``.
+
+    ``run_case_agent`` sets the case to ``PROCESSING`` before the nine steps and only
+    restores the decided status on the path that writes a new decision. Re-running it
+    on unchanged facts dedupes and returns early, so the transient state used to be
+    committed: the citizen saw "in progress" forever and the payment runner refused
+    the case. The dispatcher enforces the post-condition.
+    """
+    models = importlib.import_module("app.models")
+    queue = importlib.import_module("app.jobs.queue")
+    handlers = importlib.import_module("app.jobs.handlers")
+
+    _drain(db)
+    token = _demo_login(client, "widow_fatima")
+    case_id = _submit_application(
+        client, token, str(seeded_ids["programs"][PROGRAM_CODE]), seeded_ids["tenants"][TENANT_CODE]
+    )
+
+    job = queue.claim_job(db)
+    assert job is not None and job.job_type == "PROCESS_CASE"
+    payload = dict(job.payload_json or {})
+    handlers.run_handler(db, job.job_type, payload)
+    queue.mark_completed(db, job, result=None)
+    db.commit()
+
+    case = db.get(models.Case, case_id)
+    db.refresh(case)
+    decided_status = case.status
+    assert decided_status != "PROCESSING"
+
+    # The same job again — a retry, a re-grant, a double submit.
+    handlers.run_handler(db, "PROCESS_CASE", payload)
+    db.commit()
+    db.refresh(case)
+
+    assert case.status == decided_status, (
+        f"a replayed PROCESS_CASE job moved the case {decided_status} -> {case.status}"
+    )
+    assert case.status != "PROCESSING", "the case was stranded in the transient state"

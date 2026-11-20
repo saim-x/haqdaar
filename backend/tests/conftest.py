@@ -213,6 +213,28 @@ def database_url() -> str:
     return TEST_DATABASE_URL
 
 
+def _clear_rag_tables(db: Any) -> None:
+    """Drop RAG rows before the seed's reset.
+
+    ``app/mocks/seed.py::_RESET_ORDER`` deletes ``programs`` (index 15) before
+    ``rag_documents`` (index 24), but ``rag_documents.program_id`` references
+    ``programs``. As soon as any test has indexed a program the reset dies with a
+    ForeignKeyViolation, so the suite only ever ran once against a given database.
+    ``seed_all(with_rag=False)`` never repopulates these tables, so clearing them
+    here is safe and keeps the suite re-runnable.
+
+    Reported to the Lead: the durable fix is the order in ``_RESET_ORDER``
+    (``app/mocks/seed.py`` is DPI-owned).
+    """
+    from sqlalchemy import delete
+
+    from app.models.ai import RagChunk, RagDocument
+
+    db.execute(delete(RagChunk))
+    db.execute(delete(RagDocument))
+    db.flush()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def prepared_database(database_url: str) -> Iterator[str]:
     """Create, migrate and seed ``haqdaar_test`` exactly once per session.
@@ -229,6 +251,7 @@ def prepared_database(database_url: str) -> Iterator[str]:
 
     db = SessionLocal()
     try:
+        _clear_rag_tables(db)
         seed_all(db, reset=True, with_rag=False)
         db.commit()
     finally:
