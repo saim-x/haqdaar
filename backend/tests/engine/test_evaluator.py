@@ -196,7 +196,7 @@ def test_trace_records_actual_expected_and_source(sahara_v1: RuleSetSchema) -> N
 def test_trace_json_shape_matches_decisions_column(sahara_v1: RuleSetSchema) -> None:
     result = evaluate_ruleset(sahara_v1, FactBundle(facts={}))
     payload = result.trace_json()
-    assert len(payload) == 8
+    assert len(payload) == 9
     assert set(payload[0]) == {
         "rule_id",
         "fact",
@@ -223,7 +223,7 @@ def test_partitions_are_disjoint_and_complete(sahara_v1: RuleSetSchema) -> None:
         }
     )
     result = evaluate_ruleset(sahara_v1, bundle)
-    assert len(result.passed) + len(result.failed) + len(result.unknown) == 8
+    assert len(result.passed) + len(result.failed) + len(result.unknown) == 9
     assert [t.rule_id for t in result.human_fails] == ["R05_INCOME_CAP"]
     assert {t.rule_id for t in result.ask_items} == {
         "R02_CNIC_VALID",
@@ -231,6 +231,7 @@ def test_partitions_are_disjoint_and_complete(sahara_v1: RuleSetSchema) -> None:
         "R04_WIDOW_VERIFIED",
         "R07_DISTRICT_SINDH",
         "R08_CNIC_DOC",
+        "R09_CHILDREN_KNOWN",
     }
     assert {t.rule_id for t in result.human_unknowns} == {"R06_NO_CONFLICTING_GRANT"}
 

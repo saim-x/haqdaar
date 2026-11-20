@@ -146,7 +146,7 @@ Iterates `audit_events` ordered by `seq ASC`, recomputing `prev_hash` linkage an
 If any row is modified or deleted in Postgres, `valid: false` pinpoints the exact `first_broken_seq`.
 
 ### 5.3 Mandatory Audited Actions
-`auth.login`, `auth.demo_login`, `auth.forbidden`, `auth.cross_scope_denied`, `case.created`, `case.submitted`, `case.status_changed`, `agent.step`, `decision.recorded`, `officer.decided`, `officer.second_approved`, `rule.draft_created`, `rule.simulated`, `rule.published`, `consent.granted`, `consent.modified`, `consent.withdrawn`, `consent.access_denied`, `document.uploaded`, `document.verified`, `payment.initiated`, `payment.completed`, `payment.failed`, `scam.checked`, `ai.call`, `ai.guardrail_triggered`, `mock.config_changed`, `api_key.created`, `api_key.revoked`.
+`auth.login`, `auth.demo_login`, `auth.forbidden`, `auth.cross_scope_denied`, `case.created`, `case.submitted`, `case.status_changed`, `agent.step`, `decision.recorded`, `officer.decided`, `officer.second_approved`, `rule.draft_created`, `rule.simulated`, `rule.published`, `consent.granted`, `consent.modified`, `consent.withdrawn`, `consent.access_denied`, `document.uploaded`, `document.verified`, `payment.initiated`, `payment.completed`, `payment.failed`, `scam.checked`, `ai.call`, `ai.guardrail_triggered`, `mock.config_changed`, `api_key.created`, `api_key.revoked`, `rule.draft_updated`, `case.reevaluated`.
 
 ---
 
