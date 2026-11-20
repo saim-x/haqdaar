@@ -104,7 +104,17 @@ def record(
     )
 
     prev_hash = _chain_tip(db)
-    seq = int(db.execute(text(f"SELECT nextval('{AUDIT_SEQ_NAME}')")).scalar_one())
+    # The sequence is the normal source, but seeded rows carry explicit ``seq``
+    # values, so the next number must also clear the current maximum. Under the
+    # advisory lock above this is exact, and ``MAX(seq)`` is an index-only scan.
+    seq = int(
+        db.execute(
+            text(
+                f"SELECT GREATEST(nextval('{AUDIT_SEQ_NAME}'), "
+                "COALESCE((SELECT MAX(seq) FROM audit_events), 0) + 1)"
+            )
+        ).scalar_one()
+    )
     created_at = utcnow()
 
     event = AuditEvent(

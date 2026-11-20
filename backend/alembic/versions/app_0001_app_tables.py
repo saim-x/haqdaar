@@ -10,7 +10,7 @@ Two sequences are created explicitly because Alembic does not autogenerate them:
 
 Revision ID: app_0001
 Revises:
-Create Date: 2026-11-20 22:03:38.714981
+Create Date: 2026-11-20 22:21:05.075434
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def upgrade() -> None:
     sa.Column('error_code', sa.String(length=48), nullable=True),
     sa.Column('case_id', sa.UUID(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_ai_telemetry'))
     )
     op.create_table('audit_events',
@@ -61,7 +61,7 @@ def upgrade() -> None:
     sa.Column('payload_json', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), nullable=False),
     sa.Column('prev_hash', sa.String(length=64), nullable=False),
     sa.Column('event_hash', sa.String(length=64), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_audit_events'))
     )
@@ -91,8 +91,8 @@ def upgrade() -> None:
     sa.Column('locked_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('last_error', sa.Text(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_jobs'))
     )
     op.create_index(op.f('ix_jobs_dedup_key'), 'jobs', ['dedup_key'], unique=False)
@@ -106,7 +106,7 @@ def upgrade() -> None:
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('consumed_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_otp_challenges'))
     )
     op.create_index(op.f('ix_otp_challenges_phone'), 'otp_challenges', ['phone'], unique=False)
@@ -116,7 +116,7 @@ def upgrade() -> None:
     sa.Column('name_ur', sa.String(length=120), nullable=False),
     sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_tenants')),
     sa.UniqueConstraint('code', name=op.f('uq_tenants_code'))
     )
@@ -138,7 +138,7 @@ def upgrade() -> None:
     sa.Column('active_rule_version_id', sa.UUID(), nullable=True),
     sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_programs_tenant_id_tenants')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_programs')),
     sa.UniqueConstraint('code', name=op.f('uq_programs_code'))
@@ -154,7 +154,7 @@ def upgrade() -> None:
     sa.Column('preferred_lang', sa.String(length=8), server_default=sa.text("'ur'"), nullable=False),
     sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_users_tenant_id_tenants')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_users')),
     sa.UniqueConstraint('email', name=op.f('uq_users_email')),
@@ -171,7 +171,7 @@ def upgrade() -> None:
     sa.Column('last_used_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_by_user_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['created_by_user_id'], ['users.id'], name=op.f('fk_api_keys_created_by_user_id_users')),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_api_keys_tenant_id_tenants')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_api_keys')),
@@ -190,8 +190,8 @@ def upgrade() -> None:
     sa.Column('profile_data', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), nullable=False),
     sa.Column('created_by_user_id', sa.UUID(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['created_by_user_id'], ['users.id'], name=op.f('fk_citizens_created_by_user_id_users')),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_citizens_user_id_users')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_citizens')),
@@ -207,7 +207,7 @@ def upgrade() -> None:
     sa.Column('source_type', sa.String(length=24), nullable=False),
     sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['program_id'], ['programs.id'], name=op.f('fk_rag_documents_program_id_programs')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_rag_documents'))
     )
@@ -217,7 +217,7 @@ def upgrade() -> None:
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('revoked_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_refresh_tokens_user_id_users')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_refresh_tokens')),
     sa.UniqueConstraint('token_hash', name=op.f('uq_refresh_tokens_token_hash'))
@@ -235,7 +235,7 @@ def upgrade() -> None:
     sa.Column('published_by_user_id', sa.UUID(), nullable=True),
     sa.Column('published_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['created_by_user_id'], ['users.id'], name=op.f('fk_rule_versions_created_by_user_id_users')),
     sa.ForeignKeyConstraint(['program_id'], ['programs.id'], name=op.f('fk_rule_versions_program_id_programs')),
     sa.ForeignKeyConstraint(['published_by_user_id'], ['users.id'], name=op.f('fk_rule_versions_published_by_user_id_users')),
@@ -273,8 +273,8 @@ def upgrade() -> None:
     sa.Column('submitted_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('decided_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['assigned_officer_id'], ['users.id'], name=op.f('fk_cases_assigned_officer_id_users')),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_cases_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['first_approver_id'], ['users.id'], name=op.f('fk_cases_first_approver_id_users')),
@@ -302,7 +302,7 @@ def upgrade() -> None:
     sa.Column('allowed', sa.Boolean(), nullable=False),
     sa.Column('denial_reason', sa.String(length=64), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['actor_user_id'], ['users.id'], name=op.f('fk_consent_access_logs_actor_user_id_users')),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_consent_access_logs_citizen_id_citizens')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_consent_access_logs'))
@@ -322,8 +322,8 @@ def upgrade() -> None:
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('withdrawn_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_consent_grants_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['recipient_tenant_id'], ['tenants.id'], name=op.f('fk_consent_grants_recipient_tenant_id_tenants')),
     sa.ForeignKeyConstraint(['recipient_user_id'], ['users.id'], name=op.f('fk_consent_grants_recipient_user_id_users')),
@@ -343,7 +343,7 @@ def upgrade() -> None:
     sa.Column('status', sa.String(length=20), nullable=False),
     sa.Column('reviewed_by_user_id', sa.UUID(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_data_correction_requests_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['reviewed_by_user_id'], ['users.id'], name=op.f('fk_data_correction_requests_reviewed_by_user_id_users')),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_data_correction_requests_tenant_id_tenants')),
@@ -359,7 +359,7 @@ def upgrade() -> None:
     sa.Column('tsv', postgresql.TSVECTOR(), sa.Computed("to_tsvector('simple', content)", persisted=True), nullable=True),
     sa.Column('embedding', postgresql.ARRAY(sa.Float()), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['document_id'], ['rag_documents.id'], name=op.f('fk_rag_chunks_document_id_rag_documents')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_rag_chunks'))
     )
@@ -374,7 +374,7 @@ def upgrade() -> None:
     sa.Column('summary_json', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('created_by_user_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['baseline_rule_version_id'], ['rule_versions.id'], name=op.f('fk_simulation_runs_baseline_rule_version_id_rule_versions')),
     sa.ForeignKeyConstraint(['candidate_rule_version_id'], ['rule_versions.id'], name=op.f('fk_simulation_runs_candidate_rule_version_id_rule_versions')),
     sa.ForeignKeyConstraint(['created_by_user_id'], ['users.id'], name=op.f('fk_simulation_runs_created_by_user_id_users')),
@@ -392,7 +392,7 @@ def upgrade() -> None:
     sa.Column('metadata_json', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), nullable=False),
     sa.Column('is_visible_to_citizen', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['author_user_id'], ['users.id'], name=op.f('fk_case_notes_author_user_id_users')),
     sa.ForeignKeyConstraint(['case_id'], ['cases.id'], name=op.f('fk_case_notes_case_id_cases')),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_case_notes_tenant_id_tenants')),
@@ -407,7 +407,7 @@ def upgrade() -> None:
     sa.Column('actor_user_id', sa.UUID(), nullable=False),
     sa.Column('snapshot_json', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['actor_user_id'], ['users.id'], name=op.f('fk_consent_events_actor_user_id_users')),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_consent_events_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['grant_id'], ['consent_grants.id'], name=op.f('fk_consent_events_grant_id_consent_grants')),
@@ -437,7 +437,7 @@ def upgrade() -> None:
     sa.Column('officer_note', sa.Text(), nullable=True),
     sa.Column('is_override', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['actor_user_id'], ['users.id'], name=op.f('fk_decisions_actor_user_id_users')),
     sa.ForeignKeyConstraint(['case_id'], ['cases.id'], name=op.f('fk_decisions_case_id_cases')),
     sa.ForeignKeyConstraint(['rule_version_id'], ['rule_versions.id'], name=op.f('fk_decisions_rule_version_id_rule_versions')),
@@ -463,7 +463,7 @@ def upgrade() -> None:
     sa.Column('retake_reason_en', sa.Text(), nullable=True),
     sa.Column('uploaded_by_user_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['case_id'], ['cases.id'], name=op.f('fk_documents_case_id_cases')),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_documents_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_documents_tenant_id_tenants')),
@@ -488,7 +488,7 @@ def upgrade() -> None:
     sa.Column('case_id', sa.UUID(), nullable=True),
     sa.Column('read_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['case_id'], ['cases.id'], name=op.f('fk_notifications_case_id_cases')),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_notifications_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_notifications_user_id_users')),
@@ -510,8 +510,8 @@ def upgrade() -> None:
     sa.Column('failure_reason', sa.String(length=120), nullable=True),
     sa.Column('attempt_count', sa.Integer(), server_default=sa.text('0'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['case_id'], ['cases.id'], name=op.f('fk_payments_case_id_cases')),
     sa.ForeignKeyConstraint(['citizen_id'], ['citizens.id'], name=op.f('fk_payments_citizen_id_citizens')),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name=op.f('fk_payments_tenant_id_tenants')),
@@ -533,7 +533,7 @@ def upgrade() -> None:
     sa.Column('user_disputed', sa.Boolean(), server_default=sa.text('false'), nullable=False),
     sa.Column('dispute_note', sa.Text(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['matched_notification_id'], ['notifications.id'], name=op.f('fk_scam_checks_matched_notification_id_notifications')),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_scam_checks_user_id_users')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_scam_checks'))

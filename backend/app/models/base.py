@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, MetaData
+from sqlalchemy import DateTime, MetaData, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -44,10 +44,18 @@ class UUIDPrimaryKeyMixin:
 
 
 class CreatedAtMixin:
-    created_at: Mapped[datetime] = mapped_column(TSTAMPTZ, nullable=False, default=utcnow)
+    # ``server_default`` keeps raw-SQL inserts (seed scripts, fixtures, psql)
+    # working; the ORM still writes the Python-side ``utcnow``.
+    created_at: Mapped[datetime] = mapped_column(
+        TSTAMPTZ, nullable=False, default=utcnow, server_default=text("now()")
+    )
 
 
 class TimestampMixin(CreatedAtMixin):
     updated_at: Mapped[datetime] = mapped_column(
-        TSTAMPTZ, nullable=False, default=utcnow, onupdate=utcnow
+        TSTAMPTZ,
+        nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
+        server_default=text("now()"),
     )

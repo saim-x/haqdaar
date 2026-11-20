@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TSTAMPTZ, UUIDPrimaryKeyMixin
+from app.models.base import Base, TSTAMPTZ, UUIDPrimaryKeyMixin, utcnow
 
 AUDIT_SEQ = Sequence("audit_events_seq_seq")
 
@@ -47,7 +47,9 @@ class AuditEvent(Base, UUIDPrimaryKeyMixin):
     )
     prev_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     event_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(TSTAMPTZ, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        TSTAMPTZ, nullable=False, default=utcnow, server_default=text("now()")
+    )
 
 
 __all__ = ["AUDIT_SEQ", "AuditEvent"]

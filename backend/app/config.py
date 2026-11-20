@@ -107,8 +107,18 @@ class Settings(BaseSettings):
 
     @property
     def MOCK_BASE_URL(self) -> str:  # noqa: N802 - uppercase alias used by app/agent
-        """Uppercase alias so ``settings.MOCK_BASE_URL`` works for teammates."""
+        """Uppercase alias so ``settings.MOCK_BASE_URL`` works for teammates.
+
+        Writable: the integration tests point it at a live test server.
+        """
+        override = self.__dict__.get("_mock_base_url_override")
+        if override:
+            return str(override)
         return self.mock_api_root
+
+    @MOCK_BASE_URL.setter
+    def MOCK_BASE_URL(self, value: str) -> None:  # noqa: N802 - see getter
+        object.__setattr__(self, "_mock_base_url_override", value)
 
 
 @lru_cache
