@@ -521,19 +521,36 @@ def parse_number(text: str) -> int | None:
 # --------------------------------------------------------------------------- #
 # CNIC
 # --------------------------------------------------------------------------- #
-_CNIC_ANY = re.compile(r"(?<!\d)(\d{5})[-\s]?(\d{7})[-\s]?(\d)(?!\d)")
+_DIGIT_WORDS_EN = dict(zip(
+    ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"),
+    range(10),
+    strict=True,
+))
+
+
+def parse_digit_sequence(text: str) -> str | None:
+    """Join numeric groups and spoken single digits, preserving leading zeros."""
+    runs: list[list[str]] = []
+    current: list[str] = []
+    for token in re.findall(r"\w+", normalize_text(text).lower()):
+        if token.isascii() and token.isdecimal():
+            current.append(token)
+            continue
+        digit = _DIGIT_WORDS_EN.get(token, _word_value(token))
+        if digit is not None and 0 <= digit <= 9:
+            current.append(str(digit))
+        elif current:
+            runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+    return "".join(runs[0]) if len(runs) == 1 else None
 
 
 def parse_cnic(text: str) -> str | None:
-    """Extract a 13-digit CNIC (dashed, spaced or bare) as bare digits."""
-    if not text:
-        return None
-    normalized = normalize_text(text)
-    match = _CNIC_ANY.search(normalized)
-    if match:
-        return "".join(match.groups())
-    bare = re.search(r"(?<!\d)(\d{13})(?!\d)", normalized)
-    return bare.group(1) if bare else None
+    """Read a complete CNIC without guessing or dropping digits."""
+    digits = parse_digit_sequence(text)
+    return digits if digits is not None and len(digits) == 13 else None
 
 
 def format_cnic(digits: str) -> str:
@@ -611,17 +628,18 @@ def parse_date(text: str) -> str | None:
         return None
     normalized = normalize_text(text)
 
-    iso = re.search(r"(\d{4})-(\d{1,2})-(\d{1,2})", normalized)
+    iso = re.search(r"(?<!\d)(\d{4})[-/. ]+(\d{1,2})[-/. ]+(\d{1,2})(?!\d)", normalized)
     if iso:
         return _safe_iso(int(iso.group(1)), int(iso.group(2)), int(iso.group(3)))
 
-    numeric = re.search(r"(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})", normalized)
+    numeric = re.search(
+        r"(?<!\d)(\d{1,2})[/.\- ]+(\d{1,2})[/.\- ]+(\d{4}|\d{2})(?!\d)",
+        normalized,
+    )
     if numeric:
         day, month, year = (int(part) for part in numeric.groups())
         if year < 100:
             year += 1900 if year > 30 else 2000
-        if day > 12 and month <= 12:
-            return _safe_iso(year, month, day)
         return _safe_iso(year, month, day)
 
     lowered = normalized.lower()

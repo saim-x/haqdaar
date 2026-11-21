@@ -527,7 +527,7 @@ def _parse_field(field_key: str, text: str) -> ParsedFieldResult:
         if urdu_nlp.is_unknown(text):
             return ParsedFieldResult(key, None, 0.95, "USER_UNKNOWN")
         digits = urdu_nlp.parse_cnic(text)
-        if digits is None:
+        if digits is None or not digits.startswith("99900"):
             return ParsedFieldResult(key, None, 0.0, "PARSE_FAILED")
         return ParsedFieldResult(
             key, digits, 0.97, None, urdu_nlp.format_cnic(digits)
@@ -552,7 +552,7 @@ def _parse_field(field_key: str, text: str) -> ParsedFieldResult:
     if key in {"payout_phone", "phone", "mobile"}:
         if urdu_nlp.is_unknown(text):
             return ParsedFieldResult(key, None, 0.95, "USER_UNKNOWN")
-        digits = re.sub(r"\D", "", urdu_nlp.normalize_text(text))
+        digits = urdu_nlp.parse_digit_sequence(text) or ""
         if digits.startswith("92") and len(digits) == 12:
             digits = "0" + digits[2:]
         if len(digits) == 10 and digits.startswith("3"):

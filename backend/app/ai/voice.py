@@ -328,7 +328,7 @@ def transcribe_and_parse(
             if (
                 local.value is None
                 and not local.is_unknown
-                and field_key not in {"applicant_cnic", "spouse_cnic"}
+                and field_key not in {"applicant_cnic", "spouse_cnic", "applicant_dob", "payout_phone"}
             ):
                 # Fall back to LLM structured extraction when deterministic Urdu NLP cannot parse.
                 try:
