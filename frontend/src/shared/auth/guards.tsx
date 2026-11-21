@@ -6,7 +6,9 @@ import type { Role } from '../api/types';
 
 function FullScreenMessage({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-[60dvh] place-items-center px-6 text-center text-sm text-ink-soft">{children}</div>
+    <div className="grid min-h-[60dvh] place-items-center px-6 text-center text-caption text-ink-3">
+      {children}
+    </div>
   );
 }
 

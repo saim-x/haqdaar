@@ -16,6 +16,10 @@ type Tab = 'citizen' | 'staff';
  *  - citizens: phone + 6-digit OTP (simulated SMS)
  *  - staff/helpers: email + password
  *  - judges: one-tap demo persona login, clearly labelled as a prototype affordance
+ *
+ * The page has one job: get you in. So it is a wordmark, a two-way switch, one
+ * card of fields, and the demo list underneath as a plain ledger of people. No
+ * hero, no illustration, no gradient — a government counter does not sell itself.
  */
 export function LoginPage() {
   const { t, lang } = useI18n();
@@ -89,44 +93,58 @@ export function LoginPage() {
 
   return (
     <div className="screen">
-      <header className="mb-6 mt-2 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-teal-700">{t('app.name')}</h1>
-          <p className="text-sm text-ink-soft">{t('app.tagline')}</p>
+      <header className="enter enter-1 mb-7 mt-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-display-lg font-medium leading-[1.2] text-ink">{t('app.name')}</h1>
+          <p className="mt-1 text-body leading-[1.7] text-ink-2">{t('app.tagline')}</p>
         </div>
         <AudioButton audioKey="login_welcome" text={t('login.subtitle')} />
       </header>
 
-      <div className="mb-5 grid grid-cols-2 gap-2" role="tablist">
-        {(['citizen', 'staff'] as Tab[]).map((key) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`min-h-primary rounded-2xl border-2 text-base font-semibold ${
-              tab === key ? 'border-teal-700 bg-teal-600 text-white' : 'border-ink/20 bg-white text-ink'
-            }`}
-          >
-            {key === 'citizen' ? t('login.roleCitizen') : t('login.staffTitle')}
-          </button>
-        ))}
+      <div
+        className="enter enter-2 mb-5 grid grid-cols-2 gap-1 rounded-control bg-raised p-1"
+        role="tablist"
+      >
+        {(['citizen', 'staff'] as Tab[]).map((key) => {
+          const selected = tab === key;
+          return (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setTab(key)}
+              className={`press min-h-tap rounded-[8px] text-body ${
+                selected
+                  ? 'bg-card font-medium text-ink shadow-hair'
+                  : 'text-ink-2 hover:text-ink'
+              }`}
+            >
+              {key === 'citizen' ? t('login.roleCitizen') : t('login.staffTitle')}
+            </button>
+          );
+        })}
       </div>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-2xl border-2 border-[#B42318]/40 bg-[#B42318]/10 px-4 py-3 text-sm font-semibold text-[#B42318]">
+        <div
+          role="alert"
+          className="enter mb-4 rounded-control border border-negative/25 bg-negative-wash px-4 py-3 text-caption font-medium text-negative"
+        >
           {error}
         </div>
       )}
       {notice && (
-        <div role="status" className="mb-4 rounded-2xl border-2 border-teal-600/30 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+        <div
+          role="status"
+          className="enter mb-4 rounded-control border border-accent/25 bg-accent-wash px-4 py-3 text-caption font-medium text-accent-ink"
+        >
           {notice}
         </div>
       )}
 
       {tab === 'citizen' ? (
-        <section className="card p-4">
-          <label htmlFor="phone" className="mb-1 block text-sm font-semibold text-ink-soft">
+        <section className="card enter enter-3 p-5">
+          <label htmlFor="phone" className="block text-caption font-medium text-ink-2">
             {t('login.phone')}
           </label>
           <input
@@ -136,16 +154,22 @@ export function LoginPage() {
             dir="ltr"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="num"
+            className="num mt-1.5 font-mono"
             autoComplete="tel"
           />
           {!challengeId ? (
-            <TapButton block className="mt-3" onClick={handleSendOtp} disabled={busy === 'otp'} icon={<IconPhone size={20} />}>
+            <TapButton
+              block
+              className="mt-4"
+              onClick={handleSendOtp}
+              disabled={busy === 'otp'}
+              icon={<IconPhone size={20} />}
+            >
               {t('login.sendOtp')}
             </TapButton>
           ) : (
             <>
-              <label htmlFor="otp" className="mb-1 mt-4 block text-sm font-semibold text-ink-soft">
+              <label htmlFor="otp" className="mt-5 block text-caption font-medium text-ink-2">
                 {t('login.otp')}
               </label>
               <input
@@ -156,22 +180,35 @@ export function LoginPage() {
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                className="num tracking-[0.4em]"
+                className="num mt-1.5 text-center font-mono text-title-lg tracking-[0.2em]"
                 autoComplete="one-time-code"
               />
-              <TapButton block className="mt-3" onClick={handleVerifyOtp} disabled={otp.length !== 6 || busy === 'verify'}>
+              <TapButton
+                block
+                className="mt-4"
+                onClick={handleVerifyOtp}
+                disabled={otp.length !== 6 || busy === 'verify'}
+              >
                 {t('login.verify')}
               </TapButton>
             </>
           )}
         </section>
       ) : (
-        <section className="card p-4">
-          <label htmlFor="email" className="mb-1 block text-sm font-semibold text-ink-soft">
+        <section className="card enter enter-3 p-5">
+          <label htmlFor="email" className="block text-caption font-medium text-ink-2">
             {t('login.email')}
           </label>
-          <input id="email" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
-          <label htmlFor="password" className="mb-1 mt-4 block text-sm font-semibold text-ink-soft">
+          <input
+            id="email"
+            type="email"
+            dir="ltr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1.5"
+            autoComplete="username"
+          />
+          <label htmlFor="password" className="mt-5 block text-caption font-medium text-ink-2">
             {t('login.password')}
           </label>
           <input
@@ -180,49 +217,52 @@ export function LoginPage() {
             dir="ltr"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="mt-1.5"
             autoComplete="current-password"
           />
-          <TapButton block className="mt-3" onClick={handlePassword} disabled={busy === 'password'} icon={<IconShield size={20} />}>
+          <TapButton
+            block
+            className="mt-4"
+            onClick={handlePassword}
+            disabled={busy === 'password'}
+            icon={<IconShield size={20} />}
+          >
             {t('login.signIn')}
           </TapButton>
         </section>
       )}
 
-      <section className="mt-8">
-        <div className="mb-1 flex items-center gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-soft">{t('login.demoTitle')}</h2>
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">DEMO_MODE</span>
-        </div>
-        <p className="mb-3 text-xs text-ink-soft">{t('login.demoHint')}</p>
-        <ul className="grid gap-2">
+      <section className="enter enter-4 mt-8">
+        <h2 className="section-label">{t('login.demoTitle')}</h2>
+        <p className="mt-2 text-meta leading-[1.7] text-ink-3">{t('login.demoHint')}</p>
+
+        <ul className="card mt-3 overflow-hidden">
           {PERSONAS.map((persona) => (
-            <li key={persona.key}>
+            <li key={persona.key} className="border-b border-ink/[0.08] last:border-b-0">
               <button
                 type="button"
                 data-persona={persona.key}
                 onClick={() => void handleDemo(persona.key)}
                 disabled={busy !== null}
-                className="flex min-h-primary w-full items-center gap-3 rounded-2xl border-2 border-ink/15 bg-white px-3 py-2 text-start transition hover:border-teal-600 hover:bg-teal-50 disabled:opacity-60"
+                className="press flex min-h-primary w-full items-center gap-3 px-4 py-3 text-start hover:bg-raised disabled:opacity-50"
               >
                 <span
                   aria-hidden
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-caption font-medium text-white"
                   style={{ backgroundColor: persona.accent }}
                 >
                   {persona.name.slice(0, 1)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-ink">
+                  <span className="block truncate text-body font-medium text-ink">
                     {lang === 'ur' ? persona.nameUr : persona.name}
                   </span>
-                  <span className="block truncate text-xs text-ink-soft">
+                  <span className="block truncate text-meta text-ink-3">
                     {lang === 'ur' ? persona.blurbUr : persona.blurbEn}
                   </span>
                 </span>
-                <span className="shrink-0 rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-bold uppercase text-ink-soft">
-                  {persona.role}
-                </span>
-                <IconArrowRight size={16} className="shrink-0 text-ink-soft rtl:rotate-180" />
+                <span className="shrink-0 text-meta text-ink-3">{persona.role}</span>
+                <IconArrowRight size={16} className="shrink-0 text-ink-3" />
               </button>
             </li>
           ))}
