@@ -239,23 +239,40 @@ export function AskPage() {
               )}
 
               {turn.answer && (
-                <div className="card max-w-[92%] p-4">
+                <div className="card max-w-[92%] p-3.5">
                   <div className="flex items-start gap-2.5">
                     <p className="flex-1 text-body leading-[1.7] text-ink">{turn.answer.answer}</p>
-                    <AudioButton audioKey={null} text={turn.answer.answer} />
+                    {/* One voice at a time: while the guide is open she is the
+                        voice, and a second speaker button would talk over her. */}
+                    {!guide.active && <AudioButton audioKey={null} text={turn.answer.answer} />}
                   </div>
 
                   {turn.answer.status === 'NOT_SURE' && (
-                    <div className="mt-3 flex items-start gap-2 rounded-control bg-warn-wash px-3 py-2.5">
+                    <div className="mt-2.5 flex items-start gap-2 rounded-control bg-warn-wash px-3 py-2">
                       <IconShield size={16} className="mt-0.5 shrink-0 text-warn" />
                       <p className="text-caption font-medium leading-[1.7] text-warn">{t('ask.notSure')}</p>
                     </div>
                   )}
 
+                  {/* The receipt is one tap away rather than always open: it no
+                      longer competes with the answer, but it is still there to be
+                      checked. */}
                   {turn.answer.citations.length > 0 && (
-                    <div className="mt-3 border-t border-ink/[0.08] pt-3">
-                      <p className="mb-2 text-meta text-ink-3">{t('ask.citations')}</p>
-                      <ul className="space-y-2">
+                    <details
+                      data-testid="ask-citations"
+                      className="group mt-2.5 border-t border-ink/[0.08] pt-1"
+                    >
+                      <summary className="press flex min-h-tap cursor-pointer list-none items-center gap-1.5 text-meta text-ink-3 [&::-webkit-details-marker]:hidden">
+                        <IconDocument size={13} className="shrink-0" />
+                        <span className="flex-1">
+                          {t('ask.citations')} · {turn.answer.citations.length}
+                        </span>
+                        <IconChevron
+                          size={14}
+                          className="shrink-0 transition-transform group-open:rotate-90"
+                        />
+                      </summary>
+                      <ul className="mt-1 space-y-2 pb-1">
                         {turn.answer.citations.map((citation, index) => (
                           <li key={`${citation.doc_title}-${index}`} className="rounded-control bg-raised/40 p-2.5">
                             <p className="flex items-center gap-1.5 text-meta font-medium text-ink">
