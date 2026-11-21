@@ -23,6 +23,11 @@ function manualChunks(id: string): string | undefined {
   // Keep the optional Sindhi dictionary in its own lazy chunk so the citizen
   // initial JS bundle stays well below the 150 KB gzipped budget.
   if (norm.includes('/src/shared/i18n/sindhi')) return 'i18n-sd';
+  // ADR-025: the video guide is optional, so it must never join the `shared`
+  // chunk - that chunk is in the citizen entry graph, and `@anam-ai/js-sdk`
+  // alone would blow the 150 KB budget. Left unnamed, Rollup splits it at the
+  // React.lazy() boundary in AvatarToggleCard/AvatarPiPBubble.
+  if (norm.includes('/src/shared/avatar/')) return undefined;
   // Shared code is used by the citizen entry AND by every lazy console. Pin it
   // to its own chunk so Rollup never parks it inside a staff chunk - otherwise
   // the entry ends up statically importing `staff-*.js` and the budget gate
