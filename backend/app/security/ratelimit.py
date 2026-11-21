@@ -74,6 +74,17 @@ def check_ai_limit(user_id: str) -> None:
     limiter.check(f"ai:user:{user_id}", 30, 60)
 
 
+def check_avatar_limit(user_id: str) -> None:
+    """10 guide sessions / 10 min per user (ADR-025).
+
+    A session is a WebRTC connection, not a request: the free tier allows one
+    concurrent stream and 30 minutes a month, so the ceiling is deliberately low
+    and per-user rather than per-IP. A citizen who hits it still has the
+    audio-only guide, which is the same content without the face.
+    """
+    limiter.check(f"avatar:user:{user_id}", 10, 600)
+
+
 def check_api_key_limit(api_key_id: str, per_minute: int) -> None:
     limiter.check(f"apikey:{api_key_id}", per_minute, 60)
 
