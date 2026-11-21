@@ -1,13 +1,23 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ScamCheckResult, ScamVerdict } from '../shared/api/types';
+import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { stamp } from '../shared/lib/dates';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { CopyCode } from '../shared/ui/CopyCode';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconCamera, IconCheck, IconCross, IconMic, IconQuestion, IconShield, IconWarning } from '../shared/ui/Icons';
+import {
+  IconCamera,
+  IconCheck,
+  IconCross,
+  IconMic,
+  IconQuestion,
+  IconShield,
+  IconWarning,
+} from '../shared/ui/Icons';
 
 type Tab = 'text' | 'image' | 'voice';
 
@@ -28,6 +38,10 @@ const VERDICT: Record<
 /**
  * Scam checker — docs/11 §3.4, F-14.
  * Public: no login. Advisory only — it never blocks or deletes anything (AC-14.5).
+ *
+ * All three input tabs are real: `POST /scam/check` takes JSON text, a
+ * screenshot as `image`, or a voice note as `audio`. The voice tab used to be a
+ * disabled button promising a future feature; it now records and uploads.
  */
 export function ScamCheckPage() {
   const { t, lang } = useI18n();
@@ -38,25 +52,27 @@ export function ScamCheckPage() {
   const [error, setError] = useState<string | null>(null);
   const [disputed, setDisputed] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const capture = useVoiceCapture(20);
 
-  async function check(payload: { text?: string; file?: File }) {
+  async function check(payload: { text?: string; image?: File; audio?: Blob }) {
     setBusy(true);
     setError(null);
     setResult(null);
     setDisputed(false);
     try {
-      if (payload.file) {
+      if (payload.image || payload.audio) {
         const form = new FormData();
-        form.append('image', payload.file);
-        const res = await api.upload<ScamCheckResult>('/scam/check', form, { anonymous: true });
-        setResult(res);
+        if (payload.image) form.append('image', payload.image);
+        if (payload.audio) form.append('audio', payload.audio, 'message.webm');
+        setResult(await api.upload<ScamCheckResult>('/scam/check', form, { anonymous: true }));
       } else {
-        const res = await api.post<ScamCheckResult>(
-          '/scam/check',
-          { text: payload.text ?? '', district: null },
-          { anonymous: true },
+        setResult(
+          await api.post<ScamCheckResult>(
+            '/scam/check',
+            { text: payload.text ?? '', district: null },
+            { anonymous: true },
+          ),
         );
-        setResult(res);
       }
     } catch (err) {
       setError(errorMessage(err, lang));
@@ -64,6 +80,13 @@ export function ScamCheckPage() {
       setBusy(false);
     }
   }
+
+  // The recorder hands the blob back after `stop()`; upload it once.
+  const readyBlob = capture.state === 'ready' ? capture.blob : null;
+  useEffect(() => {
+    if (readyBlob) void check({ audio: readyBlob });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyBlob]);
 
   async function dispute() {
     if (!result) return;
@@ -76,6 +99,8 @@ export function ScamCheckPage() {
   }
 
   const verdict = result ? VERDICT[result.verdict] : null;
+  const recording = capture.state === 'recording';
+  const micBlocked = capture.state === 'unsupported' || capture.state === 'denied';
 
   const tabs: [Tab, string, typeof IconShield][] = [
     ['text', t('scam.tabText'), IconShield],
@@ -122,15 +147,13 @@ export function ScamCheckPage() {
 
       {tab === 'text' && (
         <section className="card enter enter-3 p-5">
-          <label htmlFor="scam-text" className="mb-1.5 block text-caption font-medium text-ink">
-            {t('scam.tabText')}
-          </label>
           <textarea
             id="scam-text"
             rows={5}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={t('scam.placeholder')}
+            aria-label={t('scam.tabText')}
           />
           <TapButton
             block
@@ -145,7 +168,7 @@ export function ScamCheckPage() {
 
       {tab === 'image' && (
         <section className="card enter enter-3 p-5">
-          <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.tabImage')}</p>
+          <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.imageHint')}</p>
           <input
             ref={fileRef}
             type="file"
@@ -153,7 +176,7 @@ export function ScamCheckPage() {
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) void check({ file });
+              if (file) void check({ image: file });
             }}
           />
           <TapButton block onClick={() => fileRef.current?.click()} disabled={busy} icon={<IconCamera size={18} />}>
@@ -164,19 +187,26 @@ export function ScamCheckPage() {
 
       {tab === 'voice' && (
         <section className="card enter enter-3 p-5">
-          <p className="mb-3 text-caption leading-[1.7] text-ink-2">
-            {lang === 'ur'
-              ? 'پیغام بولیں۔ ہم اسے سن کر جانیں گے۔'
-              : 'Speak the message. We will listen and check it.'}
-          </p>
-          <TapButton block disabled icon={<IconMic size={18} />}>
-            {t('scam.tabVoice')}
-          </TapButton>
-          <p className="mt-2 text-meta leading-[1.7] text-ink-3">
-            {lang === 'ur'
-              ? 'آواز کی سہولت جلد آ رہی ہے۔ ابھی پیغام لکھیں۔'
-              : 'Voice input is coming next. Paste the text for now.'}
-          </p>
+          <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.voiceHint')}</p>
+          {micBlocked ? (
+            <p className="rounded-control bg-raised px-3 py-2.5 text-meta leading-[1.7] text-ink-2">
+              {t('scam.voiceUnavailable')}
+            </p>
+          ) : (
+            <TapButton
+              block
+              variant={recording ? 'danger' : 'primary'}
+              onClick={() => (recording ? capture.stop() : void capture.start())}
+              disabled={busy}
+              icon={<IconMic size={18} />}
+            >
+              {recording
+                ? `${t('helper.recording')} ${capture.seconds}s`
+                : busy
+                  ? t('common.loading')
+                  : t('scam.record')}
+            </TapButton>
+          )}
         </section>
       )}
 
@@ -210,9 +240,7 @@ export function ScamCheckPage() {
                 </div>
                 <p className="mt-1.5 text-meta text-ink-3">
                   {result.matched_official.program} ·{' '}
-                  <span className="num font-mono">
-                    {new Date(result.matched_official.created_at).toLocaleString()}
-                  </span>
+                  <bdi className="tabular-nums">{stamp(result.matched_official.created_at, lang)}</bdi>
                 </p>
               </div>
             )}
@@ -238,7 +266,6 @@ export function ScamCheckPage() {
               <p className="mt-0.5 text-caption leading-[1.7] text-ink">
                 {lang === 'ur' ? result.advice_ur : result.advice_en}
               </p>
-              <p className="mt-1.5 text-meta font-medium text-warn">{t('scam.neverShare')}</p>
             </div>
 
             <button
@@ -252,6 +279,13 @@ export function ScamCheckPage() {
           </div>
         </section>
       )}
+
+      {/* The never-share rule is true before you check and after, so it lives in
+          the page chrome rather than inside one result. */}
+      <p className="enter enter-5 mt-6 flex items-start gap-2 text-meta leading-[1.7] text-ink-3">
+        <IconShield size={14} className="mt-0.5 shrink-0" />
+        {t('scam.neverShare')}
+      </p>
     </div>
   );
 }
