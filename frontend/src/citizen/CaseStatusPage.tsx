@@ -125,7 +125,14 @@ export function CaseStatusPage() {
 
       {reasons.length > 0 && (
         <section className="enter enter-3 mt-6">
-          <h2 className="section-label mb-3">{t('cases.explanation')}</h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="section-label">{t('cases.explanation')}</h2>
+            <AudioButton
+              label={`${t('common.listen')} · ${t('cases.explanation')}`}
+              text={(explanation?.reasons_ur.length ? explanation.reasons_ur : reasons).slice(0, 3).join('۔ ')}
+              variant="quiet"
+            />
+          </div>
           <ul className="border-y border-ink/[0.08]">
             {reasons.slice(0, 3).map((reason) => (
               <li key={reason} className="flex items-start gap-2.5 border-b border-ink/[0.08] py-2.5 last:border-b-0">
@@ -171,7 +178,10 @@ export function CaseStatusPage() {
 
       {canComplain && (
         <section className="enter enter-5 mt-6">
-          <h2 className="section-label mb-3">{t('cases.moneyNotReceived')}</h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="section-label">{t('cases.moneyNotReceived')}</h2>
+            <AudioButton text="اگر آپ کو رقم نہیں ملی تو یہاں شکایت درج کریں۔" label={`${t('common.listen')} · ${t('cases.moneyNotReceived')}`} variant="quiet" />
+          </div>
           <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('cases.moneyNotReceivedHint')}</p>
           {complaintState === 'sent' ? (
             <p className="rounded-control bg-positive-wash px-3 py-2.5 text-caption font-medium text-positive">

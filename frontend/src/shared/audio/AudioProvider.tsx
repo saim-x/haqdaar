@@ -13,9 +13,9 @@ import { audioUrl, loadManifest, resolveAudioKey } from './manifest';
  *   3. browser TTS when a clip or server TTS is unavailable
  */
 interface AudioContextValue {
-  play(key: string | null | undefined, fallbackText?: string | null): Promise<void>;
+  play(key: string | null | undefined, fallbackText?: string | null, control?: string): Promise<void>;
   stop(): void;
-  speaking: boolean;
+  activeControl: string | null;
   autoRead: boolean;
   setAutoRead(next: boolean): void;
   /** True once the manifest has been read (used to hide the button when no audio exists). */
@@ -40,7 +40,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const objectUrlRef = useRef<string | null>(null);
   const playbackRef = useRef<AbortController | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const [speaking, setSpeaking] = useState(false);
+  const [activeControl, setActiveControl] = useState<string | null>(null);
   const [autoRead, setAutoReadState] = useState(readAutoRead);
   const [ready, setReady] = useState(false);
 
@@ -64,7 +64,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
     }
-    setSpeaking(false);
+    setActiveControl(null);
   }, []);
 
   const playAudioResponse = useCallback(
@@ -84,7 +84,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         el.onended = el.onerror = () => {
           if (!signal.aborted) stop();
         };
-        setSpeaking(true);
         return true;
       } catch {
         if (!signal.aborted && objectUrlRef.current === url) {
@@ -112,8 +111,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const playBrowser = useCallback(
     (text: string, fallbackText?: string | null): void => {
-      if (typeof window === 'undefined' || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
-      stop();
+      if (typeof window === 'undefined' || !window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+        stop();
+        return;
+      }
       const voices = window.speechSynthesis.getVoices();
       const hasUrdu = voices.some((voice) => voice.lang.toLowerCase().startsWith('ur'));
       const spokenText = !hasUrdu && /[\u0600-\u06ff]/.test(text) && fallbackText && !/[\u0600-\u06ff]/.test(fallbackText)
@@ -124,18 +125,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       utterance.lang = lang;
       utterance.voice = voices.find((voice) => voice.lang.toLowerCase().startsWith(lang.slice(0, 2))) ?? null;
       utterance.onend = utterance.onerror = () => {
-        if (utteranceRef.current === utterance) {
-          utteranceRef.current = null;
-          setSpeaking(false);
-        }
+        if (utteranceRef.current === utterance) stop();
       };
       utteranceRef.current = utterance;
       try {
         window.speechSynthesis.speak(utterance);
-        setSpeaking(true);
       } catch {
-        utteranceRef.current = null;
-        setSpeaking(false);
+        stop();
       }
     },
     [stop],
@@ -170,8 +166,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   );
 
   const play = useCallback(
-    async (key: string | null | undefined, fallbackText?: string | null) => {
+    async (key: string | null | undefined, fallbackText?: string | null, control?: string) => {
       stop();
+      setActiveControl(control ?? null);
       const playback = new AbortController();
       playbackRef.current = playback;
       const { signal } = playback;
@@ -188,6 +185,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
       if (text && !signal.aborted) {
         if (!await playDynamic(text, signal) && !signal.aborted) playBrowser(text, fallbackText);
+      } else if (!signal.aborted) {
+        stop();
       }
     },
     [playClip, playDynamic, playBrowser, stop],
@@ -205,8 +204,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => () => stop(), [stop]);
 
   const value = useMemo<AudioContextValue>(
-    () => ({ play, stop, speaking, autoRead, setAutoRead, ready }),
-    [play, stop, speaking, autoRead, setAutoRead, ready],
+    () => ({ play, stop, activeControl, autoRead, setAutoRead, ready }),
+    [play, stop, activeControl, autoRead, setAutoRead, ready],
   );
 
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

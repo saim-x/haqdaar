@@ -248,9 +248,14 @@ export function ConsentPage() {
           aria-labelledby="withdraw-title"
         >
           <div className="enter w-full max-w-[520px] rounded-t-panel border border-ink/[0.08] bg-card p-5 sm:rounded-panel">
-            <h2 id="withdraw-title" className="text-lead font-medium leading-[1.4] text-ink">
-              {t('consent.withdrawConfirm')}
-            </h2>
+            <div className="flex items-start justify-between gap-3">
+              <h2 id="withdraw-title" className="text-lead font-medium leading-[1.4] text-ink">
+                {t('consent.withdrawConfirm')}
+              </h2>
+              <AudioButton text={pendingWithdraw.recipient_type === 'DEPARTMENT'
+                ? 'اگر آپ محکمے کی اجازت واپس لیں گی تو آپ کی جاری درخواست روک دی جائے گی۔'
+                : 'کیا آپ واقعی اجازت واپس لینا چاہتی ہیں؟'} />
+            </div>
             {pendingWithdraw.recipient_type === 'DEPARTMENT' && (
               <p className="mt-3 rounded-control bg-warn-wash px-3 py-2.5 text-caption leading-[1.7] text-warn">
                 {t('consent.withdrawDeptWarning')}

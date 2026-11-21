@@ -485,7 +485,10 @@ export function AddFamilyPage() {
       </section>
 
       <section className="card enter enter-3 mt-4 p-5">
-        <h2 className="text-caption font-medium text-ink-2">{t('helper.consentCapture')}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-caption font-medium text-ink-2">{t('helper.consentCapture')}</h2>
+          <AudioButton text="مدد کرنے سے پہلے اس خاندان کی اجازت لیں۔ فون پر کوڈ منگوائیں یا گواہ کے ساتھ زبانی اجازت ریکارڈ کریں۔" variant="quiet" />
+        </div>
 
         <div className="mt-2 border-y border-ink/[0.08]">
           <button

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useAudio } from '../audio/AudioProvider';
 import { useI18n } from '../i18n/I18nProvider';
 import { IconPause, IconSpeaker } from './Icons';
@@ -40,7 +41,9 @@ export function AudioButton({
   variant = 'circle',
   className = '',
 }: AudioButtonProps) {
-  const { play, speaking, stop } = useAudio();
+  const id = useId();
+  const { play, activeControl, stop } = useAudio();
+  const speaking = activeControl === id;
   const { t } = useI18n();
   const accessibleLabel = label ?? t('common.listen');
   const dimension = size === 'lg' ? 'h-14 w-14' : 'h-12 w-12';
@@ -64,7 +67,7 @@ export function AudioButton({
       aria-label={accessibleLabel}
       aria-pressed={speaking}
       title={accessibleLabel}
-      onClick={() => (speaking ? stop() : void play(audioKey, text))}
+      onClick={() => (speaking ? stop() : void play(audioKey, text, id))}
       className={`${dimension} press inline-flex shrink-0 items-center justify-center rounded-full border ${skin} ${className}`}
     >
       {speaking ? <IconPause size={size === 'lg' ? 22 : 18} /> : <IconSpeaker size={size === 'lg' ? 24 : 20} />}

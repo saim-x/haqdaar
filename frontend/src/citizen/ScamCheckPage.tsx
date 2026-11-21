@@ -3,6 +3,7 @@ import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ScamCheckResult, ScamVerdict } from '../shared/api/types';
 import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
+import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
 import { AudioButton } from '../shared/ui/AudioButton';
@@ -46,6 +47,7 @@ const VERDICT: Record<
  */
 export function ScamCheckPage() {
   const { t, lang } = useI18n();
+  const { session } = useAuth();
   const [tab, setTab] = useState<Tab>('text');
   const [text, setText] = useState('');
   const [result, setResult] = useState<ScamCheckResult | null>(null);
@@ -264,11 +266,14 @@ export function ScamCheckPage() {
                 </div>
               )}
 
-              <div className="mt-4 rounded-control bg-warn-wash px-3 py-2.5">
-                <p className="text-meta text-warn">{t('scam.advice')}</p>
-                <p className="mt-0.5 text-caption leading-[1.7] text-ink">
-                  {lang === 'ur' ? result.advice_ur : result.advice_en}
-                </p>
+              <div className="mt-4 flex items-center gap-2 rounded-control bg-warn-wash px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-meta text-warn">{t('scam.advice')}</p>
+                  <p className="mt-0.5 text-caption leading-[1.7] text-ink">
+                    {lang === 'ur' ? result.advice_ur : result.advice_en}
+                  </p>
+                </div>
+                {session && <AudioButton text={result.advice_ur} label={`${t('common.listen')} · ${t('scam.advice')}`} variant="quiet" />}
               </div>
 
               <button

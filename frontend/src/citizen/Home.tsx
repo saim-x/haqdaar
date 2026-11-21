@@ -207,11 +207,11 @@ export function CitizenHome() {
       {/* Support rows. Same height, same gap, one icon column. */}
       <ul className="enter enter-3 mt-6 border-y border-ink/[0.08]">
         {rows.map(({ key, to, label, hint, Icon }) => (
-          <li key={key} className="border-b border-ink/[0.08] last:border-b-0">
+          <li key={key} className="flex items-center gap-1 border-b border-ink/[0.08] last:border-b-0">
             <button
               type="button"
               onClick={() => navigate(to)}
-              className="press flex min-h-primary w-full items-center gap-3 px-1 py-3 text-start hover:bg-raised/50"
+              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-1 py-3 text-start hover:bg-raised/50"
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-raised text-ink-2">
                 <Icon size={18} />
@@ -222,6 +222,12 @@ export function CitizenHome() {
               </span>
               <IconChevron size={16} className="shrink-0 text-ink-3" />
             </button>
+            <AudioButton
+              audioKey={key === 'ask' ? 'ask_intro' : `home_${key}`}
+              label={`${t('common.listen')} · ${label}`}
+              text={hint}
+              variant="quiet"
+            />
           </li>
         ))}
       </ul>
