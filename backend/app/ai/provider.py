@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from app.ai import guardrails, paths, urdu_nlp
+from app.config import get_settings
 
 logger = logging.getLogger("haqdaar.ai.provider")
 
@@ -1146,7 +1147,10 @@ _FAKE_SINGLETON = FakeDeterministicProvider()
 
 
 def provider_mode() -> str:
-    return (os.environ.get("AI_PROVIDER") or "fake").strip().lower()
+    # Honor shell overrides first, then the repository .env loaded by Settings.
+    # Reading os.environ alone silently forced local runs back to fake mode.
+    mode = os.environ.get("AI_PROVIDER") or get_settings().ai_provider or "fake"
+    return mode.strip().lower()
 
 
 def get_provider() -> AIProvider:
