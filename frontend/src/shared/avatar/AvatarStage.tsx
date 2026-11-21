@@ -24,3 +24,25 @@ interface AvatarStageProps {
   compact?: boolean;
 }
 
+/**
+ * Mood → colour. `not_sure` is amber and `warning` is red because those two are
+ * the only moods that carry meaning: an honest abstention and an anti-scam
+ * alert. The rest are warmth, and warmth does not need a legend.
+ */
+const MOOD: Record<AvatarMood, { ring: string; wash: string; dot: string }> = {
+  calm: { ring: 'border-accent/35', wash: 'from-accent-wash', dot: 'bg-accent' },
+  listening: { ring: 'border-accent/45', wash: 'from-accent-wash', dot: 'bg-accent' },
+  thinking: { ring: 'border-info/35', wash: 'from-info-wash', dot: 'bg-info' },
+  happy: { ring: 'border-positive/40', wash: 'from-positive-wash', dot: 'bg-positive' },
+  reassuring: { ring: 'border-accent/35', wash: 'from-accent-wash', dot: 'bg-accent' },
+  warning: { ring: 'border-negative/45', wash: 'from-negative-wash', dot: 'bg-negative' },
+  not_sure: { ring: 'border-warn/45', wash: 'from-warn-wash', dot: 'bg-warn' },
+};
+
+function clock(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
