@@ -794,3 +794,98 @@ class TestConversationalMode:
         assert "could not be read" in prompt
 
 
+class TestVoiceAndLlmDiscovery:
+    """The two ids conversational mode needs, resolved once and cached."""
+
+    def test_voice_prefers_urdu(self) -> None:
+        voices = [
+            {"id": "en-1", "displayName": "Amanda - Warm Guide", "languages": ["en"]},
+            {"id": "ur-1", "displayName": "Urdu Voice", "languages": ["ur"]},
+        ]
+        assert avatar._pick_voice(voices) == "ur-1"
+
+    def test_voice_falls_back_to_hindi(self) -> None:
+        """Hindi and Urdu are the same spoken language, so it beats English."""
+        voices = [
+            {"id": "en-1", "displayName": "Amanda - Warm Guide", "languages": ["en"]},
+            {"id": "hi-1", "displayName": "Hindi Voice", "languages": ["hi"]},
+        ]
+        assert avatar._pick_voice(voices) == "hi-1"
+
+    def test_voice_falls_back_to_a_warm_female_name(self) -> None:
+        voices = [
+            {"id": "m-1", "displayName": "Archie", "gender": "MALE", "languages": ["en"]},
+            {"id": "f-1", "displayName": "Amanda - Warm Guide", "gender": "FEMALE"},
+        ]
+        assert avatar._pick_voice(voices) == "f-1"
+
+    def test_voice_falls_back_to_any_female_then_any(self) -> None:
+        assert avatar._pick_voice([{"id": "x", "gender": "FEMALE"}]) == "x"
+        assert avatar._pick_voice([{"id": "y", "gender": "MALE"}]) == "y"
+        assert avatar._pick_voice([]) == ""
+
+    def test_llm_skips_the_disable_sentinel(self) -> None:
+        llms = [
+            {"id": avatar.DISABLED_LLM_ID, "displayTags": ["persona-default"]},
+            {"id": "real-llm", "displayTags": ["recommended"]},
+        ]
+        assert avatar._pick_llm(llms) == "real-llm"
+
+    def test_llm_prefers_the_persona_default_tag(self) -> None:
+        llms = [
+            {"id": "a", "isDefault": True},
+            {"id": "b", "displayTags": ["persona-default"]},
+        ]
+        assert avatar._pick_llm(llms) == "b"
+
+    def test_llm_falls_back_to_is_default_then_first(self) -> None:
+        assert avatar._pick_llm([{"id": "a"}, {"id": "b", "isDefault": True}]) == "b"
+        assert avatar._pick_llm([{"id": "a"}, {"id": "b"}]) == "a"
+        assert avatar._pick_llm([]) == ""
+
+    def test_voice_is_discovered_once_and_cached(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        recorder.get_response = _Response(
+            200, {"data": [{"id": "voice-1", "languages": ["ur"]}]}
+        )
+        assert avatar.resolve_voice_id() == "voice-1"
+        assert avatar.resolve_voice_id() == "voice-1"
+        assert len([call for call in recorder.calls if call[1].endswith("/v1/voices")]) == 1
+
+    def test_llm_is_discovered_once_and_cached(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        recorder.get_response = _Response(
+            200, {"data": [{"id": "llm-1", "displayTags": ["persona-default"]}]}
+        )
+        assert avatar.resolve_llm_id() == "llm-1"
+        assert avatar.resolve_llm_id() == "llm-1"
+        assert len([call for call in recorder.calls if call[1].endswith("/v1/llms")]) == 1
+
+    def test_configured_ids_win_over_discovery(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_voice_id", "pinned-voice")
+        monkeypatch.setattr(settings, "anam_llm_id", "pinned-llm")
+        assert avatar.resolve_voice_id() == "pinned-voice"
+        assert avatar.resolve_llm_id() == "pinned-llm"
+        assert recorder.calls == []
+
+    def test_discovery_failure_degrades_to_blank(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        recorder.get_response = _Response(500, {})
+        assert avatar.resolve_voice_id() == ""
+        assert avatar.resolve_llm_id() == ""
+
+    def test_discovery_transport_error_degrades_to_blank(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def _boom(*_args: Any, **_kwargs: Any) -> Any:
+            raise httpx.ConnectError("no route to host")
+
+        monkeypatch.setattr(avatar.httpx, "Client", _boom)
+        assert avatar.resolve_voice_id() == ""
+
+
