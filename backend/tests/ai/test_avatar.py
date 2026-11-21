@@ -504,3 +504,119 @@ class TestAvatarDiscovery:
         assert recorder.calls == []
 
 
+# --------------------------------------------------------------------------- #
+# secrets
+# --------------------------------------------------------------------------- #
+class TestSecrets:
+    def test_api_key_never_reaches_a_log_record(
+        self, live: None, recorder: _Recorder, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.DEBUG)
+        recorder.post_response = _Response(502, {})
+        avatar.create_avatar_session(None, _Actor(), surface="ask")
+        recorder.post_exc = httpx.ConnectError("down")
+        avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert "test-anam-key-not-real" not in caplog.text
+
+    def test_session_token_never_reaches_a_log_record(
+        self, live: None, recorder: _Recorder, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.DEBUG)
+        recorder.post_response = _Response(200, {"sessionToken": "tok-should-stay-secret"})
+        avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert "tok-should-stay-secret" not in caplog.text
+
+
+# --------------------------------------------------------------------------- #
+# HTTP surface - RBAC, rate limit, envelope
+# --------------------------------------------------------------------------- #
+class TestApi:
+    def test_config_requires_authentication(self, client: Any) -> None:
+        response = client.get("/api/v1/avatar/config")
+        assert response.status_code == 401
+
+    def test_session_requires_authentication(self, client: Any) -> None:
+        response = client.post("/api/v1/avatar/session", json={"surface": "ask"})
+        assert response.status_code == 401
+
+    def test_citizen_can_read_the_config(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        response = client.get("/api/v1/avatar/config", headers=citizen_headers)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["provider"] == "fake"
+        assert body["enabled"] is True
+        assert "api_key" not in body
+
+    def test_helper_can_read_the_config(
+        self, client: Any, helper_headers: dict[str, str]
+    ) -> None:
+        response = client.get("/api/v1/avatar/config", headers=helper_headers)
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize("persona", ["officer_sana", "admin_bilal", "auditor_nadia"])
+    def test_staff_roles_cannot_open_a_guide_session(
+        self, client: Any, persona_headers: Any, persona: str
+    ) -> None:
+        headers = persona_headers(persona)
+        response = client.post(
+            "/api/v1/avatar/session", json={"surface": "ask"}, headers=headers
+        )
+        assert response.status_code == 403, response.text
+
+    @pytest.mark.parametrize("persona", ["widow_fatima", "helper_ayesha"])
+    def test_citizen_and_helper_can_open_a_guide_session(
+        self, client: Any, persona_headers: Any, persona: str
+    ) -> None:
+        headers = persona_headers(persona)
+        response = client.post(
+            "/api/v1/avatar/session", json={"surface": "ask"}, headers=headers
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["available"] is True
+        assert body["provider"] == "fake"
+        assert body["simulated"] is True
+
+    def test_unknown_surface_is_a_422(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        response = client.post(
+            "/api/v1/avatar/session",
+            json={"surface": "officer_queue"},
+            headers=citizen_headers,
+        )
+        assert response.status_code == 422
+        assert response.json()["error"]["code"] == "UNSUPPORTED_SURFACE"
+
+    def test_eleventh_session_in_ten_minutes_is_rate_limited(
+        self, client: Any, citizen_headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.security import ratelimit
+
+        monkeypatch.setattr(settings, "rate_limit_enabled", True)
+        ratelimit.limiter.reset()
+        try:
+            statuses = [
+                client.post(
+                    "/api/v1/avatar/session",
+                    json={"surface": "ask"},
+                    headers=citizen_headers,
+                ).status_code
+                for _ in range(11)
+            ]
+        finally:
+            ratelimit.limiter.reset()
+        assert statuses[:10] == [200] * 10
+        assert statuses[10] == 429
+
+    def test_session_response_never_contains_the_api_key(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        response = client.post(
+            "/api/v1/avatar/session", json={"surface": "ask"}, headers=citizen_headers
+        )
+        assert settings.anam_api_key not in response.text
+
+
