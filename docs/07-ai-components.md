@@ -197,7 +197,7 @@ Every choice below is a trade-off made against the actual constraints of this pr
 |---|---|
 | **`whisper-1`** | **Chosen.** Handles Urdu and Roman-Urdu code-switching, which is how people actually speak. |
 | Browser Web Speech API | Rejected. Unavailable offline, and Urdu is unsupported on most Android builds — the exact devices this app targets. |
-| A local Whisper build | Rejected for the prototype. It would remove the network dependency but adds a multi-hundred-MB model to a deployment whose whole point is a 127.5 KB client. |
+| A local Whisper build | Rejected for the prototype. It would remove the network dependency but adds a multi-hundred-MB model to a deployment whose whole point is a 131.2 KB client. |
 
 ### 9.5 Text-to-speech — `edge-tts` + 73 pre-cached MP3s
 

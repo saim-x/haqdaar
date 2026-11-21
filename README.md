@@ -201,17 +201,17 @@ event_hash = hashlib.sha256(material.encode("utf-8")).hexdigest()
 | Suite | Tests | Covers |
 |---|---|---|
 | `backend/tests/engine` | 596 | Rules DSL, tri-state evaluator, entity resolution, confidence, router policy, digital twin, eval sweep |
-| `backend/tests/ai` | 347 | Scam classifier, document verifier, RAG, voice, guardrails, provider, API auth |
+| `backend/tests/ai` | 349 | Scam classifier, document verifier, RAG, voice, guardrails, provider, API auth |
 | `backend/tests/security` | 21 | RBAC matrix, tenant isolation, consent enforcement incl. denied-log persistence and agent reads |
 | `backend/tests/integration` | 95 | Golden path, rule versioning, audit chain, idempotency, chaos resilience, my-data corrections, complaint path, transparency, Prometheus metrics |
 | `backend/tests/mocks` | 69 | Simulated DPI services and seed integrity |
 | `backend/tests/test_conftest_heal.py` | 14 | The test harness heals a stale schema instead of dropping the database |
 | `backend/tests/test_invariants.py` | 11 | Engine purity, mock-import ban, RBAC-on-every-route, no auto-reject, no raw PII in logs, transparency disclosure |
-| **Total** | **1153 passing** | 1153 collected |
+| **Total** | **1155 passing** | 1155 collected |
 
 > The suite is green on the pinned dependency set (`fastapi==0.165.0`, `pydantic==2.14.4`, `sqlalchemy==2.1.9`, `psycopg==3.3.9`, `scikit-learn==1.9.1`, `opencv-python-headless==5.1.0.95`). `test_every_non_public_route_has_an_rbac_dependency` walks the route table and imports `fastapi.routing._IncludedRouter` only when the installed release has it, so the check reports on the route table rather than on the FastAPI version.
 
-**Citizen bundle: 127.5 KB gzipped of a 150 KB budget (85.0 %), 123 precache entries.** `npm --prefix frontend run budget` fails the build above 150 KB, so the number cannot drift silently.
+**Citizen bundle: 131.2 KB gzipped of a 150 KB budget (87.4 %), 125 precache entries.** `npm --prefix frontend run budget` fails the build above 150 KB, so the number cannot drift silently.
 
 ---
 

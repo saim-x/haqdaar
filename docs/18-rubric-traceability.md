@@ -105,7 +105,7 @@ See `docs/07-ai-components.md §9` for the full rationale. Summary:
 | Concern | Mechanism |
 |---|---|
 | **CI** | `.github/workflows/ci.yml` — three jobs: backend (ruff + full pytest against a Postgres 16 service), frontend (typecheck + build + bundle budget), invariants (engine purity, mock boundary, no auto-reject) |
-| **Tests** | **1153 passing** of 1153 collected, across engine (596), ai (347), integration (95), mocks (69), security (21), conftest-heal (14), invariants (11) — green on the pinned dependency set |
+| **Tests** | **1155 passing** of 1155 collected, across engine (596), ai (349), integration (95), mocks (69), security (21), conftest-heal (14), invariants (11) — green on the pinned dependency set |
 | **Health** | `GET /health` reports DB, worker heartbeat freshness, upload dir, AI provider, demo mode |
 | **Observability** | Request-id middleware on every request, structured JSON logs, `ai_telemetry` per model call, `GET /api/v1/eval/dashboard` for live metrics |
 | **Rate limiting** | Per-route limits, disabled in tests via `RATE_LIMIT_ENABLED` |
@@ -123,7 +123,7 @@ The problem is not "build a form". It is that a widow in Thatta has to prove her
 |---|---|
 | The registry may not know | Tri-state facts; `UNKNOWN` routes to human review, never to rejection |
 | She may not read | Urdu default, RTL, audio-first wizard, 73 pre-recorded prompts, readback confirmation |
-| The phone may be offline | 127.5 KB bundle, Workbox precache, Dexie outbox, idempotent replay |
+| The phone may be offline | 131.2 KB bundle, Workbox precache, Dexie outbox, idempotent replay |
 | Someone may be defrauding her | Scam checker with HMAC verification codes; the app never asks for a PIN or a fee |
 | She may change her mind | Per-purpose consent, withdrawable at any time, denial logged before the 403 is raised |
 | She may be wrongly refused | A free complaint creates a linked case with its own reference code, an in-app notification and a simulated SMS; a human officer is the only actor who can reject |
@@ -181,8 +181,8 @@ At the measured operating point (`τ = 0.90`, n = 133) the router auto-approves 
 
 ### 4.3 Weak Internet — 3 pts
 
-- **127.5 KB gzipped** citizen entry bundle against a **150 KB** budget (85.0 %), enforced by `npm run budget` in CI.
-- **123 precache entries** via `vite-plugin-pwa` / Workbox — the app shell, the audio, and the policy corpus are all available offline.
+- **131.2 KB gzipped** citizen entry bundle against a **150 KB** budget (87.4 %), enforced by `npm run budget` in CI.
+- **125 precache entries** via `vite-plugin-pwa` / Workbox — the app shell, the audio, and the policy corpus are all available offline.
 - **Dexie outbox**: writes queue locally and replay with `Idempotency-Key`, so a dropped connection never double-submits.
 - **ETag / conditional GET** so a re-open costs a 304, not a payload.
 - **Lite mode** for the slowest devices.
