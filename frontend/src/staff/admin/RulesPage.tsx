@@ -59,9 +59,32 @@ function emptyCondition(): RuleCondition {
   };
 }
 
+/** A labelled console field. The label is a caption, never an uppercase tag. */
+function Field({
+  label,
+  children,
+  className = '',
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1 block text-meta text-ink-3">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 /**
  * Admin rule editor — docs/11 §6.2, AC-15.x.
  * Form-first: no JSON typing required. The JSON preview is read-only.
+ *
+ * A rule is a sentence: fact, operator, value, and what happens when the fact is
+ * missing. So each rule is laid out as one line of that sentence, with the
+ * bilingual labels underneath — reading a ruleset should feel like reading the
+ * policy, not like reading a config file.
  */
 export default function RulesPage() {
   const queryClient = useQueryClient();
@@ -71,7 +94,9 @@ export default function RulesPage() {
   const [changeNote, setChangeNote] = useState('');
   const [validation, setValidation] = useState<RuleValidationResult | null>(null);
   const [twin, setTwin] = useState<TwinResult | null>(null);
-  const [message, setMessage] = useState<{ tone: 'ok' | 'danger' | 'warn'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ tone: 'ok' | 'danger' | 'warn'; text: string } | null>(
+    null,
+  );
 
   const programs = useQuery({
     queryKey: ['programs'],
@@ -118,7 +143,10 @@ export default function RulesPage() {
       setValidation(res);
       setMessage(
         res.valid
-          ? { tone: 'ok', text: `Validation passed — ${res.rule_count ?? '?'} rules, hash ${res.content_hash?.slice(0, 12) ?? ''}…` }
+          ? {
+              tone: 'ok',
+              text: `Validation passed — ${res.rule_count ?? '?'} rules, hash ${res.content_hash?.slice(0, 12) ?? ''}…`,
+            }
           : { tone: 'danger', text: `${res.errors.length} validation error(s).` },
       );
     },
@@ -126,7 +154,8 @@ export default function RulesPage() {
   });
 
   const simulate = useMutation({
-    mutationFn: () => api.post<TwinResult>(`/admin/rules/${selectedId}/simulate`, { sample_size: 200 }),
+    mutationFn: () =>
+      api.post<TwinResult>(`/admin/rules/${selectedId}/simulate`, { sample_size: 200 }),
     onSuccess: (res) => {
       setTwin(res);
       setMessage({ tone: 'ok', text: `Replayed ${res.sample_size} historical cases.` });
@@ -149,7 +178,10 @@ export default function RulesPage() {
     onSuccess: (res) => {
       setSelectedId(res.id);
       setDraft(res.rules_json);
-      setMessage({ tone: 'ok', text: `Draft v${res.version_number} created from the active version.` });
+      setMessage({
+        tone: 'ok',
+        text: `Draft v${res.version_number} created from the active version.`,
+      });
       void queryClient.invalidateQueries({ queryKey: ['rule-versions', programId] });
     },
     onError: (err) => setMessage({ tone: 'danger', text: errorMessage(err, 'en') }),
@@ -158,7 +190,9 @@ export default function RulesPage() {
   function updateRule(index: number, patch: Partial<RuleCondition>) {
     setDraft((prev) => {
       if (!prev) return prev;
-      const eligibility_rules = prev.eligibility_rules.map((c, i) => (i === index ? { ...c, ...patch } : c));
+      const eligibility_rules = prev.eligibility_rules.map((c, i) =>
+        i === index ? { ...c, ...patch } : c,
+      );
       return { ...prev, eligibility_rules };
     });
   }
@@ -171,7 +205,9 @@ export default function RulesPage() {
 
   function removeRule(index: number) {
     setDraft((prev) =>
-      prev ? { ...prev, eligibility_rules: prev.eligibility_rules.filter((_, i) => i !== index) } : prev,
+      prev
+        ? { ...prev, eligibility_rules: prev.eligibility_rules.filter((_, i) => i !== index) }
+        : prev,
     );
   }
 
@@ -179,6 +215,13 @@ export default function RulesPage() {
   if (programs.error) return <ErrorState error={programs.error} />;
 
   const activeId = versions.data?.active_rule_version_id ?? null;
+
+  const messageSkin =
+    message?.tone === 'ok'
+      ? 'border-positive/25 bg-positive-wash text-positive'
+      : message?.tone === 'warn'
+        ? 'border-warn/25 bg-warn-wash text-warn'
+        : 'border-negative/25 bg-negative-wash text-negative';
 
   return (
     <div className="space-y-4">
@@ -189,13 +232,14 @@ export default function RulesPage() {
           <>
             <select
               value={programId}
+              aria-label="Program"
               onChange={(e) => {
                 setProgramId(e.target.value);
                 setSelectedId('');
                 setDraft(null);
                 setTwin(null);
               }}
-              className="min-h-tap rounded-lg border border-ink/15 bg-white px-2 text-xs font-semibold"
+              className="field w-auto"
             >
               {programs.data?.items.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -207,7 +251,7 @@ export default function RulesPage() {
               type="button"
               onClick={() => createDraft.mutate()}
               disabled={createDraft.isPending || !programId}
-              className="min-h-tap rounded-lg bg-teal-700 px-3 text-xs font-bold text-white disabled:opacity-50"
+              className="press min-h-[36px] rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
               New draft
             </button>
@@ -218,81 +262,114 @@ export default function RulesPage() {
       {message && (
         <div
           role="status"
-          className={`rounded-lg border-2 px-3 py-2 text-xs font-semibold ${
-            message.tone === 'ok'
-              ? 'border-[#0F7B3F]/30 bg-[#0F7B3F]/5 text-[#0F7B3F]'
-              : message.tone === 'warn'
-                ? 'border-amber-400/50 bg-amber-50 text-amber-700'
-                : 'border-[#B42318]/30 bg-[#B42318]/5 text-[#B42318]'
-          }`}
+          className={`rounded-control border px-4 py-2.5 text-caption font-medium ${messageSkin}`}
         >
           {message.text}
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
-        <Card className="h-fit">
-          <CardTitle hint={`${versions.data?.versions.length ?? 0} versions`}>Version history</CardTitle>
-          <ul className="space-y-1">
-            {versions.data?.versions.map((v) => (
-              <li key={v.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(v.id);
-                    setDraft(v.rules_json);
-                    setValidation(null);
-                    setTwin(null);
-                  }}
-                  className={`w-full rounded-lg px-2 py-1.5 text-left text-xs ${
-                    selectedId === v.id ? 'bg-teal-50 text-teal-800' : 'hover:bg-ink/5'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span className="font-bold">v{v.version_number}</span>
-                    <Chip tone={v.status === 'PUBLISHED' ? 'ok' : v.status === 'DRAFT' ? 'warn' : 'neutral'}>
-                      {v.status}
-                    </Chip>
-                    {v.id === activeId && <Chip tone="ok">active</Chip>}
-                  </span>
-                  <span className="mt-0.5 block truncate font-mono text-[10px] text-ink-soft">
-                    {v.content_hash.slice(0, 16)}…
-                  </span>
-                  {v.change_note && <span className="mt-0.5 block truncate text-[10px] text-ink-soft">{v.change_note}</span>}
-                </button>
-              </li>
-            ))}
+      <div className="grid gap-4 xl:grid-cols-[264px_minmax(0,1fr)]">
+        <Card className="h-fit p-0">
+          <div className="flex items-baseline justify-between gap-2 border-b border-ink/[0.08] px-4 py-3">
+            <h2 className="text-body font-medium text-ink">Version history</h2>
+            <span className="num text-meta text-ink-3">
+              {versions.data?.versions.length ?? 0}
+            </span>
+          </div>
+          <ul>
+            {versions.data?.versions.map((v) => {
+              const isSelected = selectedId === v.id;
+              return (
+                <li key={v.id} className="border-b border-ink/[0.06] last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedId(v.id);
+                      setDraft(v.rules_json);
+                      setValidation(null);
+                      setTwin(null);
+                    }}
+                    className={`press w-full px-4 py-2.5 text-start ${
+                      isSelected ? 'row-active' : 'hover:bg-raised'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="num font-mono text-caption font-medium text-ink">
+                        v{v.version_number}
+                      </span>
+                      <Chip
+                        tone={
+                          v.status === 'PUBLISHED' ? 'ok' : v.status === 'DRAFT' ? 'warn' : 'neutral'
+                        }
+                      >
+                        {v.status}
+                      </Chip>
+                      {v.id === activeId && <Chip tone="ok">active</Chip>}
+                    </span>
+                    <span className="mt-1 block truncate font-mono text-meta text-ink-3">
+                      {v.content_hash.slice(0, 16)}…
+                    </span>
+                    {v.change_note && (
+                      <span className="mt-0.5 block truncate text-meta text-ink-2">
+                        {v.change_note}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </Card>
 
         <div className="space-y-4">
           {!draft && (
             <Card>
-              <p className="text-xs text-ink-soft">Select a version to edit, or create a new draft.</p>
+              <p className="text-caption text-ink-3">
+                Select a version to edit, or create a new draft.
+              </p>
             </Card>
           )}
 
           {draft && (
             <>
               <Card>
-                <CardTitle hint={readOnly ? 'read-only — published versions are immutable' : 'form editor'}>
+                <CardTitle
+                  hint={readOnly ? 'read-only — published versions are immutable' : 'form editor'}
+                >
                   Eligibility rules
                 </CardTitle>
-                <div className="space-y-2">
+
+                <div className="space-y-3">
                   {draft.eligibility_rules.map((rule, index) => (
-                    <div key={rule.id} className="rounded-lg border border-ink/10 p-2">
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold text-teal-700">{rule.id}</span>
-                        {rule.required_for_auto && <Chip tone="neutral">required for auto</Chip>}
+                    <div
+                      key={rule.id}
+                      className="rounded-control border border-ink/[0.10] bg-card p-3"
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="font-mono text-meta font-medium text-accent-ink">
+                          {rule.id}
+                        </span>
+                        {rule.required_for_auto && (
+                          <span className="text-meta text-ink-3">required for auto</span>
+                        )}
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={() => removeRule(index)}
+                            className="press ms-auto rounded-[6px] px-1.5 py-0.5 text-meta text-negative hover:bg-negative-wash"
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
-                      <div className="grid gap-1.5 sm:grid-cols-4">
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Fact
+
+                      <div className="grid gap-2 sm:grid-cols-4">
+                        <Field label="Fact">
                           <select
                             value={rule.fact}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { fact: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field w-full font-mono"
                           >
                             {FACT_KEYS.map((k) => (
                               <option key={k} value={k}>
@@ -300,14 +377,13 @@ export default function RulesPage() {
                               </option>
                             ))}
                           </select>
-                        </label>
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Op
+                        </Field>
+                        <Field label="Operator">
                           <select
                             value={rule.op}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { op: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field w-full font-mono"
                           >
                             {OPS.map((o) => (
                               <option key={o} value={o}>
@@ -315,24 +391,22 @@ export default function RulesPage() {
                               </option>
                             ))}
                           </select>
-                        </label>
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Value
+                        </Field>
+                        <Field label="Value">
                           <input
                             value={String(rule.value ?? '')}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { value: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field num w-full font-mono"
                           />
-                        </label>
-                        <div className="grid grid-cols-2 gap-1">
-                          <label className="text-[10px] font-bold uppercase text-ink-soft">
-                            On fail
+                        </Field>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Field label="On fail">
                             <select
                               value={rule.on_fail}
                               disabled={readOnly}
                               onChange={(e) => updateRule(index, { on_fail: e.target.value })}
-                              className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                              className="field w-full font-mono"
                             >
                               {OUTCOMES.map((o) => (
                                 <option key={o} value={o}>
@@ -340,14 +414,13 @@ export default function RulesPage() {
                                 </option>
                               ))}
                             </select>
-                          </label>
-                          <label className="text-[10px] font-bold uppercase text-ink-soft">
-                            On unknown
+                          </Field>
+                          <Field label="On unknown">
                             <select
                               value={rule.on_unknown}
                               disabled={readOnly}
                               onChange={(e) => updateRule(index, { on_unknown: e.target.value })}
-                              className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                              className="field w-full font-mono"
                             >
                               {OUTCOMES.map((o) => (
                                 <option key={o} value={o}>
@@ -355,75 +428,64 @@ export default function RulesPage() {
                                 </option>
                               ))}
                             </select>
-                          </label>
+                          </Field>
                         </div>
                       </div>
-                      <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Label (English)
+
+                      <div className="mt-2 grid gap-2 border-t border-ink/[0.06] pt-2 sm:grid-cols-2">
+                        <Field label="Label (English)">
                           <input
                             value={rule.label_en}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { label_en: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field w-full"
                           />
-                        </label>
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Label (اردو)
+                        </Field>
+                        <Field label="Label (اردو)">
                           <input
                             dir="rtl"
                             value={rule.label_ur}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { label_ur: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field w-full"
                           />
-                        </label>
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Fail reason (English)
+                        </Field>
+                        <Field label="Fail reason (English)">
                           <input
                             value={rule.fail_reason_en}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { fail_reason_en: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field w-full"
                           />
-                        </label>
-                        <label className="text-[10px] font-bold uppercase text-ink-soft">
-                          Fail reason (اردو)
+                        </Field>
+                        <Field label="Fail reason (اردو)">
                           <input
                             dir="rtl"
                             value={rule.fail_reason_ur}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { fail_reason_ur: e.target.value })}
-                            className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                            className="field w-full"
                           />
-                        </label>
+                        </Field>
                       </div>
-                      {!readOnly && (
-                        <button
-                          type="button"
-                          onClick={() => removeRule(index)}
-                          className="mt-1 text-[10px] font-bold text-[#B42318] hover:underline"
-                        >
-                          Remove
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
+
                 {!readOnly && (
                   <button
                     type="button"
                     onClick={addRule}
-                    className="mt-2 rounded bg-ink/5 px-2 py-1 text-[11px] font-bold text-ink-soft"
+                    className="press mt-3 min-h-[32px] rounded-[7px] border border-dashed border-ink/[0.18] px-3 text-meta text-ink-2 hover:border-accent/40 hover:bg-accent-wash hover:text-accent-ink"
                   >
-                    + Add rule
+                    Add rule
                   </button>
                 )}
               </Card>
 
               <Card>
                 <CardTitle>Benefit formula & threshold</CardTitle>
-                <div className="grid gap-2 sm:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   {(
                     [
                       ['base_amount_pkr', 'Base PKR'],
@@ -432,8 +494,7 @@ export default function RulesPage() {
                       ['hard_cap_pkr', 'Hard cap PKR'],
                     ] as const
                   ).map(([key, label]) => (
-                    <label key={key} className="text-[10px] font-bold uppercase text-ink-soft">
-                      {label}
+                    <Field key={key} label={label}>
                       <input
                         type="number"
                         value={draft.benefit_formula[key]}
@@ -443,17 +504,19 @@ export default function RulesPage() {
                             prev
                               ? {
                                   ...prev,
-                                  benefit_formula: { ...prev.benefit_formula, [key]: Number(e.target.value) },
+                                  benefit_formula: {
+                                    ...prev.benefit_formula,
+                                    [key]: Number(e.target.value),
+                                  },
                                 }
                               : prev,
                           )
                         }
-                        className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                        className="field num w-full font-mono"
                       />
-                    </label>
+                    </Field>
                   ))}
-                  <label className="text-[10px] font-bold uppercase text-ink-soft">
-                    Auto-approve threshold
+                  <Field label="Auto-approve threshold">
                     <input
                       type="number"
                       step="0.01"
@@ -474,11 +537,10 @@ export default function RulesPage() {
                             : prev,
                         )
                       }
-                      className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                      className="field num w-full font-mono"
                     />
-                  </label>
-                  <label className="text-[10px] font-bold uppercase text-ink-soft">
-                    Auto-approve max PKR
+                  </Field>
+                  <Field label="Auto-approve max PKR">
                     <input
                       type="number"
                       value={draft.policy.auto_approve_max_amount_pkr}
@@ -488,31 +550,35 @@ export default function RulesPage() {
                           prev
                             ? {
                                 ...prev,
-                                policy: { ...prev.policy, auto_approve_max_amount_pkr: Number(e.target.value) },
+                                policy: {
+                                  ...prev.policy,
+                                  auto_approve_max_amount_pkr: Number(e.target.value),
+                                },
                               }
                             : prev,
                         )
                       }
-                      className="mt-0.5 w-full rounded border border-ink/15 px-1 py-1 text-[11px] font-normal normal-case"
+                      className="field num w-full font-mono"
                     />
-                  </label>
+                  </Field>
                 </div>
               </Card>
 
               <Card>
                 <CardTitle hint="read-only">JSON preview</CardTitle>
-                <pre className="max-h-64 overflow-auto rounded bg-[#1B1B1B] p-2 text-[10px] leading-relaxed text-[#E7E5E4]">
+                <pre className="max-h-64 overflow-auto rounded-control bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
                   {JSON.stringify(draft, null, 2)}
                 </pre>
               </Card>
 
               {validation && !validation.valid && (
-                <Card className="border-2 border-[#B42318]/30">
+                <Card className="border-negative/25 bg-negative-wash">
                   <CardTitle>Validation errors</CardTitle>
                   <ul className="space-y-1">
                     {validation.errors.map((err) => (
-                      <li key={`${err.field}-${err.message_en}`} className="text-xs">
-                        <span className="font-mono text-[#B42318]">{err.field}</span>: {err.message_en}
+                      <li key={`${err.field}-${err.message_en}`} className="text-caption">
+                        <span className="font-mono text-negative">{err.field}</span>
+                        <span className="text-ink">: {err.message_en}</span>
                       </li>
                     ))}
                   </ul>
@@ -520,43 +586,55 @@ export default function RulesPage() {
               )}
 
               {twin && (
-                <Card>
-                  <CardTitle hint={`${twin.sample_size} cases replayed`}>Digital Twin result</CardTitle>
-                  <div className="mb-2 grid gap-2 sm:grid-cols-3">
-                    <div className="rounded-lg bg-ink/5 p-2">
-                      <p className="text-[10px] font-bold uppercase text-ink-soft">Budget delta</p>
-                      <p className="num text-lg font-bold text-ink">
-                        {twin.budget_delta_pkr >= 0 ? '+' : ''}
-                        {twin.budget_delta_pkr.toLocaleString()} PKR
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-ink/5 p-2">
-                      <p className="text-[10px] font-bold uppercase text-ink-soft">Flipped cases</p>
-                      <p className="num text-lg font-bold text-ink">{twin.flipped_cases.length}</p>
-                    </div>
-                    <div className="rounded-lg bg-ink/5 p-2">
-                      <p className="text-[10px] font-bold uppercase text-ink-soft">Sample</p>
-                      <p className="num text-lg font-bold text-ink">{twin.sample_size}</p>
-                    </div>
+                <Card className="p-0">
+                  <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
+                    <h2 className="text-body font-medium text-ink">Digital Twin result</h2>
+                    <p className="num text-meta text-ink-3">{twin.sample_size} cases replayed</p>
                   </div>
-                  <table className="w-full text-left text-[11px]">
+
+                  <dl className="grid grid-cols-3 divide-x divide-ink/[0.08] border-b border-ink/[0.08]">
+                    {[
+                      {
+                        label: 'Budget delta',
+                        value: `${twin.budget_delta_pkr >= 0 ? '+' : ''}${twin.budget_delta_pkr.toLocaleString()} PKR`,
+                      },
+                      { label: 'Flipped cases', value: String(twin.flipped_cases.length) },
+                      { label: 'Sample', value: String(twin.sample_size) },
+                    ].map((cell) => (
+                      <div key={cell.label} className="px-4 py-3">
+                        <dt className="text-meta text-ink-3">{cell.label}</dt>
+                        <dd className="num mt-0.5 font-mono text-lead font-medium text-ink">
+                          {cell.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+
+                  <table className="ledger">
                     <thead>
-                      <tr className="border-b border-ink/10 text-[10px] uppercase text-ink-soft">
-                        <th className="py-1">Case</th>
-                        <th className="py-1">Before</th>
-                        <th className="py-1">After</th>
-                        <th className="py-1">Why</th>
+                      <tr>
+                        <th>Case</th>
+                        <th>Before</th>
+                        <th>After</th>
+                        <th>Why</th>
                       </tr>
                     </thead>
                     <tbody>
                       {twin.flipped_cases.slice(0, 20).map((c) => (
-                        <tr key={c.case_id} className="border-b border-ink/5">
-                          <td className="py-1 font-mono">{c.reference_code}</td>
-                          <td className="py-1">{c.before_outcome}</td>
-                          <td className="py-1 font-semibold">{c.after_outcome}</td>
-                          <td className="py-1 text-ink-soft">{c.reason_en}</td>
+                        <tr key={c.case_id}>
+                          <td className="font-mono text-meta text-ink-2">{c.reference_code}</td>
+                          <td className="text-meta text-ink-3">{c.before_outcome}</td>
+                          <td className="text-meta font-medium text-ink">{c.after_outcome}</td>
+                          <td className="text-meta text-ink-2">{c.reason_en}</td>
                         </tr>
                       ))}
+                      {twin.flipped_cases.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="text-caption text-ink-3">
+                            No case changes outcome under this draft.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </Card>
@@ -564,13 +642,13 @@ export default function RulesPage() {
 
               {!readOnly && (
                 <Card>
-                  <CardTitle>Publish</CardTitle>
+                  <CardTitle hint="validate, simulate, then publish">Publish</CardTitle>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => saveDraft.mutate()}
                       disabled={saveDraft.isPending}
-                      className="min-h-tap rounded-lg border border-ink/15 bg-white px-3 text-xs font-semibold"
+                      className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
                     >
                       Save draft
                     </button>
@@ -578,7 +656,7 @@ export default function RulesPage() {
                       type="button"
                       onClick={() => validate.mutate()}
                       disabled={validate.isPending}
-                      className="min-h-tap rounded-lg border border-ink/15 bg-white px-3 text-xs font-semibold"
+                      className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
                     >
                       Validate
                     </button>
@@ -586,7 +664,7 @@ export default function RulesPage() {
                       type="button"
                       onClick={() => simulate.mutate()}
                       disabled={simulate.isPending}
-                      className="min-h-tap rounded-lg border border-ink/15 bg-white px-3 text-xs font-semibold"
+                      className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
                     >
                       Simulate (Digital Twin)
                     </button>
@@ -594,13 +672,14 @@ export default function RulesPage() {
                       value={changeNote}
                       onChange={(e) => setChangeNote(e.target.value)}
                       placeholder="Change note (required)"
-                      className="min-h-tap min-w-[200px] flex-1 rounded-lg border border-ink/15 px-2 text-xs"
+                      aria-label="Change note"
+                      className="field min-w-[200px] flex-1"
                     />
                     <button
                       type="button"
                       onClick={() => publish.mutate()}
                       disabled={publish.isPending || changeNote.trim().length === 0}
-                      className="min-h-tap rounded-lg bg-teal-700 px-3 text-xs font-bold text-white disabled:opacity-50"
+                      className="press min-h-[36px] rounded-control bg-accent px-4 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Publish
                     </button>
