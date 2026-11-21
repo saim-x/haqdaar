@@ -946,6 +946,7 @@ export function ApplyWizard() {
             max={25}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="household_size"
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('household_size');
@@ -967,6 +968,7 @@ export function ApplyWizard() {
             onExactDigits={setExactDigits}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="monthly_income_pkr"
             valueText={textOf(answers, 'monthly_income_pkr')}
             onConfirm={(value, missingReason) => {
