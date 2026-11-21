@@ -263,6 +263,41 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   );
   if (!caseData) return <><BackToCases /><ErrorState error={new Error('Case not found')} /></>;
 
+  const decisionComplete = ['APPROVED', 'PAYMENT_INITIATED', 'PAID', 'REJECTED', 'CLOSED'].includes(caseData.status);
+  if (decisionComplete) {
+    const approved = ['APPROVED', 'PAYMENT_INITIATED', 'PAID'].includes(caseData.status);
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <PageHeader
+          title={caseData.reference_code}
+          subtitle={[caseData.citizen?.full_name ?? 'Applicant', caseData.citizen?.cnic_masked]
+            .filter(Boolean)
+            .join(' · ')}
+          actions={<BackToCases />}
+        />
+        <Card className={approved ? 'border-positive/25 bg-positive-wash' : 'border-ink/[0.12] bg-card'}>
+          <div className="flex items-start gap-3">
+            <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${approved ? 'bg-positive' : 'bg-ink-3'}`} aria-hidden="true" />
+            <div className="min-w-0">
+              <h2 className="text-title font-medium text-ink">{approved ? 'Application approved' : 'Decision recorded'}</h2>
+              <p role="status" className="mt-1 text-body text-ink-2">
+                {approved
+                  ? caseData.status === 'PAID'
+                    ? 'The payment has been completed.'
+                    : 'The application has been approved. You can check its payment progress from the case list.'
+                  : `This case is ${statusWord(caseData.status).toLowerCase()}.`}
+              </p>
+              <p className="mt-2 text-caption text-ink-3">Current status: {statusWord(caseData.status)}</p>
+            </div>
+          </div>
+          <div className="mt-5 border-t border-ink/[0.10] pt-4">
+            <BackToCases />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const needsReason = action === 'REJECT';
   const needsExplanation = action === 'REJECT';
   const needsFields = action === 'REQUEST_INFO';
