@@ -106,6 +106,13 @@ def create_user(payload: UserCreateIn, actor: AdminActor, db: DbSession) -> dict
 
     tenant_id = _scope_tenant(actor)
     if payload.role == UserRole.AUDITOR.value:
+        if not actor.is_platform_admin:
+            from app.security.errors import ForbiddenError
+
+            raise ForbiddenError(
+                message_en="Only a platform administrator can create an Auditor account.",
+                message_ur="آڈیٹر اکاؤنٹ صرف پلیٹ فارم ایڈمن بنا سکتا ہے۔",
+            )
         tenant_id = None  # auditors are platform-scoped and read-only
 
     phone = normalize_phone(payload.phone) if payload.phone else None
@@ -161,6 +168,13 @@ def patch_user(
     if payload.role is not None:
         if payload.role not in STAFF_ROLES:
             raise ValidationError(details={"allowed_roles": sorted(STAFF_ROLES)})
+        if payload.role == UserRole.AUDITOR.value and not actor.is_platform_admin:
+            from app.security.errors import ForbiddenError
+
+            raise ForbiddenError(
+                message_en="Only a platform administrator can assign the Auditor role.",
+                message_ur="آڈیٹر کا کردار صرف پلیٹ فارم ایڈمن دے سکتا ہے۔",
+            )
         user.role = payload.role
         changes["role"] = payload.role
     if payload.is_active is not None:

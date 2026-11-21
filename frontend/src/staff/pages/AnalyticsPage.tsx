@@ -40,7 +40,15 @@ export default function AnalyticsPage() {
         <Kpi label="Auto-approve" value={`${data.auto_approve_pct.toFixed(1)}%`} />
         <Kpi
           label="Avg time to decision"
-          value={`${(data.avg_time_to_decision_seconds / 3600).toFixed(1)}h`}
+          value={
+            !data.avg_time_to_decision_seconds
+              ? '—'
+              : data.avg_time_to_decision_seconds < 60
+                ? `${data.avg_time_to_decision_seconds.toFixed(1)}s`
+                : data.avg_time_to_decision_seconds < 3600
+                  ? `${(data.avg_time_to_decision_seconds / 60).toFixed(1)}m`
+                  : `${(data.avg_time_to_decision_seconds / 3600).toFixed(1)}h`
+          }
         />
         <Kpi label="Open cases" value={String(data.open_cases)} />
       </div>

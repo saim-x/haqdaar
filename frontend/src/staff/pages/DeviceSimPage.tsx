@@ -16,6 +16,7 @@ interface SmsMessage {
   body_en?: string;
   body?: string;
   verification_code?: string;
+  body_sha256?: string;
   code?: string;
   created_at: string;
 }
@@ -44,6 +45,7 @@ const PHONES = [
  */
 export default function DeviceSimPage() {
   const [phone, setPhone] = useState(PHONES[0]?.phone ?? '');
+  const [customPhone, setCustomPhone] = useState('');
 
   const query = useQuery({
     queryKey: ['sms-inbox', phone],
@@ -73,7 +75,7 @@ export default function DeviceSimPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {PHONES.map((p) => {
           const selected = phone === p.phone;
           return (
@@ -92,6 +94,28 @@ export default function DeviceSimPage() {
             </button>
           );
         })}
+        <form
+          className="flex items-center gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (customPhone.trim()) setPhone(customPhone.trim());
+          }}
+        >
+          <input
+            value={customPhone}
+            onChange={(e) => setCustomPhone(e.target.value)}
+            placeholder="+92300..."
+            aria-label="Custom synthetic phone"
+            className="field num w-40 font-mono"
+          />
+          <button
+            type="submit"
+            disabled={!customPhone.trim()}
+            className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-2.5 text-meta font-medium text-ink-2 hover:bg-raised disabled:opacity-45"
+          >
+            Open
+          </button>
+        </form>
       </div>
 
       {query.isLoading && <Loading label="Reading inbox…" />}
@@ -138,6 +162,11 @@ export default function DeviceSimPage() {
                   {msg.body_en && (
                     <p className="mt-1.5 max-w-[62ch] text-meta leading-[1.7] text-ink-2">
                       {msg.body_en}
+                    </p>
+                  )}
+                  {msg.body_sha256 && (
+                    <p className="mt-1.5 font-mono text-[11px] text-ink-3">
+                      body_sha256: <span className="text-ink-2">{msg.body_sha256.slice(0, 20)}…</span>
                     </p>
                   )}
                 </li>

@@ -14,7 +14,7 @@ import { IconCloud, IconRefresh } from './Icons';
  */
 export function OfflinePill({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
-  const { online, pending, syncing, retryNow } = useOffline();
+  const { online, pending, syncing, needsAttention, retryNow } = useOffline();
 
   if (syncing) {
     return (
@@ -25,20 +25,36 @@ export function OfflinePill({ compact = false }: { compact?: boolean }) {
     );
   }
 
+  if (needsAttention.length > 0) {
+    return (
+      <button
+        type="button"
+        onClick={retryNow}
+        data-testid="offline-pill"
+        aria-label={`${t('common.error')} (${needsAttention.length})`}
+        className="press inline-flex min-h-tap items-center gap-1.5 rounded-control bg-negative-wash px-2 text-meta font-medium text-negative"
+      >
+        <IconCloud size={14} />
+        <span>{compact ? `! ${needsAttention.length}` : `${t('common.retry')} (${needsAttention.length})`}</span>
+      </button>
+    );
+  }
+
   if (!online || pending > 0) {
     return (
       <button
         type="button"
         onClick={retryNow}
         data-testid="offline-pill"
-        // Compact mode shows a bare count, which is meaningless to a screen
-        // reader (and collides with the keypad's "0"), so name the state.
         aria-label={`${t('common.offline')} — ${pending} · ${t('common.queued')}`}
         title={t('common.queued')}
-        className="press inline-flex min-h-tap items-center gap-1.5 rounded-control px-1.5 text-meta font-medium text-warn"
+        className="press inline-flex min-h-tap items-center gap-1.5 rounded-control bg-warn-wash px-2 text-meta font-medium text-warn"
       >
         <IconCloud size={14} />
-        {compact ? <span className="num">{pending}</span> : `${t('common.offline')} (${pending})`}
+        <span>
+          {t('common.offline')}
+          {pending > 0 ? <span className="num"> ({pending})</span> : null}
+        </span>
       </button>
     );
   }

@@ -73,10 +73,11 @@ export function isApiError(value: unknown): value is ApiError {
 }
 
 /** Human-facing message in the active language, with a safe fallback. */
-export function errorMessage(err: unknown, lang: 'ur' | 'en'): string {
+export function errorMessage(err: unknown, lang: 'ur' | 'sd' | 'en'): string {
   if (err instanceof ApiError) {
-    return lang === 'ur' ? err.messageUr || err.messageEn : err.messageEn || err.messageUr;
+    return lang === 'en' ? err.messageEn || err.messageUr : err.messageUr || err.messageEn;
   }
   if (err instanceof Error) return err.message;
+  if (lang === 'sd') return 'ڪجهه غلط ٿي ويو.';
   return lang === 'ur' ? 'کچھ غلط ہو گیا۔' : 'Something went wrong.';
 }

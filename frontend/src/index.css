@@ -114,7 +114,8 @@
 
   /* Arabic diacritics need some extra leading. This sans face has a more compact
      vertical rhythm than Nastaliq, so keep Urdu line spacing close to Latin. */
-  html[lang='ur'] {
+  html[lang='ur'],
+  html[lang='sd'] {
     --lh-meta: 20px;
     --lh-caption: 22px;
     --lh-body: 26px;

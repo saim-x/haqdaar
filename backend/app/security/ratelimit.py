@@ -57,6 +57,11 @@ def check_otp_request_limits(phone: str, ip: str | None) -> None:
         limiter.check(f"otp:ip:{ip}", settings.otp_ip_limit, settings.otp_phone_window_seconds)
 
 
+def check_otp_verify_limit(ip: str | None) -> None:
+    """20 OTP verify attempts / 10 min per IP."""
+    limiter.check(f"otp:verify:{ip or 'unknown'}", 20, 600)
+
+
 def check_login_limit(ip: str | None) -> None:
     limiter.check(f"login:ip:{ip or 'unknown'}", 10, 600)
 
@@ -79,6 +84,7 @@ __all__ = [
     "check_api_key_limit",
     "check_login_limit",
     "check_otp_request_limits",
+    "check_otp_verify_limit",
     "check_scam_limit",
     "limiter",
 ]

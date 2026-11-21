@@ -16,10 +16,10 @@ Five distinct AI features, each with its own model, its own failure mode, and it
 
 | # | Feature | What it does | Implementation | Evaluation |
 |---|---|---|---|---|
-| 1 | **Scam classifier** | Verdict on a suspicious SMS/WhatsApp message: `LIKELY_SCAM` / `CANNOT_TELL` / `LIKELY_SAFE` / `VERIFIED_OFFICIAL` | `app/ai/scam_classifier.py` — char n-gram TF-IDF + calibrated logistic regression, `scam-tfidf-lr-v1.0.0` | 172 train / 43 test. Precision **0.8889**, recall **0.8889**, F1 **0.8889**, FPR **0.08**, hard-negative FPR **0.00**, confusion `[[23,2],[2,16]]` |
-| 2 | **Document verifier** | Genuine / forged / blurry verdict on a CNIC photo, cross-checking the printed text against an HMAC-signed QR | `app/ai/doc_verify.py` — OpenCV preprocess + QR decode + RapidFuzz name match | 30 images. Genuine verified **100 %**, forged caught **100 %**, false-tamper **0.00 %**, blurry→retake **100 %** |
-| 3 | **Policy RAG assistant** | Answers "what documents do I need?" from the real policy corpus, in Urdu or English, with a citation — or abstains | `app/ai/rag.py` — hybrid Postgres `tsvector` + 64-dim cosine, extractive answerer, two-gate abstention | 4 bilingual policy documents, 30 section-pure chunks. Abstains on off-topic questions; cites the section it quoted |
-| 4 | **Urdu voice** | Speech→text for the wizard, text→speech for every prompt and every dynamic explanation | `app/ai/voice.py` (Whisper STT, edge-tts TTS) + `app/ai/urdu_nlp.py` (Roman/Urdu normaliser, amount/CNIC/date/district parsers) | 73 pre-recorded Urdu MP3s (`flux-ambreen-ur`, `ur-PK`), all `status: ready`; `tests/ai/test_urdu_nlp.py`, `test_voice.py` |
+| 1 | **Scam classifier** | Verdict on a suspicious SMS/WhatsApp message (text, screenshot OCR, or voice): `LIKELY_SCAM` / `CANNOT_TELL` / `LIKELY_SAFE` / `VERIFIED_OFFICIAL` | `app/ai/scam_classifier.py` — hybrid word + char_wb `FeatureUnion` TF-IDF + calibrated logistic regression, `scam-tfidf-lr-v1.0.0`, plus Stage-1 cryptographic `HQ-*` / `body_sha256` verification | 172 train / 43 test. Precision **0.9444**, recall **0.9444**, F1 **0.9444**, FPR **0.04**, hard-negative FPR **0.00**, confusion `[[24,1],[1,17]]` |
+| 2 | **Document verifier** | Genuine / forged / blurry verdict on a CNIC photo, cross-checking the printed text against an HMAC-signed QR | `app/ai/doc_verify.py` — OpenCV preprocess + QR decode + RapidFuzz name match + `OCR_VS_QR` tamper propagation to four-eyes review | 30 images. Genuine verified **100 %**, forged caught **100 %**, false-tamper **0.00 %**, blurry→retake **100 %** |
+| 3 | **Policy RAG assistant** | Answers "what documents do I need?" by text or **voice** (`POST /rag/transcribe`) from the real policy corpus, in Urdu/Sindhi/English, with a citation — or abstains | `app/ai/rag.py` — hybrid Postgres `tsvector` + NumPy cosine (with live/fake dimension resilience), extractive/LLM answerer, two-gate abstention | 4 bilingual policy documents, 30 section-pure chunks. Abstains on off-topic questions; cites the section it quoted |
+| 4 | **Urdu & regional voice** | Speech→text for every wizard field and Policy Q&A, text→speech for every prompt and dynamic explanation, plus Auto-Read mode | `app/ai/voice.py` (Deepgram `nova-3` / OpenAI `whisper-1` STT, `edge-tts` live TTS) + `app/ai/urdu_nlp.py` (Roman/Urdu normaliser + LLM fallback) | 73 pre-recorded Urdu MP3s (`flux-ambreen-ur`, `ur-PK`), all `status: ready`; `tests/ai/test_urdu_nlp.py`, `test_voice.py` |
 | 5 | **Case agent** | Reads the case, calls the mock DPI services, assembles facts, proposes a route — and is structurally unable to decide | `app/agent/case_agent.py`, `assemble.py` | `tests/engine/test_pipeline.py`, `tests/integration/test_golden_path_and_rules.py` |
 
 **Reproduce:** `GET /api/v1/eval/dashboard` returns 1–3 in one payload.
@@ -59,10 +59,10 @@ See `docs/07-ai-components.md §9` for the full rationale. Summary:
 | Task | Chosen | Rejected alternative | Why |
 |---|---|---|---|
 | Policy Q&A | `gpt-4o-mini` + hybrid retrieval | A larger model, or `pgvector` | The corpus is 4 documents; retrieval quality dominates model size. `tsvector` + NumPy cosine needs no extension and no extra service |
-| Scam classification | TF-IDF + calibrated LR | A fine-tuned transformer | 172 labelled examples. A transformer would memorise them; a linear model on character n-grams generalises and is auditable per-feature |
-| Document check | OpenCV + HMAC QR | A vision LLM | The QR is a cryptographic fact, not a judgement. A vision model would be slower, costlier, and *less* certain |
-| Speech→text | `whisper-1` | Browser Web Speech API | Web Speech is unavailable offline and unsupported for Urdu on most Android builds |
-| Text→speech | `edge-tts` + 73 pre-cached MP3s | Live TTS for every prompt | A citizen on 2G cannot wait for synthesis; the fixed prompts ship in the bundle and work offline |
+| Scam classification | Word + char n-gram `FeatureUnion` TF-IDF + calibrated LR | A fine-tuned transformer | 172 labelled examples. A transformer would memorise them; a hybrid word/subword linear model generalises cleanly (**0.9444 F1**, **0.04 FPR**, **0.00 hard-negative FPR**) and stays auditable per-feature |
+| Document check | OpenCV + HMAC QR + OCR cross-check | A vision LLM alone | The QR is a cryptographic fact, not a judgement; `ocr_vs_qr` cross-check catches Photoshopped cards and propagates `TAMPER_SUSPECTED` (HIGH) to four-eyes approval |
+| Speech→text | Deepgram `nova-3` / OpenAI `whisper-1` | Browser Web Speech API | Web Speech is unavailable offline and unsupported for Urdu on most Android builds |
+| Text→speech | Deepgram Flux (`flux-ambreen-ur`, 73 pre-cached MP3s) + `edge-tts` live | Live TTS for every prompt | A citizen on 2G cannot wait for synthesis; critical prompts precache immediately and the full 73-clip pack caches on demand |
 | Embeddings | `text-embedding-3-small` (live) / hashed TF-IDF (fake) | `text-embedding-3-large` | 1536 dims is ample for 30 chunks; the fake path is deterministic so tests are reproducible |
 
 ---
@@ -84,12 +84,12 @@ See `docs/07-ai-components.md §9` for the full rationale. Summary:
 
 ### 2.2 Backend Architecture & API Design — 5 pts
 
-- **74 endpoints across 21 modules**, all under `/api/v1`, all with a typed Pydantic v2 request/response model.
+- **75 endpoints across 21 modules**, all under `/api/v1`, validated with Pydantic v2 schemas and uniform structured error envelopes.
 - **Documented error codes**, not bare HTTP statuses: `CONSENT_REVOKED`, `INVALID_TRANSITION`, `SAME_OFFICER`, `IDEMPOTENCY_CONFLICT`, `RULE_VALIDATION_FAILED`, `VALIDATION_ERROR`.
 - **Idempotency**: citizen/helper writes honour `Idempotency-Key`; a replay returns the cached response, a payload mismatch returns `409 IDEMPOTENCY_CONFLICT`.
 - **ETag / conditional GET** on `GET /cases/{id}`.
 - **Layered**: `api/` (transport) → `agent/` (orchestration) → `engine/` (pure policy) → `models/` (persistence). The dependency direction is enforced by the purity test.
-- **OpenAPI** served at `/docs` and `/openapi.json`.
+- **OpenAPI** served at `/api/docs` and `/api/openapi.json`.
 
 ### 2.3 Database Design — 4 pts
 
@@ -122,8 +122,8 @@ The problem is not "build a form". It is that a widow in Thatta has to prove her
 | Real constraint | Design response |
 |---|---|
 | The registry may not know | Tri-state facts; `UNKNOWN` routes to human review, never to rejection |
-| She may not read | Urdu default, RTL, audio-first wizard, 73 pre-recorded prompts, readback confirmation |
-| The phone may be offline | 131.2 KB bundle, Workbox precache, Dexie outbox, idempotent replay |
+| She may not read | Urdu default + **Sindhi (`sd`, سنڌي)** regional support, RTL, audio-first wizard with Auto-Read toggle, 73 pre-recorded prompts, voice input on every step, readback confirmation |
+| The phone may be offline | **135.3 KB** gzipped citizen bundle (≤150 KB budget), **58-entry / 1.0 MB** Workbox precache (lazy audio caching), Dexie outbox with failed-item retry/discard UI, idempotent replay |
 | Someone may be defrauding her | Scam checker with HMAC verification codes; the app never asks for a PIN or a fee |
 | She may change her mind | Per-purpose consent, withdrawable at any time, denial logged before the 403 is raised |
 | She may be wrongly refused | A free complaint creates a linked case with its own reference code, an in-app notification and a simulated SMS; a human officer is the only actor who can reject |
@@ -164,28 +164,28 @@ At the measured operating point (`τ = 0.90`, n = 133) the router auto-approves 
 
 ### 4.1 Voice & Regional Language — 4 pts
 
-- **Urdu is the default**, not a translation layer: `dir="rtl"`, `Noto Nastaliq Urdu` for Urdu and `Instrument Sans` for Latin, both self-hosted (ADR-023).
-- **73 pre-recorded Urdu prompts** (`flux-ambreen-ur`, `ur-PK`), SHA-256 pinned in `frontend/public/audio/ur/manifest.json`, all `status: ready`. They ship in the bundle, so they play offline.
-- **Speech input** via Whisper, with a Roman-Urdu normaliser so "pandrah hazaar" and "۱۵۰۰۰" both parse.
-- **Dynamic explanations** are synthesised through `POST /voice/tts` and cached.
+- **Urdu (`ur`) is the default + full Sindhi (`sd`, سنڌي) regional language support** (lazy-split into its own 4.3 KB chunk so it adds 0 KB to the initial bundle), both RTL with self-hosted `Noto Sans Arabic` (covering Urdu & Sindhi codepoints) and `Instrument Sans` (ADR-023).
+- **73 pre-recorded Urdu prompts** (`flux-ambreen-ur`, `ur-PK`), SHA-256 pinned in `frontend/public/audio/ur/manifest.json`, all `status: ready`. Critical onboarding prompts precache on install; remaining clips cache on first play (`CacheFirst`).
+- **Speech input everywhere**: every wizard field (including CNIC, district, counts, payout phone) plus Policy Q&A (`/c/ask`) accepts voice via Deepgram `nova-3` / OpenAI `whisper-1`, with a Roman-Urdu normaliser and LLM fallback so "pandrah hazaar", "Mirpur Khas", and "۱۵۰۰۰" all parse.
+- **Dynamic explanations** are synthesised through `POST /voice/tts` (`edge-tts`) and cached, with an accessible **Auto-Read** toggle in the citizen header.
 - **One 56×56 audio button per citizen screen** — the same position, every time.
 
 ### 4.2 Low-Literacy Usability — 3 pts
 
-- **One question per screen**, icon + audio + large type. No dense forms.
-- **48 px minimum tap targets, 56 px for primary actions** (`docs/11 §2`).
-- **Readback confirmation** before submit — the app says the answer back in Urdu.
+- **One question per screen**, icon + audio + large type + **WCAG AA ≥ 5.4:1 contrast**. No dense forms.
+- **48 px minimum tap targets, 56 px for primary actions** (`docs/11 §2`), plus **Approximate Age quick-picker** (`~25 / ~35 / ~45 / ~55 / ~65`) and visual **Income Band tier bars**.
+- **Readback confirmation** before submit — the app says the answer back in Urdu (and lets citizens confirm "I don't know" by voice too).
 - **"I don't know" is a first-class button**, not a validation error. It produces `UNKNOWN`, which routes to a human.
 - **Digit pad** for numeric entry instead of a keyboard.
 - **Copyable reference codes** everywhere a code appears, so a citizen can read it to a helper.
 
 ### 4.3 Weak Internet — 3 pts
 
-- **131.2 KB gzipped** citizen entry bundle against a **150 KB** budget (87.4 %), enforced by `npm run budget` in CI.
-- **125 precache entries** via `vite-plugin-pwa` / Workbox — the app shell, the audio, and the policy corpus are all available offline.
-- **Dexie outbox**: writes queue locally and replay with `Idempotency-Key`, so a dropped connection never double-submits.
+- **135.3 KB gzipped** citizen entry bundle against a **150 KB** budget (90.2 %), enforced by `npm run budget` in CI (with Sindhi `i18n-sd` lazy-loaded at 4.3 KB).
+- **58 precache entries (1.0 MB)** via `vite-plugin-pwa` / Workbox — trimmed down from 2.67 MB so initial install succeeds cleanly on slow 2G/3G links, while non-critical audio clips cache lazily on demand.
+- **Dexie outbox with failure recovery UI**: writes queue locally (preserving `X-Act-For-Citizen` for helpers) and replay with `Idempotency-Key`; failed items surface Retry / Discard controls in the header.
 - **ETag / conditional GET** so a re-open costs a 304, not a payload.
-- **Lite mode** for the slowest devices.
+- **Lite mode** genuinely pauses background polling and suppresses `.webp` illustrations on slow/low-end devices.
 
 ---
 

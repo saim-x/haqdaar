@@ -49,8 +49,11 @@ export default function MocksPage() {
 
   const update = useMutation({
     mutationFn: ({ service, patch }: { service: string; patch: Partial<MockServiceConfig> }) =>
-      api.patch<MockServiceConfig>(`/admin/mocks/${service}`, patch),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin-mocks'] }),
+      api.patch<MockServiceConfig>('/admin/mocks', { service, ...patch }),
+    onSuccess: () => {
+      setMessage(null);
+      void queryClient.invalidateQueries({ queryKey: ['admin-mocks'] });
+    },
     onError: (err) => setMessage(errorMessage(err, 'en')),
   });
 

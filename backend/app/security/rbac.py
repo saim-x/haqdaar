@@ -403,8 +403,12 @@ def get_api_key_context(request: Request, db: Session = Depends(get_db)) -> ApiK
             message_ur="یہ API کلید غلط ہے یا منسوخ کر دی گئی ہے۔",
         )
 
+    from app.security.ratelimit import check_api_key_limit
+
+    check_api_key_limit(str(row.id), row.rate_limit_per_min)
+
     row.last_used_at = datetime.now(UTC)
-    db.flush()
+    db.commit()
 
     return ApiKeyContext(
         api_key_id=row.id,

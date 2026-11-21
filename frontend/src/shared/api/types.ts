@@ -307,15 +307,20 @@ export interface OfficerCaseReview extends CaseView {
   citizen: { id: string; full_name: string; district: string | null; cnic_masked: string } | null;
   notes: TraceNote[];
   rule_stale: boolean;
+  confidence_components?: ConfidenceComponents | null;
 }
 
 export interface AgentStep {
-  at: string;
+  id?: string;
+  at?: string;
+  created_at?: string | null;
   step: string;
-  tool: string | null;
-  status: 'OK' | 'FAILED' | 'SKIPPED';
-  duration_ms: number;
-  summary: string;
+  tool?: string | null;
+  status: 'OK' | 'FAILED' | 'SKIPPED' | string;
+  duration_ms?: number | null;
+  latency_ms?: number | null;
+  summary?: string;
+  body?: string;
 }
 
 export interface CaseListResponse {
@@ -405,7 +410,7 @@ export interface RuleCondition {
   id: string;
   fact: string;
   op: string;
-  value: string | number | boolean | null;
+  value: string | number | boolean | (string | number)[] | null | unknown;
   on_fail: string;
   on_unknown: string;
   label_en: string;
@@ -474,12 +479,17 @@ export interface RuleValidationResult {
 export interface TwinFlippedCase {
   case_id: string;
   reference_code: string;
-  before_outcome: string;
-  after_outcome: string;
-  before_amount_pkr: number | null;
-  after_amount_pkr: number | null;
-  reason_en: string;
-  reason_ur: string;
+  before_route?: string;
+  after_route?: string;
+  before_outcome?: string;
+  after_outcome?: string;
+  before_amount?: number | null;
+  after_amount?: number | null;
+  before_amount_pkr?: number | null;
+  after_amount_pkr?: number | null;
+  primary_reason?: string;
+  reason_en?: string;
+  reason_ur?: string;
 }
 
 export interface TwinResult {
@@ -487,6 +497,7 @@ export interface TwinResult {
   sample_size: number;
   before_counts: Record<string, number>;
   after_counts: Record<string, number>;
+  transition_matrix?: Record<string, number>;
   flipped_cases: TwinFlippedCase[];
   budget_delta_pkr: number;
 }
@@ -540,6 +551,7 @@ export interface TraceDecision {
   officer_reason_codes: string[] | null;
   officer_note: string | null;
   is_override: boolean;
+  rule_trace?: RuleTraceEntry[];
   created_at: string;
 }
 
@@ -761,6 +773,14 @@ export interface EvalDashboard {
     llm_calls_24h: number;
     llm_cost_usd_24h: number;
     llm_failure_rate: number;
+    active_provider?: string;
+    guardrail_triggers_24h?: number;
+    ai_telemetry_by_task?: {
+      task_type: string;
+      calls: number;
+      avg_latency_ms: number;
+      cost_usd: number;
+    }[];
   };
   benchmarks_available: boolean;
   program: { id: string; code: string; name: string } | null;

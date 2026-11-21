@@ -68,7 +68,12 @@ EDITABLE_STATUSES = frozenset(
 )
 
 COMPLAINABLE_STATUSES = frozenset(
-    {CaseStatus.APPROVED.value, CaseStatus.PAID.value, CaseStatus.PAYMENT_FAILED.value}
+    {
+        CaseStatus.APPROVED.value,
+        CaseStatus.PAYMENT_INITIATED.value,
+        CaseStatus.PAID.value,
+        CaseStatus.PAYMENT_FAILED.value,
+    }
 )
 
 _TIMELINE_LABELS: dict[str, tuple[str, str]] = {

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { STORAGE_KEYS } from '../config';
 import { en, ur, type DictKey } from './dictionary';
 
-export type Lang = 'ur' | 'en';
+export type Lang = 'ur' | 'sd' | 'en';
 
 interface I18nContextValue {
   lang: Lang;
@@ -18,10 +18,12 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+let cachedSd: Partial<Record<DictKey, string>> | null = null;
+
 function readLang(): Lang {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.lang);
-    if (stored === 'ur' || stored === 'en') return stored;
+    if (stored === 'ur' || stored === 'sd' || stored === 'en') return stored;
   } catch {
     /* private mode */
   }
@@ -30,37 +32,51 @@ function readLang(): Lang {
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(readLang);
+  const [sdDict, setSdDict] = useState<Partial<Record<DictKey, string>> | null>(cachedSd);
 
   useEffect(() => {
     const root = document.documentElement;
     root.lang = lang;
-    root.dir = lang === 'ur' ? 'rtl' : 'ltr';
+    root.dir = lang === 'en' ? 'ltr' : 'rtl';
     try {
       localStorage.setItem(STORAGE_KEYS.lang, lang);
     } catch {
       /* ignore */
     }
+    if (lang === 'sd' && !cachedSd) {
+      void import('./sindhi').then((mod) => {
+        cachedSd = mod.sd;
+        setSdDict(mod.sd);
+      });
+    }
   }, [lang]);
 
   const setLang = useCallback((next: Lang) => setLangState(next), []);
-  const toggleLang = useCallback(() => setLangState((prev) => (prev === 'ur' ? 'en' : 'ur')), []);
+  const toggleLang = useCallback(
+    () => setLangState((prev) => (prev === 'ur' ? 'sd' : prev === 'sd' ? 'en' : 'ur')),
+    [],
+  );
 
   const value = useMemo<I18nContextValue>(() => {
-    const dict = lang === 'ur' ? ur : en;
+    const isRtl = lang !== 'en';
     return {
       lang,
-      dir: lang === 'ur' ? 'rtl' : 'ltr',
-      isRtl: lang === 'ur',
+      dir: isRtl ? 'rtl' : 'ltr',
+      isRtl,
       setLang,
       toggleLang,
-      t: (key: DictKey) => dict[key] ?? ur[key] ?? key,
+      t: (key: DictKey) => {
+        if (lang === 'en') return en[key] ?? ur[key] ?? key;
+        if (lang === 'sd') return sdDict?.[key] ?? ur[key] ?? key;
+        return ur[key] ?? key;
+      },
       pick: (urValue, enValue) => {
-        const primary = lang === 'ur' ? urValue : enValue;
-        const fallback = lang === 'ur' ? enValue : urValue;
+        const primary = isRtl ? urValue : enValue;
+        const fallback = isRtl ? enValue : urValue;
         return primary || fallback || '';
       },
     };
-  }, [lang, setLang, toggleLang]);
+  }, [lang, sdDict, setLang, toggleLang]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

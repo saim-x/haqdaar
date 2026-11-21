@@ -3,7 +3,6 @@ import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ScamCheckResult, ScamVerdict } from '../shared/api/types';
 import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
-import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
 import { AudioButton } from '../shared/ui/AudioButton';
@@ -47,7 +46,6 @@ const VERDICT: Record<
  */
 export function ScamCheckPage() {
   const { t, lang } = useI18n();
-  const { session } = useAuth();
   const [tab, setTab] = useState<Tab>('text');
   const [text, setText] = useState('');
   const [result, setResult] = useState<ScamCheckResult | null>(null);
@@ -233,8 +231,46 @@ export function ScamCheckPage() {
             </div>
 
             <div className="p-5">
+              {/* Visual calibrated risk band gauge so citizens & judges see the honest CANNOT_TELL band. */}
+              {result.verdict !== 'VERIFIED_OFFICIAL' && (
+                <div className="mb-4 rounded-control border border-ink/[0.08] bg-raised/60 px-3 py-2.5">
+                  <div className="flex items-center justify-between text-meta text-ink-3">
+                    <span>{lang === 'en' ? 'Calibrated Risk Band' : 'خطرے کا پیمانہ'}</span>
+                    <span className="num font-mono text-ink-2">
+                      {Math.round(result.confidence * 100)}%
+                    </span>
+                  </div>
+                  <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-ink/[0.08]">
+                    <div className="absolute inset-y-0 left-0 w-[35%] bg-positive/35" />
+                    <div className="absolute inset-y-0 left-[35%] w-[40%] bg-warn/35" />
+                    <div className="absolute inset-y-0 left-[75%] w-[25%] bg-negative/40" />
+                    <div
+                      className="absolute top-0 h-2 w-1.5 -translate-x-1/2 rounded-full bg-ink"
+                      style={{
+                        left: `${Math.min(
+                          98,
+                          Math.max(
+                            2,
+                            result.verdict === 'LIKELY_SCAM'
+                              ? Math.max(76, Math.round(result.confidence * 100))
+                              : result.verdict === 'LIKELY_SAFE'
+                                ? Math.min(34, Math.round((1 - result.confidence) * 100))
+                                : 55,
+                          ),
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="mt-1 flex justify-between text-[11px] text-ink-3">
+                    <span>{lang === 'en' ? 'Safe (<35%)' : 'محفوظ'}</span>
+                    <span>{lang === 'en' ? 'Cannot tell (35–75%)' : 'یقین نہیں'}</span>
+                    <span>{lang === 'en' ? 'Likely scam (>75%)' : 'جعلی'}</span>
+                  </div>
+                </div>
+              )}
+
               <p className="text-body leading-[1.7] text-ink">
-                {lang === 'ur' ? result.explanation_ur : result.explanation_en}
+                {lang !== 'en' ? result.explanation_ur : result.explanation_en}
               </p>
 
               {result.matched_official && (
@@ -244,8 +280,12 @@ export function ScamCheckPage() {
                     <CopyCode value={result.matched_official.verification_code} tone="green" size="md" />
                   </div>
                   <p className="mt-1.5 text-meta text-ink-3">
-                    {result.matched_official.program} ·{' '}
-                    <bdi className="tabular-nums">{stamp(result.matched_official.created_at, lang)}</bdi>
+                    {(lang !== 'en'
+                      ? (result.matched_official as { title_ur?: string; program?: string }).title_ur
+                      : (result.matched_official as { title_en?: string; program?: string }).title_en) ||
+                      result.matched_official.program ||
+                      t('app.tagline')}{' '}
+                    · <bdi className="tabular-nums">{stamp(result.matched_official.created_at, lang)}</bdi>
                   </p>
                 </div>
               )}
@@ -258,7 +298,7 @@ export function ScamCheckPage() {
                       <li key={flag.code} className="flex items-start gap-2">
                         <IconCross size={14} className="mt-1 shrink-0 text-negative" />
                         <span className="text-caption leading-[1.7] text-ink">
-                          {lang === 'ur' ? flag.label_ur : flag.label_en}
+                          {lang !== 'en' ? flag.label_ur : flag.label_en}
                         </span>
                       </li>
                     ))}
@@ -270,10 +310,14 @@ export function ScamCheckPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-meta text-warn">{t('scam.advice')}</p>
                   <p className="mt-0.5 text-caption leading-[1.7] text-ink">
-                    {lang === 'ur' ? result.advice_ur : result.advice_en}
+                    {lang !== 'en' ? result.advice_ur : result.advice_en}
                   </p>
                 </div>
-                {session && <AudioButton text={result.advice_ur} label={`${t('common.listen')} · ${t('scam.advice')}`} variant="quiet" />}
+                <AudioButton
+                  text={lang !== 'en' ? result.advice_ur : result.advice_en}
+                  label={`${t('common.listen')} · ${t('scam.advice')}`}
+                  variant="quiet"
+                />
               </div>
 
               <button

@@ -145,7 +145,10 @@ export function ApplyWizard() {
   const citizenId = actFor?.citizenId ?? session?.citizen?.id ?? null;
   const actForCitizenId = actFor?.citizenId ?? null;
 
-  const [serverCaseId, setServerCaseId] = useState<string | null>(caseId === 'new' ? null : caseId);
+  const isOfflineStart = searchParams.get('offline') === '1';
+  const [serverCaseId, setServerCaseId] = useState<string | null>(
+    caseId === 'new' || isOfflineStart ? null : caseId,
+  );
   const [programId, setProgramId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<DraftAnswers>({});
   const [stepIndex, setStepIndex] = useState(0);
@@ -191,7 +194,7 @@ export function ApplyWizard() {
   const existingCase = useQuery({
     queryKey: ['case', caseId],
     queryFn: () => api.get<CaseView>(`/cases/${caseId}`),
-    enabled: caseId !== 'new',
+    enabled: caseId !== 'new' && !isOfflineStart,
     retry: 1,
   });
 
@@ -204,7 +207,7 @@ export function ApplyWizard() {
   useEffect(() => {
     if (hydrated) return;
     const view = existingCase.data;
-    if (caseId !== 'new' && !view) return;
+    if (caseId !== 'new' && !isOfflineStart && !view) return;
 
     let cancelled = false;
     void (async () => {
@@ -544,7 +547,7 @@ export function ApplyWizard() {
       case 'payout_phone':
         return isCompletePhone(textOf(answers, 'payout_phone'));
       case 'cnic_doc':
-        return Boolean(docs.cnic);
+        return Boolean(docs.cnic) && docs.cnic?.verify_status !== 'NEEDS_RETAKE';
       case 'death_cert_doc':
         return Boolean(docs.death) || deathSkipped;
       case 'review':
@@ -558,11 +561,13 @@ export function ApplyWizard() {
     if (!canAdvance) return;
     const nextIndex = Math.min(stepIndex + 1, total - 1);
     const nextStep = STEPS[nextIndex] ?? 'review';
+    setUploadNote(null);
     setStepIndex(nextIndex);
     void syncDraft(nextStep, answers);
   }, [answers, canAdvance, stepIndex, syncDraft, total]);
 
   const goBack = useCallback(() => {
+    setUploadNote(null);
     setStepIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
@@ -612,7 +617,7 @@ export function ApplyWizard() {
                   {reference}
                 </p>
               </div>
-              <span className="stamp">{queued ? t('common.queued') : t('cases.approvedStamp')}</span>
+              <span className="stamp">{queued ? t('common.queued') : t('wizard.submitted')}</span>
             </div>
           )}
 
@@ -814,11 +819,20 @@ export function ApplyWizard() {
           />
           {valueOf(answers, 'spouse_cnic')?.missing_reason === 'USER_UNKNOWN' && (
             <p className="mt-3 rounded-control bg-warn-wash px-3 py-2.5 text-meta leading-[1.7] text-warn">
-              {lang === 'ur'
+              {lang !== 'en'
                 ? 'ٹھیک ہے۔ ہم سرکاری ریکارڈ سے تصدیق کریں گے۔'
                 : 'That is fine. We will check the government record instead.'}
             </p>
           )}
+          <VoiceField
+            fieldKey="spouse_cnic"
+            audioKey="wizard_spouse_cnic"
+            audioText={title}
+            onConfirm={(value, missingReason) => {
+              if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('spouse_cnic');
+              else setAnswer('spouse_cnic', digitsOnly(String(value)));
+            }}
+          />
         </section>
       )}
 
@@ -828,6 +842,14 @@ export function ApplyWizard() {
           <DistrictList
             value={textOf(answers, 'applicant_district') || null}
             onChange={(district) => setAnswer('applicant_district', district)}
+          />
+          <VoiceField
+            fieldKey="applicant_district"
+            audioKey="wizard_applicant_district"
+            audioText={title}
+            onConfirm={(value) => {
+              if (value) setAnswer('applicant_district', String(value));
+            }}
           />
         </section>
       )}
@@ -842,6 +864,15 @@ export function ApplyWizard() {
             audioKey="wizard_children_under_18"
             audioText={title}
           />
+          <VoiceField
+            fieldKey="children_under_18"
+            audioKey="wizard_children_under_18"
+            audioText={title}
+            onConfirm={(value, missingReason) => {
+              if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('children_under_18');
+              else setAnswer('children_under_18', Math.max(0, Math.min(15, Number(value))));
+            }}
+          />
         </section>
       )}
 
@@ -854,6 +885,15 @@ export function ApplyWizard() {
             max={25}
             audioKey="wizard_household_size"
             audioText={title}
+          />
+          <VoiceField
+            fieldKey="household_size"
+            audioKey="wizard_household_size"
+            audioText={title}
+            onConfirm={(value, missingReason) => {
+              if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('household_size');
+              else setAnswer('household_size', Math.max(1, Math.min(25, Number(value))));
+            }}
           />
         </section>
       )}
@@ -872,7 +912,10 @@ export function ApplyWizard() {
           <VoiceField
             fieldKey="monthly_income_pkr"
             audioText={title}
-            onConfirm={(value) => setAnswer('monthly_income_pkr', value === null ? null : Number(value))}
+            onConfirm={(value, missingReason) => {
+              if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('monthly_income_pkr');
+              else setAnswer('monthly_income_pkr', Number(value));
+            }}
           />
         </section>
       )}
@@ -891,12 +934,32 @@ export function ApplyWizard() {
             </button>
           )}
           <DigitPad
-            value={nationalPhoneDigits(textOf(answers, 'payout_phone'))}
-            onChange={(next) => setAnswer('payout_phone', next ? toE164Pk(next) : '')}
-            maxDigits={10}
+            value={
+              textOf(answers, 'payout_phone').startsWith('+92')
+                ? `0${nationalPhoneDigits(textOf(answers, 'payout_phone'))}`
+                : textOf(answers, 'payout_phone').replace(/\D+/g, '').slice(0, 11)
+            }
+            onChange={(next) => {
+              if (!next) {
+                setAnswer('payout_phone', '');
+              } else if (isCompletePhone(next)) {
+                setAnswer('payout_phone', toE164Pk(next));
+              } else {
+                setAnswer('payout_phone', next);
+              }
+            }}
+            maxDigits={11}
             format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
             audioKey="wizard_payout_phone"
             audioText={title}
+          />
+          <VoiceField
+            fieldKey="payout_phone"
+            audioKey="wizard_payout_phone"
+            audioText={title}
+            onConfirm={(value) => {
+              if (value) setAnswer('payout_phone', toE164Pk(String(value)));
+            }}
           />
         </section>
       )}
@@ -955,10 +1018,12 @@ export function ApplyWizard() {
                     audioKey={null}
                     text={
                       retake
-                        ? lang === 'ur'
+                        ? lang !== 'en'
                           ? (doc?.retake_reason_ur ?? t('wizard.doc.unverifiable'))
                           : (doc?.retake_reason_en ?? t('wizard.doc.unverifiable'))
-                        : t('wizard.docCnic.hint')
+                        : step === 'death_cert_doc'
+                          ? t('wizard.docDeath.hint')
+                          : t('wizard.docCnic.hint')
                     }
                   />
                 </div>

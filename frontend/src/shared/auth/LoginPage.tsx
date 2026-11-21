@@ -120,11 +120,11 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={toggleLang}
-                className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-3 hover:text-ink"
+                className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:text-ink"
                 aria-label={t('common.switchLanguage')}
               >
                 <IconGlobe size={14} />
-                {lang === 'ur' ? 'EN' : 'اردو'}
+                {lang === 'ur' ? 'سنڌي' : lang === 'sd' ? 'EN' : 'اردو'}
               </button>
               <AudioButton audioKey="login_welcome" text={t('login.subtitle')} />
             </div>

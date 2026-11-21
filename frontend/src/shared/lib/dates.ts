@@ -16,7 +16,7 @@
  * on the same three-letter width and the same order: day, month, year.
  */
 
-const MONTHS: Record<'ur' | 'en', string[]> = {
+const MONTHS: Record<'ur' | 'sd' | 'en', string[]> = {
   ur: [
     'جنوری',
     'فروری',
@@ -31,6 +31,20 @@ const MONTHS: Record<'ur' | 'en', string[]> = {
     'نومبر',
     'دسمبر',
   ],
+  sd: [
+    'جنوري',
+    'فيبروري',
+    'مارچ',
+    'اپريل',
+    'مئي',
+    'جون',
+    'جولاءِ',
+    'آگسٽ',
+    'سيپٽمبر',
+    'آڪٽوبر',
+    'نومبر',
+    'ڊسمبر',
+  ],
   en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
 };
 
@@ -41,7 +55,7 @@ function parse(iso: string | null | undefined): Date | null {
 }
 
 /** `21 Nov 2026` / `21 نومبر 2026`. */
-export function dayMonth(iso: string | null | undefined, lang: 'ur' | 'en'): string {
+export function dayMonth(iso: string | null | undefined, lang: 'ur' | 'sd' | 'en'): string {
   const date = parse(iso);
   if (!date) return '—';
   return `${date.getDate()} ${MONTHS[lang][date.getMonth()]} ${date.getFullYear()}`;
@@ -55,7 +69,7 @@ export function clock(iso: string | null | undefined): string {
 }
 
 /** `21 Nov · 14:05` / `21 نومبر · 14:05`. */
-export function stamp(iso: string | null | undefined, lang: 'ur' | 'en'): string {
+export function stamp(iso: string | null | undefined, lang: 'ur' | 'sd' | 'en'): string {
   const date = parse(iso);
   if (!date) return '—';
   return `${date.getDate()} ${MONTHS[lang][date.getMonth()]} · ${clock(iso)}`;

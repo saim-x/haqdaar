@@ -2,7 +2,6 @@ import { Suspense, lazy, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { NavLink, Navigate, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
-import { useI18n } from '../shared/i18n/I18nProvider';
 import { BrandLockup } from '../shared/ui/Brand';
 import type { Role } from '../shared/api/types';
 import {
@@ -48,7 +47,7 @@ const NAV: NavGroup[] = [
   {
     title: 'Officer',
     items: [
-      { to: '/staff/queue', label: 'Review queue', Icon: IconList, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
+      { to: '/staff/queue', label: 'Review queue', Icon: IconList, roles: ['OFFICER'] },
       { to: '/staff/eval', label: 'Evaluation', Icon: IconChart, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
       { to: '/staff/analytics', label: 'Analytics', Icon: IconChart, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
     ],
@@ -56,18 +55,18 @@ const NAV: NavGroup[] = [
   {
     title: 'Admin',
     items: [
-      { to: '/admin/rules', label: 'Rules & Digital Twin', Icon: IconGavel, roles: ['ADMIN', 'AUDITOR'] },
+      { to: '/admin/rules', label: 'Rules & Digital Twin', Icon: IconGavel, roles: ['ADMIN'] },
       { to: '/admin/users', label: 'Users', Icon: IconUsers, roles: ['ADMIN'] },
       { to: '/admin/api-keys', label: 'API keys', Icon: IconKey, roles: ['ADMIN'] },
       { to: '/admin/mocks', label: 'Mock services', Icon: IconServer, roles: ['ADMIN'] },
-      { to: '/admin/jobs', label: 'Jobs', Icon: IconServer, roles: ['ADMIN'] },
+      { to: '/admin/jobs', label: 'Jobs & Health', Icon: IconServer, roles: ['ADMIN'] },
     ],
   },
   {
     title: 'Auditor',
     items: [
-      { to: '/auditor/events', label: 'Audit events', Icon: IconShield, roles: ['AUDITOR', 'ADMIN'] },
-      { to: '/auditor/consents', label: 'Consent audit', Icon: IconUsers, roles: ['AUDITOR', 'ADMIN'] },
+      { to: '/auditor/events', label: 'Audit events', Icon: IconShield, roles: ['AUDITOR'] },
+      { to: '/auditor/consents', label: 'Consent audit', Icon: IconUsers, roles: ['AUDITOR'] },
     ],
   },
   {
@@ -101,7 +100,6 @@ function PageFallback() {
  */
 export default function StaffApp({ children }: { children: ReactNode }) {
   const { session, logout } = useAuth();
-  const { t } = useI18n();
   const navigate = useNavigate();
   const role = session?.user.role ?? 'OFFICER';
 
@@ -172,10 +170,16 @@ export default function StaffApp({ children }: { children: ReactNode }) {
 
           <div className="ms-auto flex items-center gap-1">
             <NavLink
-              to="/c"
+              to="/transparency"
               className="press rounded-[8px] px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink"
             >
-              {t('app.name')} app
+              Real vs Simulated
+            </NavLink>
+            <NavLink
+              to="/scam-check"
+              className="press hidden rounded-[8px] px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink sm:inline-block"
+            >
+              Scam Checker
             </NavLink>
             <button
               type="button"

@@ -1,12 +1,13 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { RagAnswer } from '../shared/api/types';
+import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconChevron, IconDocument, IconShield } from '../shared/ui/Icons';
+import { IconChevron, IconDocument, IconMic, IconShield } from '../shared/ui/Icons';
 
 interface Turn {
   id: number;
@@ -16,24 +17,17 @@ interface Turn {
 }
 
 const SUGGESTIONS_UR = ['میں درخواست کیسے دوں؟', 'رقم کب ملے گی؟', 'شناختی کارڈ نہیں ہے تو کیا کروں؟'];
-
+const SUGGESTIONS_SD = ['مان درخواست ڪيئن ڏيان؟', 'رقم ڪڏهن ملندي؟', 'جيڪڏهن سڃاڻپ ڪارڊ ناهي ته ڇا ڪريان؟'];
 const SUGGESTIONS_EN = ['How do I apply?', 'When will I get the money?', 'What if I do not have a CNIC?'];
 
-/**
- * Ask a question — docs/11 §3.5, F-12.
- *
- * Grounded RAG answers with citations. When the retriever is not confident the
- * answer is an explicit "we are not sure" plus a route to a human — never a guess.
- *
- * The question is a raised block on the end edge and the answer is a card on the
- * start edge, so the two voices read apart without a coloured chat bubble.
- */
 export function AskPage() {
-  const { t, lang } = useI18n();
+  const { t, lang, isRtl } = useI18n();
   const [question, setQuestion] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const nextId = useRef(1);
+  const capture = useVoiceCapture(15);
 
   async function ask(text: string) {
     const trimmed = text.trim();
@@ -46,7 +40,7 @@ export function AskPage() {
       const answer = await api.post<RagAnswer>('/rag/ask', {
         question: trimmed,
         program_id: null,
-        lang,
+        lang: isRtl ? 'ur' : 'en',
       });
       setTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, answer } : turn)));
     } catch (err) {
@@ -56,7 +50,37 @@ export function AskPage() {
     }
   }
 
-  const suggestions = lang === 'ur' ? SUGGESTIONS_UR : SUGGESTIONS_EN;
+  const readyBlob = capture.state === 'ready' ? capture.blob : null;
+  useEffect(() => {
+    if (!readyBlob) return;
+    let cancelled = false;
+    setTranscribing(true);
+    const form = new FormData();
+    form.append('audio', readyBlob, 'question.webm');
+    api
+      .upload<{ transcript: string; available: boolean }>('/rag/transcribe', form)
+      .then((res) => {
+        if (cancelled) return;
+        capture.reset();
+        if (res.transcript?.trim()) {
+          void ask(res.transcript.trim());
+        }
+      })
+      .catch(() => {
+        if (!cancelled) capture.reset();
+      })
+      .finally(() => {
+        if (!cancelled) setTranscribing(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyBlob]);
+
+  const suggestions = lang === 'sd' ? SUGGESTIONS_SD : lang === 'ur' ? SUGGESTIONS_UR : SUGGESTIONS_EN;
+  const recording = capture.state === 'recording';
+  const micAvailable = capture.state !== 'unsupported' && capture.state !== 'denied';
 
   return (
     <div className="screen flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
@@ -153,12 +177,28 @@ export function AskPage() {
       {/* The composer belongs at the bottom of the screen, not under the last
           message: answers arrive above it, so it must not move when they do. */}
       <form
-        className="sticky bottom-[76px] mt-5 flex items-end gap-2 rounded-control border border-ink/[0.08] bg-card p-1.5 shadow-lift"
+        className="sticky bottom-[76px] mt-5 flex items-end gap-1.5 rounded-control border border-ink/[0.08] bg-card p-1.5 shadow-lift"
         onSubmit={(e) => {
           e.preventDefault();
           void ask(question);
         }}
       >
+        {micAvailable && (
+          <button
+            type="button"
+            disabled={busy || transcribing}
+            onClick={() => (recording ? capture.stop() : void capture.start())}
+            aria-label={recording ? t('wizard.voice.listening') : t('common.speak')}
+            title={t('common.speak')}
+            className={`press grid h-tap w-tap shrink-0 place-items-center rounded-control border ${
+              recording
+                ? 'border-negative bg-negative text-white'
+                : 'border-ink/[0.12] bg-raised text-accent-ink hover:bg-accent-wash'
+            }`}
+          >
+            <IconMic size={18} />
+          </button>
+        )}
         <label htmlFor="ask-input" className="sr-only">
           {t('ask.placeholder')}
         </label>
@@ -168,10 +208,16 @@ export function AskPage() {
           rows={1}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder={t('ask.placeholder')}
+          placeholder={
+            recording
+              ? `${t('wizard.voice.listening')} ${capture.seconds}s`
+              : transcribing
+                ? t('common.loading')
+                : t('ask.placeholder')
+          }
           className="min-h-tap flex-1 resize-none border-0 bg-transparent px-2 text-body-lg focus:ring-0"
         />
-        <TapButton size="tap" type="submit" disabled={busy || question.trim().length === 0}>
+        <TapButton size="tap" type="submit" disabled={busy || transcribing || question.trim().length === 0}>
           {t('ask.send')}
         </TapButton>
       </form>

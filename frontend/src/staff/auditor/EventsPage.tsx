@@ -17,6 +17,8 @@ const ACTOR_TYPES = ['', 'USER', 'AI', 'AGENT', 'SYSTEM', 'API_KEY'];
  * the thing the hash chain is built on. Reading down the column is reading the
  * chain.
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function EventsPage() {
   const [actorType, setActorType] = useState('');
   const [action, setAction] = useState('');
@@ -24,13 +26,16 @@ export default function EventsPage() {
   const [chain, setChain] = useState<ChainVerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const trimmedCaseId = caseId.trim();
+  const validCaseUuid = !trimmedCaseId || UUID_RE.test(trimmedCaseId);
+
   const params = new URLSearchParams({ limit: '100' });
   if (actorType) params.set('actor_type', actorType);
-  if (action) params.set('action', action);
-  if (caseId) params.set('case_id', caseId);
+  if (action.trim()) params.set('action', action.trim());
+  if (trimmedCaseId && validCaseUuid) params.set('case_id', trimmedCaseId);
 
   const query = useQuery({
-    queryKey: ['auditor-events', actorType, action, caseId],
+    queryKey: ['auditor-events', actorType, action.trim(), validCaseUuid ? trimmedCaseId : ''],
     queryFn: () => api.get<AuditEventList>(`/auditor/events?${params.toString()}`),
   });
 
@@ -170,8 +175,10 @@ export default function EventsPage() {
                       `${event.resource_type}${event.resource_id ? `:${event.resource_id.slice(0, 8)}` : ''}`
                     )}
                   </td>
-                  <td className="font-mono text-meta text-ink-3">
-                    {event.event_hash.replace(/^sha256:/, '').slice(0, 12)}…
+                  <td className="font-mono text-[11px] text-ink-3" title={`${event.prev_hash} → ${event.event_hash}`}>
+                    <span>{event.prev_hash.replace(/^sha256:/, '').slice(0, 6)}</span>
+                    <span className="mx-1 text-accent-ink">→</span>
+                    <span className="text-ink-2">{event.event_hash.replace(/^sha256:/, '').slice(0, 10)}</span>
                   </td>
                 </tr>
               ))}

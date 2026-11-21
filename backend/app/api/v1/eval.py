@@ -215,6 +215,41 @@ def _live_operations(db: Session, tenant_id: Any) -> dict[str, Any]:
         ).scalar_one()
     )
 
+    by_task_rows = db.execute(
+        select(
+            AiTelemetry.task_type,
+            func.count(),
+            func.coalesce(func.avg(AiTelemetry.latency_ms), 0),
+            func.coalesce(func.sum(AiTelemetry.estimated_cost_usd), 0),
+        )
+        .where(*telemetry_filter)
+        .group_by(AiTelemetry.task_type)
+    ).all()
+    by_task = [
+        {
+            "task_type": str(task),
+            "calls": int(cnt),
+            "avg_latency_ms": round(float(avg_ms), 1),
+            "cost_usd": round(float(cost), 6),
+        }
+        for task, cnt, avg_ms, cost in by_task_rows
+    ]
+
+    from app.config import settings as app_settings
+    from app.models.audit import AuditEvent
+
+    guardrail_filter = [
+        AuditEvent.action == "ai.guardrail_triggered",
+        AuditEvent.created_at >= since,
+    ]
+    if tenant_id is not None:
+        guardrail_filter.append(AuditEvent.tenant_id == tenant_id)
+    guardrail_triggers = int(
+        db.execute(
+            select(func.count()).select_from(AuditEvent).where(*guardrail_filter)
+        ).scalar_one()
+    )
+
     return {
         "total_decisions": total,
         "by_route": by_route,
@@ -226,6 +261,9 @@ def _live_operations(db: Session, tenant_id: Any) -> dict[str, Any]:
         "llm_calls_24h": llm_calls,
         "llm_cost_usd_24h": round(llm_cost, 6),
         "llm_failure_rate": round(llm_failures / llm_calls, 4) if llm_calls else 0.0,
+        "active_provider": app_settings.ai_provider,
+        "ai_telemetry_by_task": by_task,
+        "guardrail_triggers_24h": guardrail_triggers,
     }
 
 

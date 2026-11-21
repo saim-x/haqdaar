@@ -32,7 +32,7 @@ export function maskCnic(input: string | null | undefined): string {
 
 /** Phone helpers — Raast payout numbers are stored as `+92XXXXXXXXXX`. */
 export function digitsOnlyPhone(input: string): string {
-  return input.replace(/\D+/g, '').slice(0, 11);
+  return input.replace(/\D+/g, '').slice(0, 12);
 }
 
 /**
@@ -50,6 +50,7 @@ export function nationalPhoneDigits(input: string): string {
 /** `3001234567` or `03001234567` → `+923001234567`. */
 export function toE164Pk(input: string): string {
   const d = input.replace(/\D+/g, '');
+  if (!d) return '';
   if (d.startsWith('92')) return `+${d.slice(0, 12)}`;
   if (d.startsWith('0')) return `+92${d.slice(1, 11)}`;
   return `+92${d.slice(0, 10)}`;
@@ -57,12 +58,14 @@ export function toE164Pk(input: string): string {
 
 export function formatPhonePk(input: string | null | undefined): string {
   if (!input) return '—';
-  const d = digitsOnlyPhone(input);
-  if (d.length !== 11) return input;
-  return `${d.slice(0, 4)} ${d.slice(4)}`;
+  const nat = nationalPhoneDigits(input);
+  if (nat.length === 10) return `0${nat.slice(0, 3)} ${nat.slice(3)}`;
+  const d = input.replace(/\D+/g, '');
+  if (d.length === 11 && d.startsWith('0')) return `${d.slice(0, 4)} ${d.slice(4)}`;
+  return input;
 }
 
 export function isCompletePhone(input: string): boolean {
-  const d = digitsOnlyPhone(input);
-  return d.length === 11 && (d.startsWith('03') || d.startsWith('92'));
+  const nat = nationalPhoneDigits(input);
+  return nat.length === 10 && nat.startsWith('3');
 }

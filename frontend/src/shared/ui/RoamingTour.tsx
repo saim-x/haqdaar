@@ -4,6 +4,7 @@ import type { Role } from '../api/types';
 import { useAudio } from '../audio/AudioProvider';
 import { roleHome } from '../auth/roleHome';
 import { useI18n } from '../i18n/I18nProvider';
+import { useLiteMode } from '../lite/LiteModeProvider';
 import { AudioButton } from './AudioButton';
 import { IconCross } from './Icons';
 import { TourQuestion } from './TourQuestion';
@@ -16,6 +17,7 @@ type Stops = readonly [TourStop, ...TourStop[]];
 export function RoamingTour({ accountId, role, pages }: { accountId: string; role: Role; pages: Stops }) {
   const storageKey = `haqdaar:welcome-tour:v1:${role}:${accountId}`;
   const { pick, lang } = useI18n();
+  const { lite } = useLiteMode();
   const { stop } = useAudio();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -143,7 +145,9 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
           <div className={seen ? 'flex justify-end' : 'flex flex-wrap items-center justify-between gap-x-3 rounded-control border border-ink/10 bg-card px-3'}>
             {!seen && (
               <div className="flex items-center gap-2">
-                <img src="/icons/haqdaar-tour-guide.webp" width="36" height="36" alt="" className="h-9 w-9 rounded-full bg-accent-wash object-contain" />
+                {!lite && (
+                  <img src="/icons/haqdaar-tour-guide.webp" width="36" height="36" alt="" className="h-9 w-9 rounded-full bg-accent-wash object-contain" />
+                )}
                 <p className="text-body font-medium text-ink">{pick('پہلی بار آئے ہیں؟', 'First time here?')}</p>
               </div>
             )}
@@ -200,17 +204,19 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
               </div>
               <div className="min-h-0 overflow-y-auto px-3.5 pb-2">
                 <div className="flex items-start gap-3">
-                  <img src="/icons/haqdaar-tour-pointing.webp" width="84" height="84" alt=""
-                    className="h-[84px] w-[84px] shrink-0 rounded-[14px] bg-accent-wash object-contain"
-                    style={{ transform: pointer && Math.cos(pointer.angle) < 0 ? 'scaleX(-1)' : undefined }} />
+                  {!lite && (
+                    <img src="/icons/haqdaar-tour-pointing.webp" width="84" height="84" alt=""
+                      className="h-[84px] w-[84px] shrink-0 rounded-[14px] bg-accent-wash object-contain"
+                      style={{ transform: pointer && Math.cos(pointer.angle) < 0 ? 'scaleX(-1)' : undefined }} />
+                  )}
                   <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
                     <div className="flex items-center gap-1">
                       <h2 id={titleId} className="min-w-0 flex-1 text-title font-semibold leading-[1.35]">{topic}</h2>
-                      <AudioButton text={page.title[1]} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
+                      <AudioButton text={pick(page.title[1], page.title[0])} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
                     </div>
                     <div className="flex items-start gap-1">
                       <p className="min-w-0 flex-1 pt-1 text-caption leading-[1.65] text-ink-2">{pick(page.text[1], page.text[0])}</p>
-                      <AudioButton text={page.text[1]} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
+                      <AudioButton text={pick(page.text[1], page.text[0])} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
                     </div>
                   </div>
                 </div>

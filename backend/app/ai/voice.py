@@ -325,18 +325,33 @@ def transcribe_and_parse(
 
         local = _local_parse(field_key, transcript)
         if stt.provider == "deepgram":
-            parsed = local
-            parsed.provider = stt.provider
-            parsed.model = stt.model
-            parsed.confidence = min(parsed.confidence, stt.confidence)
-            _emit(
-                task_type="VOICE_PARSE",
-                provider="local",
-                model_name="deterministic",
-                latency_ms=0,
-                succeeded=parsed.value is not None or parsed.is_unknown,
-                error_code=None if parsed.value is not None or parsed.is_unknown else "PARSE_FAILED",
-            )
+            if (
+                local.value is None
+                and not local.is_unknown
+                and field_key not in {"applicant_cnic", "spouse_cnic"}
+            ):
+                # Fall back to LLM structured extraction when deterministic Urdu NLP cannot parse.
+                try:
+                    parsed = provider.parse_structured_field(
+                        transcript, field_key, FIELD_SCHEMAS[field_key]
+                    )
+                except Exception:  # noqa: BLE001
+                    parsed = local
+            else:
+                parsed = local
+                parsed.provider = stt.provider
+                parsed.model = stt.model
+                parsed.confidence = min(parsed.confidence, stt.confidence)
+                _emit(
+                    task_type="VOICE_PARSE",
+                    provider="local",
+                    model_name="deterministic",
+                    latency_ms=0,
+                    succeeded=parsed.value is not None or parsed.is_unknown,
+                    error_code=None
+                    if parsed.value is not None or parsed.is_unknown
+                    else "PARSE_FAILED",
+                )
         else:
             parsed = provider.parse_structured_field(transcript, field_key, FIELD_SCHEMAS[field_key])
 

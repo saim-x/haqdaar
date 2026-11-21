@@ -92,12 +92,12 @@ COMPONENTS: list[dict[str, Any]] = [
         "name_ur": "اردو آواز اور پالیسی سوالات",
         "status": "REAL",
         "details": (
-            "With fake fallback. OpenAI whisper-1 / gpt-4o-mini / "
-            "text-embedding-3-small + edge-tts + hybrid Postgres/NumPy retrieval."
+            "With fake fallback. Deepgram nova-3 STT + Deepgram Flux pre-recorded Urdu prompts "
+            "+ OpenAI gpt-4o-mini & text-embedding-3-small + hybrid Postgres/NumPy retrieval."
         ),
-                "details_ur": (
-            "fake fallback کے ساتھ۔ OpenAI whisper-1، gpt-4o-mini، "
-            "text-embedding-3-small، edge-tts اور Postgres/NumPy کی مشترکہ تلاش۔"
+        "details_ur": (
+            "fake fallback کے ساتھ۔ Deepgram nova-3 آواز شناخت، Deepgram Flux اردو آڈیو، "
+            "OpenAI gpt-4o-mini، text-embedding-3-small اور Postgres/NumPy کی مشترکہ تلاش۔"
         ),
     },
     {

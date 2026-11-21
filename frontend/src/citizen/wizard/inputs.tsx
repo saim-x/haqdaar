@@ -162,10 +162,10 @@ export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioTex
 /* ------------------------------------------------------------------ income */
 
 export const INCOME_BANDS = [
-  { key: 'wizard.income.band1', value: 15000 },
-  { key: 'wizard.income.band2', value: 25000 },
-  { key: 'wizard.income.band3', value: 35000 },
-  { key: 'wizard.income.band4', value: 50000 },
+  { key: 'wizard.income.band1', value: 15000, bars: 1 },
+  { key: 'wizard.income.band2', value: 25000, bars: 2 },
+  { key: 'wizard.income.band3', value: 35000, bars: 3 },
+  { key: 'wizard.income.band4', value: 50000, bars: 4 },
 ] as const;
 
 interface IncomeProps {
@@ -177,7 +177,7 @@ interface IncomeProps {
   onExactDigits(next: string): void;
 }
 
-/** Tap bands or an exact keypad amount (docs/11 §3.2 step 10). */
+/** Tap bands with visual tier bars or an exact keypad amount (docs/11 §3.2 step 10). */
 export function IncomeBands({ value, onChange, exact, onExactChange, exactDigits, onExactDigits }: IncomeProps) {
   const { t } = useI18n();
   return (
@@ -194,17 +194,27 @@ export function IncomeBands({ value, onChange, exact, onExactChange, exactDigits
                 onChange(band.value);
               }}
               aria-pressed={selected}
-              className={`press flex min-h-primary items-center justify-center gap-1.5 rounded-control border px-2 text-body font-medium ${
+              className={`press flex min-h-primary flex-col items-center justify-center gap-1.5 rounded-control border px-2 py-2.5 text-body font-medium ${
                 selected
                   ? 'border-accent/40 bg-accent-wash text-accent-ink'
                   : 'border-ink/[0.10] bg-card text-ink hover:bg-raised'
               }`}
             >
-              {selected && <IconCheck size={16} className="shrink-0" />}
-              {/* The band label is Urdu prose with a number in it, so it takes
-                  tabular figures but not `.num` — that would set an LTR base
-                  direction and read "کم سے 20,000". */}
-              <span className="tabular-nums">{t(band.key)}</span>
+              <span className="flex items-end gap-1" aria-hidden>
+                {Array.from({ length: 4 }, (_, idx) => (
+                  <span
+                    key={idx}
+                    className={`w-1.5 rounded-full ${
+                      idx < band.bars ? (selected ? 'bg-accent' : 'bg-ink-2') : 'bg-ink/15'
+                    }`}
+                    style={{ height: `${8 + idx * 3}px` }}
+                  />
+                ))}
+              </span>
+              <span className="flex items-center gap-1 tabular-nums">
+                {selected && <IconCheck size={14} className="shrink-0" />}
+                <span>{t(band.key)}</span>
+              </span>
             </button>
           );
         })}
@@ -286,38 +296,77 @@ interface YearPickerProps {
   onChange(next: string): void;
 }
 
-/** Year selector for date of birth — age is all the rule engine needs. */
+/** Year selector with approximate-age presets for low-literacy citizens who know their age, not Gregorian birth year. */
 export function YearPicker({ value, onChange }: YearPickerProps) {
+  const { isRtl } = useI18n();
+  const currentYear = new Date().getFullYear();
   const years = useMemo(() => {
-    const now = new Date().getFullYear();
     const list: number[] = [];
-    for (let year = now - 12; year >= now - 90; year -= 1) list.push(year);
+    for (let year = currentYear - 12; year >= currentYear - 90; year -= 1) list.push(year);
     return list;
-  }, []);
+  }, [currentYear]);
+
+  const agePresets = [25, 35, 45, 55, 65];
+  const selectedYear = value ? Number(value) : null;
+  const approxAge = selectedYear && selectedYear > 1900 ? currentYear - selectedYear : null;
 
   return (
-    <div className="max-h-[46vh] overflow-y-auto rounded-control border border-ink/[0.08] bg-card p-2">
-      <ul className="grid grid-cols-3 gap-2">
-        {years.map((year) => {
-          const selected = value === String(year);
-          return (
-            <li key={year}>
+    <div className="space-y-3">
+      <div>
+        <p className="mb-1.5 text-meta font-medium text-ink-2">
+          {isRtl ? 'اندازاً عمر منتخب کریں (اگر سال یاد نہیں)' : 'Pick approximate age (if birth year is unsure)'}
+          {approxAge !== null && (
+            <span className="num ms-2 font-mono text-accent-ink">
+              (~{approxAge} {isRtl ? 'سال' : 'yrs'})
+            </span>
+          )}
+        </p>
+        <div className="grid grid-cols-5 gap-1.5">
+          {agePresets.map((age) => {
+            const yr = String(currentYear - age);
+            const active = value === yr;
+            return (
               <button
+                key={age}
                 type="button"
-                onClick={() => onChange(String(year))}
-                aria-pressed={selected}
-                className={`press num min-h-tap w-full rounded-[7px] border font-mono text-body font-medium ${
-                  selected
+                onClick={() => onChange(yr)}
+                aria-pressed={active}
+                className={`press num min-h-tap rounded-control border font-mono text-caption font-medium ${
+                  active
                     ? 'border-accent/40 bg-accent-wash text-accent-ink'
-                    : 'border-transparent bg-raised text-ink hover:border-ink/[0.10]'
+                    : 'border-ink/[0.10] bg-raised text-ink hover:border-ink/25'
                 }`}
               >
-                {year}
+                ~{age}
               </button>
-            </li>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="max-h-[38vh] overflow-y-auto rounded-control border border-ink/[0.08] bg-card p-2">
+        <ul className="grid grid-cols-3 gap-2">
+          {years.map((year) => {
+            const selected = value === String(year);
+            return (
+              <li key={year}>
+                <button
+                  type="button"
+                  onClick={() => onChange(String(year))}
+                  aria-pressed={selected}
+                  className={`press num min-h-tap w-full rounded-[7px] border font-mono text-body font-medium ${
+                    selected
+                      ? 'border-accent/40 bg-accent-wash text-accent-ink'
+                      : 'border-transparent bg-raised text-ink hover:border-ink/[0.10]'
+                  }`}
+                >
+                  {year}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

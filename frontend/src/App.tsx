@@ -1,10 +1,14 @@
 import { Suspense, lazy } from 'react';
-import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './shared/auth/AuthProvider';
 import { RedirectIfAuthed, RequireRole } from './shared/auth/guards';
 import { LoginPage } from './shared/auth/LoginPage';
 import { roleHome } from './shared/auth/roleHome';
 import { useI18n } from './shared/i18n/I18nProvider';
+import { useLiteMode } from './shared/lite/LiteModeProvider';
+import { BrandMark } from './shared/ui/Brand';
+import { IconGlobe, IconLogout } from './shared/ui/Icons';
+import { OfflinePill } from './shared/ui/OfflinePill';
 import { PrototypeBanner } from './shared/ui/PrototypeBanner';
 import { CitizenLayout } from './citizen/CitizenLayout';
 import { CitizenHome } from './citizen/Home';
@@ -61,11 +65,55 @@ function NotFound() {
   );
 }
 
-/** Helper shell — the roster and add-family screens own their own layout. */
+/** Helper shell — compact bar with offline status, Lite mode, 3-way language, and sign out. */
 function HelperLayout() {
+  const { t, lang, toggleLang } = useI18n();
+  const { lite, toggle: toggleLite } = useLiteMode();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const nextLangLabel = lang === 'ur' ? 'سنڌي' : lang === 'sd' ? 'EN' : 'اردو';
   return (
-    <div className="mx-auto w-full max-w-[560px]">
-      <Outlet />
+    <div className="min-h-[calc(100dvh-var(--banner-h))]">
+      <header className="sticky top-[var(--banner-h)] z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-[560px] items-center gap-1.5 px-4 py-2">
+          <BrandMark size={22} />
+          <span className="text-body-lg font-medium tracking-tight text-ink">{t('app.name')}</span>
+          <OfflinePill compact />
+          <div className="ms-auto flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={toggleLite}
+              aria-pressed={lite}
+              className={`press min-h-tap rounded-control px-2 text-meta font-medium ${
+                lite ? 'bg-accent-wash text-accent-ink' : 'text-ink-3 hover:text-ink'
+              }`}
+            >
+              {t('common.liteMode')}
+            </button>
+            <button
+              type="button"
+              onClick={toggleLang}
+              aria-label={t('common.switchLanguage')}
+              className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:text-ink"
+            >
+              <IconGlobe size={14} />
+              {nextLangLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => void logout().then(() => navigate('/login', { replace: true }))}
+              aria-label={t('common.signOut')}
+              title={t('common.signOut')}
+              className="press grid h-tap w-tap place-items-center rounded-control text-ink-3 hover:bg-raised hover:text-ink"
+            >
+              <IconLogout size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
+      <div className="mx-auto w-full max-w-[560px]">
+        <Outlet />
+      </div>
     </div>
   );
 }

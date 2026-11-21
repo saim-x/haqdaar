@@ -49,7 +49,7 @@ export default {
         ink: {
           DEFAULT: '#1C1917',
           2: '#57534E',
-          3: '#8A8279',
+          3: '#655E56',
         },
         // The one accent. `accent-ink` is the pressed/hover shade; the base
         // already clears 4.5:1 on paper, so it is safe for text on its own.
@@ -74,13 +74,13 @@ export default {
         // stack behind Instrument Sans as the fallback for Arabic codepoints.
         sans: [
           '"Instrument Sans"',
-          '"Noto Nastaliq Urdu"',
+          '"Noto Sans Arabic"',
           '"Segoe UI"',
           'system-ui',
           '-apple-system',
           'sans-serif',
         ],
-        urdu: ['"Noto Nastaliq Urdu"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        urdu: ['"Noto Sans Arabic"', '"Segoe UI"', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {

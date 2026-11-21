@@ -31,7 +31,21 @@ export const DISTRICT_UR: Record<SindhDistrict, string> = {
   Dadu: 'دادو',
 };
 
-export function districtLabel(district: string, lang: 'ur' | 'en'): string {
+export const DISTRICT_SD: Record<SindhDistrict, string> = {
+  Thatta: 'ٺٽو',
+  Badin: 'بدين',
+  Hyderabad: 'حيدرآباد',
+  Karachi: 'ڪراچي',
+  Tharparkar: 'ٿرپارڪر',
+  Umerkot: 'عمرڪوٽ',
+  Mirpurkhas: 'ميرپورخاص',
+  Sukkur: 'سکر',
+  Larkana: 'لاڙڪاڻو',
+  Dadu: 'دادو',
+};
+
+export function districtLabel(district: string, lang: 'ur' | 'sd' | 'en'): string {
   if (lang === 'en') return district;
+  if (lang === 'sd') return DISTRICT_SD[district as SindhDistrict] ?? district;
   return DISTRICT_UR[district as SindhDistrict] ?? district;
 }

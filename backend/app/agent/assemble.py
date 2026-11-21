@@ -328,18 +328,49 @@ def _document_checks(documents: Sequence[DocumentRow]) -> tuple[DocumentCheck, .
     """Map ``verify_checks`` onto the tamper detector's three questions."""
     checks: list[DocumentCheck] = []
     for row in documents:
-        named = {
-            str(check.get("check", "")).upper(): bool(check.get("passed"))
-            for check in row.verify_checks
-            if isinstance(check, Mapping)
-        }
+        named: dict[str, bool] = {}
+        ocr_vs_qr_check: Mapping[str, Any] | None = None
+        for check in row.verify_checks:
+            if not isinstance(check, Mapping):
+                continue
+            key = str(check.get("check", "")).upper()
+            named[key] = bool(check.get("passed"))
+            if key == "OCR_VS_QR":
+                ocr_vs_qr_check = check
+
         tampered = _document_status(row) is DocumentStatus.TAMPER_SUSPECTED
+        qr_valid = named.get("QR_SIGNATURE", not tampered)
+
+        ocr_name_match = named.get("OCR_QR_NAME", True)
+        ocr_cnic_match = named.get("OCR_QR_CNIC", True)
+        if ocr_vs_qr_check is not None:
+            ocr_passed = bool(ocr_vs_qr_check.get("passed"))
+            details = ocr_vs_qr_check.get("value")
+            if isinstance(details, Mapping):
+                if "cnic_match" in details:
+                    ocr_cnic_match = bool(details["cnic_match"])
+                elif not ocr_passed:
+                    ocr_cnic_match = False
+                if "name_similarity" in details:
+                    try:
+                        ocr_name_match = float(details["name_similarity"]) >= 0.85
+                    except (TypeError, ValueError):
+                        ocr_name_match = ocr_passed
+                elif not ocr_passed:
+                    ocr_name_match = False
+            elif not ocr_passed:
+                ocr_name_match = False
+                ocr_cnic_match = False
+        elif tampered and qr_valid:
+            # Tamper was flagged without explicit QR failure: ensure detector sees mismatch.
+            ocr_name_match = False
+
         checks.append(
             DocumentCheck(
                 doc_type=row.doc_type,
-                qr_signature_valid=named.get("QR_SIGNATURE", not tampered),
-                ocr_qr_name_match=named.get("OCR_QR_NAME", True),
-                ocr_qr_cnic_match=named.get("OCR_QR_CNIC", True),
+                qr_signature_valid=qr_valid,
+                ocr_qr_name_match=ocr_name_match,
+                ocr_qr_cnic_match=ocr_cnic_match,
             )
         )
     return tuple(checks)

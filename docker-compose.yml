@@ -85,13 +85,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      api:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-haqdaar}:${POSTGRES_PASSWORD:-haqdaar}@db:5432/${POSTGRES_DB:-haqdaar}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       QR_HMAC_SECRET: ${QR_HMAC_SECRET:-dev-qr-secret-change-me}
-      MOCK_BASE_URL: ${MOCK_BASE_URL:-http://127.0.0.1:8000/mock}
+      MOCK_BASE_URL: http://api:8000/mock
       AI_PROVIDER: ${AI_PROVIDER:-fake}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
       DEMO_MODE: ${DEMO_MODE:-true}
       UPLOAD_DIR: /data/uploads
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -99,6 +102,12 @@ services:
     volumes:
       - uploads:/data/uploads
     command: ["python", "-m", "app.jobs.worker"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from app.db import SessionLocal; from sqlalchemy import text; db=SessionLocal(); r=db.execute(text('SELECT count(*) FROM worker_heartbeats WHERE last_seen_at > now() - interval \\'60 seconds\\'')).scalar(); db.close(); import sys; sys.exit(0 if r else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
 volumes:
   db_data:

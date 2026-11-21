@@ -3,6 +3,7 @@ import { request } from './client';
 import { ApiError } from './errors';
 import type { CaseView } from './types';
 import { POLL_MAX_MS, POLL_MIN_MS } from '../config';
+import { useLiteMode } from '../lite/LiteModeProvider';
 import { cacheCase, readCachedCase } from '../offline/db';
 
 interface PollState {
@@ -20,6 +21,7 @@ interface PollState {
  * costs ~0 bytes, which is the whole point on a dropping 3G connection.
  */
 export function useCasePolling(caseId: string | null, citizenId: string | null) {
+  const { lite } = useLiteMode();
   const [state, setState] = useState<PollState>({
     data: null,
     error: null,
@@ -65,7 +67,7 @@ export function useCasePolling(caseId: string | null, citizenId: string | null) 
         // Back off on failure instead of hammering a broken connection.
         intervalRef.current = Math.min(intervalRef.current * 2, POLL_MAX_MS);
       } finally {
-        if (!cancelledRef.current) {
+        if (!cancelledRef.current && !lite) {
           timerRef.current = setTimeout(() => void tick(), intervalRef.current);
         }
       }
@@ -77,7 +79,7 @@ export function useCasePolling(caseId: string | null, citizenId: string | null) 
       cancelledRef.current = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [caseId, citizenId]);
+  }, [caseId, citizenId, lite]);
 
   return state;
 }

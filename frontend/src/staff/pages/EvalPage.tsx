@@ -1,42 +1,53 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { EvalDashboard } from '../../shared/api/types';
-import { Card, CardTitle, ErrorState, Kpi, Loading, PageHeader, routeWord } from '../ui';
+import { Card, CardTitle, Chip, ErrorState, Kpi, Loading, PageHeader, routeWord } from '../ui';
 
 function pct(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
 const SERIES = [
-  { key: 'auto_approve_rate', label: 'auto-approve', colour: 'var(--accent)' },
-  { key: 'human_review_rate', label: 'human review', colour: 'var(--info)' },
-  { key: 'false_approval_rate', label: 'false approval', colour: 'var(--negative)' },
+  { key: 'auto_approve_rate', label: 'auto-approve %', colour: 'var(--accent)' },
+  { key: 'human_review_rate', label: 'human review %', colour: 'var(--info)' },
+  { key: 'false_approval_rate', label: 'false approval %', colour: 'var(--negative)' },
 ] as const;
 
 /**
- * Inline SVG threshold sweep — no chart library in the bundle.
- *
- * Drawn on the same paper as everything else: hairline grid, one accent per
- * series, and the active threshold as a dashed rule rather than a filled band,
- * because the threshold is a position on the axis, not a region.
+ * Interactive Cost-of-Being-Wrong explorer — plots both the 3 routing rates
+ * and the asymmetric Expected Cost U-curve (wrong approval = 100, review = 8,
+ * ask more = 5), letting judges click any threshold τ to inspect the exact knee.
  */
 function ThresholdSweep({
   data,
   active,
+  knee,
 }: {
   data: EvalDashboard['decision_router_sweep'];
   active: number;
+  knee: number | null;
 }) {
+  const [selectedThreshold, setSelectedThreshold] = useState<number>(active);
   const w = 560;
-  const h = 200;
-  const pad = 30;
+  const h = 215;
+  const padL = 36;
+  const padR = 44;
+  const padY = 26;
   if (data.length === 0) return <p className="text-caption text-ink-3">No sweep data yet.</p>;
 
   const xs = data.map((d) => d.threshold);
   const minX = Math.min(...xs);
   const maxX = Math.max(...xs);
-  const x = (t: number) => pad + ((t - minX) / Math.max(maxX - minX, 0.001)) * (w - pad * 2);
-  const y = (v: number) => h - pad - Math.min(Math.max(v, 0), 1) * (h - pad * 2);
+  const maxCost = Math.max(...data.map((d) => d.expected_cost), 1);
+  const x = (t: number) => padL + ((t - minX) / Math.max(maxX - minX, 0.001)) * (w - padL - padR);
+  const y = (v: number) => h - padY - Math.min(Math.max(v, 0), 1) * (h - padY * 2);
+  const yCost = (c: number) => h - padY - Math.min(Math.max(c / maxCost, 0), 1) * (h - padY * 2);
+
+  const inspected =
+    data.find((d) => Math.abs(d.threshold - selectedThreshold) < 0.001) ??
+    data.find((d) => Math.abs(d.threshold - active) < 0.001) ??
+    data[0];
 
   return (
     <div>
@@ -44,17 +55,30 @@ function ThresholdSweep({
         viewBox={`0 0 ${w} ${h}`}
         className="w-full"
         role="img"
-        aria-label="Threshold sweep chart"
+        aria-label="Threshold sweep and expected cost curve"
       >
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
           <g key={tick}>
-            <line x1={pad} y1={y(tick)} x2={w - pad} y2={y(tick)} stroke="var(--rule)" />
-            <text x={pad - 8} y={y(tick) + 3} textAnchor="end" fontSize={9} fill="var(--ink-3)">
+            <line x1={padL} y1={y(tick)} x2={w - padR} y2={y(tick)} stroke="var(--rule)" />
+            <text x={padL - 6} y={y(tick) + 3} textAnchor="end" fontSize={9} fill="var(--ink-3)">
               {Math.round(tick * 100)}%
+            </text>
+            <text x={w - padR + 6} y={y(tick) + 3} textAnchor="start" fontSize={9} fill="var(--warn)">
+              {Math.round(tick * maxCost)}
             </text>
           </g>
         ))}
-        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="var(--ink-3)" strokeOpacity={0.4} />
+        <line x1={padL} y1={h - padY} x2={w - padR} y2={h - padY} stroke="var(--ink-3)" strokeOpacity={0.4} />
+
+        {/* Expected cost U-curve (right axis) */}
+        <polyline
+          fill="none"
+          stroke="var(--warn)"
+          strokeWidth={2}
+          strokeDasharray="4 2"
+          strokeLinejoin="round"
+          points={data.map((d) => `${x(d.threshold)},${yCost(d.expected_cost)}`).join(' ')}
+        />
 
         {SERIES.map(({ key, colour }) => (
           <polyline
@@ -67,41 +91,109 @@ function ThresholdSweep({
           />
         ))}
 
+        {/* Active / knee reference rule */}
         <line
           x1={x(active)}
-          y1={pad}
+          y1={padY}
           x2={x(active)}
-          y2={h - pad}
-          stroke="var(--warn)"
+          y2={h - padY}
+          stroke="var(--accent)"
           strokeDasharray="3 3"
           strokeWidth={1.5}
         />
-        <text x={x(active) + 5} y={pad + 9} fontSize={10} fill="var(--warn)">
-          active {active.toFixed(2)}
+        <text x={x(active) - 4} y={padY - 7} textAnchor="end" fontSize={9} fill="var(--accent)">
+          active τ={active.toFixed(2)}{knee && Math.abs(knee - active) < 0.001 ? ' (knee)' : ''}
         </text>
 
-        {data.map((d) => (
-          <text
-            key={d.threshold}
-            x={x(d.threshold)}
-            y={h - pad + 13}
-            textAnchor="middle"
-            fontSize={8}
-            fill="var(--ink-3)"
-          >
-            {d.threshold.toFixed(2)}
-          </text>
-        ))}
+        {/* Interactive clickable threshold nodes */}
+        {data.map((d) => {
+          const isSelected = inspected && Math.abs(d.threshold - inspected.threshold) < 0.001;
+          return (
+            <g
+              key={d.threshold}
+              className="cursor-pointer"
+              onClick={() => setSelectedThreshold(d.threshold)}
+            >
+              <circle
+                cx={x(d.threshold)}
+                cy={yCost(d.expected_cost)}
+                r={isSelected ? 5 : 3}
+                fill={isSelected ? 'var(--warn)' : 'var(--card, #fff)'}
+                stroke="var(--warn)"
+                strokeWidth={1.75}
+              />
+              <text
+                x={x(d.threshold)}
+                y={h - padY + 14}
+                textAnchor="middle"
+                fontSize={isSelected ? 9.5 : 8}
+                fontWeight={isSelected ? 600 : 400}
+                fill={isSelected ? 'var(--ink)' : 'var(--ink-3)'}
+              >
+                {d.threshold.toFixed(2)}
+              </text>
+            </g>
+          );
+        })}
       </svg>
 
-      <div className="mt-2 flex flex-wrap gap-4 border-t border-ink/[0.08] pt-2">
-        {SERIES.map(({ key, label, colour }) => (
-          <span key={key} className="inline-flex items-center gap-1.5 text-meta text-ink-2">
-            <span className="h-0.5 w-3" style={{ backgroundColor: colour }} aria-hidden />
-            {label}
+      {/* Interactive threshold selector & live readout */}
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-ink/[0.08] pt-3">
+        <div className="flex flex-wrap gap-4">
+          {SERIES.map(({ key, label, colour }) => (
+            <span key={key} className="inline-flex items-center gap-1.5 text-meta text-ink-2">
+              <span className="h-0.5 w-3" style={{ backgroundColor: colour }} aria-hidden />
+              {label}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1.5 text-meta text-warn">
+            <span className="h-0.5 w-3 border-t-2 border-dashed border-warn" aria-hidden />
+            expected cost (right axis)
           </span>
-        ))}
+        </div>
       </div>
+
+      {inspected && (
+        <div className="mt-3 grid gap-2 rounded-control border border-ink/[0.08] bg-raised/60 p-3 sm:grid-cols-5">
+          <div>
+            <p className="text-meta text-ink-3">Inspected τ</p>
+            <p className="num font-mono text-body font-medium text-ink">
+              {inspected.threshold.toFixed(2)}
+              {Math.abs(inspected.threshold - active) < 0.001 && (
+                <span className="ms-1.5 text-meta text-accent-ink">(active)</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="text-meta text-ink-3">Auto-approved</p>
+            <p className="num font-mono text-body font-medium text-accent-ink">
+              {pct(inspected.auto_approve_rate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-meta text-ink-3">False approvals</p>
+            <p
+              className={`num font-mono text-body font-medium ${
+                inspected.false_approval_rate === 0 ? 'text-positive' : 'text-negative'
+              }`}
+            >
+              {pct(inspected.false_approval_rate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-meta text-ink-3">Human review</p>
+            <p className="num font-mono text-body font-medium text-info">
+              {pct(inspected.human_review_rate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-meta text-ink-3">Expected cost</p>
+            <p className="num font-mono text-body font-medium text-warn">
+              {Math.round(inspected.expected_cost)}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,6 +222,7 @@ export default function EvalPage() {
   const {
     decision_router_sweep,
     active_threshold,
+    knee_threshold,
     scam_classifier,
     document_verifier,
     live_operations,
@@ -169,8 +262,14 @@ export default function EvalPage() {
       </div>
 
       <Card>
-        <CardTitle hint="0.50 – 0.95">Threshold sweep</CardTitle>
-        <ThresholdSweep data={decision_router_sweep} active={active_threshold} />
+        <CardTitle hint="Click any τ point · wrong approval = 100, review = 8, ask = 5">
+          Threshold sweep &amp; expected cost curve
+        </CardTitle>
+        <ThresholdSweep
+          data={decision_router_sweep}
+          active={active_threshold}
+          knee={knee_threshold ?? null}
+        />
       </Card>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -185,25 +284,30 @@ export default function EvalPage() {
             <Metric label="User disputed" value={String(scam_classifier.user_disputed_count)} />
           </dl>
 
+          {/* confusion_matrix(labels=[0, 1]) → row/col 0 = benign, row/col 1 = scam */}
           <table className="ledger mt-4 text-center">
             <thead>
               <tr>
-                <th className="text-start">actual</th>
-                <th>predicted scam</th>
+                <th className="text-start">actual \ predicted</th>
                 <th>predicted benign</th>
+                <th>predicted scam</th>
               </tr>
             </thead>
             <tbody>
               {scam_classifier.confusion_matrix.map((row, i) => (
                 <tr key={i}>
                   <td className="text-start text-meta text-ink-2">
-                    {i === 0 ? 'scam' : 'benign'}
+                    {i === 0 ? 'actual benign' : 'actual scam'}
                   </td>
-                  {row.map((cell, j) => (
-                    <td key={j} className="num font-mono font-medium">
-                      {cell}
-                    </td>
-                  ))}
+                  {row.map((cell, j) => {
+                    const tag = i === 0 && j === 0 ? 'TN' : i === 0 && j === 1 ? 'FP' : i === 1 && j === 0 ? 'FN' : 'TP';
+                    return (
+                      <td key={j} className="num font-mono font-medium">
+                        {cell}{' '}
+                        <span className="text-[11px] font-normal text-ink-3">({tag})</span>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -237,14 +341,54 @@ export default function EvalPage() {
           <Kpi bare label="LLM failures" value={pct(live_operations.llm_failure_rate)} />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-ink/[0.08] pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-ink/[0.08] pt-3">
           {Object.entries(live_operations.by_route).map(([route, count]) => (
             <span key={route} className="text-meta text-ink-2">
               <span>{routeWord(route)}</span>{' '}
               <span className="num font-medium text-ink">{count}</span>
             </span>
           ))}
+          {live_operations.active_provider && (
+            <Chip tone={live_operations.active_provider === 'live' ? 'ok' : 'neutral'}>
+              AI_PROVIDER={live_operations.active_provider}
+            </Chip>
+          )}
+          {typeof live_operations.guardrail_triggers_24h === 'number' && (
+            <Chip tone={live_operations.guardrail_triggers_24h > 0 ? 'warn' : 'ok'}>
+              Guardrails (24h): {live_operations.guardrail_triggers_24h}
+            </Chip>
+          )}
         </div>
+
+        {live_operations.ai_telemetry_by_task && live_operations.ai_telemetry_by_task.length > 0 && (
+          <div className="mt-3 border-t border-ink/[0.08] pt-3">
+            <p className="mb-2 text-meta font-medium text-ink-2">AI telemetry by task (24h)</p>
+            <table className="ledger">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th className="text-end">Calls</th>
+                  <th className="text-end">Avg latency</th>
+                  <th className="text-end">Est. cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {live_operations.ai_telemetry_by_task.map((row) => (
+                  <tr key={row.task_type}>
+                    <td className="font-mono text-meta text-ink">{row.task_type}</td>
+                    <td className="num text-end font-mono text-meta text-ink-2">{row.calls}</td>
+                    <td className="num text-end font-mono text-meta text-ink-2">
+                      {row.avg_latency_ms}ms
+                    </td>
+                    <td className="num text-end font-mono text-meta text-ink-2">
+                      ${row.cost_usd.toFixed(5)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

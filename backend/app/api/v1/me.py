@@ -218,6 +218,20 @@ def my_data(request: Request, actor: CitizenActor, db: DbSession) -> dict[str, A
                 "source_type": row.source_type,
                 "requested_value": row.requested_value,
                 "status": row.status,
+                "message_en": (
+                    "Applied to your profile."
+                    if row.status in {CorrectionStatus.APPLIED.value, CorrectionStatus.APPROVED.value}
+                    else "Waiting for officer review."
+                    if row.status == CorrectionStatus.PENDING_OFFICER.value
+                    else "Reviewed by an officer."
+                ),
+                "message_ur": (
+                    "آپ کے پروفائل پر لاگو ہو گئی۔"
+                    if row.status in {CorrectionStatus.APPLIED.value, CorrectionStatus.APPROVED.value}
+                    else "افسر کے جائزے کا انتظار ہے۔"
+                    if row.status == CorrectionStatus.PENDING_OFFICER.value
+                    else "افسر نے جائزہ مکمل کر لیا۔"
+                ),
                 "created_at": row.created_at.isoformat() if row.created_at else None,
             }
             for row in corrections
@@ -306,6 +320,17 @@ def _reevaluate_after_correction(
     return results
 
 
+_FIELD_KEY_ALIASES: dict[str, str] = {
+    "full_name": "applicant_full_name",
+    "cnic_masked": "applicant_cnic",
+    "cnic": "applicant_cnic",
+    "phone_masked": "payout_phone",
+    "phone": "payout_phone",
+    "district": "applicant_district",
+    "dob": "applicant_dob",
+}
+
+
 @router.post("/corrections", status_code=201, summary="Request a correction to stored data")
 def request_correction(
     payload: dict[str, Any],
@@ -315,7 +340,8 @@ def request_correction(
 ) -> dict[str, Any]:
     citizen_id = _scope(db, actor, request)
 
-    field_key = str(payload.get("field_key") or "").strip()
+    raw_field_key = str(payload.get("field_key") or "").strip()
+    field_key = _FIELD_KEY_ALIASES.get(raw_field_key, raw_field_key)
     if field_key not in CANONICAL_FACT_KEY_SET:
         raise ValidationError(
             details={"fields": [{"field": "field_key", "reason": "UNKNOWN_FACT_KEY"}]}
@@ -399,6 +425,8 @@ def request_correction(
                 "missing_reason": None,
             }
             profile["self_declared"] = declared
+            # Mirror onto top-level profile_data so GET /me/data immediately reflects the update.
+            profile[field_key] = requested_value
             citizen.profile_data = profile
             applied = True
 

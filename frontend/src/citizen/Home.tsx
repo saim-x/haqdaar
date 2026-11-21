@@ -12,7 +12,6 @@ import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconChevron, IconList, IconQuestion, IconShield, IconUsers } from '../shared/ui/Icons';
-import { uuid } from '../shared/lib/uuid';
 
 /**
  * Where a case sits on the five-stage track the citizen actually understands.
@@ -86,9 +85,8 @@ export function CitizenHome() {
       });
       navigate(`/c/apply/${created.id}`);
     } catch (err) {
-      // Offline: queue the case creation and continue with a local id so the
-      // wizard still works. The outbox replays it exactly once on reconnect.
-      const localId = uuid();
+      // Offline: continue with `/c/apply/new?offline=1` so the wizard hydrates
+      // cleanly from local IndexedDB and queues creation + submission on reconnect.
       try {
         await enqueue({
           method: 'POST',
@@ -98,7 +96,7 @@ export function CitizenHome() {
           actForCitizenId: actFor?.citizenId ?? null,
           label: t('home.newApplication'),
         });
-        navigate(`/c/apply/${localId}?offline=1`);
+        navigate('/c/apply/new?offline=1');
       } catch {
         setError(errorMessage(err, lang));
       }

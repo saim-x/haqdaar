@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
 import type { OfficerCaseReview } from '../../shared/api/types';
+import { getAccessToken } from '../../shared/auth/session';
+import { API_BASE } from '../../shared/config';
 import {
   Card,
   CardTitle,
@@ -30,6 +32,45 @@ const REASON_CODES = [
   'POLICY_DISCRETION',
   'OTHER',
 ];
+
+const REQUESTABLE_FIELDS = [
+  'applicant_full_name',
+  'applicant_cnic',
+  'applicant_dob',
+  'spouse_full_name',
+  'spouse_cnic',
+  'applicant_district',
+  'children_under_18',
+  'household_size',
+  'monthly_income_pkr',
+  'payout_phone',
+  'cnic_doc_verified',
+  'death_cert_doc_verified',
+];
+
+function formatCheckValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const parts: string[] = [];
+    if (typeof obj.laplacian_var === 'number') parts.push(`sharpness ${obj.laplacian_var.toFixed(1)}`);
+    if (typeof obj.width === 'number' && typeof obj.height === 'number') {
+      parts.push(`${obj.width}×${obj.height}px`);
+    }
+    if (typeof obj.cnic_match === 'boolean') parts.push(`CNIC ${obj.cnic_match ? 'match' : 'mismatch'}`);
+    if (typeof obj.name_similarity === 'number') {
+      parts.push(`name ${(obj.name_similarity * 100).toFixed(0)}%`);
+    }
+    if (Array.isArray(obj.fields)) parts.push(`fields: ${obj.fields.join(', ')}`);
+    if (typeof obj.confidence === 'number') parts.push(`conf ${(obj.confidence * 100).toFixed(0)}%`);
+    if (parts.length > 0) return parts.join(' · ');
+    return JSON.stringify(obj);
+  }
+  return String(value);
+}
 
 const ACTIONS = [
   { key: 'APPROVE', label: 'Approve', on: 'border-positive/40 bg-positive-wash text-positive' },
@@ -102,13 +143,29 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   });
 
   const reevaluate = useMutation({
-    mutationFn: () => api.post(`/officer/cases/${id}/reevaluate`),
+    mutationFn: () => api.post(`/officer/cases/${id}/reevaluate`, {}),
     onSuccess: () => {
       setBanner({ tone: 'ok', text: 'Re-evaluated with the current rule version.' });
       void queryClient.invalidateQueries({ queryKey: ['officer-case', id] });
     },
     onError: (err) => setBanner({ tone: 'danger', text: errorMessage(err, 'en') }),
   });
+
+  async function openDocumentFile(docId: string) {
+    try {
+      const token = getAccessToken();
+      const res = await fetch(`${API_BASE}/documents/${docId}/file`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setBanner({ tone: 'danger', text: errorMessage(err, 'en') });
+    }
+  }
 
   const consentRevoked = query.error instanceof ApiError && query.error.isConsentRevoked;
   const caseData = query.data;
@@ -334,28 +391,29 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     >
                       {humanize(doc.verify_status)}
                     </Chip>
-                    <a
-                      href={`/api/v1/documents/${doc.id}/file`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ms-auto text-meta text-accent-ink hover:underline"
+                    <button
+                      type="button"
+                      onClick={() => void openDocumentFile(doc.id)}
+                      className="press ms-auto text-meta font-medium text-accent-ink hover:underline"
                     >
                       Open file
-                    </a>
+                    </button>
                   </div>
                   {doc.verify_checks && doc.verify_checks.length > 0 && (
                     <ul className="mt-2 space-y-1">
                       {doc.verify_checks.map((check) => (
                         <li
                           key={check.check}
-                          className="flex items-center gap-2 text-meta text-ink-2"
+                          className="flex flex-wrap items-center gap-2 text-meta text-ink-2"
                         >
                           <Chip tone={check.passed ? 'ok' : 'danger'}>
                             {check.passed ? 'pass' : 'fail'}
                           </Chip>
                           <span>{humanize(check.check)}</span>
-                          {check.value !== undefined && (
-                            <span className="num font-mono text-ink-3">{String(check.value)}</span>
+                          {check.value !== undefined && check.value !== null && (
+                            <span className="num font-mono text-ink-3">
+                              {formatCheckValue(check.value)}
+                            </span>
                           )}
                         </li>
                       ))}
@@ -398,31 +456,36 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             <Card>
               <CardTitle hint="pipeline">Agent timeline</CardTitle>
               <ol className="space-y-1.5">
-                {(caseData.agent_steps ?? []).map((step) => (
-                  <li key={`${step.at}-${step.step}`} className="flex items-center gap-2">
-                    <span
-                      className={`live-dot ${
-                        step.status === 'OK'
-                          ? 'bg-positive'
+                {(caseData.agent_steps ?? []).map((step, idx) => {
+                  const ms = step.latency_ms ?? step.duration_ms;
+                  return (
+                    <li key={step.id ?? `${step.created_at ?? step.at ?? idx}-${step.step}`} className="flex items-center gap-2">
+                      <span
+                        className={`live-dot ${
+                          step.status === 'OK'
+                            ? 'bg-positive'
+                            : step.status === 'FAILED'
+                              ? 'bg-negative'
+                              : 'bg-ink-3'
+                        }`}
+                        aria-hidden
+                      />
+                      <span className="text-meta text-ink-3">
+                        {step.status === 'OK'
+                          ? 'ok'
                           : step.status === 'FAILED'
-                            ? 'bg-negative'
-                            : 'bg-ink-3'
-                      }`}
-                      aria-hidden
-                    />
-                    <span className="text-meta text-ink-3">
-                      {step.status === 'OK'
-                        ? 'ok'
-                        : step.status === 'FAILED'
-                          ? 'failed'
-                          : 'skipped'}
-                    </span>
-                    <span className="text-meta text-ink">{stepWord(step.step)}</span>
-                    <span className="num ms-auto font-mono text-meta text-ink-3">
-                      {step.duration_ms}ms
-                    </span>
-                  </li>
-                ))}
+                            ? 'failed'
+                            : 'skipped'}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-meta text-ink">
+                        {stepWord(step.step)}
+                      </span>
+                      {ms !== null && ms !== undefined && (
+                        <span className="num ms-auto font-mono text-meta text-ink-3">{ms}ms</span>
+                      )}
+                    </li>
+                  );
+                })}
                 {(caseData.agent_steps?.length ?? 0) === 0 && (
                   <li className="text-caption text-ink-3">No agent steps yet.</li>
                 )}
@@ -436,9 +499,46 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             <CardTitle>Decision</CardTitle>
 
             <div className="flex items-center justify-between border-y border-ink/[0.08] py-2">
-              <span className="text-meta text-ink-3">Confidence</span>
+              <span className="text-meta text-ink-3">Weakest-link confidence</span>
               <ConfidenceBar value={caseData.latest_confidence ?? null} />
             </div>
+
+            {caseData.confidence_components && (
+              <div className="mt-2.5 space-y-1.5 rounded-control bg-raised/60 p-2.5">
+                {(() => {
+                  const cc = caseData.confidence_components;
+                  const pillars = [
+                    { label: 'Identity', val: cc.identity },
+                    { label: 'Documents', val: cc.documents },
+                    { label: 'Data consistency', val: cc.data_consistency },
+                    { label: 'Consent assurance', val: cc.consent_assurance },
+                  ];
+                  const minVal = Math.min(...pillars.map((p) => p.val));
+                  return pillars.map((p) => {
+                    const isWeakest = Math.abs(p.val - minVal) < 0.001 && minVal < 0.9;
+                    return (
+                      <div key={p.label}>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className={isWeakest ? 'font-medium text-negative' : 'text-ink-2'}>
+                            {p.label}
+                            {isWeakest ? ' (bottleneck)' : ''}
+                          </span>
+                          <span className="num font-mono text-ink">{(p.val * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-ink/[0.08]">
+                          <div
+                            className={`h-full ${
+                              p.val >= 0.9 ? 'bg-positive' : p.val >= 0.7 ? 'bg-warn' : 'bg-negative'
+                            }`}
+                            style={{ width: `${Math.round(p.val * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
 
             <div className="mt-3 grid grid-cols-2 gap-1.5">
               {ACTIONS.map(({ key, label, on }) => (
@@ -492,7 +592,9 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   Fields to ask for <span className="text-negative">*</span>
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
-                  {Object.keys(caseData.draft_answers ?? {}).map((key) => {
+                  {Array.from(
+                    new Set([...REQUESTABLE_FIELDS, ...Object.keys(caseData.draft_answers ?? {})]),
+                  ).map((key) => {
                     const on = requestedFields.includes(key);
                     return (
                       <button

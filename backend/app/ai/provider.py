@@ -47,6 +47,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 COST_TABLE: dict[str, tuple[float, float]] = {
     "gpt-4o-mini": (0.15, 0.60),
     "whisper-1": (0.006, 0.0),  # per minute, not per token
+    "nova-3": (0.0043, 0.0),  # Deepgram Nova-3 per minute
+    "flux-ambreen-ur": (0.015, 0.0),  # Deepgram Flux Urdu TTS per 1k chars
     "text-embedding-3-small": (0.02, 0.0),
     "edge-tts": (0.0, 0.0),
     "fake": (0.0, 0.0),
@@ -401,13 +403,16 @@ class FakeDeterministicProvider:
 
         if entry is not None:
             fields = dict(entry.get("printed_fields") or {})
+            raw_text = entry.get("raw_text") or (
+                entry.get("text") if doc_type == "SCREENSHOT" else None
+            )
             result = OCRResult(
                 fields=fields,
-                confidence=0.96 if fields else 0.0,
-                raw_text=entry.get("raw_text"),
+                confidence=0.96 if (fields or raw_text) else 0.0,
+                raw_text=raw_text,
                 provider="fake",
                 model="fake-ocr",
-                available=bool(fields),
+                available=bool(fields or raw_text),
             )
         else:
             marker = _OCR_MARKER.search(image_bytes or b"")
@@ -1076,68 +1081,136 @@ class LiveOpenAIProvider:
         started = time.perf_counter()
         client = self._openai()
         encoded = base64.b64encode(image_bytes).decode("ascii")
-        schema = {
-            "type": "object",
-            "additionalProperties": False,
-            "required": ["cnic", "full_name", "dob", "confidence"],
-            "properties": {
-                "cnic": {"type": ["string", "null"]},
-                "full_name": {"type": ["string", "null"]},
-                "dob": {"type": ["string", "null"]},
-                "confidence": {"type": "number"},
-            },
-        }
+        mime = "image/jpeg"
+        if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+            mime = "image/png"
+        elif image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+            mime = "image/webp"
+
+        if doc_type == "SCREENSHOT":
+            schema = {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["raw_text", "confidence"],
+                "properties": {
+                    "raw_text": {"type": ["string", "null"]},
+                    "confidence": {"type": "number"},
+                },
+            }
+            system_prompt = (
+                "Transcribe all visible SMS, WhatsApp, or notification message text "
+                "from this screenshot verbatim (Urdu, Roman Urdu, Sindhi, or English). "
+                "Preserve codes like HQ-XXXXX, phone numbers, URLs, and amounts exactly. "
+                "If no text is readable, return raw_text=null and confidence=0."
+            )
+            schema_name = "screenshot_ocr"
+        else:
+            schema = {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["cnic", "full_name", "dob", "confidence"],
+                "properties": {
+                    "cnic": {"type": ["string", "null"]},
+                    "full_name": {"type": ["string", "null"]},
+                    "dob": {"type": ["string", "null"]},
+                    "confidence": {"type": "number"},
+                },
+            }
+            system_prompt = (
+                "Read the printed text of this synthetic specimen document. "
+                "For a SPOUSE_DEATH_CERTIFICATE, map the deceased person's name to full_name, "
+                "CNIC to cnic, and date of death to dob. "
+                "Return only what is legible. If a field is unreadable, return null "
+                "for it and lower the confidence. Never guess."
+            )
+            schema_name = "ocr_fields"
+
         try:
             response = client.chat.completions.create(
                 model=self.chat_model,
                 temperature=0,
                 response_format={
                     "type": "json_schema",
-                    "json_schema": {"name": "ocr_fields", "strict": True, "schema": schema},
+                    "json_schema": {"name": schema_name, "strict": True, "schema": schema},
                 },
                 messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "Read the printed text of this synthetic specimen document. "
-                            "Return only what is legible. If a field is unreadable, return null "
-                            "for it and lower the confidence. Never guess."
-                        ),
-                    },
+                    {"role": "system", "content": system_prompt},
                     {
                         "role": "user",
                         "content": [
                             {"type": "text", "text": f"doc_type={doc_type}"},
                             {
                                 "type": "image_url",
-                                "image_url": {"url": f"data:image/jpeg;base64,{encoded}"},
+                                "image_url": {"url": f"data:{mime};base64,{encoded}"},
                             },
                         ],
                     },
                 ],
             )
         except Exception as exc:
-            raise self._wrap(exc) from exc
+            err = self._wrap(exc)
+            _emit(
+                task_type="DOC_OCR",
+                provider="live",
+                model_name=self.chat_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                succeeded=False,
+                error_code=err.code,
+            )
+            raise err from exc
 
         content = response.choices[0].message.content or "{}"
         try:
             payload = json.loads(content)
         except json.JSONDecodeError as exc:
+            _emit(
+                task_type="DOC_OCR",
+                provider="live",
+                model_name=self.chat_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                succeeded=False,
+                error_code="BAD_JSON",
+            )
             raise ProviderError("OCR returned non-JSON", code="BAD_JSON") from exc
+
+        usage = getattr(response, "usage", None)
+        in_tok = int(getattr(usage, "prompt_tokens", 0) or 800)
+        out_tok = int(getattr(usage, "completion_tokens", 0) or 40)
+        confidence = float(payload.get("confidence") or 0.0)
+
+        if doc_type == "SCREENSHOT":
+            raw_text = str(payload.get("raw_text") or "").strip() or None
+            _emit(
+                task_type="DOC_OCR",
+                provider="live",
+                model_name=self.chat_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                succeeded=bool(raw_text),
+                error_code=None if raw_text else "OCR_UNAVAILABLE",
+            )
+            return OCRResult(
+                fields={},
+                raw_text=raw_text,
+                confidence=round(confidence, 3),
+                provider="live",
+                model=self.chat_model,
+                available=bool(raw_text),
+            )
 
         fields = {
             key: payload.get(key)
             for key in ("cnic", "full_name", "dob")
             if payload.get(key)
         }
-        confidence = float(payload.get("confidence") or 0.0)
         _emit(
             task_type="DOC_OCR",
             provider="live",
             model_name=self.chat_model,
             latency_ms=int((time.perf_counter() - started) * 1000),
-            input_tokens=800,
-            output_tokens=40,
+            input_tokens=in_tok,
+            output_tokens=out_tok,
             succeeded=bool(fields),
             error_code=None if fields else "OCR_UNAVAILABLE",
         )
@@ -1197,11 +1270,6 @@ class LiveOpenAIProvider:
             "rag_answer",
         )
         answer = str(payload.get("answer") or "")
-        filtered = guardrails.filter_personal_claims(answer, lang=lang)
-        if filtered.triggered:
-            guardrails.record_guardrail_event(
-                None, kind="rag_personal_claim", code="PERSONAL_ELIGIBILITY", excerpt=answer
-            )
         _emit(
             task_type="RAG_ASK",
             provider="live",
@@ -1212,7 +1280,7 @@ class LiveOpenAIProvider:
             succeeded=bool(answer),
         )
         return RAGSynthesisResult(
-            answer=filtered.text,
+            answer=answer,
             citations=[str(c) for c in payload.get("citations") or []],
             confidence=round(float(payload.get("confidence") or 0.0), 3),
             provider="live",

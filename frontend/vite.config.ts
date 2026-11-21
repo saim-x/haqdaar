@@ -20,6 +20,9 @@ function manualChunks(id: string): string | undefined {
     if (norm.includes('/node_modules/react/')) return 'vendor-react';
     return undefined;
   }
+  // Keep the optional Sindhi dictionary in its own lazy chunk so the citizen
+  // initial JS bundle stays well below the 150 KB gzipped budget.
+  if (norm.includes('/src/shared/i18n/sindhi')) return 'i18n-sd';
   // Shared code is used by the citizen entry AND by every lazy console. Pin it
   // to its own chunk so Rollup never parks it inside a staff chunk — otherwise
   // the entry ends up statically importing `staff-*.js` and the budget gate
@@ -56,7 +59,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-          globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,mp3,json}'],
+        // Precache app shell + fonts + icons + critical offline prompts only (<400 KB),
+        // letting the remaining 73 Urdu MP3s stream lazily into the CacheFirst runtime cache.
+        globPatterns: [
+          '**/*.{js,css,html,svg,png,webp,woff2,json}',
+          'audio/ur/{home_apply,offline_saved,wizard_queued,wizard_welcome,scam_intro}.mp3',
+        ],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/mock\//],

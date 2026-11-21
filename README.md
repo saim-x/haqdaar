@@ -111,7 +111,7 @@ This table is the same eleven rows served by `GET /api/v1/transparency` and rend
 | Offline-First PWA & Idempotent Outbox | **REAL** | Workbox Service Worker + Dexie IndexedDB + server-side `Idempotency-Key` deduplication. |
 | Scam Classifier & Official Verification Codes | **REAL** (trained on synthetic data) | Hybrid deterministic rules + calibrated `scikit-learn` TF-IDF/LR model + cryptographic SMS `body_sha256` lookup. |
 | Document Verification (Blur, Signed QR, OCR Cross-Check) | **REAL** (on mock specimens) | OpenCV Laplacian blur + `QRCodeDetector` + `HMAC-SHA256` signature + vision OCR comparison. |
-| Urdu Voice STT/TTS & RAG Policy Q&A | **REAL** (with `fake` fallback) | OpenAI `whisper-1` / `gpt-4o-mini` / `text-embedding-3-small` + Deepgram Flux generated offline Urdu MP3s + `edge-tts` for dynamic speech + hybrid Postgres/NumPy retrieval. |
+| Urdu Voice STT/TTS & RAG Policy Q&A | **REAL** (with `fake` fallback) | Deepgram `nova-3` (with OpenAI `whisper-1` fallback) / `gpt-4o-mini` / `text-embedding-3-small` + Deepgram Flux (`flux-ambreen-ur`) offline Urdu MP3s + `edge-tts` for live speech + hybrid Postgres/NumPy retrieval. |
 | Identity Registry (NADRA-like) | **SIMULATED** | Mock REST API (`/mock/v1/identity/lookup`) with synthetic `99900-*` CNICs & chaos modes. |
 | Civil Death, Household Survey & Benefits Registries | **SIMULATED** | Mock REST APIs (`/mock/v1/civil/*`, `/household/*`, `/benefits/*`) with synthetic data. |
 | Instant Payment Rails (Raast-like) & Complaints | **SIMULATED** | Mock REST API (`/mock/v1/payments/*`, `/complaints`) with idempotent transfers & test failure alias. |
@@ -153,14 +153,14 @@ The curve has a knee at **0.90** and that is where the router sits: it is the lo
 
 | Metric | Value |
 |---|---|
-| Model | `scam-tfidf-lr-v1.0.0` (TF-IDF + logistic regression, calibrated) |
+| Model | `scam-tfidf-lr-v1.0.0` (hybrid word + char_wb `FeatureUnion` TF-IDF + calibrated logistic regression) |
 | Train / test cases | 172 / 43 |
-| Precision | **0.8889** |
-| Recall | **0.8889** |
-| F1 | **0.8889** |
-| False-positive rate | **0.08** |
+| Precision | **0.9444** |
+| Recall | **0.9444** |
+| F1 | **0.9444** |
+| False-positive rate | **0.04** |
 | False-positive rate on hard negatives (benign texts that mention money, banks, transfers) | **0.00** |
-| Confusion matrix | `[[23, 2], [2, 16]]` |
+| Confusion matrix | `[[24, 1], [1, 17]]` |
 
 We show false alarms honestly: the dashboard reports the false-positive rate, the hard-negative rate, and a live count of verdicts citizens disputed via `POST /api/v1/scam/{check_id}/feedback`. Blocking a real person is a cost too, which is why the checker advises and never blocks or deletes a message.
 
@@ -211,7 +211,7 @@ event_hash = hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 > The suite is green on the pinned dependency set (`fastapi==0.165.0`, `pydantic==2.14.4`, `sqlalchemy==2.1.9`, `psycopg==3.3.9`, `scikit-learn==1.9.1`, `opencv-python-headless==5.1.0.95`). `test_every_non_public_route_has_an_rbac_dependency` walks the route table and imports `fastapi.routing._IncludedRouter` only when the installed release has it, so the check reports on the route table rather than on the FastAPI version.
 
-**Citizen bundle: 131.2 KB gzipped of a 150 KB budget (87.4 %), 125 precache entries.** `npm --prefix frontend run budget` fails the build above 150 KB, so the number cannot drift silently.
+**Citizen bundle: 135.3 KB gzipped of a 150 KB budget (90.2 %), 58 precache entries (1.0 MB, with Sindhi `i18n-sd` lazy-loaded at 4.3 KB).** `npm --prefix frontend run budget` fails the build above 150 KB, so the number cannot drift silently.
 
 ---
 

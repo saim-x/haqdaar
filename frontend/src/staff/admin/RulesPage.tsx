@@ -47,13 +47,61 @@ const FACT_KEYS = [
   'citizen_has_active_dept_consent',
 ];
 
-const OPS = ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in', 'not_in', 'is_true', 'is_false'];
-const OUTCOMES = ['PASS', 'FAIL', 'ASK', 'HUMAN'];
+const OPS = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in', 'not_in'];
+const OUTCOMES = ['HUMAN', 'ASK'];
+
+const INT_FACTS = new Set([
+  'applicant_age_years',
+  'children_under_18',
+  'household_size',
+  'monthly_income_pkr',
+  'poverty_score',
+]);
+
+const BOOL_FACTS = new Set([
+  'applicant_is_alive',
+  'applicant_cnic_valid',
+  'marital_status_widow',
+  'spouse_death_verified',
+  'has_conflicting_active_grant',
+  'cnic_doc_verified',
+  'death_cert_doc_verified',
+  'citizen_has_active_dept_consent',
+]);
+
+function formatRuleValue(value: unknown): string {
+  if (Array.isArray(value)) return value.join(', ');
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+function parseRuleValue(fact: string, op: string, raw: string): unknown {
+  if (op === 'in' || op === 'not_in') {
+    const parts = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (INT_FACTS.has(fact)) {
+      return parts.map((p) => {
+        const n = Number(p);
+        return Number.isFinite(n) ? Math.trunc(n) : p;
+      });
+    }
+    return parts;
+  }
+  const trimmed = raw.trim();
+  if (BOOL_FACTS.has(fact)) {
+    if (trimmed.toLowerCase() === 'true') return true;
+    if (trimmed.toLowerCase() === 'false') return false;
+  }
+  if (INT_FACTS.has(fact) && trimmed !== '' && /^-?\d+$/.test(trimmed)) {
+    return Number.parseInt(trimmed, 10);
+  }
+  return raw;
+}
 
 /** DSL tokens stay in the payload; the editor shows the policy word. */
 const OUTCOME_LABEL: Record<string, string> = {
-  PASS: 'Pass',
-  FAIL: 'Fail',
   ASK: 'Ask for more',
   HUMAN: 'Human review',
 };
@@ -64,16 +112,16 @@ function emptyCondition(): RuleCondition {
     fact: 'monthly_income_pkr',
     op: 'lte',
     value: 40000,
-    on_fail: 'FAIL',
+    on_fail: 'HUMAN',
     on_unknown: 'ASK',
-    label_en: '',
-    label_ur: '',
-    ask_prompt_en: null,
-    ask_prompt_ur: null,
-    fail_reason_en: '',
-    fail_reason_ur: '',
-    pass_reason_en: '',
-    pass_reason_ur: '',
+    label_en: 'Income threshold',
+    label_ur: 'آمدنی کی حد',
+    ask_prompt_en: 'Please confirm your monthly household income.',
+    ask_prompt_ur: 'براہ کرم گھر کی ماہانہ آمدنی بتائیں۔',
+    fail_reason_en: 'Monthly income exceeds the program limit.',
+    fail_reason_ur: 'ماہانہ آمدنی پروگرام کی حد سے زیادہ ہے۔',
+    pass_reason_en: 'Monthly income is within the program limit.',
+    pass_reason_ur: 'ماہانہ آمدنی پروگرام کی حد کے اندر ہے۔',
     required_for_auto: true,
   };
 }
@@ -157,7 +205,12 @@ export default function RulesPage() {
   });
 
   const validate = useMutation({
-    mutationFn: () => api.post<RuleValidationResult>(`/admin/rules/${selectedId}/validate`),
+    mutationFn: async () => {
+      if (!readOnly && draft) {
+        await api.put<RuleVersion>(`/admin/rules/${selectedId}`, { rules_json: draft });
+      }
+      return api.post<RuleValidationResult>(`/admin/rules/${selectedId}/validate`, {});
+    },
     onSuccess: (res) => {
       setValidation(res);
       setMessage(
@@ -173,8 +226,12 @@ export default function RulesPage() {
   });
 
   const simulate = useMutation({
-    mutationFn: () =>
-      api.post<TwinResult>(`/admin/rules/${selectedId}/simulate`, { sample_size: 200 }),
+    mutationFn: async () => {
+      if (!readOnly && draft) {
+        await api.put<RuleVersion>(`/admin/rules/${selectedId}`, { rules_json: draft });
+      }
+      return api.post<TwinResult>(`/admin/rules/${selectedId}/simulate`, { sample_size: 200 });
+    },
     onSuccess: (res) => {
       setTwin(res);
       setMessage({ tone: 'ok', text: `Replayed ${res.sample_size} historical cases.` });
@@ -416,10 +473,14 @@ export default function RulesPage() {
                         </Field>
                         <Field label="Value">
                           <input
-                            value={String(rule.value ?? '')}
-                            title={String(rule.value ?? '')}
+                            value={formatRuleValue(rule.value)}
+                            title={formatRuleValue(rule.value)}
                             disabled={readOnly}
-                            onChange={(e) => updateRule(index, { value: e.target.value })}
+                            onChange={(e) =>
+                              updateRule(index, {
+                                value: parseRuleValue(rule.fact, rule.op, e.target.value),
+                              })
+                            }
                             className="field num w-full font-mono"
                           />
                         </Field>
@@ -488,6 +549,44 @@ export default function RulesPage() {
                             className="field w-full"
                           />
                         </Field>
+                        <Field label="Pass reason (English)">
+                          <input
+                            value={rule.pass_reason_en ?? ''}
+                            disabled={readOnly}
+                            onChange={(e) => updateRule(index, { pass_reason_en: e.target.value })}
+                            className="field w-full"
+                          />
+                        </Field>
+                        <Field label="Pass reason (اردو)">
+                          <input
+                            dir="rtl"
+                            value={rule.pass_reason_ur ?? ''}
+                            disabled={readOnly}
+                            onChange={(e) => updateRule(index, { pass_reason_ur: e.target.value })}
+                            className="field w-full"
+                          />
+                        </Field>
+                        {rule.on_unknown === 'ASK' && (
+                          <>
+                            <Field label="Ask prompt (English)">
+                              <input
+                                value={rule.ask_prompt_en ?? ''}
+                                disabled={readOnly}
+                                onChange={(e) => updateRule(index, { ask_prompt_en: e.target.value })}
+                                className="field w-full"
+                              />
+                            </Field>
+                            <Field label="Ask prompt (اردو)">
+                              <input
+                                dir="rtl"
+                                value={rule.ask_prompt_ur ?? ''}
+                                disabled={readOnly}
+                                onChange={(e) => updateRule(index, { ask_prompt_ur: e.target.value })}
+                                className="field w-full"
+                              />
+                            </Field>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -631,27 +730,84 @@ export default function RulesPage() {
                     ))}
                   </dl>
 
+                  {/* Before vs After route distribution + transition matrix */}
+                  <div className="grid gap-4 border-b border-ink/[0.08] px-4 py-3 md:grid-cols-2">
+                    <div>
+                      <p className="mb-2 text-meta font-medium text-ink-2">Route shift (Before → After)</p>
+                      <div className="space-y-1.5">
+                        {Array.from(
+                          new Set([
+                            ...Object.keys(twin.before_counts ?? {}),
+                            ...Object.keys(twin.after_counts ?? {}),
+                          ]),
+                        ).map((route) => {
+                          const before = twin.before_counts?.[route] ?? 0;
+                          const after = twin.after_counts?.[route] ?? 0;
+                          const delta = after - before;
+                          return (
+                            <div key={route} className="flex items-center justify-between text-meta">
+                              <span className="font-mono text-ink-2">{route}</span>
+                              <span className="num font-mono text-ink">
+                                {before} → <strong>{after}</strong>{' '}
+                                {delta !== 0 && (
+                                  <span className={delta > 0 ? 'text-positive' : 'text-negative'}>
+                                    ({delta > 0 ? `+${delta}` : delta})
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {twin.transition_matrix && Object.keys(twin.transition_matrix).length > 0 && (
+                      <div>
+                        <p className="mb-2 text-meta font-medium text-ink-2">Transition matrix</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(twin.transition_matrix).map(([edge, count]) => (
+                            <Chip key={edge} tone="info">
+                              {edge}: {count}
+                            </Chip>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <table className="ledger">
                     <thead>
                       <tr>
                         <th>Case</th>
                         <th>Before</th>
                         <th>After</th>
+                        <th>Amount Δ</th>
                         <th>Why</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {twin.flipped_cases.slice(0, 20).map((c) => (
-                        <tr key={c.case_id}>
-                          <td className="font-mono text-meta text-ink-2">{c.reference_code}</td>
-                          <td className="text-meta text-ink-3">{c.before_outcome}</td>
-                          <td className="text-meta font-medium text-ink">{c.after_outcome}</td>
-                          <td className="text-meta text-ink-2">{c.reason_en}</td>
-                        </tr>
-                      ))}
+                      {twin.flipped_cases.slice(0, 20).map((c) => {
+                        const beforeRoute = c.before_route ?? c.before_outcome ?? '—';
+                        const afterRoute = c.after_route ?? c.after_outcome ?? '—';
+                        const beforeAmt = c.before_amount ?? c.before_amount_pkr ?? null;
+                        const afterAmt = c.after_amount ?? c.after_amount_pkr ?? null;
+                        const reason = c.primary_reason ?? c.reason_en ?? '—';
+                        return (
+                          <tr key={c.case_id}>
+                            <td className="font-mono text-meta text-ink-2">{c.reference_code}</td>
+                            <td className="font-mono text-meta text-ink-3">{beforeRoute}</td>
+                            <td className="font-mono text-meta font-medium text-ink">{afterRoute}</td>
+                            <td className="num font-mono text-meta text-ink-2">
+                              {beforeAmt !== null || afterAmt !== null
+                                ? `${beforeAmt !== null ? pkr(beforeAmt) : '0'} → ${afterAmt !== null ? pkr(afterAmt) : '0'}`
+                                : '—'}
+                            </td>
+                            <td className="text-meta text-ink-2">{reason}</td>
+                          </tr>
+                        );
+                      })}
                       {twin.flipped_cases.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="text-caption text-ink-3">
+                          <td colSpan={5} className="text-caption text-ink-3">
                             No case changes outcome under this draft.
                           </td>
                         </tr>

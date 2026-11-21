@@ -67,8 +67,42 @@ def enqueue_job(
     return job
 
 
+#: Jobs left RUNNING longer than this without finishing are assumed crashed and reclaimed.
+STALE_LOCK_SECONDS = 300
+
+
+def reclaim_stale_jobs(db: Session, *, stale_seconds: int = STALE_LOCK_SECONDS) -> int:
+    """Release RUNNING jobs whose worker died mid-flight back to FAILED_RETRY."""
+    cutoff = _now() - timedelta(seconds=stale_seconds)
+    stale = (
+        db.execute(
+            select(Job).where(
+                Job.status == JobStatus.RUNNING.value,
+                Job.locked_at.is_not(None),
+                Job.locked_at < cutoff,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if not stale:
+        return 0
+    for job in stale:
+        job.locked_at = None
+        if int(job.attempts or 0) >= int(job.max_attempts or settings.worker_max_attempts):
+            job.status = JobStatus.DEAD.value
+            job.last_error = "Worker lock expired after max attempts"
+        else:
+            job.status = JobStatus.FAILED_RETRY.value
+            job.run_after = _now()
+            job.last_error = "Reclaimed after stale worker lock"
+    db.commit()
+    return len(stale)
+
+
 def claim_job(db: Session) -> Job | None:
     """Atomically claim one due job. Safe with any number of concurrent workers."""
+    reclaim_stale_jobs(db)
     stmt = (
         select(Job.id)
         .where(Job.status.in_(CLAIMABLE_STATUSES), Job.run_after <= _now())
