@@ -431,3 +431,76 @@ class TestDegradation:
         assert session["message_en"].strip()
 
 
+# --------------------------------------------------------------------------- #
+# avatar discovery
+# --------------------------------------------------------------------------- #
+class TestAvatarDiscovery:
+    def test_prefers_a_named_stock_avatar(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_avatar_id", "")
+        recorder.get_response = _Response(
+            200,
+            {
+                "data": [
+                    {"id": "id-simon", "displayName": "Simon"},
+                    {"id": "id-mia", "displayName": "Mia"},
+                    {"id": "id-layla", "displayName": "Layla"},
+                ]
+            },
+        )
+        # Preference order is Cara, Layla, Mia, Sophie, Julia - Layla outranks Mia.
+        assert avatar.resolve_avatar_id() == "id-layla"
+
+    def test_prefers_the_first_available_name_in_the_list(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_avatar_id", "")
+        recorder.get_response = _Response(
+            200,
+            {
+                "data": [
+                    {"id": "id-simon", "displayName": "Simon"},
+                    {"id": "id-mia", "displayName": "Mia"},
+                ]
+            },
+        )
+        assert avatar.resolve_avatar_id() == "id-mia"
+
+    def test_falls_back_to_the_first_avatar(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_avatar_id", "")
+        recorder.get_response = _Response(
+            200, {"data": [{"id": "id-first", "displayName": "Someone"}]}
+        )
+        assert avatar.resolve_avatar_id() == "id-first"
+
+    def test_discovery_is_cached(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_avatar_id", "")
+        recorder.get_response = _Response(
+            200, {"data": [{"id": "id-mia", "displayName": "Mia"}]}
+        )
+        avatar.resolve_avatar_id()
+        avatar.resolve_avatar_id()
+        assert len([call for call in recorder.calls if call[0] == "GET"]) == 1
+
+    def test_discovery_failure_degrades(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_avatar_id", "")
+        recorder.get_response = _Response(500, {})
+        assert avatar.resolve_avatar_id() == ""
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["available"] is False
+        assert session["reason"] == "NO_AVATAR"
+
+    def test_configured_avatar_skips_discovery(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        assert avatar.resolve_avatar_id() == "avatar-test-123"
+        assert recorder.calls == []
+
+
