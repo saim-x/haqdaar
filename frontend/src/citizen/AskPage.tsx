@@ -1,13 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { RagAnswer } from '../shared/api/types';
+import { AvatarToggleCard } from '../shared/avatar/AvatarToggleCard';
+import { detectGuideAction } from '../shared/avatar/intentRouter';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
+import type { GuideAction } from '../shared/avatar/types';
 import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconChevron, IconDocument, IconMic, IconShield } from '../shared/ui/Icons';
+import {
+  IconArrowRight,
+  IconChevron,
+  IconDocument,
+  IconList,
+  IconMic,
+  IconShield,
+  IconUsers,
+  IconWarning,
+} from '../shared/ui/Icons';
 
 interface Turn {
   id: number;
