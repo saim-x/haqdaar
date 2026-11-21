@@ -55,7 +55,7 @@ const NAV: NavGroup[] = [
   {
     title: 'Cases',
     items: [
-      { to: '/staff/queue', detail: '/staff/cases/:id', label: 'Review queue', Icon: IconList, roles: ['OFFICER'] },
+      { to: '/staff/queue', detail: '/staff/cases/:id', label: 'Cases to review', Icon: IconList, roles: ['OFFICER'] },
     ],
   },
   {
@@ -248,7 +248,7 @@ export function StaffRoutes() {
   const page = (() => {
     if (matchPath('/staff/queue', pathname)) return <QueuePage />;
     const review = matchPath('/staff/cases/:id', pathname);
-    if (review) return <CaseReviewPage caseId={review.params.id} />;
+    if (review) return <CaseReviewPage key={review.params.id} caseId={review.params.id} />;
     if (matchPath('/staff/eval', pathname)) return <EvalPage />;
     if (matchPath('/staff/analytics', pathname)) return <AnalyticsPage />;
     if (matchPath('/staff/device-sim', pathname)) return <DeviceSimPage />;

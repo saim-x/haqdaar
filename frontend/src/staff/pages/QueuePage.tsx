@@ -10,13 +10,14 @@ import {
   ConfidenceBar,
   EmptyState,
   ErrorState,
-  humanize,
+  factLabel,
+  flagWord,
   Loading,
   PageHeader,
   PriorityBand,
   statusWord,
 } from '../ui';
-import { IconRefresh, IconWarning } from '../../shared/ui/Icons';
+import { IconArrowRight, IconRefresh } from '../../shared/ui/Icons';
 
 interface PendingCorrectionItem {
   id: string;
@@ -48,15 +49,15 @@ type Sort = 'priority' | 'confidence_asc' | 'oldest';
 
 const SORTS: { key: Sort; label: string }[] = [
   { key: 'priority', label: 'Priority' },
-  { key: 'confidence_asc', label: 'Lowest confidence' },
+  { key: 'confidence_asc', label: 'Needs more checking' },
   { key: 'oldest', label: 'Oldest' },
 ];
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
-  { value: '', label: 'All statuses' },
-  { value: 'HUMAN_REVIEW', label: 'With an officer' },
+  { value: '', label: 'All case statuses' },
+  { value: 'HUMAN_REVIEW', label: 'Ready to review' },
   { value: 'IN_REVIEW', label: 'In review' },
-  { value: 'PENDING_SECOND_APPROVAL', label: 'Awaiting 2nd approval' },
+  { value: 'PENDING_SECOND_APPROVAL', label: 'Needs a second approval' },
   { value: 'NEEDS_INFO', label: 'Needs more information' },
   { value: 'WAITING_EXTERNAL', label: 'Waiting on a registry' },
 ];
@@ -64,34 +65,26 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 function waitingFor(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const mins = Math.max(Math.floor(ms / 60000), 0);
-  if (mins < 60) return `${mins}m`;
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? 'day' : 'days'} ago`;
 }
 
-/**
- * Officer queue - docs/11 §6.1 / AC-07.1.
- * Sorting and filtering are server-side so the queue is correct at any page size.
- *
- * The queue is a ledger: one row per case, hairline rules, tabular figures. The
- * reference code is the only link, because that is what an officer reads out
- * loud when two people are looking at the same screen.
- */
 export default function QueuePage() {
   const qc = useQueryClient();
   const [sort, setSort] = useState<Sort>('priority');
   const [status, setStatus] = useState('');
   const [assigned, setAssigned] = useState<'all' | 'me' | 'unassigned'>('all');
-  const [secondApproval, setSecondApproval] = useState(false);
   const [correctionError, setCorrectionError] = useState<string | null>(null);
 
   const params = new URLSearchParams({ sort, assigned, limit: '50' });
   if (status) params.set('status', status);
-  if (secondApproval) params.set('status', 'PENDING_SECOND_APPROVAL');
 
   const query = useQuery({
-    queryKey: ['officer-queue', sort, status, assigned, secondApproval],
+    queryKey: ['officer-queue', sort, status, assigned],
     queryFn: () => api.get<QueueResponse>(`/officer/queue?${params.toString()}`),
     refetchInterval: 20_000,
   });
@@ -115,8 +108,8 @@ export default function QueuePage() {
   return (
     <div>
       <PageHeader
-        title="Review queue"
-        subtitle="Sorted server-side. Priority is the default; nothing here can auto-reject."
+        title="Cases to review"
+        subtitle="Open a case to check the application and record your decision."
         actions={
           <button
             type="button"
@@ -130,14 +123,14 @@ export default function QueuePage() {
       />
 
       <div data-tour="queue-filters" className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="inline-flex gap-1 rounded-control bg-raised p-1" role="tablist">
+        <div className="inline-flex flex-wrap gap-1 rounded-control bg-raised p-1" role="group" aria-label="Sort cases">
           {SORTS.map(({ key, label }) => {
             const selected = sort === key;
             return (
               <button
                 key={key}
-                role="tab"
-                aria-selected={selected}
+                type="button"
+                aria-pressed={selected}
                 onClick={() => setSort(key)}
                 className={`press min-h-[32px] rounded-[7px] px-2.5 text-meta ${
                   selected ? 'bg-card font-medium text-ink shadow-hair' : 'text-ink-2 hover:text-ink'
@@ -168,20 +161,11 @@ export default function QueuePage() {
           className="min-h-[36px] w-auto rounded-control border border-ink/[0.14] bg-card px-2 text-meta text-ink"
           aria-label="Filter by assignment"
         >
-          <option value="all">Everyone</option>
-          <option value="me">Assigned to me</option>
-          <option value="unassigned">Unassigned</option>
+          <option value="all">All officers</option>
+          <option value="me">My cases</option>
+          <option value="unassigned">Ready for an officer</option>
         </select>
 
-        <label className="inline-flex min-h-[36px] items-center gap-2 rounded-control border border-ink/[0.14] bg-card px-2.5 text-meta text-ink-2">
-          <input
-            type="checkbox"
-            checked={secondApproval}
-            onChange={(e) => setSecondApproval(e.target.checked)}
-            className="h-4 w-4 accent-accent"
-          />
-          Awaiting 2nd approval
-        </label>
       </div>
 
       {query.isLoading && <Loading />}
@@ -191,89 +175,47 @@ export default function QueuePage() {
       )}
 
       {query.data && query.data.items.length > 0 && (
-        <Card className="overflow-x-auto p-0">
-          <table className="ledger min-w-[900px]">
-            <thead>
-              <tr>
-                <th>Priority</th>
-                <th>Reference</th>
-                <th>Applicant</th>
-                <th>Status</th>
-                <th>Reasons</th>
-                <th>Confidence</th>
-                <th className="text-end">Waiting</th>
-                <th>Officer</th>
-              </tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((item: QueueItem) => (
-                <tr key={item.id}>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <PriorityBand band={item.priority_band} />
-                      <span className="num font-mono text-meta text-ink-3">
-                        {item.priority_score}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <Link
-                      to={`/staff/cases/${item.id}`}
-                      className="whitespace-nowrap font-mono text-caption font-medium text-accent-ink hover:underline"
-                    >
-                      {item.reference_code}
-                    </Link>
-                    {item.rule_stale && (
-                      <span
-                        className="ms-1.5 inline-flex items-center gap-0.5 text-meta text-warn"
-                        title="Evaluated with an older rule version - re-evaluate before deciding"
-                      >
-                        <IconWarning size={11} />
-                        stale
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    <p className="whitespace-nowrap text-caption font-medium text-ink">
-                      {item.citizen_name}
+        <ul className="space-y-2" aria-label="Cases to review">
+          {query.data.items.map((item: QueueItem) => (
+            <li key={item.id}>
+              <Link
+                to={`/staff/cases/${item.id}`}
+                className="press grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 rounded-panel border border-ink/[0.10] bg-card px-4 py-3 shadow-hair hover:border-accent/40 hover:bg-accent-wash focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:grid-cols-[minmax(0,1fr)_minmax(9rem,auto)_auto]"
+              >
+                <div className="min-w-0">
+                  <p className="break-words text-body font-semibold text-ink">{item.citizen_name || 'Applicant'}</p>
+                  <p className="mt-1 text-meta text-ink-2">{item.reference_code} · {item.program?.name ?? 'Application'}</p>
+                  {item.reason_codes?.length > 0 && (
+                    <p className="mt-1 text-meta text-ink-2">
+                      {item.reason_codes.slice(0, 2).map(flagWord).join(' · ')}
                     </p>
-                    <p className="num whitespace-nowrap font-mono text-meta text-ink-3">
-                      {item.cnic_masked}
-                    </p>
-                  </td>
-                  <td className="whitespace-nowrap text-meta text-ink-2">
-                    {item.status_label?.label_en ?? statusWord(item.status)}
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {item.reason_codes.slice(0, 2).map((code) => (
-                        <Chip key={code} title={code}>
-                          {humanize(code)}
-                        </Chip>
-                      ))}
-                      {item.reason_codes.length > 2 && <Chip>+{item.reason_codes.length - 2}</Chip>}
-                    </div>
-                  </td>
-                  <td>
-                    <ConfidenceBar value={item.latest_confidence} />
-                  </td>
-                  <td className="num text-end font-mono text-meta text-ink-2">
-                    {waitingFor(item.submitted_at ?? item.created_at)}
-                  </td>
-                  <td className="whitespace-nowrap text-meta text-ink-3">
-                    {item.assigned_officer_id ? 'Assigned' : '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+                  )}
+                </div>
+                <div className="col-start-1 row-start-2 flex flex-wrap items-center gap-2 sm:col-start-auto sm:row-start-auto">
+                  <Chip tone="info">{statusWord(item.status)}</Chip>
+                  <PriorityBand band={item.priority_band} />
+                  {item.rule_stale && <Chip tone="warn">Needs a fresh check</Chip>}
+                  <span className="text-meta text-ink-3">Submitted {waitingFor(item.submitted_at ?? item.created_at)}</span>
+                  {sort === 'confidence_asc' && (
+                    <span className="inline-flex items-center gap-1 text-meta text-ink-3">
+                      Record confidence <ConfidenceBar value={item.latest_confidence} />
+                    </span>
+                  )}
+                </div>
+                <span className="col-start-2 row-span-2 row-start-1 inline-flex items-center gap-2 text-caption font-medium text-accent-ink sm:col-start-auto sm:row-span-1 sm:row-start-auto">
+                  <span className="hidden sm:inline">Open case</span>
+                  <IconArrowRight size={18} aria-hidden />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
 
       {corrections.data && corrections.data.items.length > 0 && (
         <div className="mt-6">
           <h2 className="mb-2 text-caption font-semibold uppercase tracking-wide text-ink-3">
-            Pending citizen registry corrections ({corrections.data.items.length})
+            Requests to correct citizen records ({corrections.data.items.length})
           </h2>
           {correctionError && (
             <p className="mb-2 text-caption text-danger" role="alert">
@@ -295,8 +237,8 @@ export default function QueuePage() {
               <tbody>
                 {corrections.data.items.map((c) => (
                   <tr key={c.id}>
-                    <td className="font-medium text-ink">{c.citizen_name ?? c.citizen_id}</td>
-                    <td className="font-mono text-meta text-ink-2">{c.field_key}</td>
+                    <td className="font-medium text-ink">{c.citizen_name ?? 'Name unavailable'}</td>
+                    <td className="text-meta text-ink-2">{factLabel(c.field_key)}</td>
                     <td className="text-meta text-ink-3">{unwrapVal(c.old_value)}</td>
                     <td className="text-meta font-medium text-ink">
                       {unwrapVal(c.requested_value)}
