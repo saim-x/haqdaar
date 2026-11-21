@@ -9,6 +9,7 @@ import type {
   MyDataValue,
 } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { useAuth } from '../shared/auth/AuthProvider';
 import type { DictKey } from '../shared/i18n/dictionary';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { AudioButton } from '../shared/ui/AudioButton';
@@ -117,6 +118,8 @@ interface Group {
  */
 export function MyDataPage() {
   const { t, lang } = useI18n();
+  const { session } = useAuth();
+  const isHelper = session?.user.role === 'HELPER';
   const [correcting, setCorrecting] = useState<{ fieldKey: string; label: string; current: string } | null>(null);
   const [requested, setRequested] = useState('');
   const [reason, setReason] = useState('');
@@ -174,14 +177,14 @@ export function MyDataPage() {
   return (
     <div className="screen">
       <ScreenHeader
-        title={t('consent.myData')}
+        title={t(isHelper ? 'helper.familyData' : 'consent.myData')}
         hint={
-          lang === 'ur'
+          isHelper ? t('helper.familyDataHint') : lang === 'ur'
             ? 'یہ سب معلومات ہمارے پاس محفوظ ہیں۔ ہر خانے کے ساتھ لکھا ہے کہ یہ کہاں سے آیا۔'
             : 'This is everything we store about you. Each field shows where it came from.'
         }
-        audioKey="mydata_intro"
-        audioText={t('consent.myData')}
+        audioKey={isHelper ? undefined : 'mydata_intro'}
+        audioText={t(isHelper ? 'helper.familyDataHint' : 'consent.myData')}
       />
 
       {sent && (

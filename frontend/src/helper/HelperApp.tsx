@@ -53,6 +53,7 @@ export function HelperRosterPage() {
   const [search, setSearch] = useState('');
   const [pending, setPending] = useState<HelperFamily | null>(null);
   const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const families = useQuery({
     queryKey: ['helper', 'families'],
@@ -70,27 +71,29 @@ export function HelperRosterPage() {
   const switchTo = useCallback(
     async (family: HelperFamily) => {
       setSwitching(true);
+      setSwitchError(null);
       const previous = actFor?.citizenId ?? null;
-      // Order matters: drop the old family's cached data before the new identity
-      // is visible to any component.
-      queryClient.clear();
-      if (previous && previous !== family.citizen_id) {
-        await wipeCitizenLocalData(previous);
+      try {
+        if (previous && previous !== family.citizen_id) {
+          await wipeCitizenLocalData(previous);
+        }
+        // Clear the old family's queries before exposing the new scope.
+        queryClient.clear();
+        setActFor({
+          citizenId: family.citizen_id,
+          fullName: family.full_name,
+          avatarColor: family.avatar_color,
+          district: family.district,
+        });
+        setPending(null);
+        navigate('/c');
+      } catch (err) {
+        setSwitchError(errorMessage(err, lang));
+      } finally {
+        setSwitching(false);
       }
-      setActFor({
-        citizenId: family.citizen_id,
-        fullName: family.full_name,
-        avatarColor: family.avatar_color,
-        district: family.district,
-      });
-      setPending(family);
-      setSwitching(false);
-      void play(
-        'helper_switch',
-        t('helper.switchSpoken'),
-      );
     },
-    [actFor?.citizenId, lang, play, queryClient, setActFor],
+    [actFor?.citizenId, lang, navigate, queryClient, setActFor],
   );
 
   return (
@@ -148,7 +151,11 @@ export function HelperRosterPage() {
                 <button
                   type="button"
                   disabled={switching}
-                  onClick={() => void switchTo(family)}
+                  onClick={() => {
+                    setSwitchError(null);
+                    setPending(family);
+                    void play('helper_switch', t('helper.switchSpoken'));
+                  }}
                   aria-pressed={active}
                   className="press flex min-h-primary flex-1 items-center gap-3 px-4 py-3 text-start disabled:opacity-60"
                 >
@@ -250,7 +257,7 @@ export function HelperRosterPage() {
       </div>
 
       {pending && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper px-6 text-center">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper px-6 text-center" role="dialog" aria-modal="true" aria-labelledby="family-confirm-name">
           <span
             aria-hidden
             className="grid h-24 w-24 place-items-center rounded-full text-display font-medium text-white"
@@ -259,26 +266,26 @@ export function HelperRosterPage() {
             {pending.full_name.slice(0, 1)}
           </span>
           <p className="mt-6 text-caption text-ink-3">{t('helper.switchTitle')}</p>
-          <h2 className="mt-1 text-title-lg font-medium text-ink">{pending.full_name}</h2>
+          <h2 id="family-confirm-name" className="mt-1 text-title-lg font-medium text-ink">{pending.full_name}</h2>
           <AudioButton
             className="mt-4"
             audioKey="helper_switch"
             text={`${t('helper.switchTitle')} ${pending.full_name}`}
             size="lg"
           />
+          {switchError && <p className="mt-3 text-caption text-negative" role="alert">{switchError}</p>}
           <TapButton
             block
             className="mt-8 max-w-[420px]"
             icon={<IconCheck size={20} />}
-            onClick={() => {
-              setPending(null);
-              navigate('/c');
-            }}
+            disabled={switching}
+            onClick={() => void switchTo(pending)}
           >
-            {t('helper.switchContinue')}
+            {t(switching ? 'common.loading' : 'helper.switchContinue')}
           </TapButton>
           <button
             type="button"
+            disabled={switching}
             onClick={() => setPending(null)}
             className="press mt-2 min-h-tap px-4 text-body text-ink-2 underline decoration-ink/20 underline-offset-4 hover:text-ink"
           >

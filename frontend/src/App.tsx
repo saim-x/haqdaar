@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './shared/auth/AuthProvider';
 import { RedirectIfAuthed, RequireRole } from './shared/auth/guards';
 import { LoginPage } from './shared/auth/LoginPage';
@@ -19,6 +19,7 @@ const ApplyWizard = lazy(() => import('./citizen/ApplyWizard').then((m) => ({ de
 const ScamCheckPage = lazy(() => import('./citizen/ScamCheckPage').then((m) => ({ default: m.ScamCheckPage })));
 const TransparencyPage = lazy(() => import('./citizen/TransparencyPage').then((m) => ({ default: m.TransparencyPage })));
 const HelperRosterPage = lazy(() => import('./helper/HelperApp').then((m) => ({ default: m.HelperRosterPage })));
+const HelperLayout = lazy(() => import('./helper/HelperLayout').then((m) => ({ default: m.HelperLayout })));
 const AddFamilyPage = lazy(() => import('./helper/HelperApp').then((m) => ({ default: m.AddFamilyPage })));
 const StaffRoutes = lazy(() => import('./staff/StaffApp').then((m) => ({ default: m.StaffRoutes })));
 const WelcomeTour = lazy(() => import('./shared/ui/WelcomeTour').then((m) => ({ default: m.WelcomeTour })));
@@ -39,7 +40,7 @@ function RootRedirect() {
   const { status, session } = useAuth();
   if (status === 'loading') return <RouteFallback />;
   if (!session) return <Navigate to="/login" replace />;
-  return <Navigate to={roleHome(session.user.role)} replace />;
+  return <Navigate to={roleHome(session.user)} replace />;
 }
 
 function NotFound() {
@@ -57,15 +58,6 @@ function NotFound() {
           {t('common.goHome')}
         </Link>
       </div>
-    </div>
-  );
-}
-
-/** Helper shell — the roster and add-family screens own their own layout. */
-function HelperLayout() {
-  return (
-    <div className="mx-auto w-full max-w-[560px]">
-      <Outlet />
     </div>
   );
 }
@@ -142,7 +134,7 @@ export default function App() {
           <Route
             path="/admin/*"
             element={
-              <RequireRole roles={['ADMIN']}>
+              <RequireRole roles={['ADMIN', 'AUDITOR']}>
                 <StaffRoutes />
               </RequireRole>
             }
@@ -150,7 +142,7 @@ export default function App() {
           <Route
             path="/auditor/*"
             element={
-              <RequireRole roles={['AUDITOR', 'ADMIN']}>
+              <RequireRole roles={['AUDITOR']}>
                 <StaffRoutes />
               </RequireRole>
             }

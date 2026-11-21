@@ -1,4 +1,6 @@
 import type { Role } from '../api/types';
+import { useAuth } from '../auth/AuthProvider';
+import { roleHome } from '../auth/roleHome';
 import { RoamingTour, type TourStop } from './RoamingTour';
 
 const stops: Record<Role, readonly [TourStop, ...TourStop[]]> = {
@@ -26,7 +28,6 @@ const stops: Record<Role, readonly [TourStop, ...TourStop[]]> = {
     { to: '/admin/users', title: ['Manage users', 'صارفین کو سنبھالیں'], text: ['Open Users to manage accounts and their roles.', 'اکاؤنٹس اور ان کے کردار سنبھالنے کے لیے صارفین کھولیں۔'] },
     { to: '/admin/api-keys', title: ['Manage access keys', 'رسائی کی کلیدیں سنبھالیں'], text: ['Use API keys for authorized integrations.', 'اجازت یافتہ سروسز کے لیے اے پی آئی کی کلیدیں استعمال کریں۔'] },
     { to: '/admin/jobs', title: ['Check background jobs', 'پس منظر کے کام دیکھیں'], text: ['Open Jobs to see work that is waiting or needs attention.', 'رکے ہوئے یا توجہ طلب کام دیکھنے کے لیے کاموں کی فہرست کھولیں۔'] },
-    { to: '/admin/mocks', title: ['Check simulated services', 'آزمائشی سروسز دیکھیں'], text: ['Open Mock services to check the simulated services available to your role.', 'اپنے کردار کے لیے دستیاب آزمائشی سروسز دیکھنے کے لیے ان کی فہرست کھولیں۔'] },
   ],
   AUDITOR: [
     { to: '/auditor/events', anchor: 'verify-audit', title: ['Review the audit log', 'آڈٹ ریکارڈ دیکھیں'], text: ['Find an event to see what happened and when. Open its case trace when available.', 'دیکھیں کیا ہوا اور کب ہوا۔ جہاں موجود ہو وہاں درخواست کا ریکارڈ کھولیں۔'] },
@@ -35,6 +36,19 @@ const stops: Record<Role, readonly [TourStop, ...TourStop[]]> = {
   ],
 };
 
+const platformMockStop: TourStop = {
+  to: '/admin/mocks',
+  title: ['Check simulated services', 'آزمائشی سروسز دیکھیں'],
+  text: ['Open Mock services to check the status of simulated services.', 'آزمائشی سروسز کی حالت دیکھنے کے لیے ان کی فہرست کھولیں۔'],
+};
+
 export function WelcomeTour({ accountId, role }: { accountId: string; role: Role }) {
-  return <RoamingTour accountId={accountId} role={role} pages={stops[role]} />;
+  const { session } = useAuth();
+  if (!session) return null;
+  const pages = stops[role];
+  return <RoamingTour accountId={accountId} role={role} home={roleHome(session.user)} pages={
+    role === 'ADMIN' && session.user.tenant_id === null
+      ? [platformMockStop, ...pages.filter(({ to }) => to === '/admin/users' || to === '/admin/jobs')]
+      : pages
+  } />;
 }

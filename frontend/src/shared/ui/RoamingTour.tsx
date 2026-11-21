@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { Role } from '../api/types';
 import { useAudio } from '../audio/AudioProvider';
-import { roleHome } from '../auth/roleHome';
 import { useI18n } from '../i18n/I18nProvider';
 import { AudioButton } from './AudioButton';
 import { IconCross } from './Icons';
@@ -13,14 +12,13 @@ type Copy = readonly [en: string, ur: string];
 export type TourStop = { to: string; anchor?: string; title: Copy; text: Copy; question?: Copy };
 type Stops = readonly [TourStop, ...TourStop[]];
 
-export function RoamingTour({ accountId, role, pages }: { accountId: string; role: Role; pages: Stops }) {
+export function RoamingTour({ accountId, role, home, pages }: { accountId: string; role: Role; home: string; pages: Stops }) {
   const storageKey = `haqdaar:welcome-tour:v1:${role}:${accountId}`;
   const { pick, lang } = useI18n();
   const { stop } = useAudio();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const route = pathname.replace(/\/$/, '');
-  const home = roleHome(role);
   const titleId = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const panel = useRef<HTMLElement>(null);

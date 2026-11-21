@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
@@ -26,12 +26,21 @@ export function CitizenLayout() {
   // The wizard owns the bottom of the screen: its own action bar would sit
   // underneath the tab bar, so the tab bar steps aside for the whole flow.
   const focused = pathname.startsWith('/c/apply/');
+  const isHelper = session?.user.role === 'HELPER';
+  const hasWorkspace = !isHelper || Boolean(actFor);
 
-  const navItems = [
+  if (!hasWorkspace && pathname.replace(/\/$/, '') !== '/c/ask') {
+    return <Navigate to="/h" replace />;
+  }
+
+  const navItems = hasWorkspace ? [
     { to: '/c', label: t('nav.home'), Icon: IconHome, end: true },
     { to: '/c/cases', label: t('nav.cases'), Icon: IconList, end: false },
     { to: '/scam-check', label: t('nav.scam'), Icon: IconShield, end: false },
-    { to: '/c/consent', label: t('nav.data'), Icon: IconUsers, end: false },
+    { to: '/c/consent', label: isHelper ? t('nav.permissions') : t('nav.data'), Icon: IconUsers, end: false },
+  ] : [
+    { to: '/h', label: t('helper.title'), Icon: IconUsers, end: true },
+    { to: '/scam-check', label: t('nav.scam'), Icon: IconShield, end: false },
   ];
 
   return (
@@ -105,16 +114,16 @@ export function CitizenLayout() {
       </main>
 
       {!focused && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/[0.08] bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm">
-          <ul className="mx-auto grid w-full max-w-[560px] grid-cols-4">
+        <nav aria-label={t('nav.main')} className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/[0.08] bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm">
+          <ul className="mx-auto flex w-full max-w-[560px]">
             {navItems.map(({ to, label, Icon, end }) => (
-              <li key={to}>
+              <li key={to} className="min-w-0 flex-1">
                 <NavLink
                   to={to}
                   end={end}
                   className={({ isActive }) =>
                     `relative flex min-h-primary flex-col items-center justify-center gap-1 px-1 py-2 text-meta font-medium leading-[1.4] ${
-                      isActive ? 'text-accent-ink' : 'text-ink-3'
+                      isActive ? 'bg-accent-wash text-accent-ink' : 'text-ink-2 hover:bg-raised'
                     }`
                   }
                 >
@@ -135,13 +144,6 @@ export function CitizenLayout() {
         </nav>
       )}
 
-      {!focused && session?.user.role === 'HELPER' && !actFor && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[136px] z-30 px-4">
-          <p className="pointer-events-auto mx-auto max-w-[560px] rounded-control bg-paused px-4 py-2 text-center text-meta font-medium text-white">
-            {t('helper.title')} — {t('home.switchFamily')}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

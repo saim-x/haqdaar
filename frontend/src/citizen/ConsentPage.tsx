@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ConsentAccessLog, ConsentGrant } from '../shared/api/types';
+import { useAuth } from '../shared/auth/AuthProvider';
 import { grantRecipientLabel } from '../shared/lib/consent';
 import { dayMonth, stamp } from '../shared/lib/dates';
 import { useI18n } from '../shared/i18n/I18nProvider';
@@ -47,6 +48,8 @@ const INACTIVE_LABELS: Record<string, { ur: string; en: string }> = {
  */
 export function ConsentPage() {
   const { t, lang } = useI18n();
+  const { session } = useAuth();
+  const isCitizen = session?.user.role === 'CITIZEN';
   const queryClient = useQueryClient();
   const [pendingWithdraw, setPendingWithdraw] = useState<ConsentGrant | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +63,7 @@ export function ConsentPage() {
     queryKey: ['consent-access-logs'],
     queryFn: () => api.get<{ items: ConsentAccessLog[] }>('/consent/access-logs'),
     refetchInterval: 30_000,
+    enabled: isCitizen,
   });
 
   const withdraw = useMutation({
@@ -79,18 +83,18 @@ export function ConsentPage() {
   return (
     <div className="screen">
       <ScreenHeader
-        title={t('consent.title')}
-        hint={t('consent.whoHasData')}
-        audioKey="consent_intro"
-        audioText={t('consent.whoHasData')}
+        title={isCitizen ? t('consent.title') : t('nav.permissions')}
+        hint={isCitizen ? t('consent.whoHasData') : t('helper.permissionsHint')}
+        audioKey={isCitizen ? 'consent_intro' : undefined}
+        audioText={isCitizen ? t('consent.whoHasData') : t('helper.permissionsHint')}
       />
 
-      {error && (
+      {(error || grants.error) && (
         <div
           role="alert"
           className="mb-4 rounded-control border border-negative/25 bg-negative-wash px-4 py-3 text-caption font-medium text-negative"
         >
-          {error}
+          {error || errorMessage(grants.error, lang)}
         </div>
       )}
 
@@ -100,7 +104,7 @@ export function ConsentPage() {
         </p>
       )}
 
-      {active.length === 0 && !grants.isLoading && (
+      {active.length === 0 && grants.isSuccess && (
         <div className="card enter enter-2 px-6 py-10 text-center">
           <IconUsers size={28} className="mx-auto text-ink-3" />
           <p className="mt-3 text-body text-ink-2">{t('consent.empty')}</p>
@@ -162,14 +166,14 @@ export function ConsentPage() {
               </div>
             </dl>
 
-            <button
+            {isCitizen && <button
               type="button"
               onClick={() => setPendingWithdraw(grant)}
               className="press -ms-2 mt-4 inline-flex min-h-tap items-center gap-2 rounded-control px-2 text-caption font-medium text-negative hover:bg-negative-wash"
             >
               <IconLock size={16} />
               {t('consent.withdraw')}
-            </button>
+            </button>}
           </li>
         ))}
       </ul>
@@ -197,7 +201,7 @@ export function ConsentPage() {
         </section>
       )}
 
-      <section className="enter enter-4 mt-6">
+      {isCitizen && <section className="enter enter-4 mt-6">
         <div className="mb-3 flex items-center gap-3">
           <h2 className="section-label flex-1">{t('consent.accessLog')}</h2>
           <AudioButton
@@ -231,17 +235,17 @@ export function ConsentPage() {
           ))}
           {logs.data?.items.length === 0 && <li className="py-2.5 text-meta text-ink-3">—</li>}
         </ul>
-      </section>
+      </section>}
 
       <Link
         to="/c/my-data"
         data-tour="my-data"
         className="mt-8 block text-center text-caption font-medium text-accent-ink underline decoration-1 underline-offset-4"
       >
-        {t('consent.myData')}
+        {isCitizen ? t('consent.myData') : t('helper.familyData')}
       </Link>
 
-      {pendingWithdraw && (
+      {isCitizen && pendingWithdraw && (
         <div
           className="fixed inset-0 z-50 grid place-items-end bg-ink/40 sm:place-items-center sm:p-4"
           role="dialog"
