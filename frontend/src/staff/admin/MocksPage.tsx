@@ -79,7 +79,7 @@ export default function MocksPage() {
                 type="button"
                 onClick={() => reset.mutate()}
                 disabled={reset.isPending}
-                className="press min-h-[36px] rounded-control bg-negative px-3 text-caption font-medium text-white hover:bg-[#9A1D14] disabled:opacity-50"
+                className="press min-h-[36px] rounded-control bg-negative px-3 text-caption font-medium text-white hover:bg-negative-ink disabled:opacity-50"
               >
                 Confirm reset
               </button>
@@ -164,7 +164,7 @@ export default function MocksPage() {
                       patch: { latency_ms: Number(e.target.value) },
                     })
                   }
-                  className="mt-1.5 w-full accent-[#0F766E]"
+                  className="mt-1.5 w-full accent-accent"
                 />
               </label>
 
@@ -187,7 +187,7 @@ export default function MocksPage() {
                       patch: { failure_rate: Number(e.target.value) },
                     })
                   }
-                  className="mt-1.5 w-full accent-[#0F766E]"
+                  className="mt-1.5 w-full accent-accent"
                 />
               </label>
             </Card>

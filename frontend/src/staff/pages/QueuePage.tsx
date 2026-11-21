@@ -133,7 +133,7 @@ export default function QueuePage() {
             type="checkbox"
             checked={secondApproval}
             onChange={(e) => setSecondApproval(e.target.checked)}
-            className="h-4 w-4 accent-[#0F766E]"
+            className="h-4 w-4 accent-accent"
           />
           Awaiting 2nd approval
         </label>

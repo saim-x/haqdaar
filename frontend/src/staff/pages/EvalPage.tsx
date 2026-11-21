@@ -8,9 +8,9 @@ function pct(value: number): string {
 }
 
 const SERIES = [
-  { key: 'auto_approve_rate', label: 'auto-approve', colour: '#0F766E' },
-  { key: 'human_review_rate', label: 'human review', colour: '#1D4ED8' },
-  { key: 'false_approval_rate', label: 'false approval', colour: '#B42318' },
+  { key: 'auto_approve_rate', label: 'auto-approve', colour: 'var(--accent)' },
+  { key: 'human_review_rate', label: 'human review', colour: 'var(--info)' },
+  { key: 'false_approval_rate', label: 'false approval', colour: 'var(--negative)' },
 ] as const;
 
 /**
@@ -48,13 +48,13 @@ function ThresholdSweep({
       >
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
           <g key={tick}>
-            <line x1={pad} y1={y(tick)} x2={w - pad} y2={y(tick)} stroke="#EFEAE1" />
-            <text x={pad - 8} y={y(tick) + 3} textAnchor="end" fontSize={9} fill="#8A8279">
+            <line x1={pad} y1={y(tick)} x2={w - pad} y2={y(tick)} stroke="var(--rule)" />
+            <text x={pad - 8} y={y(tick) + 3} textAnchor="end" fontSize={9} fill="var(--ink-3)">
               {Math.round(tick * 100)}%
             </text>
           </g>
         ))}
-        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="#D6D3D1" />
+        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="var(--ink-3)" strokeOpacity={0.4} />
 
         {SERIES.map(({ key, colour }) => (
           <polyline
@@ -72,11 +72,11 @@ function ThresholdSweep({
           y1={pad}
           x2={x(active)}
           y2={h - pad}
-          stroke="#B45309"
+          stroke="var(--warn)"
           strokeDasharray="3 3"
           strokeWidth={1.5}
         />
-        <text x={x(active) + 5} y={pad + 9} fontSize={10} fill="#B45309">
+        <text x={x(active) + 5} y={pad + 9} fontSize={10} fill="var(--warn)">
           active {active.toFixed(2)}
         </text>
 
@@ -87,7 +87,7 @@ function ThresholdSweep({
             y={h - pad + 13}
             textAnchor="middle"
             fontSize={8}
-            fill="#8A8279"
+            fill="var(--ink-3)"
           >
             {d.threshold.toFixed(2)}
           </text>

@@ -17,8 +17,8 @@ type Size = 'primary' | 'tap' | 'sm';
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-accent text-white border-transparent hover:bg-accent-ink',
   secondary: 'bg-card text-ink border-ink/[0.14] hover:bg-raised',
-  danger: 'bg-negative text-white border-transparent hover:bg-[#9A1D14]',
-  success: 'bg-positive text-white border-transparent hover:bg-[#116B33]',
+  danger: 'bg-negative text-white border-transparent hover:bg-negative-ink',
+  success: 'bg-positive text-white border-transparent hover:bg-positive-ink',
   ghost: 'bg-transparent text-ink-2 border-transparent hover:bg-raised hover:text-ink',
 };
 

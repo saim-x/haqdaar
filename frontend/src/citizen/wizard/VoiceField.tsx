@@ -134,7 +134,7 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
                 setParsed(null);
                 capture.reset();
               }}
-              className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-transparent bg-positive text-body font-medium text-white hover:bg-[#116B33] disabled:border-transparent disabled:bg-raised disabled:text-ink-3"
+              className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-transparent bg-positive text-body font-medium text-white hover:bg-positive-ink disabled:border-transparent disabled:bg-raised disabled:text-ink-3"
             >
               <IconCheck size={16} />
               {t('wizard.readback.yes')}

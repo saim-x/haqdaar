@@ -7,12 +7,35 @@
  * content carries the colour; the teal is the real brand colour (it is already
  * in the PWA manifest and theme-color) and it is the only accent in the chrome.
  *
+ * Two deliberate departures from stock Tailwind, because a palette built from
+ * five untouched `-700` swatches reads as defaults rather than as a decision:
+ *
+ *   1. Surfaces are warm, not white. `card` is #FFFDF8, not #FFFFFF — a pure
+ *      white card on warm paper reads as a hole punched through the page. The
+ *      card is a lighter *sheet* of the same stock, and the hairline border is
+ *      what separates it.
+ *   2. The semantic ramp has hierarchy instead of five equal weights. `negative`
+ *      is the loudest (it is the only colour that means stop), `info` and
+ *      `paused` are the quietest (they are states, not alarms), and `paused` is
+ *      a muted slate-violet rather than vivid violet-700.
+ *
+ * The accent is deepened from teal-700 to #0E6A60 so it reads as ink rather
+ * than as a link colour, and so accent-coloured text clears 4.5:1 on its own
+ * without reaching for `accent-ink`. It stays in the teal family on purpose:
+ * `positive` is green, and an accent that drifts green would be confusable with
+ * "approved" — the one distinction this product cannot afford to blur.
+ *
  * Contrast, measured against the page and card surfaces:
- *   ink        #1C1917 on #FAF7F1  15.9:1
- *   ink-2      #57534E on #FAF7F1   7.4:1
- *   ink-3      #8A8279 on #FAF7F1   3.6:1  (meta and captions only, never body)
- *   accent     #0F766E on #FAF7F1   4.9:1
- *   on-accent  #FFFFFF on #0F766E   4.8:1
+ *   ink        #1C1917 on #F9F5EC  16.1:1   (17.2:1 on card)
+ *   ink-2      #57534E on #F9F5EC   7.0:1   ( 7.5:1 on card)
+ *   ink-3      #8A8279 on #F9F5EC   3.5:1   (meta and captions only, never body)
+ *   accent     #0E6A60 on #F9F5EC   5.9:1   ( 6.4:1 on card)
+ *   on-accent  #FFFFFF on #0E6A60   6.5:1
+ *   positive   #17793F on #F9F5EC   5.0:1
+ *   negative   #B42318 on #F9F5EC   6.0:1
+ *   warn       #A85A0A on #F9F5EC   4.7:1
+ *   info       #1B4DB1 on #F9F5EC   7.0:1
+ *   paused     #5B4A8F on #F9F5EC   6.8:1
  */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -20,33 +43,43 @@ export default {
     extend: {
       colors: {
         // Warm neutral ramp. Page, card and raised are the only three surfaces.
-        paper: '#FAF7F1',
-        card: '#FFFFFF',
-        raised: '#F2EDE4',
+        paper: '#F9F5EC',
+        card: '#FFFDF8',
+        raised: '#F1EADD',
         ink: {
           DEFAULT: '#1C1917',
           2: '#57534E',
           3: '#8A8279',
         },
-        // The one accent. `accent-ink` is the darker shade for accent-coloured
-        // text on a light surface, where the base teal does not reach 4.5:1.
+        // The one accent. `accent-ink` is the pressed/hover shade; the base
+        // already clears 4.5:1 on paper, so it is safe for text on its own.
         accent: {
-          DEFAULT: '#0F766E',
-          ink: '#0B5F59',
-          wash: '#EAF4F2',
+          DEFAULT: '#0E6A60',
+          ink: '#0A544C',
+          wash: '#E7F1EE',
         },
         // Semantic colours carry meaning only, toned to sit inside the ramp.
-        positive: { DEFAULT: '#15803D', wash: '#EAF5EE' },
-        negative: { DEFAULT: '#B42318', wash: '#FBEDEC' },
-        warn: { DEFAULT: '#B45309', wash: '#FBF1E4' },
-        info: { DEFAULT: '#1D4ED8', wash: '#EDF1FD' },
-        paused: { DEFAULT: '#6D28D9', wash: '#F2EDFC' },
+        // The `-ink` shades are the pressed states for filled buttons.
+        positive: { DEFAULT: '#17793F', ink: '#116B33', wash: '#EAF3EC' },
+        negative: { DEFAULT: '#B42318', ink: '#9A1D14', wash: '#FBEDEA' },
+        warn: { DEFAULT: '#A85A0A', wash: '#FAF0E2' },
+        info: { DEFAULT: '#1B4DB1', wash: '#ECF0FA' },
+        paused: { DEFAULT: '#5B4A8F', wash: '#F0EDF7' },
       },
       fontFamily: {
-        // Noto Sans Arabic is the docs/11 §2.4 decision and the rtl.md pick for
-        // "neutral, everyday". One family for both scripts keeps mixed lines in
-        // one texture; the mono is a system stack, so it costs no bytes.
-        sans: ['"Noto Sans Arabic"', '"Segoe UI"', 'system-ui', '-apple-system', 'sans-serif'],
+        // Instrument Sans for Latin, Noto Sans Arabic for Urdu. Both are
+        // self-hosted and split by `unicode-range` in index.css, so a mixed
+        // line picks the right face per character and the browser only
+        // downloads the script the page actually prints. Noto stays in the
+        // stack behind Instrument Sans as the fallback for Arabic codepoints.
+        sans: [
+          '"Instrument Sans"',
+          '"Noto Sans Arabic"',
+          '"Segoe UI"',
+          'system-ui',
+          '-apple-system',
+          'sans-serif',
+        ],
         urdu: ['"Noto Sans Arabic"', '"Segoe UI"', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
