@@ -16,6 +16,7 @@ interface AudioContextValue {
   play(key: string | null | undefined, fallbackText?: string | null, control?: string): Promise<void>;
   stop(): void;
   activeControl: string | null;
+  loadingControl: string | null;
   autoRead: boolean;
   setAutoRead(next: boolean): void;
   /** True once the manifest has been read (used to hide the button when no audio exists). */
@@ -41,6 +42,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playbackRef = useRef<AbortController | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [activeControl, setActiveControl] = useState<string | null>(null);
+  const [loadingControl, setLoadingControl] = useState<string | null>(null);
   const [autoRead, setAutoReadState] = useState(readAutoRead);
   const [ready, setReady] = useState(false);
 
@@ -65,6 +67,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       objectUrlRef.current = null;
     }
     setActiveControl(null);
+    setLoadingControl(null);
   }, []);
 
   const playAudioResponse = useCallback(
@@ -184,7 +187,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         }
       }
       if (text && !signal.aborted) {
+        setLoadingControl(control ?? null);
         if (!await playDynamic(text, signal) && !signal.aborted) playBrowser(text, fallbackText);
+        setLoadingControl(null);
       } else if (!signal.aborted) {
         stop();
       }
@@ -204,8 +209,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => () => stop(), [stop]);
 
   const value = useMemo<AudioContextValue>(
-    () => ({ play, stop, activeControl, autoRead, setAutoRead, ready }),
-    [play, stop, activeControl, autoRead, setAutoRead, ready],
+    () => ({ play, stop, activeControl, loadingControl, autoRead, setAutoRead, ready }),
+    [play, stop, activeControl, loadingControl, autoRead, setAutoRead, ready],
   );
 
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;
