@@ -7,12 +7,12 @@ import { useCasePolling } from '../shared/api/useCasePolling';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
+import { pkr } from '../shared/lib/money';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge, statusLabelKey } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconArrowLeft, IconWarning } from '../shared/ui/Icons';
 
-const PKR = new Intl.NumberFormat('en-PK');
 
 /**
  * Case status — docs/11 §3.3 / F-10.
@@ -109,7 +109,7 @@ export function CaseStatusPage() {
         {data.approved_amount_pkr !== null && (
           <div className="mt-4 flex items-end gap-3 border-t border-ink/[0.08] pt-4">
             <p className="num font-mono text-display font-medium leading-none text-ink">
-              {PKR.format(data.approved_amount_pkr)}
+              {pkr(data.approved_amount_pkr)}
             </p>
             <p className="pb-0.5 text-caption text-ink-3">PKR</p>
             {settled && <span className="stamp ms-auto">{t('cases.approvedStamp')}</span>}

@@ -23,6 +23,8 @@ import {
 import { uuid } from '../shared/lib/uuid';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ProgressDots } from '../shared/ui/ProgressDots';
+import { pkr } from '../shared/lib/money';
+import { dayMonth } from '../shared/lib/dates';
 import { TapButton } from '../shared/ui/TapButton';
 import {
   IconArrowLeft,
@@ -981,7 +983,7 @@ export function ApplyWizard() {
       {step === 'review' && (
         <section className="card enter enter-2 p-5">
           <div className="flex items-center gap-3">
-            <AudioButton audioKey="wizard_review" text={t('wizard.review.title')} size="lg" />
+            <AudioButton audioKey="wizard_review" text={t('wizard.review.title')} variant="quiet" />
             <p className="text-caption leading-[1.7] text-ink-2">
               {lang === 'ur'
                 ? 'نیچے دیے گئے جوابات چیک کریں۔ ہر جواب کے ساتھ 🔊 دبا کر سن سکتی ہیں۔'
@@ -1013,9 +1015,13 @@ export function ApplyWizard() {
                   ? '—'
                   : key === 'applicant_cnic' || key === 'spouse_cnic'
                     ? formatCnic(String(raw))
-                    : key === 'monthly_income_pkr'
-                      ? `PKR ${Number(raw).toLocaleString('en-PK')}`
-                      : String(raw);
+                    : key === 'applicant_dob'
+                      ? dayMonth(String(raw), lang)
+                      : key === 'payout_phone'
+                        ? String(raw).replace(/^(\d{4})(\d{7})$/, '$1-$2')
+                        : key === 'monthly_income_pkr'
+                          ? `PKR ${pkr(raw as number)}`
+                          : String(raw);
               return (
                 <li
                   key={key}
@@ -1024,20 +1030,25 @@ export function ApplyWizard() {
                   <div className="min-w-0 flex-1">
                     <p className="text-meta text-ink-3">{t(labelKey)}</p>
                     <p
-                      className={`num mt-0.5 truncate font-mono text-body ${unknown ? 'text-ink-3' : 'text-ink'}`}
-                      dir="auto"
+                      className={`mt-0.5 truncate font-mono text-body tabular-nums ${
+                        unknown ? 'text-ink-3' : 'text-ink'
+                      }`}
                     >
-                      {display}
+                      <bdi>{display}</bdi>
                     </p>
                   </div>
-                  <AudioButton audioKey={null} text={`${t(labelKey)}: ${display}`} />
+                  <AudioButton
+                    audioKey={null}
+                    text={`${t(labelKey)}: ${display}`}
+                    variant="quiet"
+                  />
                   <button
                     type="button"
                     onClick={() => {
                       const index = STEPS.indexOf(key as StepKey);
                       if (index >= 0) setStepIndex(index);
                     }}
-                    className="press min-h-tap shrink-0 rounded-control px-1.5 text-meta font-medium text-accent-ink underline decoration-1 underline-offset-4 hover:bg-accent-wash"
+                    className="press min-h-tap shrink-0 rounded-control px-1.5 text-meta font-medium text-ink-2 underline decoration-ink/25 underline-offset-4 hover:bg-raised hover:text-accent-ink"
                   >
                     {lang === 'ur' ? 'بدلیں' : 'Edit'}
                   </button>

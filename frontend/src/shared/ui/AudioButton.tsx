@@ -11,6 +11,14 @@ interface AudioButtonProps {
   size?: 'md' | 'lg';
   /** `onDark` for use inside a filled semantic band. */
   tone?: 'default' | 'onDark';
+  /**
+   * `circle` is the screen-level affordance docs/11 §2.2 asks for: a hairline
+   * ring, one per screen. `quiet` is for the speaker that sits beside every
+   * field in a review list — ten rings down one column is a wall of circles,
+   * and the ring is what makes the screen-level button the prominent one.
+   * Both keep the 48 px target.
+   */
+  variant?: 'circle' | 'quiet';
   className?: string;
 }
 
@@ -29,6 +37,7 @@ export function AudioButton({
   label,
   size = 'md',
   tone = 'default',
+  variant = 'circle',
   className = '',
 }: AudioButtonProps) {
   const { play, speaking, stop } = useAudio();
@@ -41,9 +50,13 @@ export function AudioButton({
       ? speaking
         ? 'border-white bg-white text-ink'
         : 'border-white/40 bg-white/15 text-white hover:bg-white/25'
-      : speaking
-        ? 'border-accent bg-accent text-white'
-        : 'border-ink/[0.14] bg-card text-accent-ink hover:bg-accent-wash';
+      : variant === 'quiet'
+        ? speaking
+          ? 'border-transparent bg-accent text-white'
+          : 'border-transparent bg-transparent text-ink-3 hover:bg-raised hover:text-accent-ink'
+        : speaking
+          ? 'border-accent bg-accent text-white'
+          : 'border-ink/[0.14] bg-card text-accent-ink hover:bg-accent-wash';
 
   return (
     <button
