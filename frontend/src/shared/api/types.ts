@@ -799,6 +799,9 @@ export interface RagAnswer {
   retrieved?: number;
 }
 
+/** Three-way honesty badge — `backend/app/api/v1/transparency.py` `COMPONENTS`. */
+export type TransparencyStatus = 'REAL' | 'SIMULATED' | 'SYNTHETIC';
+
 /** `GET /transparency` — the Real vs Simulated table (docs/15 §1). */
 export interface TransparencyPayload {
   prototype: boolean;
@@ -806,12 +809,19 @@ export interface TransparencyPayload {
   synthetic_data: { cnic_prefix: string; note: string };
   ai_provider: string;
   demo_mode: boolean;
-  subsystems: {
-    name: string;
+  components: {
+    component: string;
     name_ur: string;
-    real: boolean;
-    detail: string;
+    status: TransparencyStatus;
+    details: string;
   }[];
-  mock_statuses: Record<string, string>;
-  mock_statuses_note: string;
+  /** Live chaos mode of each simulated DPI service (`mock_service_statuses`). */
+  mock_services: {
+    service_name: string;
+    mode: string;
+    latency_ms: number;
+    failure_rate: number;
+    updated_at: string | null;
+  }[];
+  mock_services_note: string;
 }
