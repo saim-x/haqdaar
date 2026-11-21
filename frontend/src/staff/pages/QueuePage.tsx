@@ -84,7 +84,7 @@ export default function QueuePage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div data-tour="queue-filters" className="mb-4 flex flex-wrap items-center gap-2">
         <div className="inline-flex gap-1 rounded-control bg-raised p-1" role="tablist">
           {SORTS.map(({ key, label }) => {
             const selected = sort === key;

@@ -69,6 +69,7 @@ export function CasesPage() {
             <li key={item.id} className="border-b border-ink/[0.08] last:border-b-0">
               <Link
                 to={`/c/cases/${item.id}`}
+                data-tour="case-entry"
                 className="press flex min-h-primary items-center gap-3 px-1 py-3 hover:bg-raised/50"
               >
                 <div className="min-w-0 flex-1">

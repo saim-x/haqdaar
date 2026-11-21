@@ -108,6 +108,7 @@ export function HelperRosterPage() {
         </label>
         <input
           id="family-search"
+          data-tour="family-search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('helper.search')}
@@ -242,9 +243,11 @@ export function HelperRosterPage() {
         </div>
       )}
 
-      <TapLink to="/h/new" block className="mt-5" icon={<IconPlus size={20} />}>
-        {t('helper.addFamily')}
-      </TapLink>
+      <div data-tour="add-family">
+        <TapLink to="/h/new" block className="mt-5" icon={<IconPlus size={20} />}>
+          {t('helper.addFamily')}
+        </TapLink>
+      </div>
 
       {pending && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper px-6 text-center">
@@ -490,7 +493,7 @@ export function AddFamilyPage() {
           <AudioButton text="مدد کرنے سے پہلے اس خاندان کی اجازت لیں۔ فون پر کوڈ منگوائیں یا گواہ کے ساتھ زبانی اجازت ریکارڈ کریں۔" variant="quiet" />
         </div>
 
-        <div className="mt-2 border-y border-ink/[0.08]">
+        <div data-tour="family-consent" className="mt-2 border-y border-ink/[0.08]">
           <button
             type="button"
             onClick={() => setMode('OTP')}

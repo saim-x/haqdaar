@@ -176,10 +176,12 @@ export function CitizenHome() {
               </div>
             </div>
             <div className="flex items-center gap-2 border-t border-ink/[0.08] bg-raised/40 px-5 py-3">
-              <TapButton size="tap" onClick={() => navigate(`/c/cases/${activeCase.id}`)} className="flex-1">
+              <TapButton data-tour="application" size="tap" onClick={() => navigate(`/c/cases/${activeCase.id}`)} className="flex-1">
                 {t('home.viewApplication')}
               </TapButton>
-              <AudioButton audioKey="home_cases" text={t('home.cases')} />
+              <span data-tour="listen-button" className="inline-flex">
+                <AudioButton audioKey="home_cases" text={t('home.cases')} />
+              </span>
             </div>
           </>
         ) : (
@@ -190,6 +192,7 @@ export function CitizenHome() {
             </div>
             <div className="flex items-center gap-2 border-t border-ink/[0.08] bg-raised/40 px-5 py-3">
               <TapButton
+                data-tour="application"
                 size="tap"
                 onClick={() => void startApplication()}
                 disabled={busy}
@@ -198,7 +201,9 @@ export function CitizenHome() {
               >
                 {busy ? t('common.loading') : t('home.startApplication')}
               </TapButton>
-              <AudioButton audioKey="home_apply" text={t('home.apply')} />
+              <span data-tour="listen-button" className="inline-flex">
+                <AudioButton audioKey="home_apply" text={t('home.apply')} />
+              </span>
             </div>
           </>
         )}

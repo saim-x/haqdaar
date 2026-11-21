@@ -49,6 +49,7 @@ export default function EventsPage() {
           <button
             type="button"
             onClick={() => verify.mutate()}
+            data-tour="verify-audit"
             disabled={verify.isPending}
             className="press inline-flex min-h-[36px] items-center gap-1.5 rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
           >

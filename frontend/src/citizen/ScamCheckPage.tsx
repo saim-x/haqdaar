@@ -124,7 +124,7 @@ export function ScamCheckPage() {
 
         {/* Segmented control: the active segment is a raised surface, not a filled
             accent block, so the verdict band below stays the loudest thing. */}
-        <div className="enter enter-2 mb-5 grid grid-cols-3 gap-1 rounded-control bg-raised p-1" role="tablist">
+        <div data-tour="scam-input" className="enter enter-2 mb-5 grid grid-cols-3 gap-1 rounded-control bg-raised p-1" role="tablist">
           {tabs.map(([key, label, Icon]) => (
             <button
               key={key}

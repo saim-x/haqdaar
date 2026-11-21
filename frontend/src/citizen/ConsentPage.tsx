@@ -235,6 +235,7 @@ export function ConsentPage() {
 
       <Link
         to="/c/my-data"
+        data-tour="my-data"
         className="mt-8 block text-center text-caption font-medium text-accent-ink underline decoration-1 underline-offset-4"
       >
         {t('consent.myData')}

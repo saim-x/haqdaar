@@ -163,6 +163,7 @@ export function AskPage() {
           {t('ask.placeholder')}
         </label>
         <textarea
+          data-tour="ask-input"
           id="ask-input"
           rows={1}
           value={question}

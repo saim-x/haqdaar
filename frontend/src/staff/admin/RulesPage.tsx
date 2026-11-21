@@ -269,6 +269,7 @@ export default function RulesPage() {
             <button
               type="button"
               onClick={() => createDraft.mutate()}
+              data-tour="rule-draft"
               disabled={createDraft.isPending || !programId}
               className="press min-h-[36px] rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
