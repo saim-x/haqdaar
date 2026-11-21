@@ -11,14 +11,10 @@
  * open apertures; it reads as printed matter rather than as a UI default, which
  * is the register this product wants. Variable, so 400–700 is one file.
  *
- * Urdu — Noto Nastaliq Urdu. Nastaliq is the script Urdu is actually written
- * in, and its sloped baseline and stacked ligatures are what make a word read
- * as a word rather than as a row of letters. Cut to the Arabic block and Arabic
- * supplement, which is the whole Urdu alphabet plus both digit sets; the Latin
- * it used to carry now belongs to Instrument Sans. The block is kept whole
- * rather than trimmed to the letters the dictionary happens to use, because
- * citizen names arrive from the API and a missing glyph is tofu in someone's
- * name — 8 KB is the cheaper mistake.
+ * Urdu — Noto Sans Arabic. Its open letterforms are easier to scan in compact
+ * dashboard cards than the taller, layered Nastaliq face. It includes Urdu
+ * letters and is subset to the Arabic block plus supplement; Latin text belongs
+ * to Instrument Sans. Keep the full script range for citizen names from APIs.
  *
  * The subset MUST keep the Arabic joining features (`init`/`medi`/`fina`/
  * `isol`). Without them the font still loads and still draws every glyph, but
@@ -26,9 +22,7 @@
  * silent failure — nothing errors, the text is just wrong. `build-fonts.py`
  * lists them explicitly for this reason.
  *
- * 26.5 KB + 194.3 KB. Nastaliq is the expensive face: it needs a glyph per
- * positional form and per common ligature, so it cannot be cut as small as a
- * Naskh face. These static assets are outside the 150 KB JS budget, and an
+ * These self-hosted fonts are static assets outside the 150 KB JS budget, and an
  * English-only page still fetches just the Latin face. If a file is missing the
  * system stacks below render close enough that nothing breaks — the fonts are
  * an enhancement, never a dependency.
@@ -49,9 +43,9 @@
 }
 
 @font-face {
-  font-family: 'Noto Nastaliq Urdu';
-  src: url('/fonts/NotoNastaliqUrdu-subset.woff2') format('woff2');
-  font-weight: 400 700;
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/NotoSansArabicUrdu-subset.woff2') format('woff2');
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF;
@@ -106,7 +100,7 @@
     /* Type-scale leading. The `fontSize` entries in tailwind.config.js read
        these, so the scale keeps one source of truth and the Urdu face can claim
        more room without touching a single component. Latin values here; the
-       `html[lang='ur']` block below swaps in the Nastaliq set. */
+       `html[lang='ur']` block below swaps in the Arabic set. */
     --lh-meta: 18px;
     --lh-caption: 20px;
     --lh-body: 24px;
@@ -118,21 +112,18 @@
     --lh-display-lg: 40px;
   }
 
-  /* Nastaliq hangs its descenders far below the baseline and stacks marks above
-     it, so at the same point size it needs roughly a third more leading than the
-     Latin face. Without this the tail of one line collides with the marks of the
-     next and the text reads as a smear. Scoped to `lang='ur'`, which
-     I18nProvider sets on <html>, so the English UI keeps its tighter rhythm. */
+  /* Arabic diacritics need some extra leading. This sans face has a more compact
+     vertical rhythm than Nastaliq, so keep Urdu line spacing close to Latin. */
   html[lang='ur'] {
-    --lh-meta: 22px;
-    --lh-caption: 24px;
-    --lh-body: 28px;
-    --lh-body-lg: 30px;
-    --lh-lead: 34px;
-    --lh-title: 36px;
-    --lh-title-lg: 42px;
-    --lh-display: 48px;
-    --lh-display-lg: 54px;
+    --lh-meta: 20px;
+    --lh-caption: 22px;
+    --lh-body: 26px;
+    --lh-body-lg: 28px;
+    --lh-lead: 30px;
+    --lh-title: 32px;
+    --lh-title-lg: 36px;
+    --lh-display: 40px;
+    --lh-display-lg: 44px;
   }
 
   html {
@@ -142,7 +133,7 @@
 
   body {
     @apply bg-paper text-ink antialiased;
-    font-family: 'Instrument Sans', 'Noto Nastaliq Urdu', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Instrument Sans', 'Noto Sans Arabic', 'Segoe UI', system-ui, -apple-system, sans-serif;
     /* Urdu needs more line height than Latin: dots and marks sit above and
        below the baseline. rtl.md asks for 1.6–1.8 on body. */
     line-height: 1.7;
