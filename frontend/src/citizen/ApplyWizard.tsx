@@ -863,6 +863,7 @@ export function ApplyWizard() {
             placeholder={t('wizard.spouseName.placeholder')}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="spouse_full_name"
             valueText={textOf(answers, 'spouse_full_name')}
             onConfirm={(value) => setAnswer('spouse_full_name', value === null ? '' : String(value))}
@@ -889,6 +890,7 @@ export function ApplyWizard() {
             </p>
           )}
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="spouse_cnic"
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('spouse_cnic');
