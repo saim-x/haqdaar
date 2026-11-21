@@ -152,17 +152,35 @@ export function HelperRosterPage() {
                   type="button"
                   disabled={switching}
                   onClick={() => void switchTo(family)}
+                  aria-pressed={active}
                   className="press flex min-h-primary flex-1 items-center gap-3 px-4 py-3 text-start disabled:opacity-60"
                 >
                   {/* A rounded square, not a circle: the circle is the speaker
                       button's shape, and two circles on one row read as two
-                      buttons. */}
-                  <span
-                    aria-hidden
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-control text-body-lg font-medium text-white"
-                    style={{ backgroundColor: family.avatar_color }}
-                  >
-                    {family.full_name.slice(0, 1)}
+                      buttons. The fill is a 12 % tint of the family's own hue
+                      so the name stays the loudest thing in the row, and the
+                      selection mark rides on the avatar instead of taking a
+                      column of its own — a separate radio column squeezed the
+                      consent line until "Consent active" broke in two. */}
+                  <span className="relative shrink-0">
+                    <span
+                      aria-hidden
+                      className="grid h-10 w-10 place-items-center rounded-control text-body-lg font-medium"
+                      style={{
+                        backgroundColor: `${family.avatar_color}1F`,
+                        color: family.avatar_color,
+                      }}
+                    >
+                      {family.full_name.slice(0, 1)}
+                    </span>
+                    {active && (
+                      <span
+                        aria-hidden
+                        className="absolute -bottom-1 -end-1 grid h-4 w-4 place-items-center rounded-full bg-accent text-white ring-2 ring-card"
+                      >
+                        <IconCheck size={10} />
+                      </span>
+                    )}
                   </span>
 
                   <span className="min-w-0 flex-1">
@@ -183,8 +201,8 @@ export function HelperRosterPage() {
                         </>
                       )}
                     </span>
-                    <span className="mt-1 flex items-center gap-3">
-                      <span className="flex items-center gap-1.5">
+                    <span className="mt-1 flex items-center gap-2">
+                      <span className="flex items-center gap-1.5 whitespace-nowrap">
                         <span
                           className={`live-dot ${locked ? 'bg-negative' : 'bg-positive'}`}
                           aria-hidden
@@ -195,28 +213,20 @@ export function HelperRosterPage() {
                           {locked ? t('helper.consentExpired') : t('helper.consentActive')}
                         </span>
                       </span>
-                      {family.active_case_count > 0 && (
-                        <span className="num text-meta text-ink-3">
-                          {family.active_case_count} {t('helper.activeCases')}
+                      {/* A blocked family's case count is not actionable, and
+                          "Consent expired — renew" already fills the line. */}
+                      {!locked && family.active_case_count > 0 && (
+                        <span className="whitespace-nowrap text-meta tabular-nums text-ink-3">
+                          · {family.active_case_count} {t('helper.openShort')}
                         </span>
                       )}
                     </span>
-                  </span>
-
-                  {/* The row selects a family, it does not navigate, so the
-                      affordance is a radio mark and not a chevron. */}
-                  <span
-                    aria-hidden
-                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
-                      active ? 'border-accent bg-accent text-white' : 'border-ink/[0.20] text-transparent'
-                    }`}
-                  >
-                    <IconCheck size={12} />
                   </span>
                 </button>
 
                 <AudioButton
                   className="me-3 shrink-0"
+                  variant="quiet"
                   audioKey={null}
                   text={family.full_name}
                   label={`${t('common.listen')}: ${family.full_name}`}
