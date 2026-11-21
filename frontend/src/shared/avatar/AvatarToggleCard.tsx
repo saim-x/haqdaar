@@ -53,3 +53,59 @@ export function AvatarToggleCard({ guide, className = '' }: AvatarToggleCardProp
           </p>
         </div>
       </div>
+    );
+  }
+
+  if (guide.active) {
+    return (
+      <div className={className}>
+        <Suspense
+          fallback={
+            <div className="card grid min-h-[120px] place-items-center px-4 py-6" role="status">
+              <p className="text-caption text-ink-3">{t('avatar.connecting')}</p>
+            </div>
+          }
+        >
+          <AvatarStage guide={guide} />
+        </Suspense>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`card overflow-hidden ${className}`} data-testid="avatar-cta">
+      <button
+        type="button"
+        onClick={guide.start}
+        data-testid="avatar-start"
+        className="press flex min-h-primary w-full items-center gap-3 px-3.5 py-3 text-start hover:bg-accent-wash/60"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-wash text-accent-ink">
+          <IconPlay size={18} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-body font-medium leading-[1.6] text-ink">{t('avatar.cta')}</span>
+          <span className="mt-0.5 block text-meta leading-[1.7] text-ink-3">{t('avatar.ctaHint')}</span>
+        </span>
+        <IconChevron size={16} className="shrink-0 text-ink-3" />
+      </button>
+      {guide.conversational && (
+        <p
+          data-testid="avatar-live-badge"
+          className="flex items-center gap-1.5 border-t border-ink/[0.08] px-3.5 py-1.5 text-meta text-accent-ink"
+        >
+          <span className="live-dot bg-accent" aria-hidden />
+          {t('avatar.liveConversation')}
+        </p>
+      )}
+      {guide.config?.provider === 'fake' && (
+        <p
+          data-testid="avatar-simulated"
+          className="border-t border-ink/[0.08] px-3.5 py-1.5 text-meta text-ink-3"
+        >
+          {t('avatar.simulated')}
+        </p>
+      )}
+    </div>
+  );
+}
