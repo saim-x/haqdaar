@@ -168,6 +168,25 @@ export function CaseStatusPage() {
               variant="quiet"
             />
           </div>
+
+          {guide.active ? (
+            <AvatarToggleCard guide={guide} className="mb-3" />
+          ) : (
+            guide.available &&
+            !guide.steppedDown && (
+              <button
+                type="button"
+                onClick={explainWithSaima}
+                data-testid="avatar-watch-explain"
+                className="press mb-3 flex min-h-primary w-full items-center gap-2.5 rounded-control border border-accent/30 bg-accent-wash px-3.5 text-start text-body font-medium text-accent-ink hover:bg-accent/15"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white">
+                  <IconPlay size={16} />
+                </span>
+                {t('avatar.watchExplain')}
+              </button>
+            )
+          )}
           <ul className="border-y border-ink/[0.08]">
             {reasons.slice(0, 3).map((reason) => (
               <li key={reason} className="flex items-start gap-2.5 border-b border-ink/[0.08] py-2.5 last:border-b-0">
