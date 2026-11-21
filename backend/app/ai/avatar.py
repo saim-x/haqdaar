@@ -173,3 +173,30 @@ def _provider_name() -> str:
     return "anam" if _live_ready() else "fake"
 
 
+# --------------------------------------------------------------------------- #
+# public configuration
+# --------------------------------------------------------------------------- #
+def get_avatar_config() -> dict[str, Any]:
+    """The safe, key-free configuration the citizen client reads.
+
+    ``enabled`` is the only field a caller needs to branch on: when it is false
+    the guide is not offered at all and the audio-only companion is the whole
+    experience. ``provider`` then says *how* an enabled guide runs - ``fake`` is
+    the local simulator, ``anam`` is a real WebRTC stream. ``conversational``
+    tells the stage whether to offer the microphone.
+    """
+    provider = _provider_name()
+    return {
+        "enabled": not _live_requested_without_key(),
+        "provider": provider,
+        "mode": settings.anam_mode,
+        "conversational": settings.anam_mode == "conversational",
+        "avatar_id": settings.anam_avatar_id or (FAKE_AVATAR_ID if provider == "fake" else ""),
+        "sample_rate": SAMPLE_RATE,
+        "max_session_seconds": int(settings.anam_max_session_seconds),
+        "idle_timeout_seconds": int(settings.anam_idle_timeout_seconds),
+        "persona_name_ur": PERSONA_NAME_UR,
+        "persona_name_en": PERSONA_NAME_EN,
+    }
+
+
