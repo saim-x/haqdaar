@@ -11,7 +11,17 @@ import type {
   RulesResponse,
   TwinResult,
 } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader, ruleStatusWord } from '../ui';
+import {
+  Card,
+  CardTitle,
+  Chip,
+  ErrorState,
+  factLabel,
+  Loading,
+  operatorWord,
+  PageHeader,
+  ruleStatusWord,
+} from '../ui';
 
 const FACT_KEYS = [
   'applicant_cnic',
@@ -371,17 +381,18 @@ export default function RulesPage() {
                         )}
                       </div>
 
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.8fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)]">
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.9fr)_auto_minmax(0,1.2fr)_minmax(0,0.75fr)_minmax(0,0.75fr)]">
                         <Field label="Fact">
                           <select
                             value={rule.fact}
                             disabled={readOnly}
+                            title={rule.fact}
                             onChange={(e) => updateRule(index, { fact: e.target.value })}
-                            className="field w-full font-mono"
+                            className="field w-full"
                           >
                             {FACT_KEYS.map((k) => (
                               <option key={k} value={k}>
-                                {k}
+                                {factLabel(k)}
                               </option>
                             ))}
                           </select>
@@ -390,12 +401,13 @@ export default function RulesPage() {
                           <select
                             value={rule.op}
                             disabled={readOnly}
+                            title={rule.op}
                             onChange={(e) => updateRule(index, { op: e.target.value })}
-                            className="field w-full font-mono"
+                            className="field w-full"
                           >
                             {OPS.map((o) => (
                               <option key={o} value={o}>
-                                {o}
+                                {operatorWord(o)}
                               </option>
                             ))}
                           </select>

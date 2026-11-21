@@ -185,6 +185,23 @@ const OP_WORD: Record<string, string> = {
   not_in: 'not in',
 };
 
+/**
+ * The same operators, spoken. A predicate in a trace is read as a formula
+ * (`Monthly income ≤ 25,000`), so it takes the symbol; a rule being authored is
+ * read as a sentence (`Operator: is at most`), so it takes the words. One enum,
+ * two registers — both live here so they cannot drift apart.
+ */
+const OPERATOR_WORD: Record<string, string> = {
+  eq: 'equals',
+  neq: 'does not equal',
+  gt: 'is more than',
+  gte: 'is at least',
+  lt: 'is less than',
+  lte: 'is at most',
+  in: 'is one of',
+  not_in: 'is none of',
+};
+
 /** docs/06 §6 flag catalogue plus the §5.2 match outcome. */
 const FLAG_WORD: Record<string, string> = {
   TAMPER_SUSPECTED: 'Document tamper suspected',
@@ -229,6 +246,7 @@ export const factLabel = (value: string) => word(FACT_LABEL, value);
 export const sourceWord = (value: string) => word(SOURCE_WORD, value);
 export const enteredByWord = (value: string) => word(ENTERED_BY_WORD, value);
 export const opWord = (value: string) => OP_WORD[value] ?? value;
+export const operatorWord = (value: string) => OPERATOR_WORD[value] ?? value;
 export const flagWord = (value: string) => word(FLAG_WORD, value);
 export const stepWord = (value: string) => word(STEP_WORD, value);
 

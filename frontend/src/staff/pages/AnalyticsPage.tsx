@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { TenantAnalytics } from '../../shared/api/types';
-import { Card, ErrorState, Kpi, Loading, PageHeader, statusWord } from '../ui';
+import { Card, ErrorState, flagWord, Kpi, Loading, PageHeader, statusWord } from '../ui';
 
 /**
  * Tenant analytics — docs/11 §6.4. Always tenant-filtered server-side (AC-02.2).
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
             <tbody>
               {flagRows.map((flag) => (
                 <tr key={flag.code}>
-                  <td className="w-[46%] font-mono text-meta text-ink-2">{flag.code}</td>
+                  <td className="w-[46%] text-caption text-ink-2">{flagWord(flag.code)}</td>
                   <td>
                     <span className="block h-0.5 w-full overflow-hidden rounded-full bg-ink/[0.08]">
                       <span

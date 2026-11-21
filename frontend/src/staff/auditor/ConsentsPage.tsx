@@ -3,19 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { ConsentAccessLog, ConsentGrant } from '../../shared/api/types';
 import { grantRecipientLabel } from '../../shared/lib/consent';
+import { dayMonth, stamp } from '../../shared/lib/dates';
 import { Card, ErrorState, humanize, Loading, PageHeader } from '../ui';
-
-/** Console dates: day, month, year. The time of day only matters in the log. */
-const day = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
-const stamp = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
 /**
  * Consent audit — docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access.
@@ -100,10 +89,10 @@ export default function ConsentsPage() {
                   </span>
                 </td>
                 <td className="num whitespace-nowrap text-meta text-ink-3">
-                  {day(grant.granted_at)}
+                  {dayMonth(grant.granted_at, 'en')}
                 </td>
                 <td className="num whitespace-nowrap text-meta text-ink-3">
-                  {grant.expires_at ? day(grant.expires_at) : '—'}
+                  {grant.expires_at ? dayMonth(grant.expires_at, 'en') : '—'}
                 </td>
               </tr>
             ))}
@@ -140,7 +129,7 @@ export default function ConsentsPage() {
             {query.data?.access_logs.map((log) => (
               <tr key={log.id}>
                 <td className="num whitespace-nowrap text-meta text-ink-3">
-                  {stamp(log.created_at)}
+                  {stamp(log.created_at, 'en')}
                 </td>
                 <td className="font-medium text-ink">{log.actor_label}</td>
                 <td className="text-meta text-ink-2">{humanize(log.category)}</td>

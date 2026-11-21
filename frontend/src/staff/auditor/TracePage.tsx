@@ -16,16 +16,9 @@ import {
   sourceWord,
   statusWord,
 } from '../ui';
+import { stamp } from '../../shared/lib/dates';
+import { pkr } from '../../shared/lib/money';
 import { formatFactValue } from '../pages/CaseEvidence';
-
-/** Console timestamps: day, month, hour, minute. Seconds never help a reader. */
-const stamp = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
 /**
  * One confidence pillar. The number is the fact and the track is the glance;
@@ -97,13 +90,13 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
       {trace.decisions.map((decision) => (
         <div key={decision.id} className="space-y-3">
           <Card>
-            <CardTitle hint={stamp(decision.created_at)}>
+            <CardTitle hint={stamp(decision.created_at, 'en')}>
               {humanize(decision.decision_source)} · {trace.case.reference_code}
             </CardTitle>
 
             <dl className="grid grid-cols-3 divide-x divide-ink/[0.08] border-y border-ink/[0.08]">
               <div className="py-2 pe-4">
-                <dt className="text-meta text-ink-3">Route</dt>
+                <dt className="text-meta text-ink-3">Engine proposed</dt>
                 <dd className="mt-1">
                   <Chip
                     tone={
@@ -119,7 +112,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 </dd>
               </div>
               <div className="px-4 py-2">
-                <dt className="text-meta text-ink-3">Outcome</dt>
+                <dt className="text-meta text-ink-3">Case outcome</dt>
                 <dd className="mt-1 text-caption font-medium text-ink">
                   {statusWord(decision.outcome_status)}
                 </dd>
@@ -128,7 +121,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 <dt className="text-meta text-ink-3">Amount</dt>
                 <dd className="num mt-1 font-mono text-caption font-medium text-ink">
                   {decision.computed_amount_pkr !== null
-                    ? `PKR ${decision.computed_amount_pkr.toLocaleString()}`
+                    ? `PKR ${pkr(decision.computed_amount_pkr)}`
                     : '—'}
                 </dd>
               </div>
@@ -279,7 +272,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
               >
                 <div className="flex items-center gap-2">
                   <Chip tone="neutral">{humanize(note.note_type)}</Chip>
-                  <span className="num text-meta text-ink-3">{stamp(note.created_at)}</span>
+                  <span className="num text-meta text-ink-3">{stamp(note.created_at, 'en')}</span>
                 </div>
                 <p className="mt-1 text-caption leading-[1.7] text-ink">{note.body}</p>
               </li>
