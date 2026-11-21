@@ -35,6 +35,19 @@
     /* The hairline. One line weight for every divider, table rule and track. */
     --hairline: rgba(28, 25, 23, 0.08);
     --hairline-strong: rgba(28, 25, 23, 0.14);
+
+    /* Height of the prototype banner. docs/11 asks for a compact 28 px bar, and
+       that is what it is from `sm` up. On a 390 px phone the pinned English
+       sentence needs 375 px on its own — more than the screen once the
+       "Real vs Simulated" link is beside it — so the bar wraps to two lines
+       there rather than cutting the legally required claim in half. */
+    --banner-h: 46px;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --banner-h: 28px;
+    }
   }
 
   html {

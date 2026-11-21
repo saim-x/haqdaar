@@ -11,7 +11,7 @@ import { enqueue } from '../shared/offline/outbox';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconChevron, IconList, IconShield, IconUsers } from '../shared/ui/Icons';
+import { IconChevron, IconList, IconQuestion, IconShield, IconUsers } from '../shared/ui/Icons';
 import { uuid } from '../shared/lib/uuid';
 
 /**
@@ -113,10 +113,13 @@ export function CitizenHome() {
   const identity = actFor ? actFor.district : (session?.citizen?.cnic_masked ?? null);
   const programName = program ? pick(program.name_ur, program.name) : t('app.tagline');
 
+  // Each row carries a line of its own. Without it the three rows are just the
+  // tab bar again, one screen taller — the same four words in two places.
   const rows = [
-    { key: 'cases', to: '/c/cases', label: t('home.cases'), Icon: IconList },
-    { key: 'scam', to: '/scam-check', label: t('home.scam'), Icon: IconShield },
-    { key: 'data', to: '/c/consent', label: t('home.data'), Icon: IconUsers },
+    { key: 'cases', to: '/c/cases', label: t('home.cases'), hint: t('home.casesHint'), Icon: IconList },
+    { key: 'scam', to: '/scam-check', label: t('home.scam'), hint: t('home.scamHint'), Icon: IconShield },
+    { key: 'data', to: '/c/consent', label: t('home.data'), hint: t('home.dataHint'), Icon: IconUsers },
+    { key: 'ask', to: '/c/ask', label: t('home.ask'), hint: t('home.askHint'), Icon: IconQuestion },
   ];
 
   return (
@@ -203,7 +206,7 @@ export function CitizenHome() {
 
       {/* Support rows. Same height, same gap, one icon column. */}
       <ul className="enter enter-3 mt-6 border-y border-ink/[0.08]">
-        {rows.map(({ key, to, label, Icon }) => (
+        {rows.map(({ key, to, label, hint, Icon }) => (
           <li key={key} className="border-b border-ink/[0.08] last:border-b-0">
             <button
               type="button"
@@ -213,7 +216,10 @@ export function CitizenHome() {
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-raised text-ink-2">
                 <Icon size={18} />
               </span>
-              <span className="min-w-0 flex-1 text-body font-medium text-ink">{label}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-body font-medium leading-[1.4] text-ink">{label}</span>
+                <span className="mt-0.5 block text-caption leading-[1.5] text-ink-3">{hint}</span>
+              </span>
               <IconChevron size={16} className="shrink-0 text-ink-3" />
             </button>
           </li>

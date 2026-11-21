@@ -9,6 +9,10 @@ export const ur = {
   'app.tagline': 'سہارا بیوہ امدادی گرانٹ',
 
   'banner.text': 'پروٹوٹائپ — یہ سرکاری سروس نہیں ہے۔ تمام شناختی اور ادائیگی کے نظام نقلی ہیں۔',
+  // The claim is what RULE-3 requires on screen; the detail is the elaboration.
+  // Split so a 390 px phone shows the whole claim instead of cutting it in half.
+  'banner.claim': 'پروٹوٹائپ — یہ سرکاری سروس نہیں ہے۔',
+  'banner.detail': 'تمام شناختی اور ادائیگی کے نظام نقلی ہیں۔',
   'banner.link': 'تفصیلات',
 
   'common.yes': 'ہاں',
@@ -80,6 +84,16 @@ export const ur = {
   'home.startApplication': 'درخواست شروع کریں',
   'home.applyHint': 'آواز اور تصویروں سے جواب دیں۔ پڑھنا ضروری نہیں۔ انٹرنیٹ کٹ جائے تو بھی آپ کا کام محفوظ رہتا ہے۔',
   'home.offlineNote': 'سگنل کمزور ہو تو بھی درخواست محفوظ رہتی ہے اور سگنل آنے پر خود بھیج دی جاتی ہے۔',
+  'home.casesHint': 'ہر درخواست اور اس کی حالت',
+  'home.scamHint': 'پیغام اصلی ہے یا جعلی، چیک کریں',
+  'home.dataHint': 'آپ کی معلومات کون دیکھ سکتا ہے',
+  'home.askHint': 'اپنی زبان میں پوچھیں، جواب آواز میں سنیں',
+
+  // Tab labels are not page titles: four of them share one 390 px row.
+  'nav.home': 'ہوم',
+  'nav.cases': 'درخواستیں',
+  'nav.scam': 'پیغام',
+  'nav.data': 'ڈیٹا',
 
   'status.DRAFT': 'درخواست محفوظ ہے',
   'status.SUBMITTED': 'جانچ جاری ہے',
@@ -108,7 +122,7 @@ export const ur = {
   'cases.moneyNotReceivedHint': 'اگر رقم نہیں پہنچی تو ہمیں بتائیں۔',
   'cases.complaintFiled': 'شکایت درج ہو گئی۔ افسر دیکھے گا۔',
   'cases.amount': 'رقم',
-  'cases.explanation': 'وجوہات سنیں',
+  'cases.explanation': 'وجوہات',
   'cases.approvedStamp': 'منظور شدہ',
 
   'wizard.consent.title': 'آپ کی اجازت',
@@ -169,8 +183,8 @@ export const ur = {
   'consent.withdrawConfirm': 'کیا آپ واقعی اجازت واپس لینا چاہتی ہیں؟',
   'consent.withdrawDeptWarning': 'اگر آپ محکمے کی اجازت واپس لیں گی تو آپ کی جاری درخواست روک دی جائے گی۔ جب آپ دوبارہ اجازت دیں گی تو درخواست وہیں سے شروع ہو گی۔',
   'consent.withdrawDeptConfirm': 'ہاں، اجازت واپس لیں اور درخواست روک دیں',
-  'consent.since': 'سے',
-  'consent.until': 'تک',
+  'consent.grantedOn': 'کب سے',
+  'consent.expiresOn': 'کب تک',
   'consent.categories': 'کیا دیکھ سکتے ہیں',
   'consent.purpose': 'مقصد',
   'consent.statusActive': 'فعال',
@@ -241,6 +255,8 @@ export const en: Record<DictKey, string> = {
   'app.tagline': 'Sahara Widow Support Grant',
 
   'banner.text': 'PROTOTYPE — Not an official government service. Identity, payment & data services are simulated.',
+  'banner.claim': 'PROTOTYPE — Not an official government service.',
+  'banner.detail': 'Identity, payment & data services are simulated.',
   'banner.link': 'Real vs Simulated',
 
   'common.yes': 'Yes',
@@ -312,6 +328,15 @@ export const en: Record<DictKey, string> = {
   'home.startApplication': 'Start application',
   'home.applyHint': 'Answer by voice and pictures. Reading is not required. Your work is saved even when the internet drops.',
   'home.offlineNote': 'On a weak signal the application is saved and sent by itself when the signal returns.',
+  'home.casesHint': 'Every application and where it stands',
+  'home.scamHint': 'Check whether a message is real',
+  'home.dataHint': 'Who can see your information',
+  'home.askHint': 'Ask in your own words, hear the answer',
+
+  'nav.home': 'Home',
+  'nav.cases': 'Applications',
+  'nav.scam': 'Message',
+  'nav.data': 'Data',
 
   'status.DRAFT': 'Draft saved',
   'status.SUBMITTED': 'Checking your application',
@@ -340,7 +365,7 @@ export const en: Record<DictKey, string> = {
   'cases.moneyNotReceivedHint': 'Tell us if the money has not arrived.',
   'cases.complaintFiled': 'Complaint filed. An officer will look at it.',
   'cases.amount': 'Amount',
-  'cases.explanation': 'Hear the reasons',
+  'cases.explanation': 'Why this decision',
   'cases.approvedStamp': 'Approved',
 
   'wizard.consent.title': 'Your permission',
@@ -401,8 +426,8 @@ export const en: Record<DictKey, string> = {
   'consent.withdrawConfirm': 'Do you really want to withdraw access?',
   'consent.withdrawDeptWarning': 'If you withdraw the department\'s access, your open application will be paused. When you grant access again, it resumes from where it stopped.',
   'consent.withdrawDeptConfirm': 'Yes, withdraw and pause my application',
-  'consent.since': 'since',
-  'consent.until': 'until',
+  'consent.grantedOn': 'Granted',
+  'consent.expiresOn': 'Expires',
   'consent.categories': 'Can see',
   'consent.purpose': 'Purpose',
   'consent.statusActive': 'Active',

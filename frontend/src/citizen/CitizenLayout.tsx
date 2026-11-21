@@ -4,7 +4,7 @@ import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { BrandMark } from '../shared/ui/Brand';
 import { OfflinePill } from '../shared/ui/OfflinePill';
-import { IconGlobe, IconHome, IconList, IconLogout, IconQuestion, IconShield, IconUsers } from '../shared/ui/Icons';
+import { IconGlobe, IconHome, IconList, IconLogout, IconShield, IconUsers } from '../shared/ui/Icons';
 
 /**
  * Citizen shell — docs/11 §3.1.
@@ -26,20 +26,17 @@ export function CitizenLayout() {
   // The wizard owns the bottom of the screen: its own action bar would sit
   // underneath the tab bar, so the tab bar steps aside for the whole flow.
   const focused = pathname.startsWith('/c/apply/');
-  // The Ask screen owns its own composer at the bottom, so the Ask pill would
-  // sit on top of it.
-  const showAsk = !focused && pathname !== '/c/ask';
 
   const navItems = [
-    { to: '/c', label: t('home.apply'), Icon: IconHome, end: true },
-    { to: '/c/cases', label: t('home.cases'), Icon: IconList, end: false },
-    { to: '/scam-check', label: t('home.scam'), Icon: IconShield, end: false },
-    { to: '/c/consent', label: t('home.data'), Icon: IconUsers, end: false },
+    { to: '/c', label: t('nav.home'), Icon: IconHome, end: true },
+    { to: '/c/cases', label: t('nav.cases'), Icon: IconList, end: false },
+    { to: '/scam-check', label: t('nav.scam'), Icon: IconShield, end: false },
+    { to: '/c/consent', label: t('nav.data'), Icon: IconUsers, end: false },
   ];
 
   return (
-    <div className="flex min-h-[calc(100dvh-28px)] flex-col">
-      <header className="sticky top-7 z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
+    <div className="flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
+      <header className="sticky top-[var(--banner-h)] z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2">
           <BrandMark size={22} />
           <span className="text-body-lg font-medium tracking-tight text-ink">{t('app.name')}</span>
@@ -136,16 +133,6 @@ export function CitizenLayout() {
             ))}
           </ul>
         </nav>
-      )}
-
-      {showAsk && (
-        <NavLink
-          to="/c/ask"
-          className="press fixed bottom-[76px] end-4 z-40 inline-flex min-h-tap items-center gap-2 rounded-full border border-ink/[0.08] bg-card px-4 text-caption font-medium text-ink shadow-lift hover:bg-raised"
-        >
-          <IconQuestion size={18} className="text-accent-ink" />
-          {t('home.ask')}
-        </NavLink>
       )}
 
       {!focused && session?.user.role === 'HELPER' && !actFor && (

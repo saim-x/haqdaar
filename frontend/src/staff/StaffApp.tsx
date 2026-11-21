@@ -111,7 +111,7 @@ export default function StaffApp({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-28px)] bg-paper text-ink"
+      className="flex min-h-[calc(100dvh-var(--banner-h))] bg-paper text-ink"
       dir="ltr"
       lang="en"
     >

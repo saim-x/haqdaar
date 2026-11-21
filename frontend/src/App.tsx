@@ -44,7 +44,7 @@ function RootRedirect() {
 function NotFound() {
   const { t } = useI18n();
   return (
-    <div className="grid min-h-[calc(100dvh-28px)] place-items-center px-5">
+    <div className="grid min-h-[calc(100dvh-var(--banner-h))] place-items-center px-5">
       <div className="card enter w-full max-w-[420px] px-6 py-8 text-center">
         <p className="num font-mono text-meta text-ink-3">404</p>
         <h1 className="mt-2 text-title font-medium leading-[1.4] text-ink">{t('notFound.title')}</h1>
