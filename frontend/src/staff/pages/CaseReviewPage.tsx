@@ -10,10 +10,12 @@ import {
   Chip,
   ConfidenceBar,
   ErrorState,
+  flagWord,
   humanize,
   Loading,
   PageHeader,
   statusWord,
+  stepWord,
 } from '../ui';
 import { IconLock, IconWarning } from '../../shared/ui/Icons';
 import { FactTable, RuleTraceTable, WhyThisRoute } from './CaseEvidence';
@@ -320,7 +322,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                           <Chip tone={check.passed ? 'ok' : 'danger'}>
                             {check.passed ? 'pass' : 'fail'}
                           </Chip>
-                          <span className="font-mono">{check.check}</span>
+                          <span>{humanize(check.check)}</span>
                           {check.value !== undefined && (
                             <span className="num font-mono text-ink-3">{String(check.value)}</span>
                           )}
@@ -352,14 +354,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                       }`}
                       aria-hidden
                     />
-                    <span className="text-meta text-ink-2">
-                      {flag.severity === 'HIGH'
-                        ? 'High'
-                        : flag.severity === 'MEDIUM'
-                          ? 'Medium'
-                          : 'Low'}
-                    </span>
-                    <span className="font-mono text-meta text-ink">{flag.code}</span>
+                    <span className="text-meta text-ink-2">{humanize(flag.severity)}</span>
+                    <span className="text-meta text-ink">{flagWord(flag.code)}</span>
                   </li>
                 ))}
                 {(caseData.flags?.length ?? 0) === 0 && (
@@ -369,7 +365,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             </Card>
 
             <Card>
-              <CardTitle hint="agent.step">Agent timeline</CardTitle>
+              <CardTitle hint="pipeline">Agent timeline</CardTitle>
               <ol className="space-y-1.5">
                 {(caseData.agent_steps ?? []).map((step) => (
                   <li key={`${step.at}-${step.step}`} className="flex items-center gap-2">
@@ -390,7 +386,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                           ? 'failed'
                           : 'skipped'}
                     </span>
-                    <span className="font-mono text-meta text-ink">{step.step}</span>
+                    <span className="text-meta text-ink">{stepWord(step.step)}</span>
                     <span className="num ms-auto font-mono text-meta text-ink-3">
                       {step.duration_ms}ms
                     </span>

@@ -41,8 +41,14 @@ const ACRONYMS: Record<string, string> = {
   url: 'URL',
 };
 
+/**
+ * `DATA_CONFLICT_INCOME` → "Data conflict income", `qr_signature_valid` →
+ * "QR signature valid". The first letter is forced to upper case because the
+ * backend is not consistent about it: enums arrive shouting, check names arrive
+ * in snake_case, and a label that starts lower case reads like a fragment.
+ */
 export const humanize = (value: string) =>
-  (value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, ' ')).replace(
+  (value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, ' ')).replace(
     /\b[a-z]+\b/gi,
     (w) => ACRONYMS[w.toLowerCase()] ?? w,
   );
@@ -109,6 +115,106 @@ const BAND_WORD: Record<string, string> = {
   LOW: 'Low',
 };
 
+const RESULT_WORD: Record<string, string> = {
+  PASS: 'Pass',
+  FAIL: 'Fail',
+  UNKNOWN: 'Unknown',
+};
+
+/**
+ * docs/04 §5 — the 20 canonical fact keys, in the officer's vocabulary.
+ *
+ * `humanize` alone gets most of the way (`applicant_cnic` → "Applicant CNIC")
+ * but not all of it: it renders `applicant_dob` as "Applicant dob" and
+ * `death_cert_doc_verified` as "Death cert doc verified". These are the words
+ * the officer uses out loud, so they are written down rather than derived.
+ */
+const FACT_LABEL: Record<string, string> = {
+  applicant_cnic: 'Applicant CNIC',
+  applicant_full_name: 'Applicant name',
+  applicant_dob: 'Date of birth',
+  applicant_age_years: 'Age',
+  applicant_is_alive: 'Applicant alive',
+  applicant_cnic_valid: 'CNIC not expired',
+  applicant_district: 'District',
+  marital_status_widow: 'Recorded as widowed',
+  spouse_death_verified: 'Spouse death verified',
+  spouse_full_name: 'Spouse name',
+  spouse_cnic: 'Spouse CNIC',
+  children_under_18: 'Children under 18',
+  household_size: 'Household size',
+  monthly_income_pkr: 'Monthly income',
+  poverty_score: 'Poverty score',
+  has_conflicting_active_grant: 'Another active grant',
+  payout_phone: 'Payout phone',
+  cnic_doc_verified: 'CNIC document verified',
+  death_cert_doc_verified: 'Death certificate verified',
+  citizen_has_active_dept_consent: 'Department consent active',
+};
+
+/** docs/04 §5 "Primary Sources". */
+const SOURCE_WORD: Record<string, string> = {
+  DOCUMENT_QR: 'Document QR',
+  DOCUMENT_OCR: 'Document OCR',
+  SELF_DECLARED: 'Self-declared',
+  IDENTITY_REGISTRY: 'Identity registry',
+  CIVIL_REGISTRY: 'Civil registry',
+  HOUSEHOLD_SURVEY: 'Household survey',
+  BENEFITS_REGISTRY: 'Benefits registry',
+  DOCUMENT_VERIFIER: 'Document check',
+  CONSENT_ENGINE: 'Consent engine',
+  DERIVED: 'Derived',
+};
+
+const ENTERED_BY_WORD: Record<string, string> = {
+  CITIZEN: 'Citizen',
+  HELPER: 'Helper',
+  OFFICER: 'Officer',
+  SYSTEM: 'System',
+};
+
+/** docs/06 §2.2 — the complete operator set, as the symbols they mean. */
+const OP_WORD: Record<string, string> = {
+  eq: '=',
+  neq: '≠',
+  gt: '>',
+  gte: '≥',
+  lt: '<',
+  lte: '≤',
+  in: 'in',
+  not_in: 'not in',
+};
+
+/** docs/06 §6 flag catalogue plus the §5.2 match outcome. */
+const FLAG_WORD: Record<string, string> = {
+  TAMPER_SUSPECTED: 'Document tamper suspected',
+  DUPLICATE_APPLICATION: 'Duplicate application',
+  IDENTITY_CONFLICT: 'Identity conflict',
+  POSSIBLE_DUPLICATE_IDENTITY: 'Possible duplicate identity',
+  APPLICANT_DECEASED: 'Applicant recorded deceased',
+  PAYOUT_ACCOUNT_SHARED: 'Payout account shared',
+  DATA_CONFLICT_INCOME: 'Income sources disagree',
+  PAYOUT_NAME_MISMATCH: 'Payout name mismatch',
+  IDENTITY_NAME_VARIANT_CHECK: 'Name variant needs a check',
+  HELPER_HIGH_VELOCITY: 'Helper filing unusually fast',
+  LOW_ASSURANCE_CONSENT: 'Low-assurance consent',
+  CNIC_GENDER_MISMATCH: 'CNIC gender mismatch',
+  CNIC_NOT_IN_REGISTRY: 'CNIC not in registry',
+};
+
+/** `agent_steps[].step` — the pipeline stages, in order. */
+const STEP_WORD: Record<string, string> = {
+  identity_lookup: 'Identity lookup',
+  document_verify: 'Document check',
+  household_survey: 'Household survey',
+  benefits_check: 'Benefits check',
+  rule_engine: 'Rule engine',
+  anomaly_scan: 'Anomaly scan',
+  priority_score: 'Priority score',
+  explain: 'Explanation',
+  OFFICER_DECISION: 'Officer decision',
+};
+
 const word = (map: Record<string, string>, value: string) => map[value] ?? humanize(value);
 
 export const statusWord = (value: string) => word(STATUS_WORD, value);
@@ -118,6 +224,13 @@ export const roleWord = (value: string) => word(ROLE_WORD, value);
 export const ruleStatusWord = (value: string) => word(RULE_STATUS_WORD, value);
 export const mockModeWord = (value: string) => word(MOCK_MODE_WORD, value);
 export const bandWord = (value: string) => word(BAND_WORD, value);
+export const resultWord = (value: string) => word(RESULT_WORD, value);
+export const factLabel = (value: string) => word(FACT_LABEL, value);
+export const sourceWord = (value: string) => word(SOURCE_WORD, value);
+export const enteredByWord = (value: string) => word(ENTERED_BY_WORD, value);
+export const opWord = (value: string) => OP_WORD[value] ?? value;
+export const flagWord = (value: string) => word(FLAG_WORD, value);
+export const stepWord = (value: string) => word(STEP_WORD, value);
 
 export function PageHeader({
   title,

@@ -6,14 +6,17 @@ import {
   Card,
   CardTitle,
   Chip,
+  enteredByWord,
   ErrorState,
+  factLabel,
   humanize,
   Loading,
   PageHeader,
   routeWord,
+  sourceWord,
   statusWord,
 } from '../ui';
-import { renderFactValue } from '../pages/CaseEvidence';
+import { formatFactValue } from '../pages/CaseEvidence';
 
 /** Console timestamps: day, month, hour, minute. Seconds never help a reader. */
 const stamp = (iso: string) =>
@@ -43,6 +46,13 @@ function Pillar({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+/** The three models a decision can cite, named the way the console names them. */
+const MODEL_LABEL: Record<string, string> = {
+  router: 'Router',
+  scam: 'Scam model',
+  doc: 'Document model',
+};
 
 function Hash({ label, value }: { label: string; value: string }) {
   return (
@@ -165,10 +175,17 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 <Hash label="Rule version id" value={decision.rule_version_id} />
                 <Hash label="Rule hash" value={decision.rule_content_hash} />
                 <Hash label="Input snapshot hash" value={decision.input_snapshot_hash} />
-                <Hash
-                  label="Model versions"
-                  value={JSON.stringify(decision.model_versions)}
-                />
+                <div className="border-b border-ink/[0.06] py-2 last:border-b-0">
+                  <dt className="text-meta text-ink-3">Model versions</dt>
+                  <dd className="mt-0.5 space-y-0.5">
+                    {Object.entries(decision.model_versions).map(([name, version]) => (
+                      <p key={name} className="flex items-baseline justify-between gap-3 text-meta">
+                        <span className="text-ink-2">{MODEL_LABEL[name] ?? humanize(name)}</span>
+                        <span className="font-mono text-ink-3">{version}</span>
+                      </p>
+                    ))}
+                  </dd>
+                </div>
               </dl>
             </Card>
           </div>
@@ -213,7 +230,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
           <tbody>
             {facts.map(([key, fact]) => (
               <tr key={key}>
-                <td className="font-mono text-meta text-ink-2">{key}</td>
+                <td className="text-meta text-ink-2">{factLabel(key)}</td>
                 <td>
                   {fact.value === null ? (
                     <span className="inline-flex flex-wrap items-baseline gap-2">
@@ -225,16 +242,16 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                       )}
                     </span>
                   ) : (
-                    <span className="num font-mono text-caption font-medium text-ink">
-                      {renderFactValue(fact.value)}
+                    <span className="tabular-nums text-caption font-medium text-ink">
+                      {formatFactValue(key, fact.value)}
                     </span>
                   )}
                 </td>
                 <td className="text-meta text-ink-3">
-                  {fact.source ? humanize(fact.source) : '—'}
+                  {fact.source ? sourceWord(fact.source) : '—'}
                 </td>
                 <td className="text-meta text-ink-3">
-                  {fact.entered_by ? humanize(fact.entered_by) : '—'}
+                  {fact.entered_by ? enteredByWord(fact.entered_by) : '—'}
                 </td>
               </tr>
             ))}

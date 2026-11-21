@@ -1,6 +1,20 @@
 import type { DraftAnswer, FactObject, FactState, RuleTraceEntry } from '../../shared/api/types';
-import { bandWord, Card, Chip, routeWord } from '../ui';
+import {
+  bandWord,
+  Card,
+  Chip,
+  enteredByWord,
+  factLabel,
+  flagWord,
+  opWord,
+  resultWord,
+  routeWord,
+  sourceWord,
+} from '../ui';
 import { IconWarning } from '../../shared/ui/Icons';
+import { dayMonth } from '../../shared/lib/dates';
+import { formatCnic, formatPhonePk } from '../../shared/lib/cnic';
+import { pkr } from '../../shared/lib/money';
 
 /**
  * Officer evidence renderers — docs/11 §6.1, docs/04 §5, docs/06 §2.
@@ -14,6 +28,10 @@ import { IconWarning } from '../../shared/ui/Icons';
  * is a gap in the paper. So UNKNOWN is drawn as an em-dash with the reason in
  * small type underneath — never as a filled badge, which would make missing
  * information look like a finding.
+ *
+ * The vocabulary rule: nothing here prints a contract value. `monthly_income_pkr`
+ * is "Monthly income", `SELF_DECLARED` is "Self-declared", `lte` is "≤",
+ * `HUMAN_REVIEW` is "Human review". The officer is reading a case, not a schema.
  */
 
 type FactLike = DraftAnswer | FactObject;
@@ -31,12 +49,47 @@ export function resolveFactState(fact: FactLike): FactState {
   return fact.value === null || fact.value === undefined ? 'UNKNOWN' : 'KNOWN';
 }
 
-/** Render a known value without ever turning `false`/`0` into a dash. */
+/**
+ * Render a known value without ever turning `false`/`0` into a dash.
+ *
+ * Booleans become yes/no because "spouse death verified: true" is a database
+ * row and "spouse death verified: yes" is an answer. Lists become a comma
+ * series so a district allow-list reads as districts, not as JSON.
+ */
 export function renderFactValue(value: unknown): string {
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'boolean') return value ? 'yes' : 'no';
   if (value === null || value === undefined) return '—';
+  if (Array.isArray(value)) return value.map((v) => renderFactValue(v)).join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+/**
+ * The same value, shaped by the fact it belongs to.
+ *
+ * A date of birth arrives as `1978-04-12` and a payout number as
+ * `03001234042` — both correct on the wire, both unreadable on a screen. The
+ * fact key is the only thing that knows which is which, so it is passed in.
+ */
+export function formatFactValue(key: string | null | undefined, value: unknown): string {
+  if (typeof value === 'number' && key?.endsWith('_pkr')) return pkr(value);
+  if (typeof value === 'string') {
+    if (key?.endsWith('_dob')) return dayMonth(value, 'en');
+    if (key === 'payout_phone') return formatPhonePk(value);
+    if (key?.endsWith('_cnic')) return formatCnic(value);
+  }
+  return renderFactValue(value);
+}
+
+/**
+ * Mono is for identifiers, not for prose. A CNIC, an IBAN and a reference
+ * number are strings you compare character by character; a name, a district and
+ * a date are strings you read. Everything numeric gets tabular figures instead.
+ */
+function valueClass(value: unknown): string {
+  if (typeof value === 'number') return 'num tabular-nums';
+  if (typeof value === 'string' && /^[A-Z0-9-]{9,}$/.test(value)) return 'num font-mono';
+  return 'tabular-nums';
 }
 
 function sourceTone(source: string | null | undefined): 'ok' | 'info' | 'warn' | 'neutral' {
@@ -58,7 +111,7 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
 
   return (
     <tr className={fact.conflict ? 'bg-warn-wash' : undefined}>
-      <td className="font-mono text-meta text-ink-2">{factKey}</td>
+      <td className="text-caption text-ink">{factLabel(factKey)}</td>
       <td>
         {unknown ? (
           <span className="inline-flex flex-wrap items-baseline gap-2">
@@ -68,20 +121,21 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
             )}
           </span>
         ) : (
-          <span className="num font-mono text-caption font-medium text-ink">
-            {renderFactValue(fact.value)}
+          <span className={`${valueClass(fact.value)} text-caption font-medium text-ink`}>
+            {formatFactValue(factKey, fact.value)}
           </span>
         )}
         {fact.conflict && (
           <p className="mt-1">
-            <Chip tone="danger">conflict</Chip>
+            <Chip tone="danger">Sources disagree</Chip>
           </p>
         )}
         {alternatives.length > 0 && (
           <ul className="mt-1 space-y-0.5">
             {alternatives.map((alt, i) => (
               <li key={`${alt.source}-${i}`} className="text-meta text-ink-3">
-                also {renderFactValue(alt.value)} · {alt.source} · {alt.entered_by}
+                also {formatFactValue(factKey, alt.value)} · {sourceWord(alt.source ?? '')} ·{' '}
+                {enteredByWord(alt.entered_by)}
               </li>
             ))}
           </ul>
@@ -89,12 +143,12 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
       </td>
       <td>
         {fact.source ? (
-          <Chip tone={sourceTone(fact.source)}>{fact.source}</Chip>
+          <Chip tone={sourceTone(fact.source)}>{sourceWord(fact.source)}</Chip>
         ) : (
           <span className="text-caption text-ink-3">—</span>
         )}
         <p className="mt-1 text-meta text-ink-3">
-          {fact.entered_by ?? '—'}
+          {fact.entered_by ? enteredByWord(fact.entered_by) : '—'}
           {confidence && <span className="num"> · {confidence}</span>}
         </p>
       </td>
@@ -164,10 +218,19 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
   const askEn = entry.result === 'UNKNOWN' ? (entry.ask_prompt_en ?? null) : null;
   const askUr = entry.result === 'UNKNOWN' ? (entry.ask_prompt_ur ?? null) : null;
   const tone = RESULT_TONE[entry.result] ?? RESULT_FALLBACK;
-  const expression = entry.fact
-    ? `${entry.fact}${entry.op ? ` ${entry.op}` : ''}${
-        entry.value !== undefined && entry.value !== null ? ` ${renderFactValue(entry.value)}` : ''
-      }`
+
+  // The predicate, in words: "Monthly income ≤ 25,000". This is the rule the
+  // engine actually ran, so it stays visible — but as a sentence, not as DSL.
+  const predicate = entry.fact
+    ? [
+        factLabel(entry.fact),
+        entry.op ? opWord(entry.op) : null,
+        entry.value !== undefined && entry.value !== null
+          ? formatFactValue(entry.fact, entry.value)
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
     : null;
 
   return (
@@ -179,23 +242,28 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
         </div>
         <span className="inline-flex shrink-0 items-center gap-1.5">
           <span className={`live-dot ${tone.dot}`} aria-hidden />
-          <span className={`text-meta font-medium ${tone.text}`}>{entry.result}</span>
+          <span className={`text-meta font-medium ${tone.text}`}>{resultWord(entry.result)}</span>
         </span>
       </div>
 
-      {expression && <p className="mt-1 font-mono text-meta text-ink-3">{expression}</p>}
+      {predicate && <p className="mt-1 text-meta text-ink-3">{predicate}</p>}
 
       <p className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-0.5 text-meta text-ink-2">
         <span>
           actual{' '}
-          <span className="num font-mono font-medium text-ink">{renderFactValue(entry.actual)}</span>
-        </span>
-        <span>
-          expected{' '}
-          <span className="num font-mono font-medium text-ink">
-            {renderFactValue(entry.expected)}
+          <span className={`${valueClass(entry.actual)} font-medium text-ink`}>
+            {formatFactValue(entry.fact, entry.actual)}
           </span>
         </span>
+        {/* On a pass the actual already equals the expected; printing both is noise. */}
+        {entry.result !== 'PASS' && (
+          <span>
+            expected{' '}
+            <span className={`${valueClass(entry.expected)} font-medium text-ink`}>
+              {formatFactValue(entry.fact, entry.expected)}
+            </span>
+          </span>
+        )}
         {entry.required_for_auto && <span className="text-ink-3">required for auto</span>}
       </p>
 
@@ -213,9 +281,9 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
       )}
 
       {(entry.on_fail || entry.on_unknown) && (
-        <p className="mt-1.5 flex flex-wrap gap-x-4 font-mono text-meta text-ink-3">
-          {entry.on_fail && <span>fail → {entry.on_fail}</span>}
-          {entry.on_unknown && <span>unknown → {entry.on_unknown}</span>}
+        <p className="mt-1.5 flex flex-wrap gap-x-4 text-meta text-ink-3">
+          {entry.on_fail && <span>on fail → {routeWord(entry.on_fail)}</span>}
+          {entry.on_unknown && <span>on unknown → {routeWord(entry.on_unknown)}</span>}
         </p>
       )}
     </li>
@@ -304,7 +372,7 @@ export function WhyThisRoute({
         <ul className="mt-3 space-y-1">
           {flags.map((flag) => (
             <li key={flag.code} className="text-meta text-ink">
-              <span className="font-mono font-medium">{flag.code}</span>
+              <span className="font-medium">{flagWord(flag.code)}</span>
               {flag.detail && <span className="text-ink-3"> — {flag.detail}</span>}
             </li>
           ))}

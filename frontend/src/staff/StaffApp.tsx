@@ -16,6 +16,7 @@ import {
   IconShield,
   IconUsers,
 } from '../shared/ui/Icons';
+import { roleWord } from './ui';
 
 const QueuePage = lazy(() => import('./pages/QueuePage'));
 const CaseReviewPage = lazy(() => import('./pages/CaseReviewPage'));
@@ -155,7 +156,7 @@ export default function StaffApp({ children }: { children: ReactNode }) {
         <div className="border-t border-ink/[0.08] px-5 py-3">
           <p className="truncate text-caption text-ink">{session?.user.full_name}</p>
           <p className="mt-0.5 text-meta text-ink-3">
-            {role} · {session?.tenant?.code ?? 'PLATFORM'}
+            {roleWord(role)} · {session?.tenant?.code ?? 'Platform scope'}
           </p>
         </div>
       </aside>
