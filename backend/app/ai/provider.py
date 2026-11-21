@@ -908,7 +908,7 @@ class LiveOpenAIProvider:
         timeout_s: float = 10.0,
         tts_voice: str = "flux-ambreen-ur",
     ) -> None:
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY") or get_settings().openai_api_key
         self.chat_model = chat_model
         self.stt_model = stt_model
         self.embed_model = embed_model
