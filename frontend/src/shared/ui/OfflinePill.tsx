@@ -5,9 +5,12 @@ import { IconCloud, IconRefresh } from './Icons';
 /**
  * Connectivity state — docs/11 §5.3.
  *
- * Online · Offline (X saved locally) · Syncing. Text is always present; colour
- * is never the only signal. The online state is a dot and a word, not a green
- * pill, because it is the least interesting thing on the screen.
+ * Offline (X saved locally) · Syncing. Text is always present; colour is never
+ * the only signal.
+ *
+ * Online renders nothing. A permanent "Online" dot is the least interesting
+ * thing on the screen and it was costing the header 60px on a 390px phone; the
+ * states worth interrupting for are the two that need the citizen to act.
  */
 export function OfflinePill({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
@@ -40,10 +43,5 @@ export function OfflinePill({ compact = false }: { compact?: boolean }) {
     );
   }
 
-  return (
-    <span className="inline-flex items-center gap-1.5 text-meta font-medium text-ink-3">
-      <span aria-hidden className="live-dot bg-positive" />
-      {t('common.online')}
-    </span>
-  );
+  return null;
 }
