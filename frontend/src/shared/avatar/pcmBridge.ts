@@ -135,3 +135,67 @@ export async function decodeToPcm24kMono(audioBuffer: ArrayBuffer): Promise<Int1
   return pcm;
 }
 
+/** Resolve after `ms`, or reject as soon as `signal` aborts. */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * Stream PCM to the avatar in 100 ms chunks, paced to real time.
+ *
+ * Pacing matters: the vendor buffers what it receives, so dumping a 20-second
+ * clip in one tick makes the avatar's mouth run ahead of the audio it is
+ * supposed to be matching. One chunk per 100 ms keeps the face and the voice on
+ * the same clock. `signal` is checked between chunks so a barge-in stops within
+ * one chunk instead of after the whole clip.
+ */
+export async function streamPcmToAnam(
+  stream: PcmSink,
+  pcm: Int16Array,
+  signal: AbortSignal,
+): Promise<void> {
+  const samplesPerChunk = CHUNK_BYTES / 2;
+  for (let offset = 0; offset < pcm.length; offset += samplesPerChunk) {
+    if (signal.aborted) return;
+    const slice = pcm.subarray(offset, Math.min(offset + samplesPerChunk, pcm.length));
+    // `slice.buffer` may be the whole array's buffer, so copy the exact window.
+    const bytes = new Uint8Array(slice.length * 2);
+    const view = new DataView(bytes.buffer);
+    for (let index = 0; index < slice.length; index += 1) {
+      view.setInt16(index * 2, slice[index] ?? 0, true);
+    }
+    stream.sendAudioChunk(bytes);
+    await sleep(100, signal);
+  }
+  if (!signal.aborted) stream.endSequence();
+}
+
+/** Fetch a clip and decode it, or `null` when it is missing or unplayable. */
+export async function fetchPcm(
+  url: string,
+  signal: AbortSignal,
+): Promise<Int16Array | null> {
+  try {
+    const response = await fetch(url, { signal });
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    if (signal.aborted || buffer.byteLength === 0) return null;
+    return await decodeToPcm24kMono(buffer);
+  } catch {
+    return null;
+  }
+}
