@@ -1,21 +1,36 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
+/**
+ * Buttons.
+ *
+ * Quiet chrome: one accent, used only on the primary action. Secondary is a
+ * raised surface with a hairline, not a 2px frame. Press feedback is a 0.97
+ * scale at 120ms — 0.99 is invisible, so it reads as no feedback at all.
+ *
+ * Sizes keep the docs/11 §2.4 accessibility floors: `primary` is 56px tall,
+ * `tap` is 48px. `sm` is for staff consoles only, where the pointer is a mouse.
+ */
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
 type Size = 'primary' | 'tap' | 'sm';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-teal-600 text-white border-teal-700 hover:bg-teal-700 active:bg-teal-800',
-  secondary: 'bg-white text-ink border-ink/25 hover:bg-teal-50 active:bg-teal-100',
-  danger: 'bg-[#B42318] text-white border-[#8F1B12] hover:bg-[#9A1D14] active:bg-[#7E1710]',
-  success: 'bg-[#0F7B3F] text-white border-[#0B5F31] hover:bg-[#0B5F31]',
-  ghost: 'bg-transparent text-ink border-transparent hover:bg-ink/5',
+  primary:
+    'bg-accent text-white border-transparent hover:bg-accent-ink disabled:hover:bg-accent',
+  secondary:
+    'bg-card text-ink border-ink/[0.14] hover:bg-raised disabled:hover:bg-card',
+  danger:
+    'bg-negative text-white border-transparent hover:bg-[#9A1D14] disabled:hover:bg-negative',
+  success:
+    'bg-positive text-white border-transparent hover:bg-[#116B33] disabled:hover:bg-positive',
+  ghost:
+    'bg-transparent text-ink-2 border-transparent hover:bg-raised hover:text-ink disabled:hover:bg-transparent',
 };
 
 const SIZES: Record<Size, string> = {
-  primary: 'min-h-primary px-6 text-lg',
-  tap: 'min-h-tap px-4 text-base',
-  sm: 'min-h-tap px-3 text-sm',
+  primary: 'min-h-primary px-6 text-body-lg',
+  tap: 'min-h-tap px-4 text-body',
+  sm: 'min-h-[36px] px-3 text-caption',
 };
 
 interface CommonProps {
@@ -29,9 +44,8 @@ interface CommonProps {
 
 function classes({ variant = 'primary', size = 'primary', block, className = '' }: CommonProps): string {
   return [
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 font-semibold',
-    'transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50',
-    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700',
+    'press inline-flex items-center justify-center gap-2 rounded-control border font-medium',
+    'disabled:cursor-not-allowed disabled:opacity-45',
     VARIANTS[variant],
     SIZES[size],
     block ? 'w-full' : '',
@@ -56,15 +70,7 @@ export function TapButton({
   );
 }
 
-export function TapLink({
-  to,
-  variant,
-  size,
-  block,
-  icon,
-  children,
-  className,
-}: CommonProps & { to: string }) {
+export function TapLink({ to, variant, size, block, icon, children, className }: CommonProps & { to: string }) {
   return (
     <Link to={to} className={classes({ variant, size, block, children, className })}>
       {icon}

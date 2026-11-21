@@ -1,6 +1,6 @@
 import { useAudio } from '../audio/AudioProvider';
 import { useI18n } from '../i18n/I18nProvider';
-import { IconSpeaker } from './Icons';
+import { IconPause, IconSpeaker } from './Icons';
 
 interface AudioButtonProps {
   /** Manifest key under `public/audio/ur/`. */
@@ -13,8 +13,13 @@ interface AudioButtonProps {
 }
 
 /**
- * The 🔊 affordance required on every citizen screen (docs/11 §2.2).
- * 56×56 px minimum, always present, always silent-safe.
+ * The speaker affordance required on every citizen screen (docs/11 §2.2).
+ * 48×48 px minimum, 56×56 for the large variant, always present, always
+ * silent-safe.
+ *
+ * It is a hairline circle, not a 2px teal ring: it appears on every screen, so
+ * it must not compete with the one primary action. While speaking it swaps to a
+ * pause glyph and a filled surface — a state change, not a looping pulse.
  */
 export function AudioButton({ audioKey, text, label, size = 'md', className = '' }: AudioButtonProps) {
   const { play, speaking, stop } = useAudio();
@@ -26,13 +31,16 @@ export function AudioButton({ audioKey, text, label, size = 'md', className = ''
     <button
       type="button"
       aria-label={accessibleLabel}
+      aria-pressed={speaking}
       title={accessibleLabel}
       onClick={() => (speaking ? stop() : void play(audioKey, text))}
-      className={`${dimension} inline-flex shrink-0 items-center justify-center rounded-full border-2 border-teal-600 bg-white text-teal-700 transition active:scale-95 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
-        speaking ? 'animate-pulse bg-teal-50' : ''
+      className={`${dimension} press inline-flex shrink-0 items-center justify-center rounded-full border ${
+        speaking
+          ? 'border-accent bg-accent text-white'
+          : 'border-ink/[0.14] bg-card text-accent-ink hover:bg-accent-wash'
       } ${className}`}
     >
-      <IconSpeaker size={size === 'lg' ? 28 : 24} />
+      {speaking ? <IconPause size={size === 'lg' ? 22 : 18} /> : <IconSpeaker size={size === 'lg' ? 24 : 20} />}
     </button>
   );
 }

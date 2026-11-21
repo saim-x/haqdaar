@@ -13,11 +13,16 @@ interface CopyCodeProps {
   className?: string;
 }
 
+/**
+ * A code is a figure, not a badge. It sits in mono with tabular figures on a
+ * raised surface, and the copy affordance is the icon — so the chip stays quiet
+ * and the code itself is the thing you read.
+ */
 const TONES: Record<Tone, string> = {
-  teal: 'border-teal-700 bg-teal-600 text-white hover:bg-teal-700',
-  ink: 'border-ink bg-ink text-white hover:bg-ink/90',
-  green: 'border-[#0F7B3F] bg-[#0F7B3F] text-white hover:bg-[#0F7B3F]/90',
-  amber: 'border-amber-500 bg-amber-400 text-[#3B2A00] hover:bg-amber-300',
+  teal: 'border-accent/30 bg-accent-wash text-accent-ink hover:border-accent/60',
+  ink: 'border-ink/[0.14] bg-raised text-ink hover:border-ink/30',
+  green: 'border-positive/30 bg-positive-wash text-positive hover:border-positive/60',
+  amber: 'border-warn/30 bg-warn-wash text-warn hover:border-warn/60',
 };
 
 /**
@@ -86,13 +91,13 @@ export function CopyCode({ value, label, tone = 'teal', size = 'sm', className =
       data-code={value}
       aria-label={`Copy ${label ? `${label} ` : ''}${value}`}
       title={manual ? 'Select the code and press Ctrl+C' : 'Tap to copy'}
-      className={`inline-flex items-center gap-1.5 rounded border font-bold transition ${
-        size === 'md' ? 'min-h-tap px-2.5 text-xs' : 'min-h-[32px] px-2 text-[11px]'
-      } ${copied ? 'border-[#0F7B3F] bg-[#0F7B3F] text-white' : TONES[tone]} ${className}`}
+      className={`press inline-flex items-center gap-1.5 rounded-[6px] border font-medium ${
+        size === 'md' ? 'min-h-tap px-2.5 text-caption' : 'min-h-[32px] px-2 text-meta'
+      } ${copied ? 'border-positive/40 bg-positive-wash text-positive' : TONES[tone]} ${className}`}
     >
-      {copied ? <IconCheck size={13} /> : <IconCopy size={13} />}
-      {label && <span className="font-semibold opacity-80">{label}</span>}
-      <span className="num tracking-wide">{value}</span>
+      {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+      {label && <span className="text-ink-3">{label}</span>}
+      <span className="num font-mono">{value}</span>
       <span className="sr-only" aria-live="polite">
         {copied ? 'Copied to clipboard' : manual ? 'Copy failed — select the code and press Control C' : ''}
       </span>

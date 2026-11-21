@@ -2,9 +2,14 @@ import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
- * RULE-5 / AC-25.1 — a persistent 28 px amber bar on EVERY route.
+ * RULE-5 / AC-25.1 — a persistent 28 px bar on EVERY route.
+ *
  * It is rendered once in the app shell, above the router outlet, so no screen
- * can accidentally ship without it.
+ * can accidentally ship without it. The height is a hard requirement, so the
+ * shell reads it from `--banner-h` rather than hardcoding 28px in three places.
+ *
+ * Restyled as a quiet amber band: a hairline under it, no shadow, and the link
+ * is an underline rather than a second filled chip.
  */
 export function PrototypeBanner() {
   const { t } = useI18n();
@@ -13,12 +18,12 @@ export function PrototypeBanner() {
       role="note"
       data-testid="prototype-banner"
       aria-label={t('banner.text')}
-      className="sticky top-0 z-50 flex h-7 items-center justify-center gap-2 bg-amber-400 px-2 text-[11px] font-semibold leading-none text-[#3B2A00] sm:text-xs"
+      className="sticky top-0 z-50 flex h-7 items-center justify-center gap-2 border-b border-warn/25 bg-warn-wash px-3 text-meta leading-none text-warn"
     >
       <span className="truncate">{t('banner.text')}</span>
       <Link
         to="/transparency"
-        className="shrink-0 rounded px-1.5 py-0.5 underline decoration-2 underline-offset-2 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3B2A00]"
+        className="shrink-0 underline decoration-1 underline-offset-2 transition-colors duration-hover ease-out hover:text-ink"
       >
         {t('banner.link')}
       </Link>

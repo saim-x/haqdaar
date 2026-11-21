@@ -5,7 +5,10 @@ import { IconBadge, IconCheck, IconClock, IconCoin, IconCross, IconDocument, Ico
 
 /**
  * Status = icon + colour + text, never colour alone (docs/11 §2.3).
- * Every status in docs/04 §3.3 has a citizen-facing string and a pictogram.
+ *
+ * The colour lives in a 6px dot and the icon, not in a filled pill. Six
+ * saturated pills on one screen means nothing leads; a dot plus a label keeps
+ * the surface quiet and still carries the meaning three ways.
  */
 type Tone = 'approved' | 'needs' | 'review' | 'waiting' | 'paused' | 'rejected' | 'neutral';
 
@@ -34,14 +37,15 @@ const STYLES: Record<CaseStatus, StatusStyle> = {
   CLOSED: { tone: 'neutral', Icon: IconCheck, key: 'status.CLOSED' },
 };
 
-const TONE_CLASSES: Record<Tone, string> = {
-  approved: 'bg-[#0F7B3F]/10 text-[#0F7B3F] border-[#0F7B3F]/30',
-  needs: 'bg-amber-100 text-amber-700 border-amber-400/50',
-  review: 'bg-[#1D4ED8]/10 text-[#1D4ED8] border-[#1D4ED8]/30',
-  waiting: 'bg-slate-100 text-slate-700 border-slate-400/40',
-  paused: 'bg-[#6D28D9]/10 text-[#6D28D9] border-[#6D28D9]/30',
-  rejected: 'bg-[#B42318]/10 text-[#B42318] border-[#B42318]/30',
-  neutral: 'bg-ink/5 text-ink-soft border-ink/20',
+/** Dot fill and text colour per tone. Text colours all clear 4.5:1 on paper. */
+const TONE: Record<Tone, { dot: string; text: string }> = {
+  approved: { dot: 'bg-positive', text: 'text-positive' },
+  needs: { dot: 'bg-warn', text: 'text-warn' },
+  review: { dot: 'bg-info', text: 'text-info' },
+  waiting: { dot: 'bg-ink-3', text: 'text-ink-2' },
+  paused: { dot: 'bg-paused', text: 'text-paused' },
+  rejected: { dot: 'bg-negative', text: 'text-negative' },
+  neutral: { dot: 'bg-ink-3', text: 'text-ink-2' },
 };
 
 export function statusTone(status: CaseStatus): Tone {
@@ -52,14 +56,28 @@ export function StatusBadge({ status, size = 'md' }: { status: CaseStatus; size?
   const { t } = useI18n();
   const style = STYLES[status] ?? STYLES.DRAFT;
   const { Icon } = style;
-  const dims = size === 'lg' ? 'text-lg px-4 py-3 gap-3' : size === 'sm' ? 'text-xs px-2 py-1 gap-1.5' : 'text-sm px-3 py-2 gap-2';
-  const iconSize = size === 'lg' ? 28 : size === 'sm' ? 14 : 18;
+  const tone = TONE[style.tone];
+
+  const dims =
+    size === 'lg'
+      ? 'gap-2.5 text-lead'
+      : size === 'sm'
+        ? 'gap-1.5 text-meta'
+        : 'gap-2 text-caption';
+  const iconSize = size === 'lg' ? 22 : size === 'sm' ? 14 : 16;
+
   return (
-    <span className={`inline-flex items-center rounded-full border-2 font-semibold ${TONE_CLASSES[style.tone]} ${dims}`}>
+    <span className={`inline-flex items-center font-medium ${tone.text} ${dims}`}>
       <Icon size={iconSize} />
       <span>{t(style.key)}</span>
     </span>
   );
+}
+
+/** A bare dot for dense tables, where the label is already in the next column. */
+export function StatusDot({ status }: { status: CaseStatus }) {
+  const tone = TONE[statusTone(status)];
+  return <span aria-hidden className={`live-dot ${tone.dot}`} />;
 }
 
 export function statusLabelKey(status: CaseStatus): DictKey {
