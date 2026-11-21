@@ -889,3 +889,95 @@ class TestVoiceAndLlmDiscovery:
         assert avatar.resolve_voice_id() == ""
 
 
+class TestCreditGuard:
+    """No test run may ever spend a streaming minute, whatever .env says."""
+
+    def test_pytest_context_forces_the_simulator(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "fake")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "a-real-looking-key")
+        monkeypatch.setattr(settings, "anam_allow_live_in_fake_ai", True)
+        # PYTEST_CURRENT_TEST is set by pytest for the duration of this test.
+        assert avatar._is_fake_mode() is True
+        assert avatar.get_avatar_config()["provider"] == "fake"
+
+    def test_app_env_test_forces_the_simulator(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("AI_PROVIDER", "live")
+        monkeypatch.setattr(settings, "app_env", "test")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "a-real-looking-key")
+        assert avatar._is_fake_mode() is True
+
+    def test_allow_live_in_fake_ai_goes_live_outside_tests(
+        self, monkeypatch: pytest.MonkeyPatch, live_override: None
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "fake")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "a-real-looking-key")
+        monkeypatch.setattr(settings, "anam_allow_live_in_fake_ai", True)
+        assert avatar._is_fake_mode() is False
+        assert avatar.get_avatar_config()["provider"] == "anam"
+
+    def test_allow_live_in_fake_ai_can_be_turned_off(
+        self, monkeypatch: pytest.MonkeyPatch, live_override: None
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "fake")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "a-real-looking-key")
+        monkeypatch.setattr(settings, "anam_allow_live_in_fake_ai", False)
+        assert avatar._is_fake_mode() is True
+        assert avatar.get_avatar_config()["provider"] == "fake"
+
+    def test_no_key_means_the_simulator(
+        self, monkeypatch: pytest.MonkeyPatch, live_override: None
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "fake")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "")
+        assert avatar._is_fake_mode() is True
+
+    def test_live_requested_without_a_key_withdraws_the_guide(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "live")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "")
+        config = avatar.get_avatar_config()
+        assert config["enabled"] is False
+        assert config["provider"] == "fake"
+
+
+class TestConversationalConfig:
+    def test_config_exposes_the_mode_and_the_mic_flag(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "conversational")
+        config = avatar.get_avatar_config()
+        assert config["mode"] == "conversational"
+        assert config["conversational"] is True
+
+    def test_passthrough_is_not_conversational(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "passthrough")
+        config = avatar.get_avatar_config()
+        assert config["conversational"] is False
+
+    def test_fake_session_reports_the_configured_mode(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "conversational")
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["mode"] == "conversational"
+        assert session["conversational"] is True
+        assert session["simulated"] is True
+
+    def test_fake_session_never_carries_a_real_token(self) -> None:
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["session_token"] == avatar.FAKE_SESSION_TOKEN
+        assert settings.anam_api_key not in json.dumps(session)
