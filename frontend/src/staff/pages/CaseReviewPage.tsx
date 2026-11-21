@@ -150,8 +150,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
     mutationFn: () =>
       api.post<{ status: CaseStatus }>(`/officer/cases/${id}/decide`, {
         action,
-        reason_codes: reasonCodes,
-        note,
+        reason_codes: action === 'REJECT' ? reasonCodes : [],
+        note: action === 'APPROVE' ? null : note,
         requested_fields: action === 'REQUEST_INFO' ? requestedFields : [],
         override_amount_pkr: null,
       }),
@@ -263,7 +263,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   );
   if (!caseData) return <><BackToCases /><ErrorState error={new Error('Case not found')} /></>;
 
-  const needsReason = action === 'REJECT' || action === 'APPROVE';
+  const needsReason = action === 'REJECT';
+  const needsExplanation = action === 'REJECT';
   const needsFields = action === 'REQUEST_INFO';
   const unresolvedRules = ruleTrace.filter((entry) => entry.result === 'FAIL' || entry.result === 'UNKNOWN');
   const conflictingFacts = Object.values(facts).filter((fact) => fact.conflict).length;
@@ -687,6 +688,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               </div>
 
               {action && <>
+                {needsReason && <>
                 <p className="mt-4 text-meta text-ink-3">
                   Reason for decision {needsReason && <span className="text-negative">*</span>}
                 </p>
@@ -714,6 +716,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     );
                   })}
                 </div>
+                </>}
 
                 {action === 'REQUEST_INFO' && (
                   <>
@@ -749,19 +752,21 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   </>
                 )}
 
-                <label htmlFor="note" className="mt-4 block text-meta text-ink-3">
-                  Explanation {needsReason && <span className="text-negative">*</span>}
-                </label>
-                <textarea
-                  id="note"
-                  rows={3}
-                  maxLength={2000}
-                  disabled={decide.isPending}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="mt-1.5 text-caption"
-                  placeholder="Write a short explanation."
-                />
+                {action !== 'APPROVE' && <>
+                  <label htmlFor="note" className="mt-4 block text-meta text-ink-3">
+                    Explanation {needsExplanation && <span className="text-negative">*</span>}
+                  </label>
+                  <textarea
+                    id="note"
+                    rows={3}
+                    maxLength={2000}
+                    disabled={decide.isPending}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="mt-1.5 text-caption"
+                    placeholder="Write a short explanation."
+                  />
+                </>}
 
                 {needsSecondApproval && !secondReview && action === 'APPROVE' && (
                   <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta leading-[1.7] text-warn">
