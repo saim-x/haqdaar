@@ -698,3 +698,182 @@ def _fake_session() -> dict[str, Any]:
     }
 
 
+def create_avatar_session(
+    db: Any,
+    user: Any,
+    *,
+    surface: str,
+    lang: str = "ur",
+) -> dict[str, Any]:
+    """Mint a short-lived guide session, or degrade to the audio-only guide.
+
+    ``surface`` is validated by the router; it is recorded in the audit payload so
+    an auditor can see which screen opened a guide and when.
+    """
+    if surface not in SURFACES:
+        raise ValueError(f"unsupported avatar surface: {surface}")
+
+    language = "en" if str(lang).lower().startswith("en") else "ur"
+    tenant_id = getattr(user, "tenant_id", None)
+
+    if _is_fake_mode() or not _live_ready():
+        # The simulator is a first-class mode, not a stub: it is what every test
+        # and every offline demo runs, and it must never touch the network.
+        _record_telemetry(
+            db,
+            tenant_id=tenant_id,
+            latency_ms=0,
+            succeeded=True,
+            error_code=None,
+            provider="fake",
+        )
+        _record_audit(
+            db,
+            user=user,
+            surface=surface,
+            lang=language,
+            provider="fake",
+            succeeded=True,
+            error_code=None,
+        )
+        return _fake_session()
+
+    avatar_id = resolve_avatar_id()
+    if not avatar_id:
+        _record_telemetry(
+            db,
+            tenant_id=tenant_id,
+            latency_ms=0,
+            succeeded=False,
+            error_code="NO_AVATAR",
+            provider="anam",
+        )
+        _record_audit(
+            db,
+            user=user,
+            surface=surface,
+            lang=language,
+            provider="anam",
+            succeeded=False,
+            error_code="NO_AVATAR",
+        )
+        return _degraded("NO_AVATAR")
+
+    url = f"{settings.anam_base_url.rstrip('/')}/v1/auth/session-token"
+    started = time.perf_counter()
+    error_code: str | None = None
+    token: str | None = None
+    voice_id = ""
+    llm_id = ""
+    system_prompt = ""
+    if settings.anam_mode == "conversational":
+        # Discovery is best effort: a blank voice or llm simply means the vendor
+        # falls back to the avatar's own defaults, which is still a working guide.
+        voice_id = resolve_voice_id()
+        llm_id = resolve_llm_id()
+        system_prompt = build_saima_system_prompt(db, surface, language)
+    persona = _persona_config(
+        avatar_id,
+        voice_id=voice_id,
+        llm_id=llm_id,
+        system_prompt=system_prompt,
+        lang=language,
+    )
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            response = client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {settings.anam_api_key.strip()}",
+                    "Content-Type": "application/json",
+                },
+                json={"personaConfig": persona},
+            )
+        if response.status_code in {401, 403}:
+            error_code = "AUTH_FAILED"
+        elif response.status_code == 402:
+            error_code = "QUOTA_EXHAUSTED"
+        elif response.status_code == 429:
+            error_code = "RATE_LIMITED"
+        elif response.status_code >= 400:
+            error_code = "PROVIDER_ERROR"
+        else:
+            payload = response.json()
+            if isinstance(payload, dict):
+                token = payload.get("sessionToken") or payload.get("session_token")
+            if not token:
+                error_code = "NO_TOKEN"
+    except httpx.TimeoutException:
+        error_code = "TIMEOUT"
+    except Exception as exc:  # noqa: BLE001 - any transport failure degrades
+        error_code = "PROVIDER_UNAVAILABLE"
+        logger.warning("avatar session request failed: %s", type(exc).__name__)
+
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    succeeded = bool(token)
+    _record_telemetry(
+        db,
+        tenant_id=tenant_id,
+        latency_ms=latency_ms,
+        succeeded=succeeded,
+        error_code=error_code,
+        provider="anam",
+    )
+    _record_audit(
+        db,
+        user=user,
+        surface=surface,
+        lang=language,
+        provider="anam",
+        succeeded=succeeded,
+        error_code=error_code,
+    )
+
+    if not succeeded:
+        return _degraded(error_code or "PROVIDER_UNAVAILABLE")
+
+    return {
+        "available": True,
+        "provider": "anam",
+        "mode": settings.anam_mode,
+        "conversational": settings.anam_mode == "conversational",
+        "session_token": token,
+        "avatar_id": avatar_id,
+        "sample_rate": SAMPLE_RATE,
+        "max_session_seconds": int(settings.anam_max_session_seconds),
+        "idle_timeout_seconds": int(settings.anam_idle_timeout_seconds),
+    }
+
+
+def reset_avatar_cache() -> None:
+    """Drop every cached catalogue id (tests and admin reconfiguration)."""
+    global _RESOLVED_AVATAR_ID, _RESOLVED_VOICE_ID, _RESOLVED_LLM_ID
+    _RESOLVED_AVATAR_ID = None
+    _RESOLVED_VOICE_ID = None
+    _RESOLVED_LLM_ID = None
+
+
+__all__ = [
+    "ABSTENTION_UR",
+    "DEGRADED_MESSAGE_EN",
+    "DEGRADED_MESSAGE_UR",
+    "DISABLED_LLM_ID",
+    "FAKE_AVATAR_ID",
+    "FAKE_SESSION_TOKEN",
+    "PERSONA_NAME_EN",
+    "PERSONA_NAME_UR",
+    "PREFERRED_AVATAR_NAMES",
+    "PREFERRED_VOICE_LANGUAGES",
+    "PREFERRED_VOICE_NAMES",
+    "PROGRAM_CODE",
+    "SAMPLE_RATE",
+    "SURFACES",
+    "build_saima_system_prompt",
+    "create_avatar_session",
+    "get_avatar_config",
+    "reset_avatar_cache",
+    "resolve_avatar_id",
+    "resolve_llm_id",
+    "resolve_voice_id",
+    "set_test_live_override",
+]
