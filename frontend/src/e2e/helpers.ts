@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { expect, type Page } from '@playwright/test';
 
 /** Shared helpers for the Haqdaar e2e specs. */
@@ -11,11 +12,10 @@ export const PERSONA = {
   nadia: 'auditor_nadia',
 } as const;
 
-/** A 1x1 PNG — enough to exercise the upload + verify pipeline. */
-export const TINY_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64',
-);
+const DEMO_DOCUMENTS = {
+  cnic: 'fatima_cnic_genuine.jpg',
+  deathCertificate: 'ghulam_rasool_death_cert_genuine.jpg',
+} as const;
 
 /** Matches the "I don't know" affordance in either language. */
 export const DONT_KNOW = /don't know|مجھے نہیں معلوم/i;
@@ -103,12 +103,13 @@ export async function expectBanner(page: Page): Promise<void> {
  * Tap the camera button and hand the browser a file — the real user path, so the
  * wizard's own `pendingDocType` bookkeeping is exercised too.
  */
-export async function uploadDoc(page: Page, fileName: string): Promise<void> {
+export async function uploadDoc(page: Page, document: keyof typeof DEMO_DOCUMENTS): Promise<void> {
+  const specimen = new URL(`../../../backend/app/data/demo_docs/${DEMO_DOCUMENTS[document]}`, import.meta.url);
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
     page.getByRole('button', { name: /take photo|take the photo again|تصویر/i }).first().click(),
   ]);
-  await chooser.setFiles({ name: fileName, mimeType: 'image/png', buffer: TINY_PNG });
+  await chooser.setFiles(fileURLToPath(specimen));
 }
 
 /** Fill the wizard from the name step through the payout phone, inclusive. */

@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18nProvider';
 import { AudioButton } from './AudioButton';
-import { IconArrowLeft } from './Icons';
+import { BackLink } from './BackLink';
 
 /**
  * Every citizen screen opens the same way: an optional back link, the page name,
@@ -35,15 +34,7 @@ export function ScreenHeader({
     <header className="enter enter-1 mb-5">
       {(backTo || meta) && (
         <div className="mb-3 flex items-center gap-2">
-          {backTo && (
-            <Link
-              to={backTo}
-              className="press -ms-2 inline-flex min-h-tap items-center gap-1.5 rounded-control px-2 text-caption font-medium text-ink-2 hover:bg-raised hover:text-ink"
-            >
-              <IconArrowLeft size={16} />
-              {backLabel ?? t('common.back')}
-            </Link>
-          )}
+          {backTo && <BackLink to={backTo} label={backLabel ?? t('common.back')} />}
           {meta}
         </div>
       )}

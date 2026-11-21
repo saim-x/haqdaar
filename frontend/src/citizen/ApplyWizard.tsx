@@ -37,6 +37,7 @@ import {
   IconShield,
   IconWarning,
 } from '../shared/ui/Icons';
+import { DashboardBackLink } from './DashboardBackLink';
 import { Counter, DigitPad, DistrictList, IncomeBands, YearPicker } from './wizard/inputs';
 import { VoiceField } from './wizard/VoiceField';
 
@@ -559,12 +560,25 @@ export function ApplyWizard() {
 
   useAutoReadPrompt(`wizard_${step}`, t(STEP_TITLE[step]));
 
+  /**
+   * Autosave runs on a 250ms debounce, so a citizen who types an answer and
+   * immediately taps the way out would lose it. Flush the pending write first.
+   */
+  function saveBeforeLeaving() {
+    if (!hydrated) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    void persist(step, answers).catch(() => undefined);
+  }
+
   /* ------------------------------------------------------------------ render */
 
   if (submitted) {
     return (
       <div className="screen">
-        <div className="card enter mt-6 p-6">
+        <div className="mt-1">
+          <DashboardBackLink />
+        </div>
+        <div className="card enter mt-4 p-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-title font-medium leading-[1.35] text-ink">{t('wizard.submitted')}</h1>
@@ -607,7 +621,13 @@ export function ApplyWizard() {
 
   return (
     <div className="screen pb-28" data-testid="wizard" data-step={step}>
-      <div className="mb-4 mt-1">
+      {/* The tab bar steps aside for the whole flow and the bottom Back button
+          is disabled on the first step, so without this a citizen who opened
+          the form and changed her mind had no way out of it. */}
+      <div className="mb-2 mt-1">
+        <DashboardBackLink onClick={saveBeforeLeaving} />
+      </div>
+      <div className="mb-4">
         <ProgressDots total={total} current={stepIndex} />
       </div>
 

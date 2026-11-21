@@ -37,13 +37,13 @@ test('golden path: Fatima applies for the widow grant end to end', async ({ page
 
   // 12 — CNIC photo
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'cnic_doc');
-  await uploadDoc(page, 'cnic.png');
+  await uploadDoc(page, 'cnic');
   await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
   await wizardNext(page);
 
   // 13 — death certificate photo
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'death_cert_doc');
-  await uploadDoc(page, 'death-cert.png');
+  await uploadDoc(page, 'deathCertificate');
   await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
   await wizardNext(page);
 

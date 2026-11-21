@@ -77,18 +77,13 @@ test('offline sync: submit queues offline and replays exactly once', async ({ pa
   // Documents cannot reach the server offline — the wizard keeps the compressed
   // photo on the phone and queues the upload, so the submit still goes through.
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'cnic_doc');
-  await uploadDoc(page, 'cnic.png');
+  await uploadDoc(page, 'cnic');
   await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
   await wizardNext(page);
 
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'death_cert_doc');
-  const skipDeath = page.getByRole('button', { name: /not with me|ابھی ساتھ نہیں/i });
-  if (await skipDeath.count()) {
-    await skipDeath.first().click();
-  } else {
-    await uploadDoc(page, 'death-cert.png');
-    await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
-  }
+  await uploadDoc(page, 'deathCertificate');
+  await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
   await wizardNext(page);
 
   // ---- submit while offline -------------------------------------------------
@@ -103,15 +98,23 @@ test('offline sync: submit queues offline and replays exactly once', async ({ pa
   expect(await outboxCount(page)).toBeGreaterThan(0);
 
   // ---- reconnect ------------------------------------------------------------
-  await context.setOffline(false);
+  const [submission] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        /\/api\/v1\/cases\/[^/]+\/submit$/.test(response.url()) &&
+        response.request().method() === 'POST' &&
+        response.ok(),
+      { timeout: 90_000 },
+    ),
+    context.setOffline(false),
+  ]);
+  const { reference_code: referenceCode } = (await submission.json()) as { reference_code: string };
+  expect(referenceCode).toMatch(/^HQ-2026-\d{6}$/);
 
   // The outbox drains: the queued row count returns to zero.
   await expect.poll(() => outboxCount(page), { timeout: 90_000, intervals: [1000, 2000, 3000] }).toBe(0);
 
-  // Exactly once: the citizen's case list contains each reference exactly once.
+  // The replayed application appears exactly once in the citizen's case list.
   await page.goto('/c/cases');
-  await expect(page.getByText(/HQ-2026-\d{6}/).first()).toBeVisible({ timeout: 30_000 });
-  const refs = await page.getByText(/HQ-2026-\d{6}/).allTextContents();
-  const unique = new Set(refs);
-  expect(unique.size).toBe(refs.length);
+  await expect(page.getByText(referenceCode, { exact: true })).toHaveCount(1, { timeout: 30_000 });
 });
