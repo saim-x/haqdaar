@@ -984,11 +984,7 @@ export function ApplyWizard() {
         <section className="card enter enter-2 p-5">
           <div className="flex items-center gap-3">
             <AudioButton audioKey="wizard_review" text={t('wizard.review.title')} variant="quiet" />
-            <p className="text-caption leading-[1.7] text-ink-2">
-              {lang === 'ur'
-                ? 'نیچے دیے گئے جوابات چیک کریں۔ ہر جواب کے ساتھ 🔊 دبا کر سن سکتی ہیں۔'
-                : 'Check the answers below. Tap 🔊 beside any answer to hear it.'}
-            </p>
+            <p className="text-caption leading-[1.7] text-ink-2">{t('wizard.review.hint')}</p>
           </div>
 
           <ul className="mt-4 border-y border-ink/[0.08]">

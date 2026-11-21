@@ -165,6 +165,7 @@ export const ur = {
   'wizard.doc.unverifiable': 'تصویر واضح نہیں۔ دوبارہ لیں۔',
   'wizard.review.title': 'اپنی درخواست دیکھیں',
   'wizard.review.submit': 'درخواست جمع کریں',
+  'wizard.review.hint': 'نیچے دیے گئے جوابات چیک کریں۔ ہر جواب کے ساتھ آواز کا نشان دبا کر سن سکتی ہیں۔',
   'wizard.review.offlineNote': 'انٹرنیٹ نہیں ہے۔ درخواست محفوظ ہے اور سگنل آنے پر بھیج دی جائے گی۔',
   'wizard.readback.question': 'کیا یہ درست ہے؟',
   'wizard.readback.yes': 'ہاں، درست ہے',
@@ -196,6 +197,7 @@ export const ur = {
   'consent.requestCorrection': 'درستگی کی درخواست',
   'consent.sourceSelf': 'خود بتایا',
   'consent.sourceRegistry': 'سرکاری ریکارڈ',
+  'consent.sourceUnknown': 'معلوم نہیں',
 
   'scam.title': 'کیا یہ پیغام اصلی ہے؟',
   'scam.subtitle': 'پیغام لکھیں، تصویر بھیجیں یا بولیں۔',
@@ -437,6 +439,7 @@ export const en: Record<DictKey, string> = {
   'wizard.doc.unverifiable': 'Photo is not clear. Please take it again.',
   'wizard.review.title': 'Check your application',
   'wizard.review.submit': 'Submit application',
+  'wizard.review.hint': 'Check the answers below. Tap the speaker beside any answer to hear it.',
   'wizard.review.offlineNote': 'No internet. Your application is saved and will be sent when the signal returns.',
   'wizard.readback.question': 'Is this correct?',
   'wizard.readback.yes': 'Yes, correct',
@@ -468,6 +471,7 @@ export const en: Record<DictKey, string> = {
   'consent.requestCorrection': 'Request correction',
   'consent.sourceSelf': 'Self-declared',
   'consent.sourceRegistry': 'Registry',
+  'consent.sourceUnknown': 'Not known',
 
   'scam.title': 'Is this message real?',
   'scam.subtitle': 'Type the message, send a screenshot, or speak it.',

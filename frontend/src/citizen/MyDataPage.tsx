@@ -214,6 +214,7 @@ export function MyDataPage() {
                 the value the loudest thing on the line. */}
             <ul className="border-y border-ink/[0.08]">
               {group.fields.map(([fieldKey, field]) => {
+                const unknown = field.value === null || field.value === '';
                 const registry = field.source !== 'SELF_DECLARED';
                 const label = fieldLabel(fieldKey, lang);
                 return (
@@ -232,16 +233,29 @@ export function MyDataPage() {
                     >
                       <span className="min-w-0 flex-1">
                         <span className="block text-meta text-ink-3">{label}</span>
-                        {/* `<bdi>` isolates the value without forcing a
-                            direction, so a CNIC stays left-to-right and an
-                            Urdu date stays right-to-left, and the block still
-                            aligns to the start edge either way. */}
-                        <span className="mt-0.5 block break-words font-mono text-body tabular-nums text-ink">
-                          <bdi>{fieldValue(field.value, lang)}</bdi>
-                        </span>
-                        <span className="mt-0.5 block text-meta text-ink-3">
-                          {registry ? t('consent.sourceRegistry') : t('consent.sourceSelf')}
-                        </span>
+                        {/* An unknown value has no provenance to report. The
+                            old row printed "Registry" for it, because a null
+                            source is not SELF_DECLARED — so a field nobody had
+                            answered claimed to come from a government record.
+                            Unknown is a first-class value here: say so. */}
+                        {unknown ? (
+                          <span className="mt-0.5 block text-body text-ink-3">
+                            {t('consent.sourceUnknown')}
+                          </span>
+                        ) : (
+                          <>
+                            {/* `<bdi>` isolates the value without forcing a
+                                direction, so a CNIC stays left-to-right and an
+                                Urdu date stays right-to-left, and the block
+                                still aligns to the start edge either way. */}
+                            <span className="mt-0.5 block break-words font-mono text-body tabular-nums text-ink">
+                              <bdi>{fieldValue(field.value, lang)}</bdi>
+                            </span>
+                            <span className="mt-0.5 block text-meta text-ink-3">
+                              {registry ? t('consent.sourceRegistry') : t('consent.sourceSelf')}
+                            </span>
+                          </>
+                        )}
                       </span>
                       <IconPencil size={16} className="mt-1 shrink-0 text-ink-3" />
                     </button>
