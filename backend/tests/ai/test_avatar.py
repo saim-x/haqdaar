@@ -262,3 +262,104 @@ class TestFakeSession:
         assert telemetry.estimated_cost_usd == 0
 
 
+# --------------------------------------------------------------------------- #
+# live sessions - the exact vendor payload
+# --------------------------------------------------------------------------- #
+class TestLiveSession:
+    def test_passthrough_asks_for_a_mouth_only(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        recorder.post_response = _Response(200, {"sessionToken": "live-token"})
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+
+        assert session["available"] is True
+        assert session["provider"] == "anam"
+        assert session["session_token"] == "live-token"  # noqa: S105 - stub token, not a secret
+        assert session["avatar_id"] == "avatar-test-123"
+
+        method, url, headers, body = recorder.calls[-1]
+        assert method == "POST"
+        assert url == "https://api.anam.ai/v1/auth/session-token"
+        assert headers is not None and headers["Authorization"].startswith("Bearer ")
+        assert body == {
+            "personaConfig": {
+                "avatarId": "avatar-test-123",
+                "enableAudioPassthrough": True,
+            }
+        }
+        # The passthrough payload must not carry an LLM: the avatar cannot speak
+        # for itself, so it must not be given the means to.
+        assert "llmId" not in body["personaConfig"]
+
+    def test_talk_mode_uses_the_customer_client_llm(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "talk")
+        monkeypatch.setattr(settings, "anam_voice_id", "voice-ur-1")
+        recorder.post_response = _Response(200, {"sessionToken": "talk-token"})
+
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["mode"] == "talk"
+
+        _method, _url, _headers, body = recorder.calls[-1]
+        persona = body["personaConfig"]
+        assert persona["llmId"] == "CUSTOMER_CLIENT_V1"
+        assert persona["skipGreeting"] is True
+        assert persona["languageCode"] == "ur"
+        assert persona["voiceId"] == "voice-ur-1"
+        assert "enableAudioPassthrough" not in persona
+
+    def test_talk_mode_omits_an_unset_voice(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "talk")
+        monkeypatch.setattr(settings, "anam_voice_id", "")
+        recorder.post_response = _Response(200, {"sessionToken": "talk-token"})
+        avatar.create_avatar_session(None, _Actor(), surface="ask")
+        _method, _url, _headers, body = recorder.calls[-1]
+        assert "voiceId" not in body["personaConfig"]
+
+    def test_session_token_is_never_the_api_key(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        recorder.post_response = _Response(200, {"sessionToken": "short-lived-token"})
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["session_token"] == "short-lived-token"  # noqa: S105 - stub token
+        assert "test-anam-key-not-real" not in json.dumps(session)
+
+    def test_snake_case_token_is_accepted(
+        self, live: None, recorder: _Recorder
+    ) -> None:
+        recorder.post_response = _Response(200, {"session_token": "snake-token"})
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["session_token"] == "snake-token"  # noqa: S105 - stub token
+
+    def test_live_session_writes_audit_and_telemetry(self, live: None, recorder: _Recorder, real_db: Any) -> None:
+        from sqlalchemy import select
+
+        from app.models.ai import AiTelemetry
+        from app.models.audit import AuditEvent
+
+        recorder.post_response = _Response(200, {"sessionToken": "live-token"})
+        avatar.create_avatar_session(real_db, _Actor(), surface="case_status")
+        real_db.commit()
+
+        event = real_db.execute(
+            select(AuditEvent)
+            .where(AuditEvent.action == "avatar.session_created")
+            .order_by(AuditEvent.seq.desc())
+            .limit(1)
+        ).scalar_one()
+        assert event.payload_json["provider"] == "anam"
+        assert event.payload_json["surface"] == "case_status"
+
+        telemetry = real_db.execute(
+            select(AiTelemetry)
+            .where(AiTelemetry.task_type == "AVATAR_SESSION")
+            .order_by(AiTelemetry.created_at.desc())
+            .limit(1)
+        ).scalar_one()
+        assert telemetry.provider == "anam"
+        assert telemetry.succeeded is True
+
+
