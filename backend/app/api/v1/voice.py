@@ -164,7 +164,8 @@ async def text_to_speech(
     language = _normalise_lang(payload.get("lang"))
 
     try:
-        audio_bytes, mime_type = voice.synthesize(
+        audio_bytes, mime_type = await run_in_threadpool(
+            voice.synthesize,
             db, text, lang=language, tenant_id=api_support.user_tenant(user)
         )
     except Exception as exc:  # pragma: no cover - provider already degrades

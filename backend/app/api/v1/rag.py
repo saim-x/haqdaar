@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from app.ai import api_support, rag
@@ -72,7 +73,8 @@ async def ask(
     program_id = _parse_uuid(payload.get("program_id"))
 
     try:
-        answer = rag.ask(
+        answer = await run_in_threadpool(
+            rag.ask,
             db,
             question,
             program_id=program_id,

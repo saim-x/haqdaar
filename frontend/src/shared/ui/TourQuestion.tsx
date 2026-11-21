@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../api/client';
 import { errorMessage } from '../api/errors';
@@ -12,24 +12,42 @@ export function TourQuestion({ topic, starter }: { topic: string; starter: strin
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState<RagAnswer | null>(null);
   const [error, setError] = useState('');
+  const currentRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    const request = currentRequest.current;
+    currentRequest.current = null;
+    request?.abort();
+  }, []);
 
   async function ask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = question.trim();
     if (busy || !text) return;
+    const request = new AbortController();
+    currentRequest.current = request;
+    const timeout = window.setTimeout(() => request.abort(), 25000);
     setBusy(true);
     setError('');
     setAnswer(null);
     try {
-      setAnswer(await api.post<RagAnswer>('/rag/ask', {
+      const result = await api.post<RagAnswer>('/rag/ask', {
         question: `${text} (${topic})`,
         program_id: null,
         lang,
-      }));
+      }, { signal: request.signal });
+      if (currentRequest.current === request) setAnswer(result);
     } catch (err) {
-      setError(errorMessage(err, lang));
+      if (currentRequest.current === request) {
+        setError(request.signal.aborted
+          ? pick('جواب آنے میں دیر ہو گئی۔ دوبارہ کوشش کریں۔', 'The answer took too long. Try again.')
+          : errorMessage(err, lang));
+      }
     } finally {
-      setBusy(false);
+      window.clearTimeout(timeout);
+      if (currentRequest.current === request) {
+        currentRequest.current = null;
+        setBusy(false);
+      }
     }
   }
 
