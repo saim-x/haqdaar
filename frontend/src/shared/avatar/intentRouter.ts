@@ -41,3 +41,96 @@ interface Rule {
  * and "my data" are frequently said alongside "میرا کیس"; the data-rights
  * destination is the more precise answer when both appear.
  */
+const RULES: Rule[] = [
+  {
+    action: {
+      id: 'apply',
+      route: '/c/apply/new',
+      label_ur: 'درخواست شروع کریں',
+      label_en: 'Start my application',
+      label_sd: 'درخواست شروع ڪريو',
+      icon: 'document',
+    },
+    patterns: [
+      'درخواست',
+      'درواست',
+      'اپلائی',
+      'اپلائ',
+      'apply',
+      'application',
+      'درخواست ڏيان',
+      'درخواست ڏيڻ',
+    ],
+  },
+  {
+    action: {
+      id: 'my_data',
+      route: '/c/my-data',
+      label_ur: 'میرا ڈیٹا دیکھیں',
+      label_en: 'See my data',
+      label_sd: 'منهنجو ڊيٽا ڏسو',
+      icon: 'user',
+    },
+    patterns: ['میرا ڈیٹا', 'ميرا ڈیٹا', 'ڈیٹا', 'my data', 'my information', 'منهنجو ڊيٽا', 'ڊيٽا'],
+  },
+  {
+    action: {
+      id: 'cases',
+      route: '/c/cases',
+      label_ur: 'میرے کیس دیکھیں',
+      label_en: 'See my cases',
+      label_sd: 'منهنجا ڪيس ڏسو',
+      icon: 'list',
+    },
+    patterns: [
+      'کیس',
+      'ڪيس',
+      'case',
+      'status',
+      'حالت',
+      'رقم کب',
+      'رقم ڪڏهن',
+      'پیسے',
+      'پئسا',
+      'money',
+      'payment',
+    ],
+  },
+  {
+    action: {
+      id: 'consent',
+      route: '/c/consent',
+      label_ur: 'اجازت کا انتظام کریں',
+      label_en: 'Manage my permissions',
+      label_sd: 'اجازت سنڀاليو',
+      icon: 'shield',
+    },
+    patterns: ['اجازت', 'رضامندی', 'consent', 'permission', 'اجازت نامو', 'رضامندي'],
+  },
+  {
+    action: {
+      id: 'scam_check',
+      route: '/scam-check',
+      label_ur: 'پیغام جعلی ہے یا نہیں، چیک کریں',
+      label_en: 'Check if a message is fake',
+      label_sd: 'پيغام جعلي آهي يا نه، چيڪ ڪريو',
+      icon: 'warning',
+    },
+    patterns: [
+      'جعلی',
+      'جعلي',
+      'فراڈ',
+      'فراڊ',
+      'scam',
+      'fake',
+      'fraud',
+      'دھوکہ',
+      'ٺڳي',
+      'پیغام',
+      'پيغام',
+      'message',
+      'sms',
+    ],
+  },
+];
+
