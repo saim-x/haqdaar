@@ -387,7 +387,7 @@ def synthesize(db: Any, text: str, *, lang: str = "ur", tenant_id: Any = None) -
     return audio, mime
 
 
-def cache_key(text: str, voice: str = "ur-PK-UzmaNeural") -> str:
+def cache_key(text: str, voice: str = "flux-ambreen-ur") -> str:
     return hashlib.sha256(f"{voice}:{text}".encode()).hexdigest()
 
 
