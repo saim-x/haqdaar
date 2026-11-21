@@ -14,8 +14,6 @@
 
 export type AudioManifest = Record<string, string>;
 
-const availableFiles = new Set<string>();
-
 /**
  * Semantic call-site key → canonical registry key (ADR-018).
  * `resolveAudioKey` tries the call-site key first, so when DPI retargets the
@@ -58,19 +56,6 @@ function normalise(json: unknown): AudioManifest {
   const record = json as Record<string, unknown>;
   const out: AudioManifest = {};
 
-  availableFiles.clear();
-  const meta = record._meta;
-  if (meta && typeof meta === 'object') {
-    const files = (meta as Record<string, unknown>).files;
-    if (files && typeof files === 'object') {
-      for (const [key, entry] of Object.entries(files as Record<string, unknown>)) {
-        if (entry && typeof entry === 'object' && (entry as Record<string, unknown>).status !== 'pending') {
-          availableFiles.add(key);
-        }
-      }
-    }
-  }
-
   // Envelope shape: { keys: { "<key>": "<text>" } }
   const nested = record.keys;
   if (nested && typeof nested === 'object') {
@@ -95,7 +80,7 @@ export async function loadManifest(): Promise<AudioManifest> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const res = await fetch('/audio/ur/manifest.json', { cache: 'force-cache' });
+      const res = await fetch('/audio/ur/manifest.json', { cache: 'no-cache' });
       if (!res.ok) return {};
       const json = (await res.json()) as unknown;
       cache = normalise(json);
@@ -116,12 +101,6 @@ export function resolveAudioKey(key: string): string {
   const alias = ALIASES[key];
   if (alias && alias in cache) return alias;
   return key;
-}
-
-/** Synchronous best-effort check once the manifest has loaded. */
-export function hasAudio(key: string): boolean {
-  if (cache === null) return false;
-  return availableFiles.has(resolveAudioKey(key));
 }
 
 export function manifestText(key: string): string | null {

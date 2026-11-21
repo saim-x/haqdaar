@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import { getAccessToken } from '../auth/session';
 import { STORAGE_KEYS } from '../config';
-import { audioUrl, hasAudio, loadManifest, resolveAudioKey } from './manifest';
+import { audioUrl, loadManifest, resolveAudioKey } from './manifest';
 
 /**
  * One shared <audio> element for the whole app.
@@ -38,6 +38,7 @@ function readAutoRead(): boolean {
 export function AudioProvider({ children }: { children: ReactNode }) {
   const elRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const playbackRef = useRef<AbortController | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [autoRead, setAutoReadState] = useState(readAutoRead);
@@ -48,12 +49,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const stop = useCallback(() => {
+    playbackRef.current?.abort();
+    playbackRef.current = null;
     utteranceRef.current = null;
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
     const el = elRef.current;
     if (el) {
+      el.onended = el.onerror = null;
       el.pause();
-      el.currentTime = 0;
+      el.removeAttribute('src');
+      el.load();
     }
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
@@ -62,25 +67,47 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setSpeaking(false);
   }, []);
 
-  const playUrl = useCallback(
-    async (url: string, ownedObjectUrl = false): Promise<boolean> => {
-      stop();
+  const playAudioResponse = useCallback(
+    async (res: Response, signal: AbortSignal): Promise<boolean> => {
+      if (!res.ok || !res.headers.get('Content-Type')?.startsWith('audio/')) return false;
+      const blob = await res.blob();
+      if (signal.aborted || blob.size === 0) return false;
+
+      const url = URL.createObjectURL(blob);
       const el = elRef.current ?? new Audio();
       elRef.current = el;
-      if (ownedObjectUrl) objectUrlRef.current = url;
+      objectUrlRef.current = url;
       el.src = url;
-      el.onended = () => setSpeaking(false);
-      el.onerror = () => setSpeaking(false);
       try {
         await el.play();
+        if (signal.aborted) return false;
+        el.onended = el.onerror = () => {
+          if (!signal.aborted) stop();
+        };
         setSpeaking(true);
         return true;
       } catch {
-        stop();
+        if (!signal.aborted && objectUrlRef.current === url) {
+          URL.revokeObjectURL(url);
+          objectUrlRef.current = null;
+        }
         return false;
       }
     },
     [stop],
+  );
+
+  const playClip = useCallback(
+    async (key: string, signal: AbortSignal): Promise<boolean> => {
+      try {
+        // Read the full clip through the media range path, then play a local blob.
+        const res = await fetch(audioUrl(key), { signal, headers: { Range: 'bytes=0-' } });
+        return await playAudioResponse(res, signal);
+      } catch {
+        return false;
+      }
+    },
+    [playAudioResponse],
   );
 
   const playBrowser = useCallback(
@@ -115,7 +142,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   );
 
   const playDynamic = useCallback(
-    async (text: string): Promise<boolean> => {
+    async (text: string, signal: AbortSignal): Promise<boolean> => {
       const token = getAccessToken();
       if (!token || !navigator.onLine) return false;
       try {
@@ -123,44 +150,47 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ text, lang: 'ur' }),
+          signal,
         });
         if (!res.ok) return false;
         const type = res.headers.get('Content-Type') ?? '';
         if (type.includes('application/json')) {
           const json = (await res.json()) as { audio_url?: string; url?: string };
           const url = json.audio_url ?? json.url;
-          return url ? playUrl(url) : false;
+          return url ? await playAudioResponse(await fetch(url, { signal }), signal) : false;
         }
         // The fake provider returns a silent WAV. Let the browser speak instead.
         if (type.includes('audio/wav')) return false;
-        if (!type.startsWith('audio/')) return false;
-        const blob = await res.blob();
-        if (blob.size === 0) return false;
-        const objectUrl = URL.createObjectURL(blob);
-        return playUrl(objectUrl, true);
+        return await playAudioResponse(res, signal);
       } catch {
         return false;
       }
     },
-    [playUrl],
+    [playAudioResponse],
   );
 
   const play = useCallback(
     async (key: string | null | undefined, fallbackText?: string | null) => {
+      stop();
+      const playback = new AbortController();
+      playbackRef.current = playback;
+      const { signal } = playback;
       let text = fallbackText ?? null;
       if (key) {
+        if (await playClip(key, signal) || signal.aborted) return;
         const manifest = await loadManifest();
+        if (signal.aborted) return;
         const resolved = resolveAudioKey(key);
         text = manifest[resolved] ?? text;
-        if (hasAudio(resolved) && await playUrl(audioUrl(resolved))) {
+        if (resolved !== key && await playClip(resolved, signal)) {
           return;
         }
       }
-      if (text) {
-        if (!await playDynamic(text)) playBrowser(text, fallbackText);
+      if (text && !signal.aborted) {
+        if (!await playDynamic(text, signal) && !signal.aborted) playBrowser(text, fallbackText);
       }
     },
-    [playUrl, playDynamic, playBrowser],
+    [playClip, playDynamic, playBrowser, stop],
   );
 
   const setAutoRead = useCallback((next: boolean) => {
