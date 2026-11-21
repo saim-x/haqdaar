@@ -833,6 +833,12 @@ export interface RagAnswer {
   model?: string;
   guardrail_triggered?: boolean;
   retrieved?: number;
+  /**
+   * ADR-025: warm spoken-Urdu reframing, present only when the request set
+   * `conversational: true`. It never replaces `answer` - the verbatim grounded
+   * text and its citations are always shown alongside it.
+   */
+  spoken_summary?: string | null;
 }
 
 /** Three-way honesty badge - `backend/app/api/v1/transparency.py` `COMPONENTS`. */
