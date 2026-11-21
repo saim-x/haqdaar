@@ -1,5 +1,5 @@
 import type { DraftAnswer, FactObject, FactState, RuleTraceEntry } from '../../shared/api/types';
-import { Card, CardTitle, Chip } from '../ui';
+import { Card, Chip } from '../ui';
 import { IconWarning } from '../../shared/ui/Icons';
 
 /**
@@ -9,6 +9,11 @@ import { IconWarning } from '../../shared/ui/Icons';
  * but the shipped endpoint may omit either. Every component here is strictly
  * optional — when the field is absent the caller renders the "Why this route"
  * fallback instead, and nothing throws.
+ *
+ * The visual rule for this file: a KNOWN fact is ink on paper, an UNKNOWN fact
+ * is a gap in the paper. So UNKNOWN is drawn as an em-dash with the reason in
+ * small type underneath — never as a filled badge, which would make missing
+ * information look like a finding.
  */
 
 type FactLike = DraftAnswer | FactObject;
@@ -48,40 +53,46 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
   const alternatives = fact.alternatives ?? [];
 
   return (
-    <tr className={`border-b border-ink/5 last:border-0 ${fact.conflict ? 'bg-amber-50' : ''}`}>
-      <td className="px-2 py-1.5 font-mono text-[11px] text-ink-soft">{factKey}</td>
-      <td className="px-2 py-1.5">
+    <tr className={fact.conflict ? 'bg-warn-wash' : undefined}>
+      <td className="font-mono text-meta text-ink-2">{factKey}</td>
+      <td>
         {unknown ? (
-          <span className="inline-flex flex-wrap items-center gap-1">
-            <Chip tone="neutral">UNKNOWN</Chip>
+          <span className="inline-flex flex-wrap items-baseline gap-2">
+            <span className="text-caption text-ink-3">—</span>
             {fact.missing_reason && (
-              <span className="font-mono text-[10px] text-ink-soft">{fact.missing_reason}</span>
+              <span className="font-mono text-meta text-ink-3">{fact.missing_reason}</span>
             )}
           </span>
         ) : (
-          <span className="num text-xs font-semibold text-ink">{renderFactValue(fact.value)}</span>
+          <span className="num font-mono text-caption font-medium text-ink">
+            {renderFactValue(fact.value)}
+          </span>
         )}
         {alternatives.length > 0 && (
-          <ul className="mt-0.5 space-y-0.5">
+          <ul className="mt-1 space-y-0.5">
             {alternatives.map((alt, i) => (
-              <li key={`${alt.source}-${i}`} className="text-[10px] text-ink-soft">
+              <li key={`${alt.source}-${i}`} className="text-meta text-ink-3">
                 also {renderFactValue(alt.value)} · {alt.source} · {alt.entered_by}
               </li>
             ))}
           </ul>
         )}
       </td>
-      <td className="px-2 py-1.5">
+      <td>
         <Chip tone={sourceTone(fact.source)}>{fact.source ?? '—'}</Chip>
       </td>
-      <td className="px-2 py-1.5 text-[11px] text-ink-soft">{fact.entered_by ?? '—'}</td>
-      <td className="num px-2 py-1.5 text-[11px] text-ink-soft">
+      <td className="text-meta text-ink-3">{fact.entered_by ?? '—'}</td>
+      <td className="num text-end font-mono text-meta text-ink-2">
         {typeof fact.source_confidence === 'number' && fact.source_confidence > 0
           ? `${Math.round(fact.source_confidence * 100)}%`
           : '—'}
       </td>
-      <td className="px-2 py-1.5">
-        {fact.conflict ? <Chip tone="danger">conflict</Chip> : <span className="text-[11px] text-ink-soft">—</span>}
+      <td>
+        {fact.conflict ? (
+          <Chip tone="danger">conflict</Chip>
+        ) : (
+          <span className="text-meta text-ink-3">—</span>
+        )}
       </td>
     </tr>
   );
@@ -94,21 +105,23 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
   const unknowns = entries.filter(([, f]) => resolveFactState(f) === 'UNKNOWN').length;
 
   return (
-    <Card className="overflow-x-auto">
-      <CardTitle
-        hint={`${entries.length} facts · ${unknowns} unknown · ${conflicts} conflict${conflicts === 1 ? '' : 's'}`}
-      >
-        Canonical facts
-      </CardTitle>
-      <table className="w-full min-w-[680px] text-left" data-testid="facts-table">
+    <Card className="overflow-x-auto p-0">
+      <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
+        <h2 className="text-body font-medium text-ink">Canonical facts</h2>
+        <p className="num text-meta text-ink-3">
+          {entries.length} facts · {unknowns} unknown · {conflicts} conflict
+          {conflicts === 1 ? '' : 's'}
+        </p>
+      </div>
+      <table className="ledger min-w-[720px]" data-testid="facts-table">
         <thead>
-          <tr className="border-b border-ink/10 text-[10px] uppercase tracking-wide text-ink-soft">
-            <th className="px-2 py-1">Fact</th>
-            <th className="px-2 py-1">Value</th>
-            <th className="px-2 py-1">Source</th>
-            <th className="px-2 py-1">Entered by</th>
-            <th className="px-2 py-1">Conf.</th>
-            <th className="px-2 py-1">Conflict</th>
+          <tr>
+            <th>Fact</th>
+            <th>Value</th>
+            <th>Source</th>
+            <th>Entered by</th>
+            <th className="text-end">Conf.</th>
+            <th>Conflict</th>
           </tr>
         </thead>
         <tbody>
@@ -117,7 +130,7 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
           ))}
           {entries.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-2 py-3 text-xs text-ink-soft">
+              <td colSpan={6} className="text-caption text-ink-3">
                 No facts recorded on this case yet.
               </td>
             </tr>
@@ -128,61 +141,73 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
   );
 }
 
-function resultTone(result: RuleTraceEntry['result']): 'ok' | 'danger' | 'warn' {
-  return result === 'PASS' ? 'ok' : result === 'FAIL' ? 'danger' : 'warn';
-}
+const RESULT_TONE: Record<string, { dot: string; text: string }> = {
+  PASS: { dot: 'bg-positive', text: 'text-positive' },
+  FAIL: { dot: 'bg-negative', text: 'text-negative' },
+  UNKNOWN: { dot: 'bg-ink-3', text: 'text-ink-3' },
+};
+
+const RESULT_FALLBACK = { dot: 'bg-ink-3', text: 'text-ink-3' };
 
 function TraceRow({ entry }: { entry: RuleTraceEntry }) {
   const label = entry.label_en ?? entry.label_ur ?? null;
   const reasonEn = entry.reason_en ?? entry.fail_reason_en ?? entry.pass_reason_en ?? '';
   const reasonUr = entry.reason_ur ?? entry.fail_reason_ur ?? entry.pass_reason_ur ?? '';
-  const askEn = entry.result === 'UNKNOWN' ? entry.ask_prompt_en ?? null : null;
-  const askUr = entry.result === 'UNKNOWN' ? entry.ask_prompt_ur ?? null : null;
+  const askEn = entry.result === 'UNKNOWN' ? (entry.ask_prompt_en ?? null) : null;
+  const askUr = entry.result === 'UNKNOWN' ? (entry.ask_prompt_ur ?? null) : null;
+  const tone = RESULT_TONE[entry.result] ?? RESULT_FALLBACK;
 
   return (
-    <tr className="border-b border-ink/5 align-top last:border-0">
-      <td className="px-2 py-2">
-        <p className="font-mono text-[11px] font-semibold text-ink">{entry.rule_id}</p>
-        {label && <p className="mt-0.5 text-[11px] text-ink-soft">{label}</p>}
+    <tr>
+      <td>
+        <p className="font-mono text-meta font-medium text-ink">{entry.rule_id}</p>
+        {label && <p className="mt-0.5 text-meta text-ink-2">{label}</p>}
         {entry.fact && (
-          <p className="mt-0.5 font-mono text-[10px] text-ink-soft">
+          <p className="mt-0.5 font-mono text-meta text-ink-3">
             {entry.fact}
             {entry.op ? ` ${entry.op}` : ''}
-            {entry.value !== undefined && entry.value !== null ? ` ${renderFactValue(entry.value)}` : ''}
+            {entry.value !== undefined && entry.value !== null
+              ? ` ${renderFactValue(entry.value)}`
+              : ''}
           </p>
         )}
       </td>
-      <td className="px-2 py-2">
-        <Chip tone={resultTone(entry.result)}>{entry.result}</Chip>
+      <td>
+        <span className="inline-flex items-center gap-1.5">
+          <span className={`live-dot ${tone.dot}`} aria-hidden />
+          <span className={`text-meta ${tone.text}`}>{entry.result}</span>
+        </span>
         {entry.required_for_auto && (
-          <p className="mt-1 text-[10px] font-semibold uppercase text-ink-soft">required for auto</p>
+          <p className="mt-1 text-meta text-ink-3">required for auto</p>
         )}
       </td>
-      <td className="px-2 py-2 text-[11px]">
-        <p className="text-ink">
-          <span className="text-ink-soft">actual </span>
-          <span className="num font-semibold">{renderFactValue(entry.actual)}</span>
+      <td>
+        <p className="text-meta text-ink-2">
+          actual{' '}
+          <span className="num font-mono font-medium text-ink">{renderFactValue(entry.actual)}</span>
         </p>
-        <p className="text-ink">
-          <span className="text-ink-soft">expected </span>
-          <span className="num font-semibold">{renderFactValue(entry.expected)}</span>
+        <p className="text-meta text-ink-2">
+          expected{' '}
+          <span className="num font-mono font-medium text-ink">
+            {renderFactValue(entry.expected)}
+          </span>
         </p>
       </td>
-      <td className="px-2 py-2 text-[11px]">
-        {reasonEn && <p className="text-ink">{reasonEn}</p>}
+      <td>
+        {reasonEn && <p className="text-meta text-ink">{reasonEn}</p>}
         {reasonUr && (
-          <p className="mt-0.5 text-ink-soft" dir="rtl">
+          <p className="mt-0.5 text-meta text-ink-2" dir="rtl">
             {reasonUr}
           </p>
         )}
-        {askEn && <p className="mt-1 text-[10px] font-semibold text-amber-700">asks: {askEn}</p>}
+        {askEn && <p className="mt-1 text-meta text-warn">asks: {askEn}</p>}
         {askUr && (
-          <p className="text-[10px] text-amber-700" dir="rtl">
+          <p className="text-meta text-warn" dir="rtl">
             {askUr}
           </p>
         )}
       </td>
-      <td className="px-2 py-2 text-[10px] text-ink-soft">
+      <td className="text-meta text-ink-3">
         {entry.on_fail && <p>fail → {entry.on_fail}</p>}
         {entry.on_unknown && <p>unknown → {entry.on_unknown}</p>}
       </td>
@@ -200,16 +225,21 @@ export function RuleTraceTable({ trace }: { trace: RuleTraceEntry[] }) {
   const unknown = trace.filter((e) => e.result === 'UNKNOWN').length;
 
   return (
-    <Card className="overflow-x-auto">
-      <CardTitle hint={`${pass} pass · ${fail} fail · ${unknown} unknown`}>Rule trace</CardTitle>
-      <table className="w-full min-w-[760px] text-left" data-testid="rule-trace">
+    <Card className="overflow-x-auto p-0">
+      <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
+        <h2 className="text-body font-medium text-ink">Rule trace</h2>
+        <p className="num text-meta text-ink-3">
+          {pass} pass · {fail} fail · {unknown} unknown
+        </p>
+      </div>
+      <table className="ledger min-w-[820px]" data-testid="rule-trace">
         <thead>
-          <tr className="border-b border-ink/10 text-[10px] uppercase tracking-wide text-ink-soft">
-            <th className="px-2 py-1">Rule</th>
-            <th className="px-2 py-1">Result</th>
-            <th className="px-2 py-1">Actual / expected</th>
-            <th className="px-2 py-1">Reason (EN / UR)</th>
-            <th className="px-2 py-1">Policy</th>
+          <tr>
+            <th>Rule</th>
+            <th>Result</th>
+            <th>Actual / expected</th>
+            <th>Reason (EN / UR)</th>
+            <th>Policy</th>
           </tr>
         </thead>
         <tbody>
@@ -241,38 +271,49 @@ export function WhyThisRoute({
 }) {
   return (
     <Card data-testid="rule-trace-fallback">
-      <CardTitle hint="route + confidence + flags">Why this route</CardTitle>
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-ink-soft">Route</span>
-          <Chip tone={route === 'AUTO_APPROVE' ? 'ok' : route === 'HUMAN_REVIEW' ? 'warn' : 'info'}>
-            {route ?? '—'}
-          </Chip>
-          <span className="text-ink-soft">Confidence</span>
-          <span className="num font-bold text-ink">
-            {confidence !== null && confidence !== undefined ? confidence.toFixed(3) : '—'}
-          </span>
-          <span className="text-ink-soft">Priority</span>
-          <span className="num font-bold text-ink">
-            {priorityBand ?? '—'} ({priorityScore ?? '—'})
-          </span>
+      <h2 className="text-body font-medium text-ink">Why this route</h2>
+
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 border-t border-ink/[0.08] sm:grid-cols-3">
+        <div className="border-b border-ink/[0.06] py-2">
+          <dt className="text-meta text-ink-3">Route</dt>
+          <dd className="mt-0.5">
+            <Chip
+              tone={route === 'AUTO_APPROVE' ? 'ok' : route === 'HUMAN_REVIEW' ? 'warn' : 'info'}
+            >
+              {route ?? '—'}
+            </Chip>
+          </dd>
         </div>
-        {flags.length > 0 && (
-          <ul className="space-y-1">
-            {flags.map((flag) => (
-              <li key={flag.code} className="text-[11px] text-ink">
-                <span className="font-mono font-semibold">{flag.code}</span>
-                {flag.detail && <span className="text-ink-soft"> — {flag.detail}</span>}
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="flex items-start gap-1.5 text-[11px] text-ink-soft">
-          <IconWarning size={13} className="mt-0.5 shrink-0" />
-          Per-rule PASS/FAIL/UNKNOWN is recorded on the decision and is available to auditors in the
-          decision-trace inspector.
-        </p>
-      </div>
+        <div className="border-b border-ink/[0.06] py-2">
+          <dt className="text-meta text-ink-3">Confidence</dt>
+          <dd className="num mt-0.5 font-mono text-caption font-medium text-ink">
+            {confidence !== null && confidence !== undefined ? confidence.toFixed(3) : '—'}
+          </dd>
+        </div>
+        <div className="border-b border-ink/[0.06] py-2">
+          <dt className="text-meta text-ink-3">Priority</dt>
+          <dd className="num mt-0.5 font-mono text-caption font-medium text-ink">
+            {priorityBand ?? '—'} ({priorityScore ?? '—'})
+          </dd>
+        </div>
+      </dl>
+
+      {flags.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {flags.map((flag) => (
+            <li key={flag.code} className="text-meta text-ink">
+              <span className="font-mono font-medium">{flag.code}</span>
+              {flag.detail && <span className="text-ink-3"> — {flag.detail}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-3 flex items-start gap-2 text-meta leading-[1.7] text-ink-3">
+        <IconWarning size={13} className="mt-1 shrink-0" />
+        Per-rule PASS/FAIL/UNKNOWN is recorded on the decision and is available to auditors in the
+        decision-trace inspector.
+      </p>
     </Card>
   );
 }
