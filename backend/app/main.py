@@ -412,6 +412,139 @@ def create_app() -> FastAPI:
         }
         return JSONResponse(status_code=200 if healthy else 503, content=body)
 
+    @app.get(
+        "/metrics",
+        tags=["ops"],
+        summary="Prometheus metrics",
+        response_class=Response,
+        include_in_schema=False,
+    )
+    def metrics() -> Response:
+        """Prometheus text exposition.
+
+        ``/health`` answers "is this instance able to serve?" for a load balancer.
+        This answers "what is this instance doing?" for a dashboard, which is a
+        different question and needs a different shape: counters and gauges that a
+        scraper can diff over time, not a single boolean.
+
+        Every series is derived from the database, so a metric cannot report a
+        number the system does not actually hold. A failure to read returns the
+        ``up`` gauge at 0 rather than an empty body — a scrape that silently
+        returns nothing looks identical to a healthy instance with no traffic.
+        """
+        lines: list[str] = []
+
+        def gauge(name: str, value: float, help_text: str, **labels: str) -> None:
+            if not any(line.startswith(f"# HELP {name} ") for line in lines):
+                lines.append(f"# HELP {name} {help_text}")
+                lines.append(f"# TYPE {name} gauge")
+            rendered = ",".join(f'{key}="{val}"' for key, val in labels.items())
+            suffix = f"{{{rendered}}}" if rendered else ""
+            lines.append(f"{name}{suffix} {value}")
+
+        def counter(name: str, value: float, help_text: str, **labels: str) -> None:
+            if not any(line.startswith(f"# HELP {name} ") for line in lines):
+                lines.append(f"# HELP {name} {help_text}")
+                lines.append(f"# TYPE {name} counter")
+            rendered = ",".join(f'{key}="{val}"' for key, val in labels.items())
+            suffix = f"{{{rendered}}}" if rendered else ""
+            lines.append(f"{name}{suffix} {value}")
+
+        db_ok, _ = _check_database()
+        worker_ok, _ = _check_worker()
+        uploads_ok, _ = _check_uploads()
+
+        gauge("haqdaar_up", 1, "1 when the process is serving requests")
+        gauge("haqdaar_database_up", int(db_ok), "1 when the database answers SELECT 1")
+        gauge("haqdaar_worker_up", int(worker_ok), "1 when a worker heartbeat is fresh")
+        gauge("haqdaar_uploads_writable", int(uploads_ok), "1 when the upload root is writable")
+
+        db = SessionLocal()
+        try:
+            for tenant, status, count in db.execute(
+                text(
+                    "SELECT coalesce(t.code, 'platform'), c.status, count(*) "
+                    "FROM cases c LEFT JOIN tenants t ON t.id = c.tenant_id "
+                    "GROUP BY 1, 2"
+                )
+            ).all():
+                counter(
+                    "haqdaar_cases_total",
+                    float(count),
+                    "Cases by tenant and current status",
+                    tenant=str(tenant),
+                    status=str(status),
+                )
+
+            for tenant, route, count in db.execute(
+                text(
+                    "SELECT coalesce(t.code, 'platform'), d.route_action, count(*) "
+                    "FROM decisions d LEFT JOIN tenants t ON t.id = d.tenant_id "
+                    "GROUP BY 1, 2"
+                )
+            ).all():
+                counter(
+                    "haqdaar_decisions_total",
+                    float(count),
+                    "Decisions by tenant and route action",
+                    tenant=str(tenant),
+                    route=str(route),
+                )
+
+            audit_total = db.execute(text("SELECT count(*) FROM audit_events")).scalar() or 0
+            counter("haqdaar_audit_events_total", float(audit_total), "Rows in the audit chain")
+
+            chunks = db.execute(text("SELECT count(*) FROM rag_chunks")).scalar() or 0
+            gauge("haqdaar_rag_chunks", float(chunks), "Indexed policy chunks")
+
+            llm_calls = db.execute(
+                text(
+                    "SELECT count(*) FROM ai_telemetry "
+                    "WHERE created_at > now() - interval '24 hours'"
+                )
+            ).scalar() or 0
+            counter(
+                "haqdaar_llm_calls_24h",
+                float(llm_calls),
+                "Model calls in the last 24 hours",
+            )
+
+            llm_failures = db.execute(
+                text(
+                    "SELECT count(*) FROM ai_telemetry "
+                    "WHERE created_at > now() - interval '24 hours' AND succeeded IS FALSE"
+                )
+            ).scalar() or 0
+            counter(
+                "haqdaar_llm_failures_24h",
+                float(llm_failures),
+                "Failed model calls in the last 24 hours",
+            )
+
+            heartbeat_age = db.execute(
+                text(
+                    "SELECT EXTRACT(EPOCH FROM (now() - max(last_seen_at))) "
+                    "FROM worker_heartbeats"
+                )
+            ).scalar()
+            gauge(
+                "haqdaar_worker_heartbeat_age_seconds",
+                float(heartbeat_age) if heartbeat_age is not None else -1.0,
+                "Seconds since the newest worker heartbeat, -1 when there has never been one",
+            )
+        except Exception as exc:  # noqa: BLE001
+            # A metric that cannot be read must not take the endpoint down; the
+            # `up` gauge already tells the scraper the instance is degraded.
+            logger.warning("metrics query failed: %s", type(exc).__name__)
+            gauge("haqdaar_metrics_errors", 1, "1 when a metrics query failed")
+        finally:
+            db.close()
+
+        return Response(
+            content="\n".join(lines) + "\n",
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
+
     @app.get("/", include_in_schema=False)
     def root() -> dict[str, Any]:
         return {
@@ -420,6 +553,7 @@ def create_app() -> FastAPI:
             "docs": "/api/docs",
             "openapi": "/api/openapi.json",
             "health": "/health",
+            "metrics": "/metrics",
         }
 
     # Serve the built PWA when the multi-stage image copied it in.

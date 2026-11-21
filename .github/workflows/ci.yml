@@ -1,0 +1,135 @@
+name: CI
+
+# The gates in AGENTS.md §4, run on every push and pull request. Each job is one
+# of the three commands a merge is supposed to be blocked on, so a red check here
+# is the same failure a reviewer would hit locally.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend — ruff + pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: haqdaar
+          POSTGRES_PASSWORD: haqdaar
+          POSTGRES_DB: haqdaar_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U haqdaar -d haqdaar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://haqdaar:haqdaar@127.0.0.1:5433/haqdaar_test
+      AI_PROVIDER: fake
+      DEMO_MODE: "true"
+      APP_ENV: test
+      RATE_LIMIT_ENABLED: "false"
+      RUN_EMBEDDED_WORKER: "false"
+      JWT_SECRET: ci-secret-not-a-real-key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check app tests
+
+      - name: Test
+        working-directory: backend
+        run: python -m pytest tests/ -q
+
+  frontend:
+    name: Frontend — typecheck + build + budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      # The build runs the budget gate as part of `npm run budget`, but the
+      # bundle has to exist first, so build then measure.
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Bundle budget (<= 150 KB gzipped)
+        working-directory: frontend
+        run: npm run budget
+
+  invariants:
+    name: Architectural invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # The invariants are the rules that make the rest of the system trustworthy
+    # (AGENTS.md §3): engine purity, the mock HTTP boundary, no auto-reject, no
+    # raw PII in logs. They run as their own job so a violation is named in the
+    # check list rather than buried in a 1100-test run.
+    env:
+      AI_PROVIDER: fake
+      JWT_SECRET: ci-secret-not-a-real-key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Engine purity + mock boundary + no auto-reject
+        working-directory: backend
+        run: python -m pytest tests/test_invariants.py -q

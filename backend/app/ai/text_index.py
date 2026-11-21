@@ -35,9 +35,27 @@ POLICY_DIR = DATA_DIR / "policy_docs"
 #: docs/04 §4.5 — 64 dims in fake mode, 1536 in live mode.
 FAKE_EMBEDDING_DIM = 64
 
-CHUNK_MIN_TOKENS = 300
+#: Chunking. A chunk is one policy section, because a section is the unit a
+#: citation names and the unit a reader can act on.
+#:
+#: ``CHUNK_MIN_TOKENS`` used to be 300, which merged two or three sections into
+#: every chunk: the chunk titled "3. Required Documents" also carried the tail of
+#: the eligibility list and the whole payout section. Retrieval still worked, but
+#: the heading stopped describing the content, so an answer could be cited to a
+#: section it never came from. 60 keeps a real section whole and still folds a
+#: one-line heading into its neighbour.
+CHUNK_MIN_TOKENS = 60
 CHUNK_MAX_TOKENS = 450
-CHUNK_OVERLAP_TOKENS = 50
+
+#: No overlap between chunks. Overlap is a recall trick for a retriever that
+#: quotes sentences: it lets a match that straddles a boundary be found twice.
+#: Here it did the opposite. Every chunk began with the last 50 tokens of the
+#: previous one, so the chunk titled "3. Required Documents" opened with the tail
+#: of the eligibility list in Urdu — the heading no longer described the content,
+#: and an extractive answer quoted the neighbour's text under this section's
+#: citation. A section is the unit a citation names, so a section is the unit a
+#: chunk holds.
+CHUNK_OVERLAP_TOKENS = 0
 
 #: English and Urdu function words. They appear in every chunk, so they carry no
 #: topical signal and would otherwise dominate a 64-dimension vector.

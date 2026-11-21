@@ -33,7 +33,8 @@
 | **14** | [14-agent-playbooks.md](14-agent-playbooks.md) | Copy-pasteable per-agent briefs (A1–A7): exact owned/forbidden paths, ordered tasks, handoff contracts | Integration Lead + A1–A7 |
 | **15** | [15-demo-and-submission.md](15-demo-and-submission.md) | 8-minute live demo choreography, Real vs Simulated table, judge Q&A defence, submission checklist | Integration Lead, A7 |
 | **16** | [16-traceability-matrix.md](16-traceability-matrix.md) | 100 % mapping from every PDF requirement → Feature → Spec → Owner → Test | Integration Lead, A7 |
-| **17** | [17-decision-log.md](17-decision-log.md) | ADRs 001–010 justifying every frozen architectural choice + change-control process | Everyone |
+| **17** | [17-decision-log.md](17-decision-log.md) | ADRs 001–022 justifying every frozen architectural choice + change-control process | Everyone |
+| **18** | [18-rubric-traceability.md](18-rubric-traceability.md) | All 21 scoring criteria / 100 points → mechanism → file → reproduce command | Integration Lead, A7 |
 
 ---
 
