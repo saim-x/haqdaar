@@ -71,3 +71,76 @@ export interface AvatarSessionResponse {
   fallback?: 'AUDIO_ONLY';
   reason?: string;
   message_ur?: string;
+  message_en?: string;
+}
+
+/** One live turn of the conversation, as the vendor reported it. */
+export interface AvatarTurn {
+  role: 'user' | 'persona';
+  content: string;
+}
+
+/** A one-tap navigation chip. The guide suggests; the citizen taps. */
+export interface GuideAction {
+  id: 'apply' | 'cases' | 'consent' | 'scam_check' | 'my_data';
+  route: string;
+  label_ur: string;
+  label_en: string;
+  label_sd: string;
+  icon: 'document' | 'list' | 'shield' | 'warning' | 'user';
+}
+
+/** One thing for the guide to say. */
+export interface SpeakRequest {
+  text: string;
+  mood: AvatarMood;
+  /** What the caption bar shows. Defaults to `text`. */
+  caption?: string;
+  /** A grounded citation chip, e.g. `Sahara Widow Grant Policy · 3. Documents`. */
+  citation?: string;
+  /** Renders the amber abstention chip instead of a citation. */
+  notSure?: boolean;
+  /** A pre-cached clip key; when present the clip is preferred over TTS. */
+  clipKey?: string;
+}
+
+/** The controller a page holds. `speak` is a no-op while the guide is closed. */
+export interface AvatarGuide {
+  config: AvatarConfig | null;
+  /** Which citizen screen opened the guide; sent to `POST /avatar/session`. */
+  surface: AvatarSurface;
+  active: boolean;
+  /** True when Lite Mode or an offline browser has stepped the guide down. */
+  steppedDown: boolean;
+  /** True when the guide can be offered at all. */
+  available: boolean;
+  /** True when the guide is in two-way voice mode and can take a microphone. */
+  conversational: boolean;
+  start(): void;
+  stop(): void;
+  speak(request: SpeakRequest): void;
+  /**
+   * Send the citizen's own words to the guide. In `conversational` mode this is
+   * what makes her answer out loud; in every other mode it is a no-op and the
+   * page's own `/rag/ask` answer is the whole reply.
+   */
+  sendUserMessage(text: string): void;
+  /**
+   * Set the citation / abstention chips without speaking. Needed in
+   * `conversational` mode, where the vendor owns the voice and the grounded
+   * `/rag/ask` result arrives on a separate channel.
+   */
+  setEvidence(evidence: { citation?: string | null; notSure?: boolean }): void;
+  /** Registered by the stage so the page can speak without importing it. */
+  _register(handler: ((request: SpeakRequest) => void) | null): void;
+  /** Registered by the stage so the page can send text without importing it. */
+  _registerSend(handler: ((text: string) => void) | null): void;
+  /** Registered by the stage so the page can set the chips without importing it. */
+  _registerEvidence(
+    handler: ((evidence: { citation?: string | null; notSure?: boolean }) => void) | null,
+  ): void;
+  /** Registered by the page to receive every live turn the vendor reports. */
+  _registerTurn(listener: ((turn: AvatarTurn) => void) | null): void;
+  /** Called by the stage to fan a live turn out to the page's listener. */
+  _emitTurn(turn: AvatarTurn): void;
+}
