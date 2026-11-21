@@ -140,6 +140,8 @@ export function AskPage() {
     }
   }
 
+  askRef.current = (text: string) => void ask(text);
+
   const readyBlob = capture.state === 'ready' ? capture.blob : null;
   useEffect(() => {
     if (!readyBlob) return;
