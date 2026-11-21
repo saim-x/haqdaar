@@ -121,6 +121,12 @@
 - **Decision (Integration Lead):** `CHUNK_MIN_TOKENS` 300 → 60 and `CHUNK_OVERLAP_TOKENS` 50 → 0, so a chunk is exactly one section and its heading describes all of it. `rag.ask` gains a second, independent gate: `_corpus_coverage(question)` is the share of the question's content words that appear anywhere in the corpus, and below `MIN_CORPUS_COVERAGE = 0.5` the answer is `NOT_SURE` whatever the similarity score. `RagAnswer.coverage` is exposed in `POST /rag/ask` (docs/05 updated) so an abstention can be explained. The extractive answerer quotes one whole paragraph from one source, joins a lead-in ending in `:` to the list it introduces, and answers in the language that was asked.
 - **Rationale:** A citation names a section, so a section is the unit a chunk must hold — otherwise the citation is a lie even when the retrieval score is high. Coverage and similarity answer different questions ("is this about our corpus?" vs "is some chunk similar?"), and only coverage is stable when chunk sizes change; measured over the corpus, in-domain questions cover 0.67–1.00 of their content words and off-topic ones 0.00–0.33.
 
+## ADR-023: Deepgram Flux for Dynamic Urdu TTS
+- **Context:** Dynamic `/voice/tts` used `edge-tts`, but Urdu synthesis returned no audio in the local environment. Missing or changed prompt clips therefore fell through to browser speech, which is not consistently available in Urdu.
+- **Decision (user-approved):** In `AI_PROVIDER=live`, route dynamic Urdu TTS through Deepgram Flux batch REST (`POST /v2/speak`, `flux-ambreen-ur`, MP3), using the existing `DEEPGRAM_API_KEY`. Cache successful responses by voice and text. Keep the `/voice/tts` contract unchanged and retain fake-provider behavior in `AI_PROVIDER=fake`.
+- **Rationale:** The same Urdu voice used for prerecorded clips now covers dynamic text. Deepgram's Flux catalog documents Urdu as Early Access, so write numbers and dates out when natural normalization is needed.
+- **Source:** [Deepgram Flux voices and languages](https://developers.deepgram.com/docs/flux-tts/voices), [Deepgram batch Speak API](https://developers.deepgram.com/docs/flux-tts/batch).
+
 ## Change Control Protocol (During Hackathon)
 1. Minor bug fixes within a single agent's owned files need no ADR.
 2. Any change to a DB column (`04`), API contract (`05`), canonical fact key (`04 §5`), or routing threshold (`06`) MUST be proposed to the Integration Lead, updated in the relevant doc, and logged as `ADR-011+` here before merging.

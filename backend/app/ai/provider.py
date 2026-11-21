@@ -34,6 +34,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
+import httpx
+
 from app.ai import guardrails, paths, urdu_nlp
 from app.config import get_settings
 
@@ -892,7 +894,7 @@ def _silent_wav(text: str, *, sample_rate: int = 8_000) -> bytes:
 # live provider
 # --------------------------------------------------------------------------- #
 class LiveOpenAIProvider:
-    """OpenAI + edge-tts. Every failure raises :class:`ProviderError`."""
+    """OpenAI for AI tasks and Deepgram Flux for Urdu TTS."""
 
     name = "live"
 
@@ -904,7 +906,7 @@ class LiveOpenAIProvider:
         stt_model: str = "whisper-1",
         embed_model: str = "text-embedding-3-small",
         timeout_s: float = 10.0,
-        tts_voice: str = "ur-PK-UzmaNeural",
+        tts_voice: str = "flux-ambreen-ur",
     ) -> None:
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
         self.chat_model = chat_model
@@ -1209,44 +1211,57 @@ class LiveOpenAIProvider:
     # -- TTS --------------------------------------------------------------- #
     def synthesize_urdu_tts(self, text: str) -> bytes:
         started = time.perf_counter()
+        settings = get_settings()
+        api_key = settings.deepgram_api_key.strip()
+        if not api_key:
+            raise ProviderError(
+                "DEEPGRAM_API_KEY is not set",
+                code="NO_DEEPGRAM_API_KEY",
+                retryable=False,
+            )
+
         cache_dir = _tts_cache_dir()
         digest = hashlib.sha256(f"{self.tts_voice}:{text}".encode()).hexdigest()
         cached = cache_dir / f"{digest}.mp3"
         if cached.exists():
             _emit(
                 task_type="VOICE_TTS",
-                provider="live",
-                model_name="edge-tts",
+                provider="deepgram",
+                model_name=self.tts_voice,
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 input_tokens=len((text or "").split()),
             )
             return cached.read_bytes()
 
         try:
-            import asyncio
-
-            import edge_tts  # type: ignore
-
-            async def _render() -> bytes:
-                communicate = edge_tts.Communicate(text, self.tts_voice)
-                chunks: list[bytes] = []
-                async for chunk in communicate.stream():
-                    if chunk.get("type") == "audio":
-                        chunks.append(chunk["data"])
-                return b"".join(chunks)
-
-            audio = asyncio.run(_render())
+            response = httpx.post(
+                "https://api.deepgram.com/v2/speak",
+                params={"model": self.tts_voice, "encoding": "mp3"},
+                headers={
+                    "Authorization": f"Token {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={"text": text},
+                timeout=self.timeout_s,
+            )
+            response.raise_for_status()
         except Exception as exc:
-            raise ProviderError(f"edge-tts failed: {exc}", code="TTS_FAILED") from exc
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            code = "DEEPGRAM_TTS_HTTP" if status else "DEEPGRAM_TTS_FAILED"
+            message = f"Deepgram TTS request failed (HTTP {status})" if status else "Deepgram TTS request failed"
+            raise ProviderError(message, code=code) from exc
 
+        audio = response.content
         if not audio:
-            raise ProviderError("edge-tts returned no audio", code="TTS_EMPTY")
+            raise ProviderError("Deepgram returned no audio", code="TTS_EMPTY")
+        if not response.headers.get("content-type", "").startswith("audio/"):
+            raise ProviderError("Deepgram returned a non-audio response", code="TTS_INVALID_MEDIA")
         cache_dir.mkdir(parents=True, exist_ok=True)
         cached.write_bytes(audio)
         _emit(
             task_type="VOICE_TTS",
-            provider="live",
-            model_name="edge-tts",
+            provider="deepgram",
+            model_name=self.tts_voice,
             latency_ms=int((time.perf_counter() - started) * 1000),
             input_tokens=len((text or "").split()),
         )
