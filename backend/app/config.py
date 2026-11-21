@@ -75,6 +75,36 @@ class Settings(BaseSettings):
     # --- Audit chain (docs/09 §5.1) -----------------------------------------
     audit_chain_lock_key: int = 99887766
 
+    # --- Interactive video guide (ADR-025) -----------------------------------
+    # Three modes, one face:
+    #   ``conversational`` - the vendor listens to the citizen's Urdu over WebRTC
+    #       and answers in its own voice. True two-way conversation, and the only
+    #       mode that needs no Deepgram/OpenAI key of ours.
+    #   ``passthrough`` - the avatar is a mouth only: it lip-syncs the Urdu PCM
+    #       this system already produced. Zero vendor text, zero hallucination.
+    #   ``talk`` - the documented single-turn fallback.
+    # ``anam_enabled`` is False by default so no environment reaches the vendor
+    # unless someone deliberately turns it on, and the free tier (30 min/month,
+    # 3 min/session) is never spent by a page load.
+    anam_enabled: bool = False
+    anam_api_key: str = ""
+    anam_avatar_id: str = ""
+    anam_voice_id: str = ""
+    anam_llm_id: str = ""
+    anam_mode: Literal["conversational", "passthrough", "talk"] = "conversational"
+    anam_base_url: str = "https://api.anam.ai"
+    #: 165 s, not 180 s: the free tier cuts the stream at 180 s, so the client
+    #: warns at 145 s and renews before the vendor can drop the call.
+    anam_max_session_seconds: int = 165
+    anam_idle_timeout_seconds: int = 90
+    #: ``AI_PROVIDER=fake`` normally means "no vendor calls at all", which is what
+    #: keeps CI free. A developer who has pasted a real ``ANAM_API_KEY`` still
+    #: wants to see the real avatar while the rest of the AI layer stays fake, so
+    #: this flag lets the guide go live on its own. It is ignored inside pytest
+    #: (``PYTEST_CURRENT_TEST``) and when ``APP_ENV=test``, so a test run can
+    #: never spend a streaming minute no matter how the shell is configured.
+    anam_allow_live_in_fake_ai: bool = True
+
     @field_validator("upload_dir", "static_dir", mode="after")
     @classmethod
     def _resolve_path(cls, value: Path) -> Path:
