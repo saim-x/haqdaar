@@ -22,6 +22,10 @@ interface VoiceFieldProps {
  * value is shown, spoken back in Urdu, and only written when the citizen taps ✅.
  * When the microphone is unavailable this component renders nothing at all —
  * voice is an accelerator, never a single point of failure.
+ *
+ * The read-back is the one place this screen raises its voice: a hairline card
+ * with the parsed value at 24px mono, and two giant buttons. Nothing else on the
+ * step competes with it.
  */
 export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFieldProps) {
   const { t, lang } = useI18n();
@@ -60,22 +64,24 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
 
   if (capture.state === 'unsupported' || capture.state === 'denied') return null;
 
+  const recording = capture.state === 'recording';
+
   return (
     <div className="mt-3">
       {!parsed && (
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => (capture.state === 'recording' ? capture.stop() : void capture.start())}
+            onClick={() => (recording ? capture.stop() : void capture.start())}
             disabled={busy}
-            className={`inline-flex min-h-primary flex-1 items-center justify-center gap-2 rounded-2xl border-2 text-base font-bold ${
-              capture.state === 'recording'
-                ? 'border-[#B42318] bg-[#B42318] text-white'
-                : 'border-teal-600 bg-white text-teal-700'
-            } disabled:opacity-60`}
+            className={`press inline-flex min-h-primary flex-1 items-center justify-center gap-2 rounded-control border text-body font-medium disabled:opacity-60 ${
+              recording
+                ? 'border-negative bg-negative text-white'
+                : 'border-ink/[0.14] bg-card text-ink hover:bg-raised'
+            }`}
           >
-            <IconMic size={22} />
-            {capture.state === 'recording'
+            <IconMic size={20} className={recording ? '' : 'text-accent-ink'} />
+            {recording
               ? `${t('wizard.voice.listening')} ${capture.seconds}s`
               : busy
                 ? t('common.loading')
@@ -86,32 +92,32 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
       )}
 
       {error && (
-        <p role="alert" className="mt-2 text-xs font-semibold text-[#B42318]">
+        <p role="alert" className="mt-2 text-meta font-medium text-negative">
           {error}
         </p>
       )}
 
       {parsed && (
-        <div className="rounded-2xl border-2 border-teal-600 bg-teal-50 p-3">
-          <p className="text-[11px] font-bold uppercase text-teal-800">{t('wizard.readback.question')}</p>
-          <div className="mt-1 flex items-center gap-2">
-            <p className="num flex-1 text-xl font-bold text-ink" dir="auto">
+        <div className="card enter p-4">
+          <p className="text-meta text-ink-3">{t('wizard.readback.question')}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <p className="num flex-1 font-mono text-title-lg font-medium text-ink" dir="auto">
               {parsed.parsed_value === null || parsed.parsed_value === ''
                 ? t('wizard.voice.notUnderstood')
                 : String(parsed.parsed_value)}
             </p>
             <AudioButton audioKey={null} text={parsed.readback_ur} />
           </div>
-          <p className="mt-1 text-[11px] text-ink-soft">{parsed.transcript}</p>
+          <p className="mt-1 text-meta leading-[1.7] text-ink-3">{parsed.transcript}</p>
 
-          <div className="mt-2 flex gap-2">
+          <div className="mt-4 flex gap-2">
             <button
               type="button"
               onClick={() => {
                 setParsed(null);
                 capture.reset();
               }}
-              className="inline-flex min-h-tap flex-1 items-center justify-center gap-1 rounded-xl border-2 border-ink/20 bg-white text-sm font-bold text-ink"
+              className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-ink/[0.14] bg-card text-body font-medium text-ink hover:bg-raised"
             >
               <IconCross size={16} />
               {t('wizard.readback.no')}
@@ -124,7 +130,7 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
                 setParsed(null);
                 capture.reset();
               }}
-              className="inline-flex min-h-tap flex-1 items-center justify-center gap-1 rounded-xl border-2 border-[#0B5F31] bg-[#0F7B3F] text-sm font-bold text-white disabled:opacity-50"
+              className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-transparent bg-positive text-body font-medium text-white hover:bg-[#116B33] disabled:opacity-45"
             >
               <IconCheck size={16} />
               {t('wizard.readback.yes')}
