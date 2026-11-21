@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, request } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
@@ -37,11 +37,29 @@ const TONE: Record<string, { dot: string; text: string }> = {
 
 const TONE_FALLBACK = { dot: 'bg-ink-3', text: 'text-ink-2' };
 
+function errorSummary(error: string | null): string {
+  if (!error) return 'No error recorded.';
+  const text = error.toLowerCase();
+  if (text.includes('timeout') || text.includes('timed out')) return 'A service took too long to respond. The system may retry this job.';
+  if (text.includes('connection') || text.includes('unavailable') || text.includes('refused')) return 'A required service could not be reached. Check service health, then retry if the job is stopped.';
+  if (text.includes('consent')) return 'The required permission could not be confirmed. Review the citizen’s consent before retrying.';
+  if (text.includes('not found') || text.includes('does not exist')) return 'A record needed for this task could not be found. Check that record before retrying.';
+  return 'The task stopped because of an error. See technical details below.';
+}
+
+function payloadDetails(payload: Record<string, unknown>) {
+  return Object.entries(payload).filter(([key, value]) =>
+    /case_id|document_id|complaint_id|program_id|decision_id|rule_version_id|correlation_id|amount_pkr/.test(key)
+    && (typeof value === 'string' || typeof value === 'number'),
+  );
+}
+
 /** Jobs queue - docs/11 §6.2.4. Retry a DEAD job without touching the DB. */
 export default function JobsPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<JobStatus | ''>('');
   const [message, setMessage] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['admin-jobs', status],
@@ -57,11 +75,13 @@ export default function JobsPage() {
 
   const retry = useMutation({
     mutationFn: (id: string) => api.post(`/admin/jobs/${id}/retry`),
+    onMutate: (id) => setRetryingId(id),
     onSuccess: () => {
       setMessage('Job re-queued.');
       void queryClient.invalidateQueries({ queryKey: ['admin-jobs'] });
     },
     onError: (err) => setMessage(errorMessage(err, 'en')),
+    onSettled: () => setRetryingId(null),
   });
 
   if (query.isLoading) return <Loading />;
@@ -124,11 +144,11 @@ export default function JobsPage() {
         <table className="ledger min-w-[820px]">
           <thead>
             <tr>
-              <th>Type</th>
+              <th>Task</th>
               <th>Status</th>
               <th className="text-end">Attempts</th>
-              <th>Run after</th>
-              <th>Last error</th>
+              <th>Next run</th>
+              <th>Issue</th>
               <th />
             </tr>
           </thead>
@@ -136,7 +156,8 @@ export default function JobsPage() {
             {query.data?.items.map((job) => {
               const tone = TONE[job.status] ?? TONE_FALLBACK;
               return (
-                <tr key={job.id}>
+                <Fragment key={job.id}>
+                <tr>
                   <td className="text-meta font-medium text-ink">{humanize(job.job_type)}</td>
                   <td>
                     <span className="inline-flex items-center gap-1.5">
@@ -158,20 +179,65 @@ export default function JobsPage() {
                     })}
                   </td>
                   <td className="max-w-[260px] truncate text-meta text-ink-3">
-                    {job.last_error ?? '-'}
+                    {job.last_error ? errorSummary(job.last_error) : '-'}
                   </td>
                   <td className="text-end">
                     {job.status === 'DEAD' && (
                       <button
                         type="button"
                         onClick={() => retry.mutate(job.id)}
+                        disabled={retryingId !== null}
                         className="press min-h-[30px] rounded-[7px] border border-ink/[0.12] px-2 text-meta text-ink-2 hover:bg-raised hover:text-ink"
                       >
-                        Retry
+                        {retryingId === job.id ? 'Retrying…' : 'Retry'}
                       </button>
                     )}
                   </td>
                 </tr>
+                <tr>
+                  <td colSpan={6} className="py-0">
+                    <details className="px-3 pb-2">
+                      <summary className="min-h-9 cursor-pointer py-2 text-meta font-medium text-accent-ink">
+                        Show details
+                      </summary>
+                      <dl className="grid gap-x-5 gap-y-2 rounded-control bg-raised/60 p-3 text-meta sm:grid-cols-2">
+                        <div>
+                          <dt className="text-ink-3">Created</dt>
+                          <dd className="text-ink">{new Date(job.created_at).toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-ink-3">Last updated</dt>
+                          <dd className="text-ink">{new Date(job.updated_at).toLocaleString()}</dd>
+                        </div>
+                        {job.locked_at && (
+                          <div>
+                            <dt className="text-ink-3">Picked up by worker</dt>
+                            <dd className="text-ink">{new Date(job.locked_at).toLocaleString()}</dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="text-ink-3">Attempts</dt>
+                          <dd className="text-ink">{job.attempts} of {job.max_attempts}</dd>
+                        </div>
+                        {payloadDetails(job.payload ?? {}).map(([key, value]) => (
+                          <div key={key} className="min-w-0">
+                            <dt className="text-ink-3">{humanize(key)}</dt>
+                            <dd className="break-all font-mono text-ink">{String(value)}</dd>
+                          </div>
+                        ))}
+                        {job.last_error && (
+                          <div className="sm:col-span-2">
+                            <dt className="text-ink-3">Technical error</dt>
+                            <dd className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-control bg-card p-2 font-mono text-meta text-ink">
+                              {job.last_error}
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
+                    </details>
+                  </td>
+                </tr>
+                </Fragment>
               );
             })}
             {query.data?.items.length === 0 && (
