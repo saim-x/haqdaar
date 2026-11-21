@@ -131,7 +131,7 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
       : null;
 
   return (
-    <tr id={`case-fact-${factKey}`} className={`scroll-mt-24 ${fact.conflict ? 'bg-warn-wash' : ''}`}>
+    <tr id={`case-fact-${factKey}`} className={`scroll-mt-24 target:bg-accent-wash ${fact.conflict ? 'bg-warn-wash' : ''}`}>
       <td className="text-caption text-ink">{factLabel(factKey)}</td>
       <td>
         {unknown ? (

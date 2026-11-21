@@ -83,6 +83,20 @@ const ACTIONS = [
 
 type ActionKey = (typeof ACTIONS)[number]['key'];
 
+// Older and seeded handoff notes contain prose instead of field references.
+const HANDOFF_FIELDS: [RegExp, string][] = [
+  [/\bincome\b|DATA_CONFLICT_INCOME/i, 'monthly_income_pkr'],
+  [/date of birth|applicant_dob/i, 'applicant_dob'],
+  [/spouse(?:'s)? name|spouse_full_name/i, 'spouse_full_name'],
+  [/applicant(?:'s)? name|registry name|registered name|spelling variant|IDENTITY_CONFLICT|IDENTITY_NAME_VARIANT_CHECK/i, 'applicant_full_name'],
+  [/\bcnic\b|POSSIBLE_DUPLICATE_IDENTITY|DUPLICATE_APPLICATION/i, 'applicant_cnic'],
+  [/payout|raast|alias|retry the payment/i, 'payout_phone'],
+  [/household (?:size|composition)/i, 'household_size'],
+  [/death record|death certificate/i, 'spouse_death_verified'],
+  [/applicant(?:_is_alive| recorded deceased)|APPLICANT_DECEASED/i, 'applicant_is_alive'],
+  [/consent/i, 'citizen_has_active_dept_consent'],
+];
+
 function BackToCases() {
   return (
     <Link
@@ -359,7 +373,6 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     marker: 'bg-info',
                     skin: 'border-info/20 bg-raised/60 sm:col-span-2',
                     empty: 'No follow-up checks suggested.',
-                    followUp: true,
                     items: caseData.ai_case_note.suggested_checks,
                   },
                   {
@@ -367,7 +380,6 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     marker: 'bg-warn',
                     skin: 'border-warn/25 bg-warn-wash/50',
                     empty: 'No uncertainties recorded.',
-                    followUp: false,
                     items: caseData.ai_case_note.uncertain,
                   },
                   {
@@ -375,10 +387,9 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     marker: 'bg-positive',
                     skin: 'border-positive/20 bg-positive-wash/50',
                     empty: 'No findings marked as verified.',
-                    followUp: false,
                     items: caseData.ai_case_note.verified,
                   },
-                ].map(({ label, marker, skin, empty, followUp, items }) => (
+                ].map(({ label, marker, skin, empty, items }) => (
                   <section key={label} className={`min-w-0 rounded-control border p-3 sm:p-4 ${skin}`}>
                     <h3 className="flex items-center gap-2 text-caption font-semibold text-ink">
                       <span className={`live-dot ${marker}`} aria-hidden />
@@ -395,6 +406,18 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                             item === `Ask the applicant for: ${entry.ask_prompt_en || entry.label_en}`,
                           );
                           const fact = rule?.fact;
+                          const conflictFact = item.match(/^CONFLICTING_FACT_(.+)$/i)?.[1]?.toLowerCase();
+                          const document = /printed name|signed QR|CNIC (?:image|photo)|TAMPER_SUSPECTED/i.test(item)
+                            ? caseData.documents.find((doc) => doc.doc_type === 'CNIC_FRONT' && doc.verify_status === 'TAMPER_SUSPECTED')
+                              ?? caseData.documents.find((doc) => doc.doc_type === 'CNIC_FRONT')
+                            : undefined;
+                          const exactField = fact ?? conflictFact;
+                          const relatedFields = exactField && Object.hasOwn(facts, exactField)
+                            ? [exactField]
+                            : HANDOFF_FIELDS.filter(([pattern]) => pattern.test(item)).map(([, key]) => key);
+                          const visibleFields = relatedFields.filter((key) =>
+                            Object.hasOwn(facts, key) && (!document || key !== 'applicant_cnic'),
+                          );
                           const prefix = rule ? `${rule.rule_id}:` : '';
                           const description = prefix && item.startsWith(prefix)
                             ? item.slice(prefix.length).trim()
@@ -402,15 +425,18 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                           return (
                             <li key={item} className="break-words py-2 text-caption leading-relaxed text-ink first:pt-0 last:pb-0">
                               <p>{description || item}</p>
-                              {fact && Object.hasOwn(facts, fact) ? (
-                                <a href={`#case-fact-${fact}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
-                                  See {factLabel(fact)}
-                                </a>
-                              ) : followUp && (
-                                <a href="#case-review-evidence" className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
-                                  Review application evidence
-                                </a>
-                              )}
+                              <div className="flex flex-wrap gap-x-4">
+                                {document && (
+                                  <a href={`#case-document-${document.id}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
+                                    See CNIC document
+                                  </a>
+                                )}
+                                {visibleFields.map((key) => (
+                                  <a key={key} href={`#case-fact-${key}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
+                                    See {factLabel(key)}
+                                  </a>
+                                ))}
+                              </div>
                             </li>
                           );
                         })}
@@ -436,7 +462,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             </div>
             <ul>
               {caseData.documents.map((doc) => (
-                <li key={doc.id} className="border-b border-ink/[0.06] px-4 py-3 last:border-b-0">
+                <li id={`case-document-${doc.id}`} key={doc.id} className="scroll-mt-24 border-b border-ink/[0.06] px-4 py-3 last:border-b-0 target:bg-accent-wash">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-caption font-medium text-ink">
                       {humanize(doc.doc_type)}
