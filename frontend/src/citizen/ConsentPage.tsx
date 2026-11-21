@@ -157,13 +157,13 @@ export function ConsentPage() {
       )}
 
       {active.length === 0 && grants.isSuccess && (
-        <div className="card enter enter-2 px-6 py-10 text-center">
+        <div data-tour="my-data" className="card enter enter-2 px-6 py-10 text-center">
           <IconUsers size={28} className="mx-auto text-ink-3" />
           <p className="mt-3 text-body text-ink-2">{t('consent.empty')}</p>
         </div>
       )}
 
-      <ul className="enter enter-2 space-y-3">
+      <ul data-tour={active.length > 0 ? 'my-data' : undefined} className="enter enter-2 space-y-3">
         {active.map((grant) => (
           <li key={grant.id} className="card p-5">
             <div className="flex items-start justify-between gap-3">
@@ -317,7 +317,6 @@ export function ConsentPage() {
 
       <Link
         to="/c/my-data"
-        data-tour="my-data"
         className="mt-6 flex min-h-tap items-center justify-center text-center text-caption font-medium text-accent-ink underline decoration-1 underline-offset-4"
       >
         {isCitizen ? t('consent.myData') : t('helper.familyData')}

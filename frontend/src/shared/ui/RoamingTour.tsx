@@ -26,7 +26,15 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   const panel = useRef<HTMLElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
-  const [step, setStep] = useState<number | null>(null);
+  const sessionStepKey = `${storageKey}:active-step`;
+  const [step, setStep] = useState<number | null>(() => {
+    try {
+      const stored = sessionStorage.getItem(sessionStepKey);
+      if (stored === null) return null;
+      const saved = Number(stored);
+      return Number.isInteger(saved) && saved >= 0 && saved < pages.length ? saved : null;
+    } catch { return null; }
+  });
   const [position, setPosition] = useState<TourPosition | null>(null);
   const [asking, setAsking] = useState(false);
   const [seen, setSeen] = useState(() => {
@@ -90,6 +98,13 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
 
   const running = step !== null;
   useEffect(() => {
+    const modal = dialog.current;
+    if (running && modal && !modal.open) {
+      try { modal.showModal(); } catch { /* The browser may already be opening the dialog. */ }
+    }
+  }, [running]);
+
+  useEffect(() => {
     if (!running) return;
     panel.current?.querySelector('button')?.focus({ preventScroll: true });
     return stop;
@@ -106,6 +121,7 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
     stop();
     setAsking(false);
     setStep(index);
+    try { sessionStorage.setItem(sessionStepKey, String(index)); } catch { /* Session storage may be disabled. */ }
     if (route !== next.to) navigate(next.to, { replace: true });
   }
 
@@ -113,6 +129,7 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
     const tryCurrentPage = dialog.current?.returnValue === 'try';
     stop();
     setStep(null);
+    try { sessionStorage.removeItem(sessionStepKey); } catch { /* Session storage may be disabled. */ }
     setPosition(null);
     markSeen();
     if (tryCurrentPage) {
