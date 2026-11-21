@@ -200,3 +200,65 @@ class TestConfig:
         assert "api_key" not in rendered
 
 
+# --------------------------------------------------------------------------- #
+# fake sessions - the zero-credit path
+# --------------------------------------------------------------------------- #
+class TestFakeSession:
+    def test_envelope_is_complete_and_simulated(self) -> None:
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["available"] is True
+        assert session["provider"] == "fake"
+        assert session["simulated"] is True
+        assert session["session_token"] == avatar.FAKE_SESSION_TOKEN
+        assert session["avatar_id"] == avatar.FAKE_AVATAR_ID
+        assert session["sample_rate"] == 24000
+        assert session["max_session_seconds"] == 165
+        assert session["idle_timeout_seconds"] == 90
+
+    def test_fake_session_never_touches_the_network(
+        self, recorder: _Recorder
+    ) -> None:
+        avatar.create_avatar_session(None, _Actor(), surface="wizard")
+        assert recorder.calls == [], "the simulator must not call the vendor"
+
+    @pytest.mark.parametrize("surface", sorted(avatar.SURFACES))
+    def test_every_surface_is_accepted(self, surface: str) -> None:
+        session = avatar.create_avatar_session(None, _Actor(), surface=surface)
+        assert session["available"] is True
+
+    def test_unknown_surface_is_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            avatar.create_avatar_session(None, _Actor(), surface="officer_queue")
+
+    def test_fake_session_writes_audit_and_telemetry(self, real_db: Any) -> None:
+        from sqlalchemy import select
+
+        from app.models.ai import AiTelemetry
+        from app.models.audit import AuditEvent
+
+        actor = _Actor()
+        avatar.create_avatar_session(real_db, actor, surface="ask", lang="ur")
+        real_db.commit()
+
+        event = real_db.execute(
+            select(AuditEvent)
+            .where(AuditEvent.action == "avatar.session_created")
+            .order_by(AuditEvent.seq.desc())
+            .limit(1)
+        ).scalar_one()
+        assert event.resource_type == "avatar_session"
+        assert event.payload_json["surface"] == "ask"
+        assert event.payload_json["provider"] == "fake"
+        assert event.payload_json["succeeded"] is True
+
+        telemetry = real_db.execute(
+            select(AiTelemetry)
+            .where(AiTelemetry.task_type == "AVATAR_SESSION")
+            .order_by(AiTelemetry.created_at.desc())
+            .limit(1)
+        ).scalar_one()
+        assert telemetry.provider == "fake"
+        assert telemetry.succeeded is True
+        assert telemetry.estimated_cost_usd == 0
+
+
