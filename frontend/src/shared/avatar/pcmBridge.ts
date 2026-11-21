@@ -44,3 +44,54 @@ export interface PcmSink {
  * sentence longer than `maxChars` is cut at a word boundary rather than mid-word,
  * because a TTS engine reading half a word is worse than two short clips.
  */
+export function splitForTts(text: string, maxChars = TTS_MAX_CHARS): string[] {
+  const flat = (text || '').replace(/\s+/g, ' ').trim();
+  if (!flat) return [];
+  if (flat.length <= maxChars) return [flat];
+
+  // Keep the terminator with its sentence.
+  const sentences = flat.match(/[^۔؟!?\n]+[۔؟!?]?/g) ?? [flat];
+  const pieces: string[] = [];
+  let current = '';
+
+  const push = (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed) pieces.push(trimmed);
+  };
+
+  for (const raw of sentences) {
+    const sentence = raw.trim();
+    if (!sentence) continue;
+    if (sentence.length > maxChars) {
+      // A single sentence longer than the cap: pack words greedily.
+      if (current) {
+        push(current);
+        current = '';
+      }
+      let line = '';
+      for (const word of sentence.split(' ')) {
+        if (!line) {
+          line = word;
+        } else if (`${line} ${word}`.length <= maxChars) {
+          line = `${line} ${word}`;
+        } else {
+          push(line);
+          line = word;
+        }
+      }
+      if (line) push(line);
+      continue;
+    }
+    if (!current) {
+      current = sentence;
+    } else if (`${current} ${sentence}`.length <= maxChars) {
+      current = `${current} ${sentence}`;
+    } else {
+      push(current);
+      current = sentence;
+    }
+  }
+  if (current) push(current);
+  return pieces;
+}
+
