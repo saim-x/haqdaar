@@ -810,6 +810,7 @@ export function ApplyWizard() {
             <p className="mt-2 text-meta font-medium text-negative">{t('wizard.cnic.invalid')}</p>
           )}
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_cnic"
             onConfirm={(value) => setAnswer('applicant_cnic', digitsOnly(String(value ?? '')))}
           />
@@ -841,6 +842,7 @@ export function ApplyWizard() {
             {t('wizard.dob.yearEnough')}
           </p>
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_dob"
             valueText={textOf(answers, 'applicant_dob')}
             onConfirm={(value) => setAnswer('applicant_dob', value === null ? null : String(value))}
