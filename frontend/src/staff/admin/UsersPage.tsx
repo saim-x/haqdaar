@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { Role, User } from '../../shared/api/types';
-import { Card, CardTitle, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, CardTitle, ErrorState, Loading, PageHeader, roleWord } from '../ui';
 
 const ROLES: Role[] = ['CITIZEN', 'HELPER', 'OFFICER', 'ADMIN', 'AUDITOR'];
 
@@ -64,7 +64,10 @@ export default function UsersPage() {
       />
 
       {message && (
-        <div className="rounded-control border border-ink/[0.12] bg-card px-4 py-2.5 text-caption text-ink">
+        <div
+          role="status"
+          className="rounded-control border border-ink/[0.12] bg-card px-4 py-2.5 text-caption text-ink"
+        >
           {message}
         </div>
       )}
@@ -94,7 +97,7 @@ export default function UsersPage() {
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
-                {r}
+                {roleWord(r)}
               </option>
             ))}
           </select>
@@ -140,11 +143,11 @@ export default function UsersPage() {
                     onChange={(e) =>
                       changeRole.mutate({ id: user.id, role: e.target.value as Role })
                     }
-                    className="min-h-[30px] rounded-[7px] border border-ink/[0.12] bg-card px-1.5 text-meta text-ink"
+                    className="min-h-[30px] rounded-[7px] border border-transparent bg-transparent px-1.5 text-meta text-ink hover:border-ink/[0.12] hover:bg-card focus:border-ink/[0.2] focus:bg-card"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>
-                        {r}
+                        {roleWord(r)}
                       </option>
                     ))}
                   </select>

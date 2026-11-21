@@ -3,7 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { ConsentAccessLog, ConsentGrant } from '../../shared/api/types';
 import { grantRecipientLabel } from '../../shared/lib/consent';
-import { Card, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, ErrorState, humanize, Loading, PageHeader } from '../ui';
+
+/** Console dates: day, month, year. The time of day only matters in the log. */
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const stamp = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /**
  * Consent audit — docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access.
@@ -46,13 +58,16 @@ export default function ConsentsPage() {
       <Card className="overflow-x-auto p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
           <h2 className="text-body font-medium text-ink">Grants</h2>
-          <p className="num text-meta text-ink-3">{query.data?.grants.length ?? 0}</p>
+          <p className="num text-meta text-ink-3">
+            {query.data?.grants.length ?? 0}{' '}
+            {(query.data?.grants.length ?? 0) === 1 ? 'grant' : 'grants'}
+          </p>
         </div>
         <table className="ledger min-w-[820px]">
           <thead>
             <tr>
               <th>Recipient</th>
-              <th>Type</th>
+              <th>Kind</th>
               <th>Categories</th>
               <th>Assurance</th>
               <th>Status</th>
@@ -64,9 +79,11 @@ export default function ConsentsPage() {
             {query.data?.grants.map((grant) => (
               <tr key={grant.id}>
                 <td className="font-medium text-ink">{grantRecipientLabel(grant, 'en')}</td>
-                <td className="text-meta text-ink-2">{grant.recipient_type}</td>
-                <td className="text-meta text-ink-2">{grant.categories.join(', ')}</td>
-                <td className="text-meta text-ink-2">{grant.assurance_level}</td>
+                <td className="text-meta text-ink-2">{humanize(grant.recipient_type)}</td>
+                <td className="text-meta text-ink-2">
+                  {grant.categories.map(humanize).join(', ')}
+                </td>
+                <td className="text-meta text-ink-2">{humanize(grant.assurance_level)}</td>
                 <td>
                   <span className="inline-flex items-center gap-1.5">
                     <span
@@ -79,14 +96,14 @@ export default function ConsentsPage() {
                       }`}
                       aria-hidden
                     />
-                    <span className="text-meta text-ink-2">{grant.status}</span>
+                    <span className="text-meta text-ink-2">{humanize(grant.status)}</span>
                   </span>
                 </td>
-                <td className="num text-meta text-ink-3">
-                  {new Date(grant.granted_at).toLocaleDateString()}
+                <td className="num whitespace-nowrap text-meta text-ink-3">
+                  {day(grant.granted_at)}
                 </td>
-                <td className="num text-meta text-ink-3">
-                  {grant.expires_at ? new Date(grant.expires_at).toLocaleDateString() : '—'}
+                <td className="num whitespace-nowrap text-meta text-ink-3">
+                  {grant.expires_at ? day(grant.expires_at) : '—'}
                 </td>
               </tr>
             ))}
@@ -104,7 +121,10 @@ export default function ConsentsPage() {
       <Card className="overflow-x-auto p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
           <h2 className="text-body font-medium text-ink">Access log</h2>
-          <p className="num text-meta text-ink-3">{query.data?.access_logs.length ?? 0}</p>
+          <p className="num text-meta text-ink-3">
+            {query.data?.access_logs.length ?? 0}{' '}
+            {(query.data?.access_logs.length ?? 0) === 1 ? 'attempt' : 'attempts'}
+          </p>
         </div>
         <table className="ledger min-w-[820px]">
           <thead>
@@ -119,11 +139,11 @@ export default function ConsentsPage() {
           <tbody>
             {query.data?.access_logs.map((log) => (
               <tr key={log.id}>
-                <td className="num text-meta text-ink-3">
-                  {new Date(log.created_at).toLocaleString()}
+                <td className="num whitespace-nowrap text-meta text-ink-3">
+                  {stamp(log.created_at)}
                 </td>
                 <td className="font-medium text-ink">{log.actor_label}</td>
-                <td className="text-meta text-ink-2">{log.category}</td>
+                <td className="text-meta text-ink-2">{humanize(log.category)}</td>
                 <td className="font-mono text-meta text-ink-2">{log.resource_ref}</td>
                 <td>
                   <span className="inline-flex items-center gap-1.5">
@@ -132,10 +152,12 @@ export default function ConsentsPage() {
                       aria-hidden
                     />
                     <span className="text-meta text-ink-2">
-                      {log.allowed ? 'ALLOWED' : 'BLOCKED'}
+                      {log.allowed ? 'Allowed' : 'Blocked'}
                     </span>
                     {!log.allowed && log.denial_reason && (
-                      <span className="font-mono text-meta text-ink-3">{log.denial_reason}</span>
+                      <span className="text-meta text-ink-3">
+                        · {humanize(log.denial_reason)}
+                      </span>
                     )}
                   </span>
                 </td>

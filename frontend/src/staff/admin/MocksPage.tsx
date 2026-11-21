@@ -3,9 +3,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { MocksResponse, MockMode, MockServiceConfig } from '../../shared/api/types';
-import { Card, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, ErrorState, Loading, mockModeWord, PageHeader } from '../ui';
 
 const MODES: MockMode[] = ['NORMAL', 'SLOW', 'FLAKY', 'DOWN'];
+
+/** Acronyms the generic title-caser would mangle. */
+const SERVICE_LABEL: Record<string, string> = {
+  sms: 'SMS',
+  raast: 'Raast',
+  identity: 'Identity',
+  civil_registry: 'Civil Registry',
+  household_survey: 'Household Survey',
+  benefits: 'Benefits',
+  complaints: 'Complaints',
+};
+
+const serviceWord = (name: string) =>
+  SERVICE_LABEL[name] ?? name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
 
 const MODE_TONE: Record<MockMode, { dot: string; text: string; on: string }> = {
   NORMAL: { dot: 'bg-positive', text: 'text-positive', on: 'border-positive/40 bg-positive-wash text-positive' },
@@ -101,12 +115,12 @@ export default function MocksPage() {
           return (
             <Card key={service.service_name}>
               <div className="mb-3 flex items-baseline justify-between gap-2">
-                <h2 className="text-body font-medium capitalize text-ink">
-                  {service.service_name.replace(/_/g, ' ')}
+                <h2 className="text-body font-medium text-ink">
+                  {serviceWord(service.service_name)}
                 </h2>
                 <span className="inline-flex items-center gap-1.5">
                   <span className={`live-dot ${tone.dot}`} aria-hidden />
-                  <span className={`text-meta ${tone.text}`}>{service.mode}</span>
+                  <span className={`text-meta ${tone.text}`}>{mockModeWord(service.mode)}</span>
                 </span>
               </div>
 
@@ -127,7 +141,7 @@ export default function MocksPage() {
                           : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
                       }`}
                     >
-                      {mode}
+                      {mockModeWord(mode)}
                     </button>
                   );
                 })}

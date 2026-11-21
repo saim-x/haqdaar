@@ -100,26 +100,21 @@ export default function ApiKeysPage() {
           {SCOPES.map((scope) => {
             const on = scopes.includes(scope);
             return (
-              <label
+              <button
                 key={scope}
-                className={`inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-control border px-2.5 font-mono text-meta ${
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  setScopes((prev) => (on ? prev.filter((s) => s !== scope) : [...prev, scope]))
+                }
+                className={`press inline-flex min-h-[36px] items-center rounded-control border px-2.5 font-mono text-meta ${
                   on
-                    ? 'border-accent/40 bg-accent-wash text-accent-ink'
-                    : 'border-ink/[0.12] text-ink-2 hover:bg-raised'
+                    ? 'border-accent/40 bg-accent-wash font-medium text-accent-ink'
+                    : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={on}
-                  onChange={(e) =>
-                    setScopes((prev) =>
-                      e.target.checked ? [...prev, scope] : prev.filter((s) => s !== scope),
-                    )
-                  }
-                  className="h-3.5 w-3.5 accent-[#0F766E]"
-                />
                 {scope}
-              </label>
+              </button>
             );
           })}
           <button
@@ -147,7 +142,7 @@ export default function ApiKeysPage() {
           </thead>
           <tbody>
             {query.data?.items.map((key) => (
-              <tr key={key.id}>
+              <tr key={key.id} className={key.is_active ? undefined : 'opacity-60'}>
                 <td className="font-medium text-ink">{key.name}</td>
                 <td className="font-mono text-meta text-ink-2">{key.key_prefix}…</td>
                 <td>

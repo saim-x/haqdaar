@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { AuditEventList, ChainVerifyResult } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, CardTitle, Chip, ErrorState, humanize, Loading, PageHeader } from '../ui';
 import { IconShield } from '../../shared/ui/Icons';
 
 const ACTOR_TYPES = ['', 'USER', 'AI', 'AGENT', 'SYSTEM', 'API_KEY'];
@@ -95,7 +95,7 @@ export default function EventsPage() {
         >
           {ACTOR_TYPES.map((t) => (
             <option key={t} value={t}>
-              {t === '' ? 'All actors' : t}
+              {t === '' ? 'All actors' : humanize(t)}
             </option>
           ))}
         </select>
@@ -136,7 +136,12 @@ export default function EventsPage() {
                 <tr key={event.id}>
                   <td className="num text-end font-mono text-meta text-ink-3">{event.seq}</td>
                   <td className="num text-meta text-ink-3">
-                    {new Date(event.created_at).toLocaleString()}
+                    {new Date(event.created_at).toLocaleString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </td>
                   <td>
                     <Chip
@@ -148,7 +153,7 @@ export default function EventsPage() {
                             : 'neutral'
                       }
                     >
-                      {event.actor_type}
+                      {humanize(event.actor_type)}
                     </Chip>
                   </td>
                   <td className="font-mono text-meta font-medium text-ink">{event.action}</td>
@@ -165,7 +170,7 @@ export default function EventsPage() {
                     )}
                   </td>
                   <td className="font-mono text-meta text-ink-3">
-                    {event.event_hash.slice(0, 12)}…
+                    {event.event_hash.replace(/^sha256:/, '').slice(0, 12)}…
                   </td>
                 </tr>
               ))}

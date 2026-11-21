@@ -11,6 +11,114 @@ import { ApiError } from '../shared/api/errors';
  * saturated pills has no hierarchy left to spend on the one row that matters.
  */
 
+/**
+ * Contract enums are not words. Every console screen that prints a status, a
+ * route or a role goes through these maps, so the officer never reads
+ * `HUMAN_REVIEW` and the auditor never reads a different spelling of it on the
+ * next screen. The enum stays in the request body; the screen gets English.
+ *
+ * `humanize` is the fallback for a value the backend adds before this file
+ * knows about it — it still reads as a sentence rather than shouting
+ * snake_case, and it keeps the acronyms the domain actually uses.
+ */
+const ACRONYMS: Record<string, string> = {
+  ai: 'AI',
+  api: 'API',
+  cnic: 'CNIC',
+  dpi: 'DPI',
+  en: 'EN',
+  id: 'ID',
+  nadra: 'NADRA',
+  ocr: 'OCR',
+  otp: 'OTP',
+  pdf: 'PDF',
+  pkr: 'PKR',
+  qr: 'QR',
+  rag: 'RAG',
+  sms: 'SMS',
+  tts: 'TTS',
+  ur: 'UR',
+  url: 'URL',
+};
+
+export const humanize = (value: string) =>
+  (value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, ' ')).replace(
+    /\b[a-z]+\b/gi,
+    (w) => ACRONYMS[w.toLowerCase()] ?? w,
+  );
+
+const STATUS_WORD: Record<string, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Submitted',
+  PROCESSING: 'Processing',
+  WAITING_EXTERNAL: 'Waiting on external',
+  NEEDS_INFO: 'Needs more information',
+  HUMAN_REVIEW: 'Human review',
+  IN_REVIEW: 'In review',
+  PENDING_SECOND_APPROVAL: 'Second approval',
+  ON_HOLD_CONSENT: 'On hold — consent',
+  APPROVED: 'Approved',
+  PAYMENT_INITIATED: 'Payment initiated',
+  PAID: 'Paid',
+  PAYMENT_FAILED: 'Payment failed',
+  REJECTED: 'Rejected',
+  WITHDRAWN: 'Withdrawn',
+  CLOSED: 'Closed',
+};
+
+const ROUTE_WORD: Record<string, string> = {
+  AUTO_APPROVE: 'Auto approve',
+  ASK_MORE: 'Ask for more',
+  HUMAN_REVIEW: 'Human review',
+  WAIT_EXTERNAL: 'Wait on external',
+};
+
+const JOB_WORD: Record<string, string> = {
+  PENDING: 'Pending',
+  RUNNING: 'Running',
+  COMPLETED: 'Completed',
+  FAILED_RETRY: 'Failed, retrying',
+  DEAD: 'Dead',
+};
+
+const ROLE_WORD: Record<string, string> = {
+  CITIZEN: 'Citizen',
+  HELPER: 'Helper',
+  OFFICER: 'Officer',
+  ADMIN: 'Admin',
+  AUDITOR: 'Auditor',
+};
+
+const RULE_STATUS_WORD: Record<string, string> = {
+  DRAFT: 'Draft',
+  PUBLISHED: 'Published',
+  ARCHIVED: 'Archived',
+};
+
+const MOCK_MODE_WORD: Record<string, string> = {
+  NORMAL: 'Normal',
+  SLOW: 'Slow',
+  FLAKY: 'Flaky',
+  DOWN: 'Down',
+};
+
+const BAND_WORD: Record<string, string> = {
+  URGENT: 'Urgent',
+  HIGH: 'High',
+  NORMAL: 'Normal',
+  LOW: 'Low',
+};
+
+const word = (map: Record<string, string>, value: string) => map[value] ?? humanize(value);
+
+export const statusWord = (value: string) => word(STATUS_WORD, value);
+export const routeWord = (value: string) => word(ROUTE_WORD, value);
+export const jobWord = (value: string) => word(JOB_WORD, value);
+export const roleWord = (value: string) => word(ROLE_WORD, value);
+export const ruleStatusWord = (value: string) => word(RULE_STATUS_WORD, value);
+export const mockModeWord = (value: string) => word(MOCK_MODE_WORD, value);
+export const bandWord = (value: string) => word(BAND_WORD, value);
+
 export function PageHeader({
   title,
   subtitle,
@@ -105,7 +213,7 @@ export function PriorityBand({ band }: { band: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`live-dot ${tone.dot}`} aria-hidden />
-      <span className={`text-meta ${tone.text}`}>{band}</span>
+      <span className={`text-meta ${tone.text}`}>{bandWord(band)}</span>
     </span>
   );
 }

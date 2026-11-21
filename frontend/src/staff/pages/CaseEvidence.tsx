@@ -1,5 +1,5 @@
 import type { DraftAnswer, FactObject, FactState, RuleTraceEntry } from '../../shared/api/types';
-import { Card, Chip } from '../ui';
+import { bandWord, Card, Chip, routeWord } from '../ui';
 import { IconWarning } from '../../shared/ui/Icons';
 
 /**
@@ -281,7 +281,7 @@ export function WhyThisRoute({
             <Chip
               tone={route === 'AUTO_APPROVE' ? 'ok' : route === 'HUMAN_REVIEW' ? 'warn' : 'info'}
             >
-              {route ?? '—'}
+              {route ? routeWord(route) : '—'}
             </Chip>
           </dd>
         </div>
@@ -293,8 +293,9 @@ export function WhyThisRoute({
         </div>
         <div className="border-b border-ink/[0.06] py-2">
           <dt className="text-meta text-ink-3">Priority</dt>
-          <dd className="num mt-0.5 font-mono text-caption font-medium text-ink">
-            {priorityBand ?? '—'} ({priorityScore ?? '—'})
+          <dd className="mt-0.5 text-caption font-medium text-ink">
+            {priorityBand ? bandWord(priorityBand) : '—'}{' '}
+            <span className="num font-mono text-meta text-ink-3">({priorityScore ?? '—'})</span>
           </dd>
         </div>
       </dl>

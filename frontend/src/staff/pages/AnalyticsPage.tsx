@@ -1,29 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { TenantAnalytics } from '../../shared/api/types';
-import { Card, ErrorState, Kpi, Loading, PageHeader } from '../ui';
-
-/**
- * Status enums are contract values, not words. The console shows the word and
- * keeps the enum for the API — an officer reading "HUMAN_REVIEW" has to decode
- * it, and a screen full of shouting snake_case has no hierarchy left.
- */
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Draft',
-  SUBMITTED: 'Submitted',
-  PROCESSING: 'Processing',
-  HUMAN_REVIEW: 'Human review',
-  WAIT_EXTERNAL: 'Waiting on external',
-  APPROVED: 'Approved',
-  REJECTED: 'Rejected',
-  PAID: 'Paid',
-  WITHDRAWN: 'Withdrawn',
-  ON_HOLD_CONSENT: 'On hold — consent',
-  ESCALATED: 'Escalated',
-};
-
-const statusWord = (status: string) =>
-  STATUS_LABEL[status] ?? status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
+import { Card, ErrorState, Kpi, Loading, PageHeader, statusWord } from '../ui';
 
 /**
  * Tenant analytics — docs/11 §6.4. Always tenant-filtered server-side (AC-02.2).

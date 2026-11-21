@@ -4,7 +4,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
 import type { OfficerCaseReview } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ConfidenceBar, ErrorState, Loading, PageHeader } from '../ui';
+import {
+  Card,
+  CardTitle,
+  Chip,
+  ConfidenceBar,
+  ErrorState,
+  humanize,
+  Loading,
+  PageHeader,
+  statusWord,
+} from '../ui';
 import { IconLock, IconWarning } from '../../shared/ui/Icons';
 import { FactTable, RuleTraceTable, WhyThisRoute } from './CaseEvidence';
 
@@ -160,7 +170,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
         subtitle={[
           caseData.citizen?.full_name ?? 'Applicant',
           caseData.citizen?.cnic_masked,
-          caseData.status_label?.label_en ?? caseData.status,
+          caseData.status_label?.label_en ?? statusWord(caseData.status),
         ]
           .filter(Boolean)
           .join(' · ')}
@@ -277,7 +287,9 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               {caseData.documents.map((doc) => (
                 <li key={doc.id} className="border-b border-ink/[0.06] px-4 py-3 last:border-b-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-caption font-medium text-ink">{doc.doc_type}</span>
+                    <span className="text-caption font-medium text-ink">
+                      {humanize(doc.doc_type)}
+                    </span>
                     <Chip
                       tone={
                         doc.verify_status === 'VERIFIED'
@@ -287,7 +299,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                             : 'warn'
                       }
                     >
-                      {doc.verify_status}
+                      {humanize(doc.verify_status)}
                     </Chip>
                     <a
                       href={`/api/v1/documents/${doc.id}/file`}
@@ -435,13 +447,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                       )
                     }
                     aria-pressed={on}
-                    className={`press rounded-[6px] border px-1.5 py-1 font-mono text-meta ${
+                    className={`press rounded-[6px] border px-2 py-1 text-meta ${
                       on
                         ? 'border-accent/40 bg-accent-wash font-medium text-accent-ink'
                         : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
                     }`}
                   >
-                    {code}
+                    {humanize(code)}
                   </button>
                 );
               })}
@@ -465,13 +477,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                           )
                         }
                         aria-pressed={on}
-                        className={`press rounded-[6px] border px-1.5 py-1 font-mono text-meta ${
+                        className={`press rounded-[6px] border px-2 py-1 text-meta ${
                           on
                             ? 'border-warn/40 bg-warn-wash font-medium text-warn'
                             : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
                         }`}
                       >
-                        {key}
+                        {humanize(key)}
                       </button>
                     );
                   })}

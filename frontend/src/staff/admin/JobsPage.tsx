@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { JobListResponse, JobStatus } from '../../shared/api/types';
-import { Card, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, ErrorState, jobWord, Loading, PageHeader } from '../ui';
 
 const STATUSES: (JobStatus | '')[] = [
   '',
@@ -62,7 +62,7 @@ export default function JobsPage() {
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s === '' ? 'All statuses' : s}
+                {s === '' ? 'All statuses' : jobWord(s)}
               </option>
             ))}
           </select>
@@ -96,14 +96,21 @@ export default function JobsPage() {
                   <td>
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`live-dot ${tone.dot}`} aria-hidden />
-                      <span className={`text-meta ${tone.text}`}>{job.status}</span>
+                      <span className={`text-meta ${tone.text}`}>
+                        {jobWord(job.status)}
+                      </span>
                     </span>
                   </td>
                   <td className="num text-end font-mono text-meta text-ink-2">
                     {job.attempts}/{job.max_attempts}
                   </td>
                   <td className="num text-meta text-ink-3">
-                    {new Date(job.run_after).toLocaleString()}
+                    {new Date(job.run_after).toLocaleString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </td>
                   <td className="max-w-[260px] truncate text-meta text-ink-3">
                     {job.last_error ?? '—'}

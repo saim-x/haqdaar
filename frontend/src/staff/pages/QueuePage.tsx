@@ -12,6 +12,7 @@ import {
   Loading,
   PageHeader,
   PriorityBand,
+  statusWord,
 } from '../ui';
 import { IconRefresh, IconWarning } from '../../shared/ui/Icons';
 
@@ -195,7 +196,7 @@ export default function QueuePage() {
                     </p>
                   </td>
                   <td className="whitespace-nowrap text-meta text-ink-2">
-                    {item.status_label?.label_en ?? item.status}
+                    {item.status_label?.label_en ?? statusWord(item.status)}
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-1">

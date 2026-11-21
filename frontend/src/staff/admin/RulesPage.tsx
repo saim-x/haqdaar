@@ -11,7 +11,7 @@ import type {
   RulesResponse,
   TwinResult,
 } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader, ruleStatusWord } from '../ui';
 
 const FACT_KEYS = [
   'applicant_cnic',
@@ -38,6 +38,14 @@ const FACT_KEYS = [
 
 const OPS = ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in', 'not_in', 'is_true', 'is_false'];
 const OUTCOMES = ['PASS', 'FAIL', 'ASK', 'HUMAN'];
+
+/** DSL tokens stay in the payload; the editor shows the policy word. */
+const OUTCOME_LABEL: Record<string, string> = {
+  PASS: 'Pass',
+  FAIL: 'Fail',
+  ASK: 'Ask for more',
+  HUMAN: 'Human review',
+};
 
 function emptyCondition(): RuleCondition {
   return {
@@ -302,12 +310,12 @@ export default function RulesPage() {
                           v.status === 'PUBLISHED' ? 'ok' : v.status === 'DRAFT' ? 'warn' : 'neutral'
                         }
                       >
-                        {v.status}
+                        {ruleStatusWord(v.status)}
                       </Chip>
                       {v.id === activeId && <Chip tone="ok">active</Chip>}
                     </span>
                     <span className="mt-1 block truncate font-mono text-meta text-ink-3">
-                      {v.content_hash.slice(0, 16)}…
+                      {v.content_hash.replace(/^sha256:/, '').slice(0, 12)}…
                     </span>
                     {v.change_note && (
                       <span className="mt-0.5 block truncate text-meta text-ink-2">
@@ -363,7 +371,7 @@ export default function RulesPage() {
                         )}
                       </div>
 
-                      <div className="grid gap-2 sm:grid-cols-4">
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.8fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)]">
                         <Field label="Fact">
                           <select
                             value={rule.fact}
@@ -395,13 +403,13 @@ export default function RulesPage() {
                         <Field label="Value">
                           <input
                             value={String(rule.value ?? '')}
+                            title={String(rule.value ?? '')}
                             disabled={readOnly}
                             onChange={(e) => updateRule(index, { value: e.target.value })}
                             className="field num w-full font-mono"
                           />
                         </Field>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Field label="On fail">
+                        <Field label="On fail">
                             <select
                               value={rule.on_fail}
                               disabled={readOnly}
@@ -410,12 +418,12 @@ export default function RulesPage() {
                             >
                               {OUTCOMES.map((o) => (
                                 <option key={o} value={o}>
-                                  {o}
+                                  {OUTCOME_LABEL[o] ?? o}
                                 </option>
                               ))}
                             </select>
-                          </Field>
-                          <Field label="On unknown">
+                        </Field>
+                        <Field label="On unknown">
                             <select
                               value={rule.on_unknown}
                               disabled={readOnly}
@@ -424,12 +432,11 @@ export default function RulesPage() {
                             >
                               {OUTCOMES.map((o) => (
                                 <option key={o} value={o}>
-                                  {o}
+                                  {OUTCOME_LABEL[o] ?? o}
                                 </option>
                               ))}
                             </select>
-                          </Field>
-                        </div>
+                        </Field>
                       </div>
 
                       <div className="mt-2 grid gap-2 border-t border-ink/[0.06] pt-2 sm:grid-cols-2">
@@ -566,7 +573,7 @@ export default function RulesPage() {
 
               <Card>
                 <CardTitle hint="read-only">JSON preview</CardTitle>
-                <pre className="max-h-64 overflow-auto rounded-control bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
+                <pre className="max-h-64 overflow-auto rounded-control border border-ink/[0.08] bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
                   {JSON.stringify(draft, null, 2)}
                 </pre>
               </Card>

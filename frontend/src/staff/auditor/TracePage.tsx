@@ -2,7 +2,27 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { DecisionTrace } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import {
+  Card,
+  CardTitle,
+  Chip,
+  ErrorState,
+  humanize,
+  Loading,
+  PageHeader,
+  routeWord,
+  statusWord,
+} from '../ui';
+import { renderFactValue } from '../pages/CaseEvidence';
+
+/** Console timestamps: day, month, hour, minute. Seconds never help a reader. */
+const stamp = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /**
  * One confidence pillar. The number is the fact and the track is the glance;
@@ -55,7 +75,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
     <div className="space-y-4">
       <PageHeader
         title="Decision trace"
-        subtitle={`${trace.case.reference_code} · ${trace.case.status} · ${trace.case.citizen?.full_name ?? 'unknown citizen'}`}
+        subtitle={`${trace.case.reference_code} · ${statusWord(trace.case.status)} · ${trace.case.citizen?.full_name ?? 'unknown citizen'}`}
       />
 
       {trace.decisions.length === 0 && (
@@ -67,8 +87,8 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
       {trace.decisions.map((decision) => (
         <div key={decision.id} className="space-y-3">
           <Card>
-            <CardTitle hint={new Date(decision.created_at).toLocaleString()}>
-              {decision.decision_source} · {trace.case.reference_code}
+            <CardTitle hint={stamp(decision.created_at)}>
+              {humanize(decision.decision_source)} · {trace.case.reference_code}
             </CardTitle>
 
             <dl className="grid grid-cols-3 divide-x divide-ink/[0.08] border-y border-ink/[0.08]">
@@ -84,14 +104,14 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                           : 'info'
                     }
                   >
-                    {decision.route_action}
+                    {routeWord(decision.route_action)}
                   </Chip>
                 </dd>
               </div>
               <div className="px-4 py-2">
                 <dt className="text-meta text-ink-3">Outcome</dt>
                 <dd className="mt-1 text-caption font-medium text-ink">
-                  {decision.outcome_status}
+                  {statusWord(decision.outcome_status)}
                 </dd>
               </div>
               <div className="py-2 ps-4">
@@ -114,14 +134,14 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
               <div className="mt-3 flex flex-wrap gap-1">
                 {decision.escalation_reasons.map((code) => (
                   <Chip key={code} tone="danger">
-                    {code}
+                    {humanize(code)}
                   </Chip>
                 ))}
               </div>
             )}
           </Card>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid items-start gap-3 lg:grid-cols-2">
             <Card>
               <CardTitle hint="weakest link">Confidence pillars</CardTitle>
               <div className="space-y-3">
@@ -177,7 +197,9 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
       <Card className="overflow-x-auto p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
           <h2 className="text-body font-medium text-ink">Input snapshot (facts + sources)</h2>
-          <p className="num text-meta text-ink-3">{facts.length} facts</p>
+          <p className="num text-meta text-ink-3">
+            {facts.length} {facts.length === 1 ? 'fact' : 'facts'}
+          </p>
         </div>
         <table className="ledger min-w-[560px]">
           <thead>
@@ -197,19 +219,23 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                     <span className="inline-flex flex-wrap items-baseline gap-2">
                       <span className="text-caption text-ink-3">—</span>
                       {fact.missing_reason && (
-                        <span className="font-mono text-meta text-ink-3">
-                          {fact.missing_reason}
+                        <span className="text-meta text-ink-3">
+                          {humanize(fact.missing_reason)}
                         </span>
                       )}
                     </span>
                   ) : (
                     <span className="num font-mono text-caption font-medium text-ink">
-                      {String(fact.value)}
+                      {renderFactValue(fact.value)}
                     </span>
                   )}
                 </td>
-                <td className="text-meta text-ink-3">{fact.source ?? '—'}</td>
-                <td className="text-meta text-ink-3">{fact.entered_by ?? '—'}</td>
+                <td className="text-meta text-ink-3">
+                  {fact.source ? humanize(fact.source) : '—'}
+                </td>
+                <td className="text-meta text-ink-3">
+                  {fact.entered_by ? humanize(fact.entered_by) : '—'}
+                </td>
               </tr>
             ))}
             {facts.length === 0 && (
@@ -225,7 +251,9 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
       {trace.notes.length > 0 && (
         <Card>
-          <CardTitle hint={`${trace.notes.length} notes`}>Notes</CardTitle>
+          <CardTitle hint={`${trace.notes.length} ${trace.notes.length === 1 ? 'note' : 'notes'}`}>
+            Notes
+          </CardTitle>
           <ul className="space-y-2">
             {trace.notes.map((note) => (
               <li
@@ -233,10 +261,8 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 className="rounded-control border border-ink/[0.10] px-3 py-2"
               >
                 <div className="flex items-center gap-2">
-                  <Chip tone="neutral">{note.note_type}</Chip>
-                  <span className="num text-meta text-ink-3">
-                    {new Date(note.created_at).toLocaleString()}
-                  </span>
+                  <Chip tone="neutral">{humanize(note.note_type)}</Chip>
+                  <span className="num text-meta text-ink-3">{stamp(note.created_at)}</span>
                 </div>
                 <p className="mt-1 text-caption leading-[1.7] text-ink">{note.body}</p>
               </li>
@@ -247,7 +273,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
       <Card>
         <CardTitle hint="read-only">Raw trace</CardTitle>
-        <pre className="max-h-72 overflow-auto rounded-control bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
+        <pre className="max-h-72 overflow-auto rounded-control border border-ink/[0.08] bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
           {JSON.stringify({ case: trace.case, decisions: trace.decisions }, null, 2)}
         </pre>
       </Card>
