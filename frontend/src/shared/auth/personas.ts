@@ -22,7 +22,6 @@ export interface Persona {
   tenant: string | null;
   /** Where this persona lands after login. */
   home: string;
-  accent: string;
 }
 
 export const PERSONAS: Persona[] = [
@@ -35,7 +34,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'بیوہ، ٹھٹھہ۔ پڑھ نہیں سکتیں۔ سگنل کمزور ہے۔',
     tenant: null,
     home: '/c',
-    accent: '#0F766E',
   },
   {
     key: 'shopkeeper_rasool',
@@ -46,7 +44,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'دکاندار، حیدرآباد۔ جعلی پیغام چیک کرتے ہیں۔',
     tenant: null,
     home: '/c',
-    accent: '#B4740A',
   },
   {
     key: 'helper_ayesha',
@@ -57,7 +54,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'کمیونٹی مددگار۔ 40 گھرانے، ایک فون۔',
     tenant: null,
     home: '/h',
-    accent: '#6D28D9',
   },
   {
     key: 'officer_sana',
@@ -68,7 +64,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'کیس افسر، محکمہ سماجی بہبود۔',
     tenant: 'SPD',
     home: '/staff/queue',
-    accent: '#1D4ED8',
   },
   {
     key: 'officer_imran',
@@ -79,7 +74,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'دوسرے افسر — حتمی منظوری۔',
     tenant: 'SPD',
     home: '/staff/queue',
-    accent: '#1D4ED8',
   },
   {
     key: 'admin_bilal',
@@ -90,7 +84,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'ٹیننٹ ایڈمن۔ قواعد، صارفین، چابیاں۔',
     tenant: 'SPD',
     home: '/admin/rules',
-    accent: '#0B5F59',
   },
   {
     key: 'admin_platform',
@@ -101,7 +94,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'پلیٹ فارم اور نقلی خدمات چلاتے ہیں۔',
     tenant: null,
     home: '/admin/mocks',
-    accent: '#0B5F59',
   },
   {
     key: 'auditor_nadia',
@@ -112,7 +104,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'آزاد آڈیٹر۔ صرف پڑھ سکتی ہیں۔',
     tenant: null,
     home: '/auditor/events',
-    accent: '#475569',
   },
   {
     key: 'officer_zakat',
@@ -123,7 +114,6 @@ export const PERSONAS: Persona[] = [
     blurbUr: 'زکوٰۃ اینڈ ویلفیئر بورڈ — ٹیننٹ علیحدگی۔',
     tenant: 'ZWB',
     home: '/staff/queue',
-    accent: '#B4740A',
   },
 ];
 
