@@ -17,7 +17,7 @@ Order matters, and it is not the same for both fonts:
   * Instrument Sans is instanced on `wdth` first, then subset. Subsetting a
     two-axis variable font first leaves the `wdth` axis pointing at glyphs the
     subset dropped.
-  * Noto Sans Arabic is subset first, then instanced on `wght`. Instancing
+  * Noto Nastaliq Urdu is subset first, then instanced on `wght`. Instancing
     first trips `KeyError: '.notdef'` inside `gvar`.
 
 Both orders were found by trying the other one first and reading the traceback.
@@ -41,9 +41,9 @@ INSTRUMENT_SANS_URL = (
     "https://raw.githubusercontent.com/google/fonts/main/ofl/instrumentsans/"
     "InstrumentSans%5Bwdth,wght%5D.ttf"
 )
-NOTO_ARABIC_URL = (
-    "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/"
-    "NotoSansArabic%5Bwdth,wght%5D.ttf"
+NOTO_NASTALIQ_URL = (
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/notonastaliqurdu/"
+    "NotoNastaliqUrdu%5Bwght%5D.ttf"
 )
 
 # Latin, Latin-1 punctuation, general punctuation (dashes, quotes, bullets,
@@ -77,8 +77,27 @@ def fetch(url: str) -> TTFont:
 def subset(font: TTFont, unicodes: list[int], *, preserve_shaping: bool = False) -> TTFont:
     options = Options()
     if preserve_shaping:
-        # Keep positional forms and mark placement for Arabic-script text.
-        options.layout_features = ["*"]
+        # `init`/`medi`/`fina`/`isol` are the Arabic contextual-joining features.
+        # Dropping them does not error — it silently ships a font whose letters can
+        # only ever render in their isolated forms, so every Urdu word comes out
+        # spelled letter-by-letter. `ccmp` composes the base+mark sequences Nastaliq
+        # needs before joining, and `rlig` carries its required ligatures.
+        options.layout_features = [
+            "ccmp",
+            "locl",
+            "init",
+            "medi",
+            "fina",
+            "isol",
+            "rlig",
+            "rclt",
+            "calt",
+            "liga",
+            "mark",
+            "mkmk",
+            "curs",
+            "kern",
+        ]
     else:
         options.layout_features = ["kern", "liga", "calt", "mark", "mkmk", "rlig"]
     options.name_IDs = ["*"]
@@ -126,12 +145,12 @@ def main() -> int:
         latin = subset(latin, LATIN_UNICODES)
         save(latin, "InstrumentSans-subset.woff2")
 
-    print("Noto Sans Arabic (Urdu) — subset, then pin wdth and clamp wght")
-    urdu = fetch(NOTO_ARABIC_URL)
+    print("Noto Nastaliq Urdu — subset, then clamp wght")
+    urdu = fetch(NOTO_NASTALIQ_URL)
     urdu = subset(urdu, ARABIC_UNICODES, preserve_shaping=True)
-    urdu = pin_axis(urdu, "wdth", 100)
+    # Nastaliq ships a single `wght` axis; there is no `wdth` to pin.
     urdu = limit_axis(urdu, "wght", 400, 700)
-    save(urdu, "NotoSansArabic-subset.woff2")
+    save(urdu, "NotoNastaliqUrdu-subset.woff2")
 
     print("\nDone. Re-run `npm run build` and check the precache size.")
     return 0

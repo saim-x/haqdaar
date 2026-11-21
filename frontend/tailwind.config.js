@@ -67,33 +67,36 @@ export default {
         paused: { DEFAULT: '#5B4A8F', wash: '#F0EDF7' },
       },
       fontFamily: {
-        // Instrument Sans for Latin, Noto Sans Arabic for Urdu. Both are
+        // Instrument Sans for Latin, Noto Nastaliq Urdu for Urdu. Both are
         // self-hosted and split by `unicode-range` in index.css, so a mixed
         // line picks the right face per character and the browser only
-        // downloads the script the page actually prints. Noto stays in the
+        // downloads the script the page actually prints. Nastaliq stays in the
         // stack behind Instrument Sans as the fallback for Arabic codepoints.
         sans: [
           '"Instrument Sans"',
-          '"Noto Sans Arabic"',
+          '"Noto Nastaliq Urdu"',
           '"Segoe UI"',
           'system-ui',
           '-apple-system',
           'sans-serif',
         ],
-        urdu: ['"Noto Sans Arabic"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        urdu: ['"Noto Nastaliq Urdu"', '"Segoe UI"', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       fontSize: {
         // A short scale. Nothing below 12px: Urdu marks need the room.
-        meta: ['12px', { lineHeight: '18px' }],
-        caption: ['13px', { lineHeight: '20px' }],
-        body: ['15px', { lineHeight: '24px' }],
-        'body-lg': ['16px', { lineHeight: '26px' }],
-        lead: ['18px', { lineHeight: '28px' }],
-        title: ['20px', { lineHeight: '28px' }],
-        'title-lg': ['24px', { lineHeight: '32px' }],
-        display: ['28px', { lineHeight: '36px' }],
-        'display-lg': ['32px', { lineHeight: '40px' }],
+        // Leading comes from CSS variables (index.css) so the Nastaliq face can
+        // take the extra room it needs under `html[lang='ur']` without changing
+        // the Latin rhythm or any component.
+        meta: ['12px', { lineHeight: 'var(--lh-meta)' }],
+        caption: ['13px', { lineHeight: 'var(--lh-caption)' }],
+        body: ['15px', { lineHeight: 'var(--lh-body)' }],
+        'body-lg': ['16px', { lineHeight: 'var(--lh-body-lg)' }],
+        lead: ['18px', { lineHeight: 'var(--lh-lead)' }],
+        title: ['20px', { lineHeight: 'var(--lh-title)' }],
+        'title-lg': ['24px', { lineHeight: 'var(--lh-title-lg)' }],
+        display: ['28px', { lineHeight: 'var(--lh-display)' }],
+        'display-lg': ['32px', { lineHeight: 'var(--lh-display-lg)' }],
       },
       fontWeight: {
         // 700+ is banned. Hierarchy comes from size and colour.

@@ -11,17 +11,25 @@
  * open apertures; it reads as printed matter rather than as a UI default, which
  * is the register this product wants. Variable, so 400–700 is one file.
  *
- * Urdu — Noto Sans Arabic, the docs/11 §2.4 decision (not Nastaliq: too heavy
- * and too slow on cheap Android screens). Cut to the Arabic block and Arabic
+ * Urdu — Noto Nastaliq Urdu. Nastaliq is the script Urdu is actually written
+ * in, and its sloped baseline and stacked ligatures are what make a word read
+ * as a word rather than as a row of letters. Cut to the Arabic block and Arabic
  * supplement, which is the whole Urdu alphabet plus both digit sets; the Latin
  * it used to carry now belongs to Instrument Sans. The block is kept whole
  * rather than trimmed to the letters the dictionary happens to use, because
  * citizen names arrive from the API and a missing glyph is tofu in someone's
  * name — 8 KB is the cheaper mistake.
  *
- * The Urdu subset retains positional forms and mark placement. An
- * English-only page still fetches just the Latin face. These static assets
- * are outside the 150 KB JS budget. If a file is missing, the
+ * The subset MUST keep the Arabic joining features (`init`/`medi`/`fina`/
+ * `isol`). Without them the font still loads and still draws every glyph, but
+ * only in its isolated form, so each word renders letter-by-letter. That is a
+ * silent failure — nothing errors, the text is just wrong. `build-fonts.py`
+ * lists them explicitly for this reason.
+ *
+ * 26.5 KB + 194.3 KB. Nastaliq is the expensive face: it needs a glyph per
+ * positional form and per common ligature, so it cannot be cut as small as a
+ * Naskh face. These static assets are outside the 150 KB JS budget, and an
+ * English-only page still fetches just the Latin face. If a file is missing the
  * system stacks below render close enough that nothing breaks — the fonts are
  * an enhancement, never a dependency.
  *
@@ -41,8 +49,8 @@
 }
 
 @font-face {
-  font-family: 'Noto Sans Arabic';
-  src: url('/fonts/NotoSansArabic-subset.woff2') format('woff2');
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('/fonts/NotoNastaliqUrdu-subset.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -94,6 +102,37 @@
        lines and the bar grows rather than clipping a legally required sentence.
        That is the one case where being taller than 28 px is the correct answer. */
     --banner-h: 28px;
+
+    /* Type-scale leading. The `fontSize` entries in tailwind.config.js read
+       these, so the scale keeps one source of truth and the Urdu face can claim
+       more room without touching a single component. Latin values here; the
+       `html[lang='ur']` block below swaps in the Nastaliq set. */
+    --lh-meta: 18px;
+    --lh-caption: 20px;
+    --lh-body: 24px;
+    --lh-body-lg: 26px;
+    --lh-lead: 28px;
+    --lh-title: 28px;
+    --lh-title-lg: 32px;
+    --lh-display: 36px;
+    --lh-display-lg: 40px;
+  }
+
+  /* Nastaliq hangs its descenders far below the baseline and stacks marks above
+     it, so at the same point size it needs roughly a third more leading than the
+     Latin face. Without this the tail of one line collides with the marks of the
+     next and the text reads as a smear. Scoped to `lang='ur'`, which
+     I18nProvider sets on <html>, so the English UI keeps its tighter rhythm. */
+  html[lang='ur'] {
+    --lh-meta: 22px;
+    --lh-caption: 24px;
+    --lh-body: 28px;
+    --lh-body-lg: 30px;
+    --lh-lead: 34px;
+    --lh-title: 36px;
+    --lh-title-lg: 42px;
+    --lh-display: 48px;
+    --lh-display-lg: 54px;
   }
 
   html {
@@ -103,7 +142,7 @@
 
   body {
     @apply bg-paper text-ink antialiased;
-    font-family: 'Instrument Sans', 'Noto Sans Arabic', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Instrument Sans', 'Noto Nastaliq Urdu', 'Segoe UI', system-ui, -apple-system, sans-serif;
     /* Urdu needs more line height than Latin: dots and marks sit above and
        below the baseline. rtl.md asks for 1.6–1.8 on body. */
     line-height: 1.7;

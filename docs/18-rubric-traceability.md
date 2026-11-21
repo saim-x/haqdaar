@@ -164,7 +164,7 @@ At the measured operating point (`τ = 0.90`, n = 133) the router auto-approves 
 
 ### 4.1 Voice & Regional Language — 4 pts
 
-- **Urdu is the default**, not a translation layer: `dir="rtl"`, `Noto Sans Arabic` for Urdu and `Instrument Sans` for Latin, both self-hosted.
+- **Urdu is the default**, not a translation layer: `dir="rtl"`, `Noto Nastaliq Urdu` for Urdu and `Instrument Sans` for Latin, both self-hosted (ADR-023).
 - **73 pre-recorded Urdu prompts** (`flux-ambreen-ur`, `ur-PK`), SHA-256 pinned in `frontend/public/audio/ur/manifest.json`, all `status: ready`. They ship in the bundle, so they play offline.
 - **Speech input** via Whisper, with a Roman-Urdu normaliser so "pandrah hazaar" and "۱۵۰۰۰" both parse.
 - **Dynamic explanations** are synthesised through `POST /voice/tts` and cached.
