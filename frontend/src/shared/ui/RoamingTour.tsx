@@ -115,10 +115,20 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
   }
 
   function finish() {
+    const tryCurrentPage = dialog.current?.returnValue === 'try';
     stop();
     setStep(null);
     setPosition(null);
     markSeen();
+    if (tryCurrentPage) {
+      const target = page?.anchor && document.querySelector<HTMLElement>(`#tour-content [data-tour="${page.anchor}"]`);
+      const controls = 'button, a[href], input, textarea, select';
+      if (target) {
+        const control = target.matches(controls) ? target : target.querySelector<HTMLElement>(controls);
+        control?.focus({ preventScroll: true });
+      }
+      return;
+    }
     returnFocus.current = true;
     if (route !== home) navigate(home, { replace: true });
   }
@@ -143,7 +153,12 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
               </div>
             )}
             <button ref={launcher} type="button" className="press min-h-tap rounded-control px-2 text-caption font-medium text-accent-ink hover:bg-accent-wash"
-              onClick={() => { dialog.current?.showModal(); go(0); }}>
+              onClick={() => {
+                if (!dialog.current) return;
+                dialog.current.returnValue = '';
+                dialog.current.showModal();
+                go(0);
+              }}>
               {seen ? pick('تعارف دوبارہ دیکھیں', 'Replay tour') : pick('مختصر تعارف دیکھیں', 'Take a quick tour')}
             </button>
             {!seen && (
@@ -179,10 +194,14 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
                 <small className="text-meta font-medium text-accent-ink" aria-live="polite">
                   {pick('مرحلہ', 'Step')} {new Intl.NumberFormat(lang).format(step + 1)} / {new Intl.NumberFormat(lang).format(pages.length)}
                 </small>
-                <button type="button" className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta text-ink-3 hover:bg-raised"
-                  onClick={() => dialog.current?.close()}>
-                  <IconCross size={14} /> {pick('تعارف بند کریں', 'Exit tour')}
-                </button>
+                <div className="flex flex-wrap items-center justify-end gap-x-1">
+                  <button type="button" className="press min-h-tap rounded-control px-2 text-meta font-medium text-accent-ink hover:bg-accent-wash"
+                    onClick={() => dialog.current?.close('try')}>{pick('یہاں کام شروع کریں', 'Try this page')}</button>
+                  <button type="button" className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta text-ink-3 hover:bg-raised"
+                    onClick={() => dialog.current?.close()}>
+                    <IconCross size={14} /> {pick('تعارف بند کریں', 'Exit tour')}
+                  </button>
+                </div>
               </div>
               <div className="min-h-0 overflow-y-auto px-3.5 pb-2">
                 <div className="flex items-start gap-3">
