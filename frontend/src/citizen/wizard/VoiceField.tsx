@@ -85,7 +85,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
         setParsed(result);
         // Mandatory voice readback (docs/11 §2.6): speak the confirmation immediately.
         const spoken = isRtl ? result.readback_ur : result.readback_en;
-        if (spoken) void play(null, spoken);
+        if (spoken && !readbackRef.current?.(spoken)) void play(null, spoken);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(errorMessage(err, lang));
