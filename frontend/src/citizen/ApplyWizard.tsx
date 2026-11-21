@@ -908,6 +908,7 @@ export function ApplyWizard() {
             onChange={(district) => setAnswer('applicant_district', district)}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_district"
             valueText={textOf(answers, 'applicant_district')}
             onConfirm={(value) => {
@@ -926,6 +927,7 @@ export function ApplyWizard() {
             max={15}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="children_under_18"
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('children_under_18');
