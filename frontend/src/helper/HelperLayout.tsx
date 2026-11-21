@@ -33,6 +33,7 @@ export function HelperLayout() {
           <button
             type="button"
             onClick={toggleLang}
+            data-testid="lang-toggle"
             aria-label={t('common.switchLanguage')}
             className="press flex min-h-tap shrink-0 items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:bg-raised"
           >
