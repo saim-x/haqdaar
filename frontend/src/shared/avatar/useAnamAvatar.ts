@@ -47,3 +47,59 @@ import type {
   SpeakRequest,
 } from './types';
 
+/** Shown for this long before the hard cap so the citizen can renew calmly. */
+const RENEW_WARNING_SECONDS = 25;
+
+/**
+ * How many words of the vendor's streamed sentence stay on screen at once.
+ *
+ * The vendor emits one token per event. Rendering each token on its own makes
+ * the caption flicker a word at a time, which is hard to read at speed and
+ * re-renders the stage on every token. A short rolling window keeps three or
+ * four words stable while the next one arrives, so the eye has something to
+ * track - and the full sentence still lands when the turn completes.
+ */
+const CAPTION_WINDOW_WORDS = 4;
+
+/** The last `count` words of `text`, collapsed to single spaces. */
+function tailWords(text: string, count: number): string {
+  const words = text.split(/\s+/).filter(Boolean);
+  return words.length <= count ? words.join(' ') : words.slice(-count).join(' ');
+}
+
+/**
+ * The phrases Saima uses when she is declining to answer. Detecting them lets the
+ * stage show the amber abstention shield for a spoken reply, exactly as it does
+ * for a `/rag/ask` `NOT_SURE` - the citizen sees the same honest signal whether
+ * she asked by voice or by text.
+ */
+const NOT_SURE_MARKERS = ['یقین نہیں', 'معلومات نہیں', 'پتہ نہیں', 'not sure', "don't know"];
+
+function looksUnsure(text: string): boolean {
+  const lowered = text.toLowerCase();
+  return NOT_SURE_MARKERS.some((marker) => lowered.includes(marker.toLowerCase()));
+}
+
+/** Fallback pacing when no audio element reports a duration. */
+function estimateSpeechMs(text: string): number {
+  return Math.min(9000, Math.max(1200, text.length * 55));
+}
+
+function wait(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
