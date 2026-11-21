@@ -372,3 +372,118 @@ def resolve_voice_id() -> str:
     return _RESOLVED_VOICE_ID
 
 
+def resolve_llm_id() -> str:
+    """The configured LLM, or Anam's persona-default model, cached once."""
+    global _RESOLVED_LLM_ID
+
+    configured = settings.anam_llm_id.strip()
+    if configured:
+        return configured
+    if _RESOLVED_LLM_ID:
+        return _RESOLVED_LLM_ID
+    if _is_fake_mode() or not _live_ready():
+        return ""
+    _RESOLVED_LLM_ID = _discover("/v1/llms", _pick_llm)
+    return _RESOLVED_LLM_ID
+
+
+# --------------------------------------------------------------------------- #
+# live-policy system prompt
+# --------------------------------------------------------------------------- #
+#: The program Saima is allowed to talk about. One program, one prompt: a guide
+#: that can talk about everything is a guide that can be wrong about everything.
+PROGRAM_CODE = "SAHARA_WIDOW_GRANT"
+
+_SURFACE_HINT = {
+    "ask": "the policy question screen",
+    "case_status": "her own case status screen",
+    "wizard": "the application wizard",
+    "scam_check": "the scam-check screen",
+}
+
+
+def _active_rules(db: Any) -> dict[str, Any] | None:
+    """The live active rule set for the Sahara grant, or ``None``.
+
+    Reads ``programs.active_rule_version_id`` - the same pointer the policy engine
+    resolves - so a published v2 is quoted by Saima on her next session. Falls
+    back to the newest ``PUBLISHED`` version, then gives up: a prompt with no
+    numbers is honest, a prompt with stale numbers is not.
+    """
+    if db is None:
+        return None
+    try:
+        from sqlalchemy import select
+
+        from app.models.programs import Program, RuleVersion
+
+        active = db.execute(
+            select(RuleVersion.rules_json)
+            .join(Program, Program.active_rule_version_id == RuleVersion.id)
+            .where(Program.code == PROGRAM_CODE, Program.is_active.is_(True))
+            .limit(1)
+        ).scalar_one_or_none()
+        if isinstance(active, dict):
+            return active
+        newest = db.execute(
+            select(RuleVersion.rules_json)
+            .where(RuleVersion.status == "PUBLISHED")
+            .order_by(RuleVersion.version_number.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        return newest if isinstance(newest, dict) else None
+    except Exception as exc:  # noqa: BLE001 - a prompt must never break a session
+        logger.warning("active rule read failed: %s", type(exc).__name__)
+        return None
+
+
+def _rule_facts(rules: dict[str, Any]) -> dict[str, Any]:
+    """The handful of numbers and lists a spoken answer actually needs."""
+    formula = rules.get("benefit_formula") or {}
+    income_cap: Any = None
+    districts: list[str] = []
+    for rule in rules.get("eligibility_rules") or []:
+        if not isinstance(rule, dict):
+            continue
+        fact = rule.get("fact")
+        if fact == "monthly_income_pkr" and rule.get("op") == "lte":
+            income_cap = rule.get("value")
+        elif fact == "applicant_district" and rule.get("op") == "in":
+            districts = [str(item) for item in (rule.get("value") or [])]
+    return {
+        "income_cap": income_cap,
+        "base_amount": formula.get("base_amount_pkr"),
+        "per_child": formula.get("per_child_bonus_pkr"),
+        "max_children": formula.get("max_children_counted"),
+        "hard_cap": formula.get("hard_cap_pkr"),
+        "districts": districts,
+    }
+
+
+def _facts_block(facts: dict[str, Any]) -> str:
+    """The live numbers, or an explicit instruction to quote none."""
+    lines: list[str] = []
+    if facts["income_cap"] is not None:
+        lines.append(
+            f"- Monthly household income must be at most PKR {int(facts['income_cap']):,}."
+        )
+    if facts["base_amount"] is not None:
+        amount = f"- Base amount PKR {int(facts['base_amount']):,}"
+        if facts["per_child"] is not None:
+            amount += f", plus PKR {int(facts['per_child']):,} per child under 18"
+            if facts["max_children"] is not None:
+                amount += f" (up to {int(facts['max_children'])} children)"
+        if facts["hard_cap"] is not None:
+            amount += f", hard cap PKR {int(facts['hard_cap']):,}"
+        lines.append(amount + ".")
+    if facts["districts"]:
+        lines.append(f"- Eligible districts: {', '.join(facts['districts'])}.")
+    if not lines:
+        return (
+            "CURRENT RULES: the live rule set could not be read just now. Do NOT quote any "
+            "amount, income limit or district list. Tell the user to open the official rules "
+            "screen, and offer to help with the application steps instead."
+        )
+    return "CURRENT RULES (live, from the official rules database):\n" + "\n".join(lines)
+
+
