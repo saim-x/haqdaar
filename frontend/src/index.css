@@ -206,17 +206,24 @@
     box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
   }
 
-  /* A ledger table: hairline rules, tabular figures, one header treatment. */
+  /* A ledger table: hairline rules, tabular figures, one header treatment.
+     Colour lives on the table and the head, never on the cells. A rule like
+     `.ledger tbody td { color }` outranks a `text-warn` utility on the cell
+     itself, so a status column would silently render in plain ink. */
   .ledger {
-    @apply w-full border-collapse text-caption;
+    @apply w-full border-collapse text-caption text-ink;
+  }
+
+  .ledger thead {
+    @apply text-meta text-ink-3;
   }
 
   .ledger thead th {
-    @apply border-b border-ink/[0.08] px-3 py-2 text-start text-meta font-medium text-ink-3;
+    @apply border-b border-ink/[0.08] px-3 py-2 text-start font-medium;
   }
 
   .ledger tbody td {
-    @apply border-b border-ink/[0.06] px-3 py-2.5 align-top text-ink;
+    @apply border-b border-ink/[0.06] px-3 py-2.5 align-top;
   }
 
   .ledger tbody tr:last-child td {
