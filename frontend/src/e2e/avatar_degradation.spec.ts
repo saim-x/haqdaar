@@ -1,0 +1,75 @@
+import { expect, test, type Page } from '@playwright/test';
+import { demoLogin, expectBanner, useEnglish } from './helpers';
+
+/**
+ * Saima, the interactive Urdu video guide - ADR-025.
+ *
+ * Every test here runs in `fake` provider mode (`AI_PROVIDER=fake`), so the
+ * suite consumes **zero** Anam streaming minutes. That is the whole point of the
+ * simulator: the citizen flow, the governance pill, the abstention chip and the
+ * Lite Mode step-down are all exercised against the real backend without a
+ * WebRTC peer.
+ *
+ * The one thing these tests cannot prove is that a live avatar renders - that is
+ * what `backend/scripts/verify_anam.py` is for, and it costs nothing either.
+ */
+
+/** Ask a question through the composer and wait for the answer card. */
+async function ask(page: Page, question: string): Promise<void> {
+  const input = page.locator('#ask-input');
+  await expect(input).toBeVisible();
+  await input.fill(question);
+  await page.locator('form').getByRole('button', { name: /send|بھیجیں/i }).click();
+  await expect(page.getByText(question, { exact: false }).first()).toBeVisible();
+}
+
+/** Open the guide from the opt-in card and wait for the stage. */
+async function startGuide(page: Page): Promise<void> {
+  await page.locator('[data-testid="avatar-start"]').click();
+  await expect(page.locator('[data-testid="avatar-stage"]')).toBeVisible({ timeout: 30_000 });
+}
+
+test('the guide is opt-in: nothing loads and nothing connects before the tap', async ({ page }) => {
+  const sdkRequests: string[] = [];
+  page.on('request', (request) => {
+    const url = request.url();
+    if (/@anam-ai|anam-ai_js-sdk/i.test(url)) sdkRequests.push(url);
+  });
+
+  await demoLogin(page, 'widow_fatima');
+  await useEnglish(page);
+  await expectBanner(page);
+  await page.goto('/c/ask');
+
+  // The invitation is on screen; the stage is not.
+  await expect(page.locator('[data-testid="avatar-cta"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-testid="avatar-stage"]')).toHaveCount(0);
+
+  // Give the page a beat to fire any eager import it might have.
+  await page.waitForTimeout(1_500);
+  expect(sdkRequests, `the SDK must not be fetched before the citizen taps: ${sdkRequests.join(', ')}`).toEqual([]);
+});
+
+test('fake mode: grounded answer, honest abstention, guided action, clean stop', async ({ page }) => {
+  await demoLogin(page, 'widow_fatima');
+  await useEnglish(page);
+  await page.goto('/c/ask');
+  await startGuide(page);
+
+  // The governance pill is the promise the whole feature rests on.
+  await expect(page.locator('[data-testid="avatar-governance"]')).toContainText(/info only|صرف معلومات/i);
+  await expect(page.locator('[data-testid="avatar-stage"]')).toHaveAttribute('data-provider', 'fake');
+  await expect(page.locator('[data-testid="avatar-countdown"]')).toContainText(/^\d:\d{2}$/);
+
+  // 1 - a grounded answer carries a citation chip.
+  await ask(page, 'widow grant eligibility');
+  await expect(page.locator('[data-testid="avatar-citation"]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-testid="avatar-caption"]')).not.toBeEmpty();
+
+  // 2 - an off-topic question abstains, in amber, with no citation.
+  await ask(page, 'best biryani recipe');
+  await expect(page.locator('[data-testid="avatar-not-sure"]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-testid="avatar-stage"]')).toHaveAttribute('data-mood', 'not_sure');
+
+  // 3 - a navigation intent surfaces one tap, and only one tap.
+  await ask(page, 'مجھے درخواست دینی ہے');
