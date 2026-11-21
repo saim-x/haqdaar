@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.ai import guardrails, urdu_nlp
-from app.ai.provider import ParsedFieldResult, get_provider, telemetry
+from app.ai.provider import ParsedFieldResult, _emit, get_provider, telemetry
 
 logger = logging.getLogger("haqdaar.ai.voice")
 
@@ -323,16 +323,28 @@ def transcribe_and_parse(
                 model=stt.model,
             )
 
-        parsed: ParsedFieldResult = provider.parse_structured_field(
-            transcript, field_key, FIELD_SCHEMAS[field_key]
-        )
+        local = _local_parse(field_key, transcript)
+        if stt.provider == "deepgram":
+            parsed = local
+            parsed.provider = stt.provider
+            parsed.model = stt.model
+            parsed.confidence = min(parsed.confidence, stt.confidence)
+            _emit(
+                task_type="VOICE_PARSE",
+                provider="local",
+                model_name="deterministic",
+                latency_ms=0,
+                succeeded=parsed.value is not None or parsed.is_unknown,
+                error_code=None if parsed.value is not None or parsed.is_unknown else "PARSE_FAILED",
+            )
+        else:
+            parsed = provider.parse_structured_field(transcript, field_key, FIELD_SCHEMAS[field_key])
 
     value = parsed.value
     confidence = float(parsed.confidence or 0.0)
     missing_reason = parsed.missing_reason
 
     # Local post-check: the deterministic parser must agree with the model.
-    local = _local_parse(field_key, transcript)
     if local.value is not None and value is not None and str(local.value) != str(value):
         confidence = min(confidence, 0.55)
     if value is None and local.value is not None and missing_reason is None:

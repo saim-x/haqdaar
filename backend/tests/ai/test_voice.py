@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from app.ai import urdu_nlp, voice
+from app.ai import provider, urdu_nlp, voice
 
 
 def _audio(transcript: str) -> bytes:
@@ -27,6 +27,46 @@ def _parse(db: Any, field_key: str, transcript: str) -> voice.VoiceParseResult:
         field_key=field_key,
         lang="ur",
     )
+
+
+@pytest.mark.parametrize(("confidence", "needs_retry"), [(0.95, False), (0.40, True)])
+def test_deepgram_wizard_parses_locally(
+    monkeypatch: pytest.MonkeyPatch, confidence: float, needs_retry: bool
+) -> None:
+    import httpx
+
+    live = provider.LiveOpenAIProvider()
+    monkeypatch.setattr(provider.get_settings(), "deepgram_api_key", "test-key")
+    monkeypatch.setattr(voice, "get_provider", lambda: live)
+
+    def transcribe(url: str, **kwargs: Any) -> httpx.Response:
+        assert url == "https://api.deepgram.com/v1/listen"
+        assert kwargs["params"]["model"] == "nova-3"
+        assert kwargs["params"]["language"] == "ur"
+        assert kwargs["headers"]["Content-Type"] == "audio/webm"
+        assert kwargs["content"] == b"sample audio"
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", url),
+            json={
+                "metadata": {"duration": 2.0},
+                "results": {"channels": [{"alternatives": [
+                    {"transcript": "اٹھائیس ہزار روپے", "confidence": confidence},
+                ]}]},
+            },
+        )
+
+    def unexpected_openai_call() -> None:
+        pytest.fail("The Deepgram wizard path must not use OpenAI")
+
+    monkeypatch.setattr(provider.httpx, "post", transcribe)
+    monkeypatch.setattr(live, "_openai", unexpected_openai_call)
+    result = voice.transcribe_and_parse(
+        None, audio_bytes=b"sample audio", mime_type="audio/webm", field_key="monthly_income_pkr"
+    )
+    assert result.parsed_value == 28_000
+    assert result.needs_retry is needs_retry
+    assert result.provider == "deepgram"
 
 
 # --------------------------------------------------------------------------- #

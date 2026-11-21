@@ -1,10 +1,9 @@
 """The single gateway to every external AI capability (docs/07 §1).
 
-Nothing in ``app/ai`` talks to OpenAI, Whisper or edge-tts directly — it all goes
-through an :class:`AIProvider`. Two implementations ship:
+External AI calls go through an :class:`AIProvider`. Two implementations ship:
 
-* :class:`LiveOpenAIProvider` — ``gpt-4o-mini`` (strict JSON Schema),
-  ``whisper-1``, ``text-embedding-3-small`` and ``edge-tts`` Urdu neural voices.
+* :class:`LiveOpenAIProvider` — OpenAI for structured outputs and embeddings,
+  Deepgram Nova-3 for Urdu transcription and Deepgram Flux for Urdu speech.
 * :class:`FakeDeterministicProvider` — zero network, < 20 ms, deterministic,
   keyed by fixture hashes and keywords. Used by every test and by the circuit
   breaker when the live provider misbehaves.
@@ -677,7 +676,7 @@ def _silent_wav(text: str, *, sample_rate: int = 8_000) -> bytes:
 # live provider
 # --------------------------------------------------------------------------- #
 class LiveOpenAIProvider:
-    """OpenAI for AI tasks and Deepgram Flux for Urdu TTS."""
+    """OpenAI for text and vision tasks, Deepgram for Urdu voice."""
 
     name = "live"
 
@@ -686,14 +685,12 @@ class LiveOpenAIProvider:
         *,
         api_key: str | None = None,
         chat_model: str = "gpt-4o-mini",
-        stt_model: str = "whisper-1",
         embed_model: str = "text-embedding-3-small",
         timeout_s: float = 10.0,
         tts_voice: str = "flux-ambreen-ur",
     ) -> None:
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY") or get_settings().openai_api_key
         self.chat_model = chat_model
-        self.stt_model = stt_model
         self.embed_model = embed_model
         self.timeout_s = timeout_s
         self.tts_voice = tts_voice
@@ -750,26 +747,41 @@ class LiveOpenAIProvider:
     # -- STT --------------------------------------------------------------- #
     def transcribe_urdu(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> STTResult:
         started = time.perf_counter()
-        client = self._openai()
-        suffix = {"audio/wav": "wav", "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/webm": "webm"}.get(
-            mime_type, "wav"
-        )
+        model = "nova-3"
+        api_key = get_settings().deepgram_api_key.strip()
         try:
-            response = client.audio.transcriptions.create(
-                model=self.stt_model,
-                file=(f"audio.{suffix}", audio_bytes, mime_type),
-                language="ur",
-                response_format="verbose_json",
+            if not api_key:
+                raise ProviderError("DEEPGRAM_API_KEY is not set", code="NO_API_KEY", retryable=False)
+            response = httpx.post(
+                "https://api.deepgram.com/v1/listen",
+                params={"model": model, "language": "ur", "mip_opt_out": "true"},
+                headers={"Authorization": f"Token {api_key}", "Content-Type": mime_type},
+                content=audio_bytes,
+                timeout=self.timeout_s,
             )
+            response.raise_for_status()
+            payload = response.json()
+            alternative = payload["results"]["channels"][0]["alternatives"][0]
+            transcript = alternative["transcript"].strip()
+            confidence = float(alternative["confidence"]) if transcript else 0.0
+            duration = float(payload["metadata"]["duration"])
         except Exception as exc:
-            raise self._wrap(exc) from exc
-
-        transcript = (getattr(response, "text", "") or "").strip()
-        duration = float(getattr(response, "duration", 0.0) or 0.0)
+            error = exc if isinstance(exc, ProviderError) else ProviderError("Deepgram STT failed")
+            _emit(
+                task_type="VOICE_STT",
+                provider="deepgram",
+                model_name=model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                succeeded=False,
+                error_code=error.code,
+            )
+            if error is exc:
+                raise
+            raise error from exc
         _emit(
             task_type="VOICE_STT",
-            provider="live",
-            model_name=self.stt_model,
+            provider="deepgram",
+            model_name=model,
             latency_ms=int((time.perf_counter() - started) * 1000),
             input_tokens=int(duration * 100),
             succeeded=bool(transcript),
@@ -778,10 +790,10 @@ class LiveOpenAIProvider:
         return STTResult(
             transcript=transcript,
             language="ur",
-            confidence=0.92 if transcript else 0.0,
+            confidence=confidence,
             duration_s=duration,
-            provider="live",
-            model=self.stt_model,
+            provider="deepgram",
+            model=model,
             available=bool(transcript),
         )
 
@@ -1110,25 +1122,28 @@ class ResilientProvider:
         self.live = live
         self.fake = fake
         self.breaker = breaker or CircuitBreaker()
+        self.voice_breaker = CircuitBreaker()
         self.fallback_count = 0
 
     def _call(self, method: str, *args: Any, **kwargs: Any) -> Any:
-        if self.breaker.is_open:
+        is_voice = method in {"transcribe_urdu", "synthesize_urdu_tts"}
+        breaker = self.voice_breaker if is_voice else self.breaker
+        if breaker.is_open:
             self.fallback_count += 1
             return getattr(self.fake, method)(*args, **kwargs)
         try:
             result = getattr(self.live, method)(*args, **kwargs)
         except ProviderError as exc:
-            self.breaker.record_failure(exc)
+            breaker.record_failure(exc)
             self.fallback_count += 1
             logger.warning("live AI call %s failed (%s) — falling back to fake", method, exc.code)
             return getattr(self.fake, method)(*args, **kwargs)
         except Exception as exc:  # pragma: no cover - defensive
-            self.breaker.record_failure(ProviderError(str(exc), code="UNEXPECTED"))
+            breaker.record_failure(ProviderError(str(exc), code="UNEXPECTED"))
             self.fallback_count += 1
             logger.warning("live AI call %s crashed (%s) — falling back to fake", method, exc)
             return getattr(self.fake, method)(*args, **kwargs)
-        self.breaker.record_success()
+        breaker.record_success()
         return result
 
     def transcribe_urdu(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> STTResult:
