@@ -21,6 +21,7 @@ const TransparencyPage = lazy(() => import('./citizen/TransparencyPage').then((m
 const HelperRosterPage = lazy(() => import('./helper/HelperApp').then((m) => ({ default: m.HelperRosterPage })));
 const AddFamilyPage = lazy(() => import('./helper/HelperApp').then((m) => ({ default: m.AddFamilyPage })));
 const StaffRoutes = lazy(() => import('./staff/StaffApp').then((m) => ({ default: m.StaffRoutes })));
+const WelcomeTour = lazy(() => import('./shared/ui/WelcomeTour').then((m) => ({ default: m.WelcomeTour })));
 
 function RouteFallback() {
   const { t } = useI18n();
@@ -71,10 +72,16 @@ function HelperLayout() {
 
 export default function App() {
   const location = useLocation();
+  const { session } = useAuth();
 
   return (
     <div className="min-h-dvh bg-paper">
       <PrototypeBanner />
+      {session && location.pathname.replace(/\/$/, '') === roleHome(session.user.role) && (
+        <Suspense fallback={null}>
+          <WelcomeTour key={`${session.user.role}:${session.user.id}`} accountId={session.user.id} role={session.user.role} />
+        </Suspense>
+      )}
       <Suspense fallback={<RouteFallback />}>
         <Routes location={location}>
           <Route path="/" element={<RootRedirect />} />
