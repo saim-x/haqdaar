@@ -8,6 +8,7 @@ import { stamp } from '../shared/lib/dates';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { CopyCode } from '../shared/ui/CopyCode';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
+import { PublicHeader } from '../shared/ui/PublicHeader';
 import { TapButton } from '../shared/ui/TapButton';
 import {
   IconCamera,
@@ -109,183 +110,186 @@ export function ScamCheckPage() {
   ];
 
   return (
-    <div className="screen">
-      <ScreenHeader
-        title={t('scam.title')}
-        hint={t('scam.subtitle')}
-        audioKey="scam_intro"
-        audioText={t('scam.subtitle')}
-      />
+    <>
+      <PublicHeader />
+      <div className="screen">
+        <ScreenHeader
+          title={t('scam.title')}
+          hint={t('scam.subtitle')}
+          audioKey="scam_intro"
+          audioText={t('scam.subtitle')}
+        />
 
-      {/* Segmented control: the active segment is a raised surface, not a filled
-          accent block, so the verdict band below stays the loudest thing. */}
-      <div className="enter enter-2 mb-5 grid grid-cols-3 gap-1 rounded-control bg-raised p-1" role="tablist">
-        {tabs.map(([key, label, Icon]) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`press flex min-h-tap flex-col items-center justify-center gap-1 rounded-[7px] px-1 text-meta font-medium ${
-              tab === key ? 'bg-card text-ink shadow-hair' : 'text-ink-3 hover:text-ink-2'
-            }`}
-          >
-            <Icon size={18} />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-control border border-negative/25 bg-negative-wash px-4 py-3 text-caption font-medium text-negative"
-        >
-          {error}
+        {/* Segmented control: the active segment is a raised surface, not a filled
+            accent block, so the verdict band below stays the loudest thing. */}
+        <div className="enter enter-2 mb-5 grid grid-cols-3 gap-1 rounded-control bg-raised p-1" role="tablist">
+          {tabs.map(([key, label, Icon]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`press flex min-h-tap flex-col items-center justify-center gap-1 rounded-[7px] px-1 text-meta font-medium ${
+                tab === key ? 'bg-card text-ink shadow-hair' : 'text-ink-3 hover:text-ink-2'
+              }`}
+            >
+              <Icon size={18} />
+              {label}
+            </button>
+          ))}
         </div>
-      )}
 
-      {tab === 'text' && (
-        <section className="card enter enter-3 p-5">
-          <textarea
-            id="scam-text"
-            rows={5}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t('scam.placeholder')}
-            aria-label={t('scam.tabText')}
-          />
-          <TapButton
-            block
-            className="mt-3"
-            onClick={() => void check({ text })}
-            disabled={busy || text.trim().length === 0}
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 rounded-control border border-negative/25 bg-negative-wash px-4 py-3 text-caption font-medium text-negative"
           >
-            {busy ? t('common.loading') : t('scam.check')}
-          </TapButton>
-        </section>
-      )}
+            {error}
+          </div>
+        )}
 
-      {tab === 'image' && (
-        <section className="card enter enter-3 p-5">
-          <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.imageHint')}</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void check({ image: file });
-            }}
-          />
-          <TapButton block onClick={() => fileRef.current?.click()} disabled={busy} icon={<IconCamera size={18} />}>
-            {busy ? t('common.loading') : t('scam.tabImage')}
-          </TapButton>
-        </section>
-      )}
-
-      {tab === 'voice' && (
-        <section className="card enter enter-3 p-5">
-          <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.voiceHint')}</p>
-          {micBlocked ? (
-            <p className="rounded-control bg-raised px-3 py-2.5 text-meta leading-[1.7] text-ink-2">
-              {t('scam.voiceUnavailable')}
-            </p>
-          ) : (
+        {tab === 'text' && (
+          <section className="card enter enter-3 p-5">
+            <textarea
+              id="scam-text"
+              rows={5}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={t('scam.placeholder')}
+              aria-label={t('scam.tabText')}
+            />
             <TapButton
               block
-              variant={recording ? 'danger' : 'primary'}
-              onClick={() => (recording ? capture.stop() : void capture.start())}
-              disabled={busy}
-              icon={<IconMic size={18} />}
+              className="mt-3"
+              onClick={() => void check({ text })}
+              disabled={busy || text.trim().length === 0}
             >
-              {recording
-                ? `${t('helper.recording')} ${capture.seconds}s`
-                : busy
-                  ? t('common.loading')
-                  : t('scam.record')}
+              {busy ? t('common.loading') : t('scam.check')}
             </TapButton>
-          )}
-        </section>
-      )}
+          </section>
+        )}
 
-      {result && verdict && (
-        <section className="card enter enter-4 mt-5 overflow-hidden">
-          <div className={`flex items-center gap-3 p-5 text-white ${verdict.band}`}>
-            <verdict.Icon size={32} />
-            <div className="min-w-0 flex-1">
-              <p className="text-title font-medium leading-[1.3]">{t(verdict.key)}</p>
-              <p className="num mt-0.5 font-mono text-meta text-white/80">
-                {Math.round(result.confidence * 100)}%
-              </p>
-            </div>
-            <AudioButton
-              tone="onDark"
-              audioKey={`scam_${result.verdict.toLowerCase()}`}
-              text={lang === 'ur' ? result.explanation_ur : result.explanation_en}
+        {tab === 'image' && (
+          <section className="card enter enter-3 p-5">
+            <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.imageHint')}</p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void check({ image: file });
+              }}
             />
-          </div>
+            <TapButton block onClick={() => fileRef.current?.click()} disabled={busy} icon={<IconCamera size={18} />}>
+              {busy ? t('common.loading') : t('scam.tabImage')}
+            </TapButton>
+          </section>
+        )}
 
-          <div className="p-5">
-            <p className="text-body leading-[1.7] text-ink">
-              {lang === 'ur' ? result.explanation_ur : result.explanation_en}
-            </p>
+        {tab === 'voice' && (
+          <section className="card enter enter-3 p-5">
+            <p className="mb-3 text-caption leading-[1.7] text-ink-2">{t('scam.voiceHint')}</p>
+            {micBlocked ? (
+              <p className="rounded-control bg-raised px-3 py-2.5 text-meta leading-[1.7] text-ink-2">
+                {t('scam.voiceUnavailable')}
+              </p>
+            ) : (
+              <TapButton
+                block
+                variant={recording ? 'danger' : 'primary'}
+                onClick={() => (recording ? capture.stop() : void capture.start())}
+                disabled={busy}
+                icon={<IconMic size={18} />}
+              >
+                {recording
+                  ? `${t('helper.recording')} ${capture.seconds}s`
+                  : busy
+                    ? t('common.loading')
+                    : t('scam.record')}
+              </TapButton>
+            )}
+          </section>
+        )}
 
-            {result.matched_official && (
-              <div className="mt-4 border-t border-ink/[0.08] pt-4">
-                <p className="text-meta text-ink-3">{t('scam.matchedCode')}</p>
-                <div className="mt-1.5">
-                  <CopyCode value={result.matched_official.verification_code} tone="green" size="md" />
-                </div>
-                <p className="mt-1.5 text-meta text-ink-3">
-                  {result.matched_official.program} ·{' '}
-                  <bdi className="tabular-nums">{stamp(result.matched_official.created_at, lang)}</bdi>
+        {result && verdict && (
+          <section className="card enter enter-4 mt-5 overflow-hidden">
+            <div className={`flex items-center gap-3 p-5 text-white ${verdict.band}`}>
+              <verdict.Icon size={32} />
+              <div className="min-w-0 flex-1">
+                <p className="text-title font-medium leading-[1.3]">{t(verdict.key)}</p>
+                <p className="num mt-0.5 font-mono text-meta text-white/80">
+                  {Math.round(result.confidence * 100)}%
                 </p>
               </div>
-            )}
-
-            {result.red_flags.length > 0 && (
-              <div className="mt-4 border-t border-ink/[0.08] pt-4">
-                <p className="mb-2 text-meta text-ink-3">{t('scam.redFlags')}</p>
-                <ul className="space-y-1.5">
-                  {result.red_flags.map((flag) => (
-                    <li key={flag.code} className="flex items-start gap-2">
-                      <IconCross size={14} className="mt-1 shrink-0 text-negative" />
-                      <span className="text-caption leading-[1.7] text-ink">
-                        {lang === 'ur' ? flag.label_ur : flag.label_en}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="mt-4 rounded-control bg-warn-wash px-3 py-2.5">
-              <p className="text-meta text-warn">{t('scam.advice')}</p>
-              <p className="mt-0.5 text-caption leading-[1.7] text-ink">
-                {lang === 'ur' ? result.advice_ur : result.advice_en}
-              </p>
+              <AudioButton
+                tone="onDark"
+                audioKey={`scam_${result.verdict.toLowerCase()}`}
+                text={lang === 'ur' ? result.explanation_ur : result.explanation_en}
+              />
             </div>
 
-            <button
-              type="button"
-              onClick={() => void dispute()}
-              disabled={disputed}
-              className="press mt-4 min-h-tap w-full rounded-control text-meta font-medium text-ink-3 underline decoration-1 underline-offset-4 hover:text-ink disabled:no-underline disabled:opacity-60"
-            >
-              {disputed ? t('scam.disputeThanks') : t('scam.dispute')}
-            </button>
-          </div>
-        </section>
-      )}
+            <div className="p-5">
+              <p className="text-body leading-[1.7] text-ink">
+                {lang === 'ur' ? result.explanation_ur : result.explanation_en}
+              </p>
 
-      {/* The never-share rule is true before you check and after, so it lives in
-          the page chrome rather than inside one result. */}
-      <p className="enter enter-5 mt-6 flex items-start gap-2 text-meta leading-[1.7] text-ink-3">
-        <IconShield size={14} className="mt-0.5 shrink-0" />
-        {t('scam.neverShare')}
-      </p>
-    </div>
+              {result.matched_official && (
+                <div className="mt-4 border-t border-ink/[0.08] pt-4">
+                  <p className="text-meta text-ink-3">{t('scam.matchedCode')}</p>
+                  <div className="mt-1.5">
+                    <CopyCode value={result.matched_official.verification_code} tone="green" size="md" />
+                  </div>
+                  <p className="mt-1.5 text-meta text-ink-3">
+                    {result.matched_official.program} ·{' '}
+                    <bdi className="tabular-nums">{stamp(result.matched_official.created_at, lang)}</bdi>
+                  </p>
+                </div>
+              )}
+
+              {result.red_flags.length > 0 && (
+                <div className="mt-4 border-t border-ink/[0.08] pt-4">
+                  <p className="mb-2 text-meta text-ink-3">{t('scam.redFlags')}</p>
+                  <ul className="space-y-1.5">
+                    {result.red_flags.map((flag) => (
+                      <li key={flag.code} className="flex items-start gap-2">
+                        <IconCross size={14} className="mt-1 shrink-0 text-negative" />
+                        <span className="text-caption leading-[1.7] text-ink">
+                          {lang === 'ur' ? flag.label_ur : flag.label_en}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="mt-4 rounded-control bg-warn-wash px-3 py-2.5">
+                <p className="text-meta text-warn">{t('scam.advice')}</p>
+                <p className="mt-0.5 text-caption leading-[1.7] text-ink">
+                  {lang === 'ur' ? result.advice_ur : result.advice_en}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void dispute()}
+                disabled={disputed}
+                className="press mt-4 min-h-tap w-full rounded-control text-meta font-medium text-ink-3 underline decoration-1 underline-offset-4 hover:text-ink disabled:no-underline disabled:opacity-60"
+              >
+                {disputed ? t('scam.disputeThanks') : t('scam.dispute')}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* The never-share rule is true before you check and after, so it lives in
+            the page chrome rather than inside one result. */}
+        <p className="enter enter-5 mt-6 flex items-start gap-2 text-meta leading-[1.7] text-ink-3">
+          <IconShield size={14} className="mt-0.5 shrink-0" />
+          {t('scam.neverShare')}
+        </p>
+      </div>
+    </>
   );
 }
