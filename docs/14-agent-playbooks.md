@@ -62,7 +62,7 @@
   2. `app/ai/guardrails.py` (XML prompt-injection wrapping, injection detection/logging, CNIC regex redaction, RAG personal-claim filter).
   3. `app/ai/doc_verify.py`: OpenCV Laplacian blur (`NEEDS_RETAKE`), `cv2.QRCodeDetector` + `HMAC-SHA256` signature check (`UNVERIFIABLE` vs `TAMPER_SUSPECTED`), OCR cross-check using `entity_resolution.name_sim`, benchmark evaluator over A3's `doc_eval_set/` (target: `0 %` false tamper on WhatsApp-compressed genuine docs).
   4. `app/data/scam_dataset.jsonl` (240 labelled Urdu/Roman-Urdu/English messages incl. 35 hard negatives) + `app/ai/scam_classifier.py` (4-stage pipeline: official `HQ-XXXXX` & `body_sha256` check → red-flag rules → calibrated scikit-learn TF-IDF+LR → `CANNOT_TELL` band) + `/scam/check` & `/scam/{id}/feedback` + benchmark metrics helper.
-  5. `app/ai/voice.py` (`/voice/transcribe-parse` field-scoped structured Pydantic parser with Urdu numerals & mandatory readback + `/voice/tts` cached `edge-tts`) + pre-generate ~45 static Urdu wizard/status MP3 prompts in `frontend/public/audio/ur/`.
+  5. `app/ai/voice.py` (`/voice/transcribe-parse` field-scoped structured Pydantic parser with Urdu numerals & mandatory readback + `/voice/tts` cached `edge-tts`) + pre-generate 73 static Urdu wizard/status MP3 prompts with Deepgram Flux TTS in `frontend/public/audio/ur/`.
   6. `app/data/policy_docs/` (4 bilingual Markdown policy docs) + `app/ai/rag.py` (heading chunker, hybrid `tsvector` + NumPy cosine similarity, abstention `NOT_SURE` below threshold, `reindex_program_rules()` handler for `REINDEX_RAG` job) + `/rag/ask`.
 - **Done Criteria:** All tests in `backend/tests/ai/` pass in `fake` mode; live smoke test passes with `AI_PROVIDER=live`; benchmark metrics feed A2's `/eval/dashboard`.
 

@@ -74,7 +74,7 @@
 | Guardrails + human approval | F-06, F-08 | No auto-reject, four-eyes, prompt-injection XML framing, PII redact | `07 §6`, `09 §2` | A4, A1 | `test_ai_guardrails.py` |
 | Explainability | F-06, F-18 | Rule-trace Urdu/English reasons + full auditor trace | `06 §8`, `08 Ch05` | A2, A6 | `test_audit_chain.py` |
 | Structured outputs | F-03 | Field-scoped Pydantic JSON schema parsing + readback | `07 §2.2` | A4 | `test_voice_parse.py` |
-| Voice (Urdu STT/TTS) | F-03, F-10 | Whisper STT + `edge-tts` + pre-cached Urdu prompt MP3s | `07 §2` | A4, A5 | `test_voice_parse.py` |
+| Voice (Urdu STT/TTS) | F-03, F-10 | Whisper STT + Deepgram Flux generated Urdu prompt MP3s + `edge-tts` dynamic TTS | `07 §2` | A4, A5 | `test_voice_parse.py` |
 | Computer vision | F-04 | OpenCV blur + `QRCodeDetector` HMAC + OCR cross-check | `07 §5` | A4, A3 | `test_doc_verifier.py` |
 | RAG with citations | F-21 | Hybrid `tsvector` + cosine similarity + `NOT_SURE` + auto rule reindex | `07 §4` | A4, A5 | `test_rag_abstention.py` |
 | Anomaly detection | F-30 | Duplicate CNIC, shared payout alias, helper velocity, income conflict | `06 §6` | A2 | `test_anomalies.py` |

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     mock_base_url: str = "http://127.0.0.1:8000/mock"
     ai_provider: Literal["live", "fake"] = "fake"
     openai_api_key: str = ""
+    deepgram_api_key: str = ""
     openai_chat_model: str = "gpt-4o-mini"
     openai_embed_model: str = "text-embedding-3-small"
     openai_stt_model: str = "whisper-1"

@@ -32,7 +32,7 @@ Every call through `AIProvider` writes a row to `ai_telemetry` (model, prompt ve
 ## 2. Voice Pipeline & Structured Outputs (`app/ai/voice.py`)
 
 ### 2.1 Why Pre-Recorded Prompts + Dynamic TTS
-- All **static citizen wizard questions, labels, and common errors** (~45 phrases) are pre-generated in Urdu (`ur-PK-UzmaNeural`) into `frontend/public/audio/ur/*.mp3` and cached by the PWA Service Worker → **0 ms latency, 0 bytes network after install, works 100 % offline.**
+- All **static citizen wizard questions, labels, and common errors** (73 phrases) are generated in Urdu using Deepgram Flux TTS (`flux-ambreen-ur`) into `frontend/public/audio/ur/*.mp3` and cached by the PWA Service Worker → **0 ms latency, 0 bytes network after install, works 100 % offline.** Set `DEEPGRAM_API_KEY` in the ignored root `.env` and run `python -m app.ai.tts_pregen` from `backend/`; the key is never sent to the frontend.
 - **Dynamic audio** (e.g., personalized approval explanation with specific PKR amount, or voice readback confirmation) calls `POST /api/v1/voice/tts`, cached server-side by text hash.
 
 ### 2.2 Speech-to-Text + Field-Scoped Structured Parsing

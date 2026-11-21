@@ -16,7 +16,7 @@
 ## 2. Frozen Tech Stack (Do Not Substitute)
 - **Backend:** Python 3.12 · FastAPI · Pydantic v2 · **Sync** SQLAlchemy 2.0 + `psycopg[binary]` v3 · Alembic · PostgreSQL 16 · Postgres `SKIP LOCKED` job queue (no Redis/Celery).
 - **Frontend:** React 18 · Vite 5 · TypeScript 5 · Tailwind CSS · `vite-plugin-pwa` (Workbox) · TanStack Query v5 · Dexie.js (IndexedDB) · Route-split chunks (Citizen/Helper PWA bundle **≤ 150 KB gzipped**).
-- **AI & ML:** Strict `AIProvider` (`AI_PROVIDER=live|fake`) · OpenAI `gpt-4o-mini` / `whisper-1` / `text-embedding-3-small` · `edge-tts` + pre-cached Urdu MP3s · OpenCV (`opencv-python-headless`) + HMAC-signed QR · `scikit-learn` TF-IDF+LR calibrated scam model · RapidFuzz entity resolution · Hybrid Postgres `tsvector` + NumPy cosine RAG (no `pgvector` dependency).
+- **AI & ML:** Strict `AIProvider` (`AI_PROVIDER=live|fake`) · OpenAI `gpt-4o-mini` / `whisper-1` / `text-embedding-3-small` · Deepgram Flux TTS for build-time Urdu MP3s, `edge-tts` for live dynamic speech · OpenCV (`opencv-python-headless`) + HMAC-signed QR · `scikit-learn` TF-IDF+LR calibrated scam model · RapidFuzz entity resolution · Hybrid Postgres `tsvector` + NumPy cosine RAG (no `pgvector` dependency).
 
 ---
 

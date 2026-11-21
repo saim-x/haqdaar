@@ -17,7 +17,7 @@ Displayed identically on `/transparency` in the live app and in `README.md`:
 | Offline-First PWA & Idempotent Outbox | **REAL** | Workbox Service Worker + Dexie IndexedDB + server-side `Idempotency-Key` deduplication. |
 | Scam Classifier & Official Verification Codes | **REAL** (trained on synthetic data) | Hybrid deterministic rules + calibrated `scikit-learn` TF-IDF/LR model + cryptographic SMS `body_sha256` lookup. |
 | Document Verification (Blur, Signed QR, OCR Cross-Check) | **REAL** (on mock specimens) | OpenCV Laplacian blur + `QRCodeDetector` + `HMAC-SHA256` signature + vision OCR comparison. |
-| Urdu Voice STT/TTS & RAG Policy Q&A | **REAL** (with `fake` fallback) | OpenAI `whisper-1` / `gpt-4o-mini` / `text-embedding-3-small` + `edge-tts` + hybrid Postgres/NumPy retrieval. |
+| Urdu Voice STT/TTS & RAG Policy Q&A | **REAL** (with `fake` fallback) | OpenAI `whisper-1` / `gpt-4o-mini` / `text-embedding-3-small` + Deepgram Flux generated offline Urdu MP3s + `edge-tts` for dynamic speech + hybrid Postgres/NumPy retrieval. |
 | Identity Registry (NADRA-like) | **SIMULATED** | Mock REST API (`/mock/v1/identity/lookup`) with synthetic `99900-*` CNICs & chaos modes. |
 | Civil Death, Household Survey & Benefits Registries | **SIMULATED** | Mock REST APIs (`/mock/v1/civil/*`, `/household/*`, `/benefits/*`) with synthetic data. |
 | Instant Payment Rails (Raast-like) & Complaints | **SIMULATED** | Mock REST API (`/mock/v1/payments/*`, `/complaints`) with idempotent transfers & test failure alias. |

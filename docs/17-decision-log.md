@@ -111,6 +111,11 @@
 
 ---
 
+## ADR-021: Deepgram Flux for Static Urdu Prompt Generation
+- **Context:** The pinned `edge-tts` generator returned no audio for either Urdu voice on the integration machine, leaving all 73 manifest prompts without MP3 files. The citizen PWA needs the clips for offline playback.
+- **Decision (user-approved):** Generate the fixed Urdu prompt library with Deepgram Flux TTS batch REST (`flux-ambreen-ur`, MP3). Read `DEEPGRAM_API_KEY` from the ignored repository-root `.env` at generation time. Keep dynamic `/voice/tts` on the existing `AIProvider` and `edge-tts`; no API or database contract changes. Commit only generated audio and the manifest, never the key.
+- **Rationale:** Deepgram documents an Urdu voice and batch MP3 output. Static clips remain available offline after generation. Review pronunciation before the demo, especially numbers because Urdu Flux is Early Access.
+
 ## Change Control Protocol (During Hackathon)
 1. Minor bug fixes within a single agent's owned files need no ADR.
 2. Any change to a DB column (`04`), API contract (`05`), canonical fact key (`04 §5`), or routing threshold (`06`) MUST be proposed to the Integration Lead, updated in the relevant doc, and logged as `ADR-011+` here before merging.

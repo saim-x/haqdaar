@@ -4,21 +4,20 @@ The citizen PWA must speak its wizard questions with **zero latency and zero
 network after install**, so every static phrase is rendered once into
 ``frontend/public/audio/ur/<key>.mp3`` and cached by the service worker.
 
-Run with network access::
+Set ``DEEPGRAM_API_KEY`` in the repository-root ``.env`` and run with network access::
 
     python -m app.ai.tts_pregen            # render anything missing
     python -m app.ai.tts_pregen --force    # re-render everything
     python -m app.ai.tts_pregen --manifest-only
 
-``manifest.json`` is always written — it is the contract the frontend reads
-(``{key: text}`` plus metadata). If a render fails the key is marked ``pending``
-and the frontend degrades silently to on-screen text, exactly as specified.
+``manifest.json`` is written after generation — it is the contract the frontend
+reads (``{key: text}`` plus metadata). If a render fails the key is marked
+``pending`` and the frontend uses online or browser speech fallback.
 """
 
 from __future__ import annotations
 
 import argparse
-import asyncio
 import hashlib
 import json
 import logging
@@ -27,10 +26,15 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+import httpx
+
+from app.config import get_settings
+
 logger = logging.getLogger("haqdaar.ai.tts_pregen")
 
-VOICE = "ur-PK-UzmaNeural"
-VOICE_ALT = "ur-PK-AsadNeural"
+VOICE = "flux-ambreen-ur"
+VOICE_ALT = "flux-usman-ur"
+DEEPGRAM_SPEAK_URL = "https://api.deepgram.com/v2/speak"
 
 #: Repo root → ``frontend/public/audio/ur``. This directory is owned by A4.
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
@@ -196,25 +200,32 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-async def _render(text: str, voice: str) -> bytes:
-    import edge_tts  # type: ignore
+def _render(text: str, voice: str, api_key: str, client: httpx.Client) -> bytes:
+    response = client.post(
+        DEEPGRAM_SPEAK_URL,
+        params={"model": voice, "encoding": "mp3"},
+        headers={"Authorization": f"Token {api_key}"},
+        json={"text": text},
+    )
+    response.raise_for_status()
+    audio = response.content
+    content_type = response.headers.get("content-type", "").lower()
+    is_mp3 = audio.startswith(b"ID3") or (
+        len(audio) >= 2 and audio[0] == 0xFF and audio[1] & 0xE0 == 0xE0
+    )
+    if not content_type.startswith("audio/") or not is_mp3:
+        raise ValueError("Deepgram returned an invalid MP3 response")
+    return audio
 
-    communicate = edge_tts.Communicate(text, voice)
-    chunks: list[bytes] = []
-    async for chunk in communicate.stream():
-        if chunk.get("type") == "audio":
-            chunks.append(chunk["data"])
-    return b"".join(chunks)
 
-
-def build_manifest(statuses: dict[str, str] | None = None) -> dict[str, Any]:
+def build_manifest(output_dir: Path | None = None) -> dict[str, Any]:
     """Return the canonical manifest: a flat ``{key: text}`` map plus ``_meta``.
 
     ADR-018 pins this shape. FE reads the file as ``Record<string, string>`` and
     keeps only string values, so ``_meta`` is invisible to it while still carrying
     the voice/language/file data a producer needs.
     """
-    statuses = statuses or {}
+    target = output_dir or OUTPUT_DIR
     manifest: dict[str, Any] = dict(PROMPTS)
     manifest["_meta"] = {
         "voice": VOICE,
@@ -226,7 +237,7 @@ def build_manifest(statuses: dict[str, str] | None = None) -> dict[str, Any]:
             key: {
                 "file": f"{key}.mp3",
                 "sha256": _sha256(text),
-                "status": statuses.get(key, "pending"),
+                "status": "ready" if (target / f"{key}.mp3").is_file() else "pending",
             }
             for key, text in PROMPTS.items()
         },
@@ -239,36 +250,32 @@ def generate(
     force: bool = False,
     manifest_only: bool = False,
     output_dir: Path | None = None,
+    api_key: str | None = None,
 ) -> dict[str, Any]:
     target = output_dir or OUTPUT_DIR
+    missing = [key for key in PROMPTS if force or not (target / f"{key}.mp3").is_file()]
+    if not manifest_only and missing:
+        api_key = api_key or get_settings().deepgram_api_key
+        if not api_key:
+            raise ValueError("Set DEEPGRAM_API_KEY in the repository-root .env before generating audio")
     target.mkdir(parents=True, exist_ok=True)
 
-    statuses: dict[str, str] = {}
     rendered = 0
     failed = 0
 
     if not manifest_only:
-        for key, text in PROMPTS.items():
-            path = target / f"{key}.mp3"
-            if path.exists() and not force:
-                statuses[key] = "cached"
-                continue
-            try:
-                audio = asyncio.run(_render(text, VOICE))
-            except Exception as exc:
-                logger.warning("TTS render failed for %s: %s", key, exc)
-                statuses[key] = "pending"
-                failed += 1
-                continue
-            if not audio:
-                statuses[key] = "pending"
-                failed += 1
-                continue
-            path.write_bytes(audio)
-            statuses[key] = "rendered"
-            rendered += 1
+        with httpx.Client(timeout=30.0) as client:
+            for key in missing:
+                try:
+                    audio = _render(PROMPTS[key], VOICE, api_key or "", client)
+                except Exception as exc:
+                    logger.warning("TTS render failed for %s: %s", key, exc)
+                    failed += 1
+                    continue
+                (target / f"{key}.mp3").write_bytes(audio)
+                rendered += 1
 
-    manifest = build_manifest(statuses)
+    manifest = build_manifest(target)
     (target / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8"
     )
@@ -294,19 +301,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
-    summary = generate(
-        force=args.force,
-        manifest_only=args.manifest_only,
-        output_dir=Path(args.out) if args.out else None,
-    )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    try:
+        summary = generate(
+            force=args.force,
+            manifest_only=args.manifest_only,
+            output_dir=Path(args.out) if args.out else None,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     print(json.dumps(summary, ensure_ascii=False, indent=1))
     if summary["failed"]:
         print(
-            "Some prompts could not be rendered (no network or edge-tts blocked). "
-            "The manifest is written; the frontend degrades silently to on-screen text.",
+            "Some prompts could not be rendered by Deepgram. "
+            "The manifest marks missing files pending; the frontend uses speech fallback.",
             file=sys.stderr,
         )
-    return 0
+    return 1 if summary["failed"] else 0
 
 
 if __name__ == "__main__":  # pragma: no cover
