@@ -152,6 +152,11 @@ class RagAnswer:
             "retrieved": self.retrieved,
             "coverage": round(self.coverage, 4),
         }
+        # Omitted entirely when not requested, so the existing contract and every
+        # existing test see byte-identical payloads.
+        if self.spoken_summary is not None:
+            body["spoken_summary"] = self.spoken_summary
+        return body
 
 
 # --------------------------------------------------------------------------- #
@@ -686,6 +691,43 @@ def _synthesize(
     if not answer:
         return _extractive_answer(chunks, lang), "fake", "fake-extractive"
     return answer, result.provider, result.model
+
+
+def _spoken_summary(
+    db: Any,
+    *,
+    answer: str,
+    chunks: Sequence[RetrievedChunk],
+    lang: str,
+    tenant_id: Any = None,
+) -> str:
+    """Warm spoken reframing of an already-grounded answer (ADR-025).
+
+    The excerpt handed to the model is the **single** chunk the answer was built
+    from, so the reframing cannot reach a fact the citation does not contain. If
+    the provider fails, the deterministic wrapper is used instead - a guide that
+    goes quiet mid-sentence is worse than one that speaks plainly.
+    """
+    from app.ai.provider import _spoken_wrapper
+
+    if not chunks:
+        return SPOKEN_ABSTENTION_UR if lang == "ur" else SPOKEN_ABSTENTION_EN
+
+    excerpt = chunks[0].content
+    provider = get_provider()
+    try:
+        with telemetry(db, tenant_id=tenant_id, resource_type="rag_spoken", resource_id=None):
+            spoken = provider.spoken_summary(answer, excerpt, lang)
+    except Exception as exc:  # pragma: no cover - provider already degrades
+        logger.warning("spoken reframing failed, using deterministic wrapper: %s", exc)
+        spoken = ""
+
+    spoken = (spoken or "").strip()
+    if not spoken:
+        spoken = _spoken_wrapper(answer, lang)
+    if not spoken:
+        return SPOKEN_ABSTENTION_UR if lang == "ur" else SPOKEN_ABSTENTION_EN
+    return spoken[:SPOKEN_SUMMARY_MAX_CHARS]
 
 
 def ask(
