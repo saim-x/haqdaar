@@ -36,6 +36,27 @@ import { pkr } from '../../shared/lib/money';
 
 type FactLike = DraftAnswer | FactObject;
 
+function isFact(value: unknown): value is FactLike {
+  return value !== null && typeof value === 'object' && 'value' in value;
+}
+
+export function reviewFacts(snapshot: unknown, draft: unknown): Record<string, FactLike> {
+  const payload = snapshot !== null && typeof snapshot === 'object' && 'facts' in snapshot
+    ? snapshot.facts
+    : snapshot;
+  const validFacts = (value: unknown) =>
+    value !== null && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, FactLike] => isFact(entry[1])))
+      : {};
+  return { ...validFacts(draft), ...validFacts(payload) };
+}
+
+export function isRuleCheck(entry: unknown): entry is RuleTraceEntry {
+  return entry !== null && typeof entry === 'object'
+    && 'rule_id' in entry && typeof entry.rule_id === 'string'
+    && 'result' in entry && (entry.result === 'PASS' || entry.result === 'FAIL' || entry.result === 'UNKNOWN');
+}
+
 /**
  * Tri-state is NEVER coerced (docs/04 §5).
  *
@@ -115,9 +136,9 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
       <td>
         {unknown ? (
           <span className="inline-flex flex-wrap items-baseline gap-2">
-            <span className="text-caption text-ink-3">-</span>
+            <span className="text-caption text-ink-3">Unknown</span>
             {fact.missing_reason && (
-              <span className="text-meta leading-[1.6] text-ink-3">{fact.missing_reason}</span>
+              <span className="text-meta leading-[1.6] text-ink-3">{fact.missing_reason.replaceAll('_', ' ').toLowerCase()}</span>
             )}
           </span>
         ) : (
@@ -172,7 +193,7 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
   return (
     <Card className="p-0">
       <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-        <h2 className="text-body font-medium text-ink">Canonical facts</h2>
+        <h2 className="text-body font-medium text-ink">Application details</h2>
         <p className="num text-meta text-ink-3">
           {entries.length} facts · {unknowns} unknown · {conflicts} conflict
           {conflicts === 1 ? '' : 's'}
@@ -181,7 +202,7 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
       <table className="ledger" data-testid="facts-table">
         <thead>
           <tr>
-            <th className="w-[34%]">Fact</th>
+            <th className="w-[34%]">Information</th>
             <th>Value</th>
             <th className="w-[30%]">Source</th>
           </tr>

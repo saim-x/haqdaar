@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
 import { useAuth } from '../../shared/auth/AuthProvider';
-import type { OfficerCaseReview } from '../../shared/api/types';
+import type { CaseStatus, OfficerCaseReview } from '../../shared/api/types';
 import { getAccessToken } from '../../shared/auth/session';
 import { API_BASE } from '../../shared/config';
 import {
@@ -13,6 +13,7 @@ import {
   Chip,
   ConfidenceBar,
   ErrorState,
+  factLabel,
   flagWord,
   humanize,
   Loading,
@@ -21,18 +22,18 @@ import {
   stepWord,
 } from '../ui';
 import { IconLock, IconWarning } from '../../shared/ui/Icons';
-import { FactTable, RuleTraceTable, WhyThisRoute } from './CaseEvidence';
+import { FactTable, isRuleCheck, reviewFacts, RuleTraceTable, WhyThisRoute } from './CaseEvidence';
 
-const REASON_CODES = [
-  'DOCUMENT_ILLEGIBLE',
-  'INCOME_CONFLICT',
-  'IDENTITY_AMBIGUOUS',
-  'DUPLICATE_SUSPECTED',
-  'PAYOUT_MISMATCH',
-  'CONSENT_LOW_ASSURANCE',
-  'POLICY_DISCRETION',
-  'OTHER',
-];
+const REASON_CODES = {
+  DOCUMENT_ILLEGIBLE: 'Document is hard to read',
+  INCOME_CONFLICT: 'Income records disagree',
+  IDENTITY_AMBIGUOUS: 'Identity could not be confirmed',
+  DUPLICATE_SUSPECTED: 'Possible duplicate application',
+  PAYOUT_MISMATCH: 'Payment details do not match',
+  CONSENT_LOW_ASSURANCE: 'Permission needs checking',
+  POLICY_DISCRETION: 'Program rules require judgment',
+  OTHER: 'Other',
+};
 
 const REQUESTABLE_FIELDS = [
   'applicant_full_name',
@@ -75,12 +76,23 @@ function formatCheckValue(value: unknown): string {
 
 const ACTIONS = [
   { key: 'APPROVE', label: 'Approve', on: 'border-positive/40 bg-positive-wash text-positive' },
-  { key: 'REQUEST_INFO', label: 'Request info', on: 'border-warn/40 bg-warn-wash text-warn' },
+  { key: 'REQUEST_INFO', label: 'Ask for information', on: 'border-warn/40 bg-warn-wash text-warn' },
   { key: 'REJECT', label: 'Reject', on: 'border-negative/40 bg-negative-wash text-negative' },
-  { key: 'ESCALATE', label: 'Escalate', on: 'border-ink/25 bg-raised text-ink' },
+  { key: 'ESCALATE', label: 'Return for review', on: 'border-ink/25 bg-raised text-ink' },
 ] as const;
 
 type ActionKey = (typeof ACTIONS)[number]['key'];
+
+function BackToCases() {
+  return (
+    <Link
+      to="/staff/queue"
+      className="press mb-2 inline-flex min-h-[36px] items-center rounded-control px-3 text-caption font-medium text-accent-ink hover:bg-raised"
+    >
+      Back to cases
+    </Link>
+  );
+}
 
 /**
  * Officer case review - docs/11 §6.1.
@@ -95,13 +107,18 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const id = caseId ?? params.id ?? '';
   const { session } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedAction, setAction] = useState<ActionKey>('APPROVE');
+  const [selectedAction, setAction] = useState<ActionKey | null>(null);
   const [reasonCodes, setReasonCodes] = useState<string[]>([]);
   const [requestedFields, setRequestedFields] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [banner, setBanner] = useState<{ tone: 'ok' | 'danger' | 'warn'; text: string } | null>(
     null,
   );
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (banner) bannerRef.current?.focus();
+  }, [banner]);
 
   const query = useQuery({
     queryKey: ['officer-case', id],
@@ -113,19 +130,31 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const availableActions = secondReview
     ? ACTIONS.filter(({ key }) => key === 'REJECT' || (key === 'APPROVE' && !firstApprover))
     : ACTIONS;
-  const action = availableActions.find(({ key }) => key === selectedAction)?.key ?? availableActions[0].key;
+  const action = availableActions.find(({ key }) => key === selectedAction)?.key ?? null;
 
   const decide = useMutation({
     mutationFn: () =>
-      api.post(`/officer/cases/${id}/decide`, {
+      api.post<{ status: CaseStatus }>(`/officer/cases/${id}/decide`, {
         action,
         reason_codes: reasonCodes,
         note,
         requested_fields: action === 'REQUEST_INFO' ? requestedFields : [],
         override_amount_pkr: null,
       }),
-    onSuccess: () => {
-      setBanner({ tone: 'ok', text: `Decision recorded: ${action}.` });
+    onSuccess: ({ status }) => {
+      queryClient.setQueryData<OfficerCaseReview>(['officer-case', id], (current) =>
+        current ? {
+          ...current,
+          status,
+          status_label: undefined,
+          first_approver_id: status === 'PENDING_SECOND_APPROVAL' ? session?.user.id : current.first_approver_id,
+        } : current,
+      );
+      setAction(null);
+      setReasonCodes([]);
+      setRequestedFields([]);
+      setNote('');
+      setBanner({ tone: 'ok', text: `Decision saved. ${statusWord(status)}.` });
       void queryClient.invalidateQueries({ queryKey: ['officer-case', id] });
       void queryClient.invalidateQueries({ queryKey: ['officer-queue'] });
     },
@@ -133,7 +162,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
       if (err instanceof ApiError && err.code === 'SAME_OFFICER') {
         setBanner({
           tone: 'danger',
-          text: 'Four-eyes rule: you gave the first approval. A different officer must give the second.',
+          text: 'You gave the first approval. A different officer must give the second.',
         });
         return;
       }
@@ -142,10 +171,14 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   });
 
   const assign = useMutation({
-    mutationFn: () => api.post(`/officer/cases/${id}/assign`),
-    onSuccess: () => {
-      setBanner({ tone: 'ok', text: 'Assigned to you.' });
+    mutationFn: () => api.post<{ status: CaseStatus }>(`/officer/cases/${id}/assign`),
+    onSuccess: ({ status }) => {
+      queryClient.setQueryData<OfficerCaseReview>(['officer-case', id], (current) =>
+        current ? { ...current, status, status_label: undefined } : current,
+      );
+      setBanner({ tone: 'ok', text: 'Review started. This case is now in My cases.' });
       void queryClient.invalidateQueries({ queryKey: ['officer-case', id] });
+      void queryClient.invalidateQueries({ queryKey: ['officer-queue'] });
     },
     onError: (err) => setBanner({ tone: 'danger', text: errorMessage(err, 'en') }),
   });
@@ -153,7 +186,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const reevaluate = useMutation({
     mutationFn: () => api.post(`/officer/cases/${id}/reevaluate`, {}),
     onSuccess: () => {
-      setBanner({ tone: 'ok', text: 'Re-evaluated with the current rule version.' });
+      setBanner({ tone: 'ok', text: 'Case checked against the current program rules.' });
       void queryClient.invalidateQueries({ queryKey: ['officer-case', id] });
     },
     onError: (err) => setBanner({ tone: 'danger', text: errorMessage(err, 'en') }),
@@ -175,14 +208,14 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
     }
   }
 
-  const consentRevoked = query.error instanceof ApiError && query.error.isConsentRevoked;
+  const consentRevoked = [query.error, decide.error, assign.error, reevaluate.error]
+    .some((error) => error instanceof ApiError && error.isConsentRevoked);
   const caseData = query.data;
 
-  // docs/05 §3.6 - `facts` is the canonical tri-state bundle. Older payloads
-  // only carry `draft_answers`, which has the same shape minus `state`.
-  const facts = useMemo(() => caseData?.facts ?? caseData?.draft_answers ?? {}, [caseData]);
-  const ruleTrace = caseData?.rule_trace ?? [];
-  const highFlags = (caseData?.flags ?? []).filter((f) => f.severity === 'HIGH');
+  // A saved officer decision wraps the application fields in its audit snapshot.
+  const facts = useMemo(() => reviewFacts(caseData?.facts, caseData?.draft_answers), [caseData]);
+  const ruleTrace = caseData?.rule_trace?.filter(isRuleCheck) ?? [];
+  const needsSecondApproval = caseData?.priority_band === 'HIGH' || caseData?.priority_band === 'URGENT';
   const ruleStale = caseData?.rule_stale === true;
 
   if (query.isLoading) return <Loading label="Loading case…" />;
@@ -196,26 +229,25 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           </div>
           <h1 className="text-title font-medium text-paused">Citizen withdrew consent</h1>
           <p className="mt-2 text-caption leading-[1.7] text-ink">
-            Access is blocked and the attempt has been logged. This case is now{' '}
-            <span className="font-mono font-medium">ON_HOLD_CONSENT</span>.
+            This case is on hold until the applicant gives permission again. The access attempt was recorded.
           </p>
           <p className="mt-3 text-meta leading-[1.7] text-ink-3">
-            No personal data is shown on this screen. The citizen can re-grant access at any time
-            and the case resumes from where it stopped.
+            You can return to your list of cases.
           </p>
-          <Link
-            to="/staff/queue"
-            className="press mt-5 inline-flex min-h-[36px] items-center rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised"
-          >
-            Back to queue
-          </Link>
+          <BackToCases />
         </Card>
       </div>
     );
   }
 
-  if (query.error) return <ErrorState error={query.error} />;
-  if (!caseData) return <ErrorState error={new Error('Case not found')} />;
+  if (query.error) return (
+    <div>
+      <BackToCases />
+      {banner?.tone === 'ok' && <p role="status" className="mb-3 text-positive">{banner.text}</p>}
+      <ErrorState error={query.error} />
+    </div>
+  );
+  if (!caseData) return <><BackToCases /><ErrorState error={new Error('Case not found')} /></>;
 
   const needsReason = action === 'REJECT' || action === 'APPROVE';
   const needsFields = action === 'REQUEST_INFO';
@@ -225,7 +257,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const canAssign = caseData.status === 'HUMAN_REVIEW';
   const canDecide = caseData.status === 'IN_REVIEW' || secondReview;
   const canSubmit =
-    (!needsReason || (reasonCodes.length > 0 && note.trim().length > 0)) &&
+    action !== null && (!needsReason || (reasonCodes.length > 0 && note.trim().length > 0)) &&
     (!needsFields || requestedFields.length > 0);
 
   const bannerSkin =
@@ -242,33 +274,18 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
         subtitle={[
           caseData.citizen?.full_name ?? 'Applicant',
           caseData.citizen?.cnic_masked,
-          caseData.status_label?.label_en ?? statusWord(caseData.status),
+          statusWord(caseData.status),
         ]
           .filter(Boolean)
           .join(' · ')}
-        actions={
-          <>
-            {canAssign && <button
-              type="button"
-              onClick={() => assign.mutate()}
-              disabled={assign.isPending}
-              className="press inline-flex min-h-[36px] items-center rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
-            >
-              Assign to me
-            </button>}
-            <Link
-              to="/staff/queue"
-              className="press inline-flex min-h-[36px] items-center rounded-control px-3 text-caption text-ink-2 hover:bg-raised hover:text-ink"
-            >
-              Back to queue
-            </Link>
-          </>
-        }
+        actions={<BackToCases />}
       />
 
       {banner && (
         <div
-          role="status"
+          ref={bannerRef}
+          tabIndex={-1}
+          role={banner.tone === 'danger' ? 'alert' : 'status'}
           className={`mb-4 rounded-control border px-4 py-2.5 text-caption font-medium ${bannerSkin}`}
         >
           {banner.text}
@@ -279,8 +296,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-control border border-warn/25 bg-warn-wash px-4 py-2.5">
           <IconWarning size={14} className="shrink-0 text-warn" />
           <p className="flex-1 text-caption leading-[1.7] text-warn">
-            This case was evaluated with an older rule version. Re-evaluate before deciding so the
-            decision is reproducible against the active rules.
+            The program rules have changed. Check the case again before making a decision.
           </p>
           <button
             type="button"
@@ -288,16 +304,21 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             disabled={reevaluate.isPending}
             className="press inline-flex min-h-[32px] items-center rounded-[7px] border border-warn/40 bg-card px-2.5 text-meta font-medium text-warn hover:bg-warn-wash disabled:opacity-50"
           >
-            Re-evaluate
+            {reevaluate.isPending ? 'Checking…' : 'Check again'}
           </button>
         </div>
       )}
 
+      {(canAssign || canDecide) && (
+        <a href="#case-decision" className="mb-3 inline-flex min-h-tap items-center text-caption font-medium text-accent-ink underline xl:hidden">
+          Go to case decision
+        </a>
+      )}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
           {reviewInProgress && (
             <Card className="border-accent/25 bg-accent-wash">
-              <CardTitle>What would unblock this case?</CardTitle>
+              <CardTitle>What happens next?</CardTitle>
               {caseData.status === 'NEEDS_INFO' ? (
                 <p className="text-body text-ink-2">The case is waiting for the information already requested from the citizen.</p>
               ) : caseData.status === 'PENDING_SECOND_APPROVAL' ? (
@@ -306,23 +327,23 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 <p className="text-body text-ink-2">
                   {conflictingFacts > 0
                     ? 'Compare the conflicting records and their sources before deciding.'
-                    : 'Review the handoff and check the evidence before deciding or requesting more information.'}
+                    : 'Check the application and documents before you record a decision.'}
                 </p>
               )}
               {unresolvedRules.length > 0 && (
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-caption text-ink-2">
                   {unresolvedRules.slice(0, 3).map((entry) => (
-                    <li key={entry.rule_id}>{entry.reason_en || entry.label_en || entry.rule_id}</li>
+                    <li key={entry.rule_id}>{entry.reason_en || entry.label_en || 'This check needs a closer look.'}</li>
                   ))}
                 </ul>
               )}
               <a href="#case-review-evidence" className="mt-2 inline-flex min-h-tap items-center text-caption font-medium text-accent-ink underline">
-                Open evidence and sources
+                See application details
               </a>
             </Card>
           )}
           <Card>
-            <CardTitle hint="AI proposes, policy disposes">AI case handoff</CardTitle>
+            <CardTitle>Case summary</CardTitle>
             {caseData.ai_case_note ? (
               <div className="grid gap-5 border-t border-ink/[0.08] pt-3 sm:grid-cols-3">
                 {[
@@ -358,7 +379,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 ))}
               </div>
             ) : (
-              <p className="text-caption text-ink-3">No handoff note recorded for this case.</p>
+              <p className="text-caption text-ink-3">There is no summary for this case yet.</p>
             )}
           </Card>
 
@@ -366,17 +387,6 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             <FactTable facts={facts} />
           </div>
 
-          {ruleTrace.length > 0 ? (
-            <RuleTraceTable trace={ruleTrace} />
-          ) : (
-            <WhyThisRoute
-              route={caseData.latest_route}
-              confidence={caseData.latest_confidence}
-              priorityBand={caseData.priority_band}
-              priorityScore={caseData.priority_score}
-              flags={caseData.flags ?? []}
-            />
-          )}
 
           <Card className="p-0">
             <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
@@ -410,24 +420,27 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     </button>
                   </div>
                   {doc.verify_checks && doc.verify_checks.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {doc.verify_checks.map((check) => (
-                        <li
-                          key={check.check}
-                          className="flex flex-wrap items-center gap-2 text-meta text-ink-2"
-                        >
-                          <Chip tone={check.passed ? 'ok' : 'danger'}>
-                            {check.passed ? 'pass' : 'fail'}
-                          </Chip>
-                          <span>{humanize(check.check)}</span>
-                          {check.value !== undefined && check.value !== null && (
-                            <span className="num font-mono text-ink-3">
-                              {formatCheckValue(check.value)}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-meta text-ink-2">Document checks</summary>
+                      <ul className="mt-2 space-y-1">
+                        {doc.verify_checks.map((check) => (
+                          <li
+                            key={check.check}
+                            className="flex flex-wrap items-center gap-2 text-meta text-ink-2"
+                          >
+                            <Chip tone={check.passed ? 'ok' : 'danger'}>
+                              {check.passed ? 'pass' : 'fail'}
+                            </Chip>
+                            <span>{humanize(check.check)}</span>
+                            {check.value !== undefined && check.value !== null && (
+                              <span className="num font-mono text-ink-3">
+                                {formatCheckValue(check.value)}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
                 </li>
               ))}
@@ -437,9 +450,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             </ul>
           </Card>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Card>
-              <CardTitle hint={`${caseData.flags?.length ?? 0} active`}>Risk flags</CardTitle>
+          <Card>
+              <CardTitle>Things to check</CardTitle>
               <ul className="space-y-1.5">
                 {(caseData.flags ?? []).map((flag) => (
                   <li key={flag.code} className="flex items-center gap-2">
@@ -458,228 +470,253 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   </li>
                 ))}
                 {(caseData.flags?.length ?? 0) === 0 && (
-                  <li className="text-caption text-ink-3">No flags.</li>
+                  <li className="text-caption text-ink-3">Nothing extra to check.</li>
                 )}
               </ul>
-            </Card>
-
-            <Card>
-              <CardTitle hint="pipeline">Agent timeline</CardTitle>
-              <ol className="space-y-1.5">
-                {(caseData.agent_steps ?? []).map((step, idx) => {
-                  const ms = step.latency_ms ?? step.duration_ms;
-                  return (
-                    <li key={step.id ?? `${step.created_at ?? step.at ?? idx}-${step.step}`} className="flex items-center gap-2">
-                      <span
-                        className={`live-dot ${
-                          step.status === 'OK'
-                            ? 'bg-positive'
+          </Card>
+          <details className="rounded-panel border border-ink/[0.10] bg-card px-4 py-3">
+            <summary className="cursor-pointer font-medium text-ink">System checks and history</summary>
+            <div className="mt-3 space-y-4">
+              {ruleTrace.length > 0 ? (
+                <RuleTraceTable trace={ruleTrace} />
+              ) : (
+                <WhyThisRoute
+                  route={caseData.latest_route}
+                  confidence={caseData.latest_confidence}
+                  priorityBand={caseData.priority_band}
+                  priorityScore={caseData.priority_score}
+                  flags={caseData.flags ?? []}
+                />
+              )}
+              <Card>
+                <CardTitle>System activity</CardTitle>
+                <ol className="space-y-1.5">
+                  {(caseData.agent_steps ?? []).map((step, idx) => {
+                    const ms = step.latency_ms ?? step.duration_ms;
+                    return (
+                      <li key={step.id ?? `${step.created_at ?? step.at ?? idx}-${step.step}`} className="flex items-center gap-2">
+                        <span
+                          className={`live-dot ${
+                            step.status === 'OK'
+                              ? 'bg-positive'
+                              : step.status === 'FAILED'
+                                ? 'bg-negative'
+                                : 'bg-ink-3'
+                          }`}
+                          aria-hidden
+                        />
+                        <span className="text-meta text-ink-3">
+                          {step.status === 'OK'
+                            ? 'ok'
                             : step.status === 'FAILED'
-                              ? 'bg-negative'
-                              : 'bg-ink-3'
-                        }`}
-                        aria-hidden
-                      />
-                      <span className="text-meta text-ink-3">
-                        {step.status === 'OK'
-                          ? 'ok'
-                          : step.status === 'FAILED'
-                            ? 'failed'
-                            : 'skipped'}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-meta text-ink">
-                        {stepWord(step.step)}
-                      </span>
-                      {ms !== null && ms !== undefined && (
-                        <span className="num ms-auto font-mono text-meta text-ink-3">{ms}ms</span>
-                      )}
-                    </li>
-                  );
-                })}
-                {(caseData.agent_steps?.length ?? 0) === 0 && (
-                  <li className="text-caption text-ink-3">No agent steps yet.</li>
-                )}
-              </ol>
-            </Card>
-          </div>
+                              ? 'failed'
+                              : 'skipped'}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-meta text-ink">
+                          {stepWord(step.step)}
+                        </span>
+                        {ms !== null && ms !== undefined && (
+                          <span className="num ms-auto font-mono text-meta text-ink-3">{ms}ms</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                  {(caseData.agent_steps?.length ?? 0) === 0 && (
+                    <li className="text-caption text-ink-3">No agent steps yet.</li>
+                  )}
+                </ol>
+              </Card>
+              <div className="flex items-center justify-between border-y border-ink/[0.08] py-2">
+                <span className="text-meta text-ink-3">Confidence in the records</span>
+                <ConfidenceBar value={caseData.latest_confidence ?? null} />
+              </div>
+
+              {caseData.confidence_components && (
+                <div className="mt-2.5 space-y-1.5 rounded-control bg-raised/60 p-2.5">
+                  {(() => {
+                    const cc = caseData.confidence_components;
+                    const pillars = [
+                      { label: 'Identity', val: cc.identity },
+                      { label: 'Documents', val: cc.documents },
+                      { label: 'Data consistency', val: cc.data_consistency },
+                      { label: 'Permission', val: cc.consent_assurance },
+                    ];
+                    const minVal = Math.min(...pillars.map((p) => p.val));
+                    return pillars.map((p) => {
+                      const isWeakest = Math.abs(p.val - minVal) < 0.001 && minVal < 0.9;
+                      return (
+                        <div key={p.label}>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className={isWeakest ? 'font-medium text-negative' : 'text-ink-2'}>
+                              {p.label}
+                              {isWeakest ? ' (needs checking)' : ''}
+                            </span>
+                            <span className="num font-mono text-ink">{(p.val * 100).toFixed(0)}%</span>
+                          </div>
+                          <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-ink/[0.08]">
+                            <div
+                              className={`h-full ${
+                                p.val >= 0.9 ? 'bg-positive' : p.val >= 0.7 ? 'bg-warn' : 'bg-negative'
+                              }`}
+                              style={{ width: `${Math.round(p.val * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+
+            </div>
+          </details>
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+        <aside id="case-decision" className="scroll-mt-24 space-y-4 xl:sticky xl:top-4 xl:self-start">
           <Card>
-            <CardTitle>Decision</CardTitle>
+            <CardTitle>Case decision</CardTitle>
 
-            <div className="flex items-center justify-between border-y border-ink/[0.08] py-2">
-              <span className="text-meta text-ink-3">Weakest-link confidence</span>
-              <ConfidenceBar value={caseData.latest_confidence ?? null} />
-            </div>
-
-            {caseData.confidence_components && (
-              <div className="mt-2.5 space-y-1.5 rounded-control bg-raised/60 p-2.5">
-                {(() => {
-                  const cc = caseData.confidence_components;
-                  const pillars = [
-                    { label: 'Identity', val: cc.identity },
-                    { label: 'Documents', val: cc.documents },
-                    { label: 'Data consistency', val: cc.data_consistency },
-                    { label: 'Consent assurance', val: cc.consent_assurance },
-                  ];
-                  const minVal = Math.min(...pillars.map((p) => p.val));
-                  return pillars.map((p) => {
-                    const isWeakest = Math.abs(p.val - minVal) < 0.001 && minVal < 0.9;
-                    return (
-                      <div key={p.label}>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className={isWeakest ? 'font-medium text-negative' : 'text-ink-2'}>
-                            {p.label}
-                            {isWeakest ? ' (bottleneck)' : ''}
-                          </span>
-                          <span className="num font-mono text-ink">{(p.val * 100).toFixed(0)}%</span>
-                        </div>
-                        <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-ink/[0.08]">
-                          <div
-                            className={`h-full ${
-                              p.val >= 0.9 ? 'bg-positive' : p.val >= 0.7 ? 'bg-warn' : 'bg-negative'
-                            }`}
-                            style={{ width: `${Math.round(p.val * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            )}
-
-            {!canDecide ? (
-              <p className="mt-3 text-caption text-ink-2">
-                {canAssign ? 'Assign this case to yourself to start the review.' : 'No decision is available for this case right now.'}
-              </p>
-            ) : <>
-            {firstApprover && (
-              <p className="mt-3 text-caption text-ink-2">You recorded the first approval. A different officer can record the second.</p>
-            )}
-            <div className="mt-3 grid grid-cols-2 gap-1.5">
-              {availableActions.map(({ key, label, on }) => (
+            {canAssign ? (
+              <>
+                <p className="text-caption leading-[1.7] text-ink-2">
+                  Start the review to add this case to My cases and open the decision form.
+                </p>
                 <button
-                  key={key}
                   type="button"
-                  onClick={() => setAction(key)}
-                  aria-pressed={action === key}
-                  className={`press min-h-[40px] rounded-control border text-caption ${
-                    action === key
-                      ? `${on} font-medium`
-                      : 'border-ink/[0.12] bg-card text-ink-2 hover:bg-raised hover:text-ink'
-                  }`}
+                  onClick={() => assign.mutate()}
+                  disabled={assign.isPending}
+                  className="press mt-3 min-h-primary w-full rounded-control bg-accent px-4 text-body font-medium text-white hover:bg-accent-ink disabled:opacity-50"
                 >
-                  {label}
+                  {assign.isPending ? 'Starting review…' : 'Start review'}
                 </button>
-              ))}
-            </div>
-
-            <p className="mt-4 text-meta text-ink-3">
-              Reason codes {needsReason && <span className="text-negative">*</span>}
-            </p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {REASON_CODES.map((code) => {
-                const on = reasonCodes.includes(code);
-                return (
+              </>
+            ) : !canDecide ? (
+              <div className="space-y-2">
+                <p className="text-caption text-ink-2">Current status: {statusWord(caseData.status)}.</p>
+                <BackToCases />
+              </div>
+            ) : <>
+              {firstApprover && (
+                <p className="mt-3 text-caption text-ink-2">You recorded the first approval. A different officer can record the second.</p>
+              )}
+              <p className="mt-2 text-caption text-ink-2">Choose what should happen to this application.</p>
+              <div className="mt-3 grid grid-cols-2 gap-1.5">
+                {availableActions.map(({ key, label, on }) => (
                   <button
-                    key={code}
+                    key={key}
                     type="button"
-                    onClick={() =>
-                      setReasonCodes((prev) =>
-                        on ? prev.filter((c) => c !== code) : [...prev, code],
-                      )
-                    }
-                    aria-pressed={on}
-                    className={`press rounded-[6px] border px-2 py-1 text-meta ${
-                      on
-                        ? 'border-accent/40 bg-accent-wash font-medium text-accent-ink'
-                        : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
+                    onClick={() => setAction(key)}
+                    disabled={decide.isPending}
+                    aria-pressed={action === key}
+                    className={`press min-h-[40px] rounded-control border text-caption ${
+                      action === key
+                        ? `${on} font-medium`
+                        : 'border-ink/[0.12] bg-card text-ink-2 hover:bg-raised hover:text-ink'
                     }`}
                   >
-                    {humanize(code)}
+                    {label}
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
 
-            {action === 'REQUEST_INFO' && (
-              <>
+              {action && <>
                 <p className="mt-4 text-meta text-ink-3">
-                  Fields to ask for <span className="text-negative">*</span>
+                  Reason for decision {needsReason && <span className="text-negative">*</span>}
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
-                  {Array.from(
-                    new Set([...REQUESTABLE_FIELDS, ...Object.keys(caseData.draft_answers ?? {})]),
-                  ).map((key) => {
-                    const on = requestedFields.includes(key);
+                  {Object.entries(REASON_CODES).map(([code, label]) => {
+                    const on = reasonCodes.includes(code);
                     return (
                       <button
-                        key={key}
+                        key={code}
                         type="button"
                         onClick={() =>
-                          setRequestedFields((prev) =>
-                            on ? prev.filter((f) => f !== key) : [...prev, key],
+                          setReasonCodes((prev) =>
+                            on ? prev.filter((c) => c !== code) : [...prev, code],
                           )
                         }
                         aria-pressed={on}
                         className={`press rounded-[6px] border px-2 py-1 text-meta ${
                           on
-                            ? 'border-warn/40 bg-warn-wash font-medium text-warn'
+                            ? 'border-accent/40 bg-accent-wash font-medium text-accent-ink'
                             : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
                         }`}
                       >
-                        {humanize(key)}
+                        {label}
                       </button>
                     );
                   })}
                 </div>
-              </>
-            )}
 
-            <label htmlFor="note" className="mt-4 block text-meta text-ink-3">
-              Note {needsReason && <span className="text-negative">*</span>}
-            </label>
-            <textarea
-              id="note"
-              rows={3}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="mt-1.5 text-caption"
-              placeholder="Explain the decision. The citizen sees a plain-language version."
-            />
+                {action === 'REQUEST_INFO' && (
+                  <>
+                    <p className="mt-4 text-meta text-ink-3">
+                      What should the applicant provide? <span className="text-negative">*</span>
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {Array.from(
+                        new Set([...REQUESTABLE_FIELDS, ...Object.keys(caseData.draft_answers ?? {})]),
+                      ).map((key) => {
+                        const on = requestedFields.includes(key);
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() =>
+                              setRequestedFields((prev) =>
+                                on ? prev.filter((f) => f !== key) : [...prev, key],
+                              )
+                            }
+                            aria-pressed={on}
+                            className={`press rounded-[6px] border px-2 py-1 text-meta ${
+                              on
+                                ? 'border-warn/40 bg-warn-wash font-medium text-warn'
+                                : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
+                            }`}
+                          >
+                            {factLabel(key)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
 
-            {highFlags.length > 0 && !secondReview && action === 'APPROVE' && (
-              <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta leading-[1.7] text-warn">
-                HIGH flag present: your approval sends this case to a second officer.
-              </p>
-            )}
+                <label htmlFor="note" className="mt-4 block text-meta text-ink-3">
+                  Explanation {needsReason && <span className="text-negative">*</span>}
+                </label>
+                <textarea
+                  id="note"
+                  rows={3}
+                  maxLength={2000}
+                  disabled={decide.isPending}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="mt-1.5 text-caption"
+                  placeholder="Write a short explanation."
+                />
 
-            <button
-              type="button"
-              disabled={!canSubmit || decide.isPending}
-              onClick={() => decide.mutate()}
-              className="press mt-4 min-h-primary w-full rounded-control bg-accent text-body font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {decide.isPending ? 'Recording…' : `Record ${action.toLowerCase()}`}
-            </button>
-            {!canSubmit && (
-              <p className="mt-2 text-meta leading-[1.7] text-ink-3">
-                Approve and Reject need at least one reason code and a note. Request info needs at
-                least one field.
-              </p>
-            )}
+                {needsSecondApproval && !secondReview && action === 'APPROVE' && (
+                  <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta leading-[1.7] text-warn">
+                    If you approve this case, a second officer must also approve it before payment.
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!canSubmit || decide.isPending}
+                  onClick={() => decide.mutate()}
+                  className="press mt-4 min-h-primary w-full rounded-control bg-accent text-body font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {decide.isPending ? 'Saving…' : 'Save decision'}
+                </button>
+                {!canSubmit && (
+                  <p className="mt-2 text-meta leading-[1.7] text-ink-3">
+                    {needsFields ? 'Choose at least one item to request.' : 'Choose a reason and write a short explanation.'}
+                  </p>
+                )}
+              </>}
             </>}
-          </Card>
-
-          <Card>
-            <CardTitle>Four-eyes</CardTitle>
-            <p className="text-caption leading-[1.7] text-ink-2">
-              {caseData.first_approver_id
-                ? 'First approval recorded. A different officer must complete the second approval.'
-                : 'No first approval yet.'}
-            </p>
           </Card>
         </aside>
       </div>
