@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Navigate, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { BrandLockup } from '../shared/ui/Brand';
 import type { Role } from '../shared/api/types';
 import {
   IconChart,
@@ -116,8 +117,8 @@ export default function StaffApp({ children }: { children: ReactNode }) {
     >
       <aside className="hidden w-[248px] shrink-0 border-e border-ink/[0.08] bg-card md:flex md:flex-col">
         <div className="border-b border-ink/[0.08] px-5 py-4">
-          <p className="text-body font-medium text-ink">Haqdaar</p>
-          <p className="mt-0.5 text-meta text-ink-3">Staff console</p>
+          <BrandLockup height={22} />
+          <p className="mt-1.5 text-meta text-ink-3">Staff console</p>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">

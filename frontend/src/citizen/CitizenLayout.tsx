@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
+import { BrandMark } from '../shared/ui/Brand';
 import { OfflinePill } from '../shared/ui/OfflinePill';
 import { IconGlobe, IconHome, IconList, IconLogout, IconQuestion, IconShield, IconUsers } from '../shared/ui/Icons';
 
@@ -40,6 +41,7 @@ export function CitizenLayout() {
     <div className="flex min-h-[calc(100dvh-28px)] flex-col">
       <header className="sticky top-7 z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2">
+          <BrandMark size={22} />
           <span className="text-body-lg font-medium tracking-tight text-ink">{t('app.name')}</span>
           <OfflinePill compact />
           <div className="ms-auto flex items-center gap-0.5">
