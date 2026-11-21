@@ -51,6 +51,10 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
   const state = resolveFactState(fact);
   const unknown = state === 'UNKNOWN';
   const alternatives = fact.alternatives ?? [];
+  const confidence =
+    typeof fact.source_confidence === 'number' && fact.source_confidence > 0
+      ? `${Math.round(fact.source_confidence * 100)}%`
+      : null;
 
   return (
     <tr className={fact.conflict ? 'bg-warn-wash' : undefined}>
@@ -60,13 +64,18 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
           <span className="inline-flex flex-wrap items-baseline gap-2">
             <span className="text-caption text-ink-3">—</span>
             {fact.missing_reason && (
-              <span className="font-mono text-meta text-ink-3">{fact.missing_reason}</span>
+              <span className="text-meta leading-[1.6] text-ink-3">{fact.missing_reason}</span>
             )}
           </span>
         ) : (
           <span className="num font-mono text-caption font-medium text-ink">
             {renderFactValue(fact.value)}
           </span>
+        )}
+        {fact.conflict && (
+          <p className="mt-1">
+            <Chip tone="danger">conflict</Chip>
+          </p>
         )}
         {alternatives.length > 0 && (
           <ul className="mt-1 space-y-0.5">
@@ -79,33 +88,35 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
         )}
       </td>
       <td>
-        <Chip tone={sourceTone(fact.source)}>{fact.source ?? '—'}</Chip>
-      </td>
-      <td className="text-meta text-ink-3">{fact.entered_by ?? '—'}</td>
-      <td className="num text-end font-mono text-meta text-ink-2">
-        {typeof fact.source_confidence === 'number' && fact.source_confidence > 0
-          ? `${Math.round(fact.source_confidence * 100)}%`
-          : '—'}
-      </td>
-      <td>
-        {fact.conflict ? (
-          <Chip tone="danger">conflict</Chip>
+        {fact.source ? (
+          <Chip tone={sourceTone(fact.source)}>{fact.source}</Chip>
         ) : (
-          <span className="text-meta text-ink-3">—</span>
+          <span className="text-caption text-ink-3">—</span>
         )}
+        <p className="mt-1 text-meta text-ink-3">
+          {fact.entered_by ?? '—'}
+          {confidence && <span className="num"> · {confidence}</span>}
+        </p>
       </td>
     </tr>
   );
 }
 
-/** Canonical facts with provenance, alternatives and conflict highlighting. */
+/**
+ * Canonical facts with provenance, alternatives and conflict highlighting.
+ *
+ * Three columns, not six. The reading column is ~590px wide, so a six-column
+ * table pushed "Entered by" and "Conflict" off the right edge — the officer had
+ * to scroll sideways to see who supplied a value, which is exactly the question
+ * this table exists to answer. Provenance now stacks under the source chip.
+ */
 export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
   const entries = Object.entries(facts);
   const conflicts = entries.filter(([, f]) => f.conflict).length;
   const unknowns = entries.filter(([, f]) => resolveFactState(f) === 'UNKNOWN').length;
 
   return (
-    <Card className="overflow-x-auto p-0">
+    <Card className="p-0">
       <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
         <h2 className="text-body font-medium text-ink">Canonical facts</h2>
         <p className="num text-meta text-ink-3">
@@ -113,15 +124,12 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
           {conflicts === 1 ? '' : 's'}
         </p>
       </div>
-      <table className="ledger min-w-[720px]" data-testid="facts-table">
+      <table className="ledger" data-testid="facts-table">
         <thead>
           <tr>
-            <th>Fact</th>
+            <th className="w-[34%]">Fact</th>
             <th>Value</th>
-            <th>Source</th>
-            <th>Entered by</th>
-            <th className="text-end">Conf.</th>
-            <th>Conflict</th>
+            <th className="w-[30%]">Source</th>
           </tr>
         </thead>
         <tbody>
@@ -130,7 +138,7 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
           ))}
           {entries.length === 0 && (
             <tr>
-              <td colSpan={6} className="text-caption text-ink-3">
+              <td colSpan={3} className="text-caption text-ink-3">
                 No facts recorded on this case yet.
               </td>
             </tr>
@@ -156,68 +164,72 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
   const askEn = entry.result === 'UNKNOWN' ? (entry.ask_prompt_en ?? null) : null;
   const askUr = entry.result === 'UNKNOWN' ? (entry.ask_prompt_ur ?? null) : null;
   const tone = RESULT_TONE[entry.result] ?? RESULT_FALLBACK;
+  const expression = entry.fact
+    ? `${entry.fact}${entry.op ? ` ${entry.op}` : ''}${
+        entry.value !== undefined && entry.value !== null ? ` ${renderFactValue(entry.value)}` : ''
+      }`
+    : null;
 
   return (
-    <tr>
-      <td>
-        <p className="font-mono text-meta font-medium text-ink">{entry.rule_id}</p>
-        {label && <p className="mt-0.5 text-meta text-ink-2">{label}</p>}
-        {entry.fact && (
-          <p className="mt-0.5 font-mono text-meta text-ink-3">
-            {entry.fact}
-            {entry.op ? ` ${entry.op}` : ''}
-            {entry.value !== undefined && entry.value !== null
-              ? ` ${renderFactValue(entry.value)}`
-              : ''}
-          </p>
-        )}
-      </td>
-      <td>
-        <span className="inline-flex items-center gap-1.5">
+    <li className="border-b border-ink/[0.06] px-4 py-3 last:border-b-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <span className="font-mono text-meta font-medium text-ink">{entry.rule_id}</span>
+          {label && <span className="ms-2 text-caption text-ink">{label}</span>}
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1.5">
           <span className={`live-dot ${tone.dot}`} aria-hidden />
-          <span className={`text-meta ${tone.text}`}>{entry.result}</span>
+          <span className={`text-meta font-medium ${tone.text}`}>{entry.result}</span>
         </span>
-        {entry.required_for_auto && (
-          <p className="mt-1 text-meta text-ink-3">required for auto</p>
-        )}
-      </td>
-      <td>
-        <p className="text-meta text-ink-2">
+      </div>
+
+      {expression && <p className="mt-1 font-mono text-meta text-ink-3">{expression}</p>}
+
+      <p className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-0.5 text-meta text-ink-2">
+        <span>
           actual{' '}
           <span className="num font-mono font-medium text-ink">{renderFactValue(entry.actual)}</span>
-        </p>
-        <p className="text-meta text-ink-2">
+        </span>
+        <span>
           expected{' '}
           <span className="num font-mono font-medium text-ink">
             {renderFactValue(entry.expected)}
           </span>
+        </span>
+        {entry.required_for_auto && <span className="text-ink-3">required for auto</span>}
+      </p>
+
+      {reasonEn && <p className="mt-1.5 text-caption leading-[1.6] text-ink">{reasonEn}</p>}
+      {reasonUr && (
+        <p className="mt-0.5 text-caption leading-[1.7] text-ink-2" dir="rtl">
+          {reasonUr}
         </p>
-      </td>
-      <td>
-        {reasonEn && <p className="text-meta text-ink">{reasonEn}</p>}
-        {reasonUr && (
-          <p className="mt-0.5 text-meta text-ink-2" dir="rtl">
-            {reasonUr}
-          </p>
-        )}
-        {askEn && <p className="mt-1 text-meta text-warn">asks: {askEn}</p>}
-        {askUr && (
-          <p className="text-meta text-warn" dir="rtl">
-            {askUr}
-          </p>
-        )}
-      </td>
-      <td className="text-meta text-ink-3">
-        {entry.on_fail && <p>fail → {entry.on_fail}</p>}
-        {entry.on_unknown && <p>unknown → {entry.on_unknown}</p>}
-      </td>
-    </tr>
+      )}
+      {askEn && <p className="mt-1.5 text-meta leading-[1.6] text-warn">Asks: {askEn}</p>}
+      {askUr && (
+        <p className="text-meta leading-[1.7] text-warn" dir="rtl">
+          {askUr}
+        </p>
+      )}
+
+      {(entry.on_fail || entry.on_unknown) && (
+        <p className="mt-1.5 flex flex-wrap gap-x-4 font-mono text-meta text-ink-3">
+          {entry.on_fail && <span>fail → {entry.on_fail}</span>}
+          {entry.on_unknown && <span>unknown → {entry.on_unknown}</span>}
+        </p>
+      )}
+    </li>
   );
 }
 
 /**
  * Per-rule PASS / FAIL / UNKNOWN trace. Rendered only when the backend supplies
  * `rule_trace`; the caller falls back to "Why this route" otherwise.
+ *
+ * A list, not a table. Five columns of prose (rule, result, actual/expected,
+ * reason EN + UR, policy) cannot fit the reading column, and a horizontally
+ * scrolling trace hides the reason — the one thing the officer came to read.
+ * Stacked, each rule is one paragraph you finish before moving to the next.
  */
 export function RuleTraceTable({ trace }: { trace: RuleTraceEntry[] }) {
   const pass = trace.filter((e) => e.result === 'PASS').length;
@@ -225,29 +237,18 @@ export function RuleTraceTable({ trace }: { trace: RuleTraceEntry[] }) {
   const unknown = trace.filter((e) => e.result === 'UNKNOWN').length;
 
   return (
-    <Card className="overflow-x-auto p-0">
+    <Card className="p-0" data-testid="rule-trace">
       <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
         <h2 className="text-body font-medium text-ink">Rule trace</h2>
         <p className="num text-meta text-ink-3">
           {pass} pass · {fail} fail · {unknown} unknown
         </p>
       </div>
-      <table className="ledger min-w-[820px]" data-testid="rule-trace">
-        <thead>
-          <tr>
-            <th>Rule</th>
-            <th>Result</th>
-            <th>Actual / expected</th>
-            <th>Reason (EN / UR)</th>
-            <th>Policy</th>
-          </tr>
-        </thead>
-        <tbody>
-          {trace.map((entry, i) => (
-            <TraceRow key={`${entry.rule_id}-${i}`} entry={entry} />
-          ))}
-        </tbody>
-      </table>
+      <ul>
+        {trace.map((entry, i) => (
+          <TraceRow key={`${entry.rule_id}-${i}`} entry={entry} />
+        ))}
+      </ul>
     </Card>
   );
 }

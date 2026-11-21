@@ -23,13 +23,13 @@ const SORTS: { key: Sort; label: string }[] = [
   { key: 'oldest', label: 'Oldest' },
 ];
 
-const STATUS_FILTERS = [
-  '',
-  'HUMAN_REVIEW',
-  'IN_REVIEW',
-  'PENDING_SECOND_APPROVAL',
-  'NEEDS_INFO',
-  'WAITING_EXTERNAL',
+const STATUS_FILTERS: { value: string; label: string }[] = [
+  { value: '', label: 'All statuses' },
+  { value: 'HUMAN_REVIEW', label: 'With an officer' },
+  { value: 'IN_REVIEW', label: 'In review' },
+  { value: 'PENDING_SECOND_APPROVAL', label: 'Awaiting 2nd approval' },
+  { value: 'NEEDS_INFO', label: 'Needs more information' },
+  { value: 'WAITING_EXTERNAL', label: 'Waiting on a registry' },
 ];
 
 function waitingFor(iso: string): string {
@@ -109,8 +109,8 @@ export default function QueuePage() {
           aria-label="Filter by status"
         >
           {STATUS_FILTERS.map((s) => (
-            <option key={s} value={s}>
-              {s === '' ? 'All statuses' : s}
+            <option key={s.value} value={s.value}>
+              {s.label}
             </option>
           ))}
         </select>
@@ -172,7 +172,7 @@ export default function QueuePage() {
                   <td>
                     <Link
                       to={`/staff/cases/${item.id}`}
-                      className="font-mono text-caption font-medium text-accent-ink hover:underline"
+                      className="whitespace-nowrap font-mono text-caption font-medium text-accent-ink hover:underline"
                     >
                       {item.reference_code}
                     </Link>
@@ -187,16 +187,20 @@ export default function QueuePage() {
                     )}
                   </td>
                   <td>
-                    <p className="text-caption font-medium text-ink">{item.citizen_name}</p>
-                    <p className="num font-mono text-meta text-ink-3">{item.cnic_masked}</p>
+                    <p className="whitespace-nowrap text-caption font-medium text-ink">
+                      {item.citizen_name}
+                    </p>
+                    <p className="num whitespace-nowrap font-mono text-meta text-ink-3">
+                      {item.cnic_masked}
+                    </p>
                   </td>
-                  <td className="text-meta text-ink-2">{item.status}</td>
+                  <td className="whitespace-nowrap text-meta text-ink-2">
+                    {item.status_label?.label_en ?? item.status}
+                  </td>
                   <td>
                     <div className="flex flex-wrap gap-1">
                       {item.reason_codes.slice(0, 2).map((code) => (
-                        <Chip key={code} tone="danger">
-                          {code}
-                        </Chip>
+                        <Chip key={code}>{code}</Chip>
                       ))}
                       {item.reason_codes.length > 2 && <Chip>+{item.reason_codes.length - 2}</Chip>}
                     </div>
@@ -207,8 +211,8 @@ export default function QueuePage() {
                   <td className="num text-end font-mono text-meta text-ink-2">
                     {waitingFor(item.submitted_at ?? item.created_at)}
                   </td>
-                  <td className="text-meta text-ink-3">
-                    {item.assigned_officer_id ? 'assigned' : '—'}
+                  <td className="whitespace-nowrap text-meta text-ink-3">
+                    {item.assigned_officer_id ? 'Assigned' : '—'}
                   </td>
                 </tr>
               ))}

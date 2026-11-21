@@ -157,7 +157,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
     <div>
       <PageHeader
         title={caseData.reference_code}
-        subtitle={`${caseData.citizen?.full_name ?? 'Applicant'} · ${caseData.citizen?.cnic_masked ?? ''} · ${caseData.status}`}
+        subtitle={[
+          caseData.citizen?.full_name ?? 'Applicant',
+          caseData.citizen?.cnic_masked,
+          caseData.status_label?.label_en ?? caseData.status,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
         actions={
           <>
             <button
@@ -324,17 +330,23 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               <ul className="space-y-1.5">
                 {(caseData.flags ?? []).map((flag) => (
                   <li key={flag.code} className="flex items-center gap-2">
-                    <Chip
-                      tone={
+                    <span
+                      className={`live-dot ${
                         flag.severity === 'HIGH'
-                          ? 'danger'
+                          ? 'bg-negative'
                           : flag.severity === 'MEDIUM'
-                            ? 'warn'
-                            : 'neutral'
-                      }
-                    >
-                      {flag.severity}
-                    </Chip>
+                            ? 'bg-warn'
+                            : 'bg-ink-3'
+                      }`}
+                      aria-hidden
+                    />
+                    <span className="text-meta text-ink-2">
+                      {flag.severity === 'HIGH'
+                        ? 'High'
+                        : flag.severity === 'MEDIUM'
+                          ? 'Medium'
+                          : 'Low'}
+                    </span>
                     <span className="font-mono text-meta text-ink">{flag.code}</span>
                   </li>
                 ))}
@@ -349,17 +361,23 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               <ol className="space-y-1.5">
                 {(caseData.agent_steps ?? []).map((step) => (
                   <li key={`${step.at}-${step.step}`} className="flex items-center gap-2">
-                    <Chip
-                      tone={
+                    <span
+                      className={`live-dot ${
                         step.status === 'OK'
-                          ? 'ok'
+                          ? 'bg-positive'
                           : step.status === 'FAILED'
-                            ? 'danger'
-                            : 'neutral'
-                      }
-                    >
-                      {step.status}
-                    </Chip>
+                            ? 'bg-negative'
+                            : 'bg-ink-3'
+                      }`}
+                      aria-hidden
+                    />
+                    <span className="text-meta text-ink-3">
+                      {step.status === 'OK'
+                        ? 'ok'
+                        : step.status === 'FAILED'
+                          ? 'failed'
+                          : 'skipped'}
+                    </span>
                     <span className="font-mono text-meta text-ink">{step.step}</span>
                     <span className="num ms-auto font-mono text-meta text-ink-3">
                       {step.duration_ms}ms
@@ -374,7 +392,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <Card>
             <CardTitle>Decision</CardTitle>
 
