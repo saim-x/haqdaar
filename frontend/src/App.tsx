@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './shared/auth/AuthProvider';
 import { RedirectIfAuthed, RequireRole } from './shared/auth/guards';
 import { LoginPage } from './shared/auth/LoginPage';
@@ -42,20 +42,19 @@ function RootRedirect() {
 }
 
 function NotFound() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   return (
-    <div className="screen">
-      <div className="card enter mt-10 px-6 py-10 text-center">
-        <p className="num font-mono text-display font-medium text-ink-3">404</p>
-        <p className="mt-2 text-body text-ink-2">
-          {lang === 'ur' ? 'یہ صفحہ موجود نہیں۔' : 'This page does not exist.'}
-        </p>
-        <a
-          href="/"
+    <div className="grid min-h-[calc(100dvh-28px)] place-items-center px-5">
+      <div className="card enter w-full max-w-[420px] px-6 py-8 text-center">
+        <p className="num font-mono text-meta text-ink-3">404</p>
+        <h1 className="mt-2 text-title font-medium leading-[1.4] text-ink">{t('notFound.title')}</h1>
+        <p className="mt-2 text-body leading-[1.7] text-ink-2">{t('notFound.hint')}</p>
+        <Link
+          to="/"
           className="press mt-6 inline-flex min-h-primary items-center rounded-control bg-accent px-6 text-body-lg font-medium text-white hover:bg-accent-ink"
         >
-          {t('app.name')}
-        </a>
+          {t('common.goHome')}
+        </Link>
       </div>
     </div>
   );

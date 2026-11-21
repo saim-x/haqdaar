@@ -3,7 +3,7 @@ import { api } from '../shared/api/client';
 import type { TransparencyPayload } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
-import { IconCheck, IconWarning } from '../shared/ui/Icons';
+import { IconCheck, IconRefresh, IconWarning } from '../shared/ui/Icons';
 
 /**
  * /transparency — RULE-5 / AC-25.2.
@@ -79,7 +79,20 @@ export function TransparencyPage() {
           {rows.length === 0 && (
             <tr>
               <td colSpan={2} className="py-4 text-center text-ink-3">
-                {query.isLoading ? t('common.loading') : '—'}
+                {query.isLoading ? (
+                  t('common.loading')
+                ) : query.isError ? (
+                  <button
+                    type="button"
+                    onClick={() => void query.refetch()}
+                    className="press inline-flex min-h-tap items-center gap-1.5 text-caption font-medium text-accent-ink hover:underline"
+                  >
+                    <IconRefresh size={14} />
+                    {t('common.retry')}
+                  </button>
+                ) : (
+                  '—'
+                )}
               </td>
             </tr>
           )}

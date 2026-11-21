@@ -42,6 +42,10 @@ export const ur = {
   'common.confirm': 'تصدیق کریں',
   'common.recorded': 'ریکارڈ ہو گیا',
   'common.help': 'مدد',
+  'common.goHome': 'گھر جائیں',
+
+  'notFound.title': 'یہ صفحہ موجود نہیں',
+  'notFound.hint': 'لنک پرانا ہو سکتا ہے۔ نیچے سے گھر واپس جائیں۔',
 
   'login.title': 'حقدار میں خوش آمدید',
   'login.subtitle': 'اپنا موبائل نمبر ڈالیں۔ ہم آپ کو ایک کوڈ بھیجیں گے۔',
@@ -270,6 +274,10 @@ export const en: Record<DictKey, string> = {
   'common.confirm': 'Confirm',
   'common.recorded': 'Recorded',
   'common.help': 'Help',
+  'common.goHome': 'Go home',
+
+  'notFound.title': 'This page does not exist',
+  'notFound.hint': 'The link may be out of date. Go back home below.',
 
   'login.title': 'Welcome to Haqdaar',
   'login.subtitle': 'Enter your mobile number. We will send you a code.',
