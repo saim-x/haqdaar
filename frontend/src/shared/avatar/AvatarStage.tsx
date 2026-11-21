@@ -108,3 +108,28 @@ function GuideFace({ mood, speaking }: { mood: AvatarMood; speaking: boolean }) 
   );
 }
 
+/**
+ * The live WebRTC surface.
+ *
+ * Memoised on purpose: the caption changes on every streamed token, and without
+ * this the whole stage - including this element and its props - is reconciled
+ * several times a second while the vendor is decoding video. The element's own
+ * props never change mid-session, so it should never be part of that work.
+ *
+ * `avatar-video` promotes it to its own compositor layer, so the caption text
+ * reflowing underneath cannot force the video to repaint.
+ */
+const LiveVideo = memo(function LiveVideo({ videoId, muted }: { videoId: string; muted: boolean }) {
+  return (
+    <video
+      id={videoId}
+      data-testid="avatar-video"
+      autoPlay
+      playsInline
+      muted={muted}
+      disablePictureInPicture
+      className="avatar-video h-full w-full object-cover"
+    />
+  );
+});
+
