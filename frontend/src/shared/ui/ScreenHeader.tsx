@@ -38,10 +38,10 @@ export function ScreenHeader({
           {backTo && (
             <Link
               to={backTo}
-              className="press -ms-2 grid h-tap w-tap place-items-center rounded-control text-ink-2 hover:bg-raised hover:text-ink"
-              aria-label={backLabel ?? t('common.back')}
+              className="press -ms-2 inline-flex min-h-tap items-center gap-1.5 rounded-control px-2 text-caption font-medium text-ink-2 hover:bg-raised hover:text-ink"
             >
-              <IconArrowLeft size={20} />
+              <IconArrowLeft size={16} />
+              {backLabel ?? t('common.back')}
             </Link>
           )}
           {meta}

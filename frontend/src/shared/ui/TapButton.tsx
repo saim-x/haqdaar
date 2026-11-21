@@ -15,16 +15,26 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
 type Size = 'primary' | 'tap' | 'sm';
 
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-accent text-white border-transparent hover:bg-accent-ink disabled:hover:bg-accent',
-  secondary:
-    'bg-card text-ink border-ink/[0.14] hover:bg-raised disabled:hover:bg-card',
-  danger:
-    'bg-negative text-white border-transparent hover:bg-[#9A1D14] disabled:hover:bg-negative',
-  success:
-    'bg-positive text-white border-transparent hover:bg-[#116B33] disabled:hover:bg-positive',
-  ghost:
-    'bg-transparent text-ink-2 border-transparent hover:bg-raised hover:text-ink disabled:hover:bg-transparent',
+  primary: 'bg-accent text-white border-transparent hover:bg-accent-ink',
+  secondary: 'bg-card text-ink border-ink/[0.14] hover:bg-raised',
+  danger: 'bg-negative text-white border-transparent hover:bg-[#9A1D14]',
+  success: 'bg-positive text-white border-transparent hover:bg-[#116B33]',
+  ghost: 'bg-transparent text-ink-2 border-transparent hover:bg-raised hover:text-ink',
+};
+
+/**
+ * A disabled control is inert, so it looks inert whatever it would have been.
+ * Fading the accent to 45 % left a pale mint block that still read as "the
+ * button" — the one thing a disabled button must not do. It becomes a raised
+ * surface with muted text instead, and the accent stays reserved for the action
+ * that is actually available.
+ */
+const DISABLED: Record<Variant, string> = {
+  primary: 'disabled:bg-raised disabled:text-ink-3',
+  secondary: 'disabled:bg-raised disabled:text-ink-3',
+  danger: 'disabled:bg-raised disabled:text-ink-3',
+  success: 'disabled:bg-raised disabled:text-ink-3',
+  ghost: 'disabled:bg-transparent disabled:text-ink-3',
 };
 
 const SIZES: Record<Size, string> = {
@@ -45,8 +55,9 @@ interface CommonProps {
 function classes({ variant = 'primary', size = 'primary', block, className = '' }: CommonProps): string {
   return [
     'press inline-flex items-center justify-center gap-2 rounded-control border font-medium',
-    'disabled:cursor-not-allowed disabled:opacity-45',
+    'disabled:cursor-not-allowed disabled:border-transparent',
     VARIANTS[variant],
+    DISABLED[variant],
     SIZES[size],
     block ? 'w-full' : '',
     className,
