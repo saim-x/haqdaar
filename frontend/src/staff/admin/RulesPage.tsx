@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
+import { pkr } from '../../shared/lib/money';
 import type {
   Program,
   RuleCondition,
@@ -615,7 +616,7 @@ export default function RulesPage() {
                     {[
                       {
                         label: 'Budget delta',
-                        value: `${twin.budget_delta_pkr >= 0 ? '+' : ''}${twin.budget_delta_pkr.toLocaleString()} PKR`,
+                        value: `${twin.budget_delta_pkr >= 0 ? '+' : ''}${pkr(twin.budget_delta_pkr)} PKR`,
                       },
                       { label: 'Flipped cases', value: String(twin.flipped_cases.length) },
                       { label: 'Sample', value: String(twin.sample_size) },

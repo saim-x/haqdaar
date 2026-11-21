@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
+import { pkr } from '../../shared/lib/money';
 import type { TenantAnalytics } from '../../shared/api/types';
 import { Card, ErrorState, flagWord, Kpi, Loading, PageHeader, statusWord } from '../ui';
 
@@ -35,7 +36,7 @@ export default function AnalyticsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Disbursed" value={`PKR ${data.disbursed_pkr.toLocaleString()}`} />
+        <Kpi label="Disbursed" value={`PKR ${pkr(data.disbursed_pkr)}`} />
         <Kpi label="Auto-approve" value={`${data.auto_approve_pct.toFixed(1)}%`} />
         <Kpi
           label="Avg time to decision"
