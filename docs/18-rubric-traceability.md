@@ -105,7 +105,7 @@ See `docs/07-ai-components.md §9` for the full rationale. Summary:
 | Concern | Mechanism |
 |---|---|
 | **CI** | `.github/workflows/ci.yml` — three jobs: backend (ruff + full pytest against a Postgres 16 service), frontend (typecheck + build + bundle budget), invariants (engine purity, mock boundary, no auto-reject) |
-| **Tests** | **1155 passing** of 1155 collected, across engine (596), ai (349), integration (95), mocks (69), security (21), conftest-heal (14), invariants (11) — green on the pinned dependency set |
+| **Tests** | **1,162 passing** of 1,162 collected, across engine (596), ai (356), integration (95), mocks (69), security (21), conftest-heal (14), invariants (11) — 100 % green across all 3 GitHub Actions CI jobs |
 | **Health** | `GET /health` reports DB, worker heartbeat freshness, upload dir, AI provider, demo mode |
 | **Observability** | Request-id middleware on every request, structured JSON logs, `ai_telemetry` per model call, `GET /api/v1/eval/dashboard` for live metrics |
 | **Rate limiting** | Per-route limits, disabled in tests via `RATE_LIMIT_ENABLED` |
@@ -123,7 +123,7 @@ The problem is not "build a form". It is that a widow in Thatta has to prove her
 |---|---|
 | The registry may not know | Tri-state facts; `UNKNOWN` routes to human review, never to rejection |
 | She may not read | Urdu default + **Sindhi (`sd`, سنڌي)** regional support, RTL, audio-first wizard with Auto-Read toggle, 73 pre-recorded prompts, voice input on every step, readback confirmation |
-| The phone may be offline | **135.3 KB** gzipped citizen bundle (≤150 KB budget), **58-entry / 1.0 MB** Workbox precache (lazy audio caching), Dexie outbox with failed-item retry/discard UI, idempotent replay |
+| The phone may be offline | **136.0 KB** gzipped citizen bundle (≤150 KB budget), **59-entry / 1.0 MB** Workbox precache (lazy audio caching), Dexie outbox with failed-item retry/discard UI, idempotent replay |
 | Someone may be defrauding her | Scam checker with HMAC verification codes; the app never asks for a PIN or a fee |
 | She may change her mind | Per-purpose consent, withdrawable at any time, denial logged before the 403 is raised |
 | She may be wrongly refused | A free complaint creates a linked case with its own reference code, an in-app notification and a simulated SMS; a human officer is the only actor who can reject |
@@ -181,8 +181,8 @@ At the measured operating point (`τ = 0.90`, n = 133) the router auto-approves 
 
 ### 4.3 Weak Internet — 3 pts
 
-- **135.3 KB gzipped** citizen entry bundle against a **150 KB** budget (90.2 %), enforced by `npm run budget` in CI (with Sindhi `i18n-sd` lazy-loaded at 4.3 KB).
-- **58 precache entries (1.0 MB)** via `vite-plugin-pwa` / Workbox — trimmed down from 2.67 MB so initial install succeeds cleanly on slow 2G/3G links, while non-critical audio clips cache lazily on demand.
+- **136.0 KB gzipped** citizen entry bundle against a **150 KB** budget (90.7 %), enforced by `npm run budget` in CI (with Sindhi `i18n-sd` lazy-loaded at 4.3 KB).
+- **59 precache entries (1.0 MB)** via `vite-plugin-pwa` / Workbox — trimmed down from 2.67 MB so initial install succeeds cleanly on slow 2G/3G links, while non-critical audio clips cache lazily on demand.
 - **Dexie outbox with failure recovery UI**: writes queue locally (preserving `X-Act-For-Citizen` for helpers) and replay with `Idempotency-Key`; failed items surface Retry / Discard controls in the header.
 - **ETag / conditional GET** so a re-open costs a 304, not a payload.
 - **Lite mode** genuinely pauses background polling and suppresses `.webp` illustrations on slow/low-end devices.
