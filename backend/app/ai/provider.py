@@ -530,6 +530,27 @@ class FakeDeterministicProvider:
         )
         return result
 
+    # -- spoken reframing (ADR-025) ---------------------------------------- #
+    def spoken_summary(self, answer: str, excerpt: str, lang: str = "ur") -> str:
+        """Warm spoken wrapper around the answer's first sentence.
+
+        Deterministic on purpose: the fake provider must never invent a fact, so
+        it re-uses the sentence the grounded answerer already chose and only adds
+        a greeting. That is exactly what a spoken reframing is allowed to do.
+        """
+        started = time.perf_counter()
+        spoken = _spoken_wrapper(answer, lang)
+        _emit(
+            task_type="RAG_SPOKEN",
+            provider="fake",
+            model_name="fake-spoken",
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            input_tokens=len((excerpt or "").split()),
+            output_tokens=len(spoken.split()),
+            succeeded=bool(spoken),
+        )
+        return spoken
+
     # -- TTS --------------------------------------------------------------- #
     def synthesize_urdu_tts(self, text: str) -> bytes:
         started = time.perf_counter()
@@ -1008,6 +1029,28 @@ class LiveOpenAIProvider:
             return json.loads(content)
         except json.JSONDecodeError as exc:
             raise ProviderError("model returned non-JSON", code="BAD_JSON") from exc
+
+    def _chat_text(self, system: str, user: str, *, temperature: float) -> str:
+        """Plain-text completion. Used only for the spoken reframing (ADR-025).
+
+        ``temperature=0.2`` rather than ``0``: the sentence has to sound like a
+        person speaking, and a fully greedy decode produces the same flat phrasing
+        every time. It is still low enough that the model does not wander off the
+        excerpt it was given.
+        """
+        client = self._openai()
+        try:
+            response = client.chat.completions.create(
+                model=self.chat_model,
+                temperature=temperature,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            )
+        except Exception as exc:
+            raise self._wrap(exc) from exc
+        return (response.choices[0].message.content or "").strip()
 
     # -- STT --------------------------------------------------------------- #
     def transcribe_urdu(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> STTResult:
