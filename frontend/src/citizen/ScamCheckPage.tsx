@@ -123,6 +123,20 @@ export function ScamCheckPage() {
   }
 
   const verdict = result ? VERDICT[result.verdict] : null;
+
+  // Assembled from the verdict the model already produced - the guide explains,
+  // it never re-scores. Zero extra model calls.
+  const guideBriefing = result
+    ? [
+        t(VERDICT[result.verdict].key),
+        lang !== 'en' ? result.explanation_ur : result.explanation_en,
+        ...result.red_flags.slice(0, 3).map((flag) => (lang !== 'en' ? flag.label_ur : flag.label_en)),
+        lang !== 'en' ? result.advice_ur : result.advice_en,
+      ]
+        .filter(Boolean)
+        .join('۔ ')
+    : '';
+  const guideMood: AvatarMood = result ? moodForVerdict(result.verdict) : 'calm';
   const recording = capture.state === 'recording';
   const micBlocked = capture.state === 'unsupported' || capture.state === 'denied';
 
@@ -254,6 +268,29 @@ export function ScamCheckPage() {
             </div>
 
             <div className="p-5">
+              {canGuide &&
+                (guide.active ? (
+                  <AvatarToggleCard guide={guide} className="mb-4" />
+                ) : (
+                  guide.available &&
+                  !guide.steppedDown && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        guide.start();
+                        guide.speak({ text: guideBriefing, caption: guideBriefing, mood: guideMood });
+                      }}
+                      data-testid="avatar-explain-verdict"
+                      className="press mb-4 flex min-h-primary w-full items-center gap-2.5 rounded-control border border-accent/30 bg-accent-wash px-3.5 text-start text-body font-medium text-accent-ink hover:bg-accent/15"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white">
+                        <IconPlay size={16} />
+                      </span>
+                      {t('avatar.explainVerdict')}
+                    </button>
+                  )
+                ))}
+
               {/* Visual calibrated risk band gauge so citizens & judges see the honest CANNOT_TELL band. */}
               {result.verdict !== 'VERIFIED_OFFICIAL' && (
                 <div className="mb-4 rounded-control border border-ink/[0.08] bg-raised/60 px-3 py-2.5">
