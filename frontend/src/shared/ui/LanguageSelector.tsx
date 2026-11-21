@@ -1,31 +1,94 @@
+import { useEffect, useRef, useState } from 'react';
 import { useI18n, type Lang } from '../i18n/I18nProvider';
 import { IconGlobe } from './Icons';
 
-const LANGUAGES: { value: Lang; label: string }[] = [
-  { value: 'ur', label: 'اردو' },
-  { value: 'sd', label: 'سنڌي' },
-  { value: 'en', label: 'English' },
+const LANGUAGES: { value: Lang; label: string; english: string }[] = [
+  { value: 'ur', label: 'اردو', english: 'Urdu' },
+  { value: 'sd', label: 'سنڌي', english: 'Sindhi' },
+  { value: 'en', label: 'English', english: 'English' },
 ];
 
 /** Shows the active language and lets people choose any supported language. */
 export function LanguageSelector({ className = '' }: { className?: string }) {
   const { lang, setLang } = useI18n();
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const selected = LANGUAGES.find(({ value }) => value === lang) ?? LANGUAGES[0]!;
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        trigger.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
 
   return (
-    <label
-      className={`press relative inline-flex min-h-tap shrink-0 items-center gap-1 rounded-control border border-ink/[0.12] bg-card px-2.5 text-meta font-medium text-ink-2 hover:bg-raised hover:text-ink ${className}`}
-    >
-      <IconGlobe size={14} />
-      <span aria-hidden="true">{LANGUAGES.find(({ value }) => value === lang)?.label ?? 'اردو'}</span>
-      <select
-        value={lang}
-        onChange={(event) => setLang(event.currentTarget.value as Lang)}
-        aria-label="Select language"
+    <div ref={root} className="relative shrink-0">
+      <button
+        ref={trigger}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={`Language: ${selected.english}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
         data-testid="lang-toggle"
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        className={`press inline-flex min-h-tap items-center gap-2 rounded-control border border-ink/[0.12] bg-card px-2.5 text-meta font-medium text-ink-2 hover:bg-raised hover:text-ink ${className}`}
       >
-        {LANGUAGES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-      </select>
-    </label>
+        <IconGlobe size={15} />
+        <span>{selected.label}</span>
+        <span aria-hidden="true" className={`text-[10px] transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {open && (
+        <div
+          role="menu"
+          aria-label={lang === 'ur' ? 'زبان منتخب کریں' : lang === 'sd' ? 'ٻولي چونڊيو' : 'Choose language'}
+          className="absolute end-0 top-[calc(100%+6px)] z-[100] min-w-44 overflow-hidden rounded-panel border border-ink/[0.12] bg-card p-1.5 shadow-xl"
+        >
+          <p className="px-2.5 pb-1.5 pt-1 text-meta font-medium text-ink-3">
+            {lang === 'ur' ? 'زبان منتخب کریں' : lang === 'sd' ? 'ٻولي چونڊيو' : 'Choose language'}
+          </p>
+          {LANGUAGES.map(({ value, label, english }) => {
+            const isSelected = value === lang;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="menuitemradio"
+                aria-checked={isSelected}
+                onClick={() => {
+                  setLang(value);
+                  setOpen(false);
+                  trigger.current?.focus();
+                }}
+                className={`press flex min-h-tap w-full items-center justify-between gap-5 rounded-control px-2.5 text-start ${
+                  isSelected
+                    ? 'bg-accent-wash text-accent-ink'
+                    : 'text-ink-2 hover:bg-raised hover:text-ink'
+                }`}
+              >
+                <span className="flex flex-col py-1">
+                  <span className="text-caption font-medium" lang={value} dir={value === 'en' ? 'ltr' : 'rtl'}>{label}</span>
+                  {value !== 'en' && <span className="text-meta text-ink-3">{english}</span>}
+                </span>
+                {isSelected && <span aria-hidden="true" className="text-caption font-semibold">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
