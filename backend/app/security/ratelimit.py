@@ -93,6 +93,7 @@ __all__ = [
     "SlidingWindowLimiter",
     "check_ai_limit",
     "check_api_key_limit",
+    "check_avatar_limit",
     "check_login_limit",
     "check_otp_request_limits",
     "check_otp_verify_limit",
