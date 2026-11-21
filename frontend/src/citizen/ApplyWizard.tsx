@@ -456,9 +456,19 @@ export function ApplyWizard() {
             ? t('wizard.doc.unverifiable')
             : t('wizard.doc.checking'),
       );
-      // Spoken retake feedback - docs/11 §3.2 step 12.
+      // Spoken retake feedback - docs/11 §3.2 step 12. With the guide open the
+      // coaching is face-to-face and `reassuring`: a blurry photo is a small
+      // mistake, and the tone is what stops a citizen giving up here.
       if (doc.verify_status === 'NEEDS_RETAKE' || doc.verify_status === 'UNVERIFIABLE') {
-        void play(null, lang === 'ur' ? doc.retake_reason_ur ?? t('wizard.doc.unverifiable') : doc.retake_reason_en ?? t('wizard.doc.unverifiable'));
+        const retakeText =
+          lang === 'ur'
+            ? doc.retake_reason_ur ?? t('wizard.doc.unverifiable')
+            : doc.retake_reason_en ?? t('wizard.doc.unverifiable');
+        if (guide.active) {
+          guide.speak({ text: retakeText, caption: retakeText, mood: 'reassuring' });
+        } else {
+          void play(null, retakeText);
+        }
       }
       if (docType === 'CNIC_FRONT') {
         setAnswer('cnic_doc_verified', doc.verify_status === 'VERIFIED');
@@ -575,6 +585,34 @@ export function ApplyWizard() {
   }, []);
 
   useAutoReadPrompt(`wizard_${step}`, t(STEP_TITLE[step]));
+
+  /* ------------------------------------------------------------- video guide */
+
+  /**
+   * The PiP guide lip-syncs the step prompt this screen already ships as a
+   * pre-cached MP3 - `wizard_<step>` - so opening her costs zero TTS calls and
+   * zero vendor text. She is a mouth for a clip that already exists.
+   */
+  const lastSpokenStep = useRef<string | null>(null);
+  useEffect(() => {
+    if (!guide.active) {
+      lastSpokenStep.current = null;
+      return;
+    }
+    if (lastSpokenStep.current === step) return;
+    lastSpokenStep.current = step;
+    guide.speak({ text: t(STEP_TITLE[step]), mood: 'listening', clipKey: `wizard_${step}` });
+  }, [guide.active, guide.speak, step, t]);
+
+  /** Mandatory readback, spoken face-to-face when the guide is open. */
+  const handleReadback = useCallback(
+    (text: string): boolean => {
+      if (!guide.active) return false;
+      guide.speak({ text, caption: text, mood: 'listening' });
+      return true;
+    },
+    [guide.active, guide.speak],
+  );
 
   /**
    * Autosave runs on a 250ms debounce, so a citizen who types an answer and
