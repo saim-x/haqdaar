@@ -542,3 +542,83 @@ def _record_telemetry(
     error_code: str | None,
     provider: str,
 ) -> None:
+    """One ``ai_telemetry`` row per session attempt, inside a savepoint.
+
+    A failed telemetry insert must never abort the caller's transaction, so this
+    mirrors ``app.ai.provider._isolated_write``: best effort, never raises.
+    """
+    if db is None:
+        return
+    row = {
+        "id": uuid.uuid4(),
+        "tenant_id": tenant_id,
+        "task_type": "AVATAR_SESSION",
+        "provider": provider,
+        "model_name": "anam-passthrough" if provider == "anam" else "fake-avatar",
+        "prompt_version": "v1.1.0",
+        "latency_ms": int(latency_ms),
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "estimated_cost_usd": 0,
+        "succeeded": succeeded,
+        "error_code": error_code,
+        "case_id": None,
+        "created_at": datetime.now(UTC),
+    }
+    try:
+        from app.models.ai import AiTelemetry
+
+        begin_nested = getattr(db, "begin_nested", None)
+        if begin_nested is None:
+            db.add(AiTelemetry(**row))
+            return
+        with begin_nested():
+            db.add(AiTelemetry(**row))
+    except Exception as exc:  # noqa: BLE001 - telemetry must not break the request
+        logger.warning("avatar telemetry write failed: %s", type(exc).__name__)
+
+
+def _record_audit(
+    db: Any,
+    *,
+    user: Any,
+    surface: str,
+    lang: str,
+    provider: str,
+    succeeded: bool,
+    error_code: str | None,
+) -> None:
+    """``avatar.session_created`` in the caller's transaction (invariant 7)."""
+    if db is None:
+        return
+    try:
+        audit.record(
+            db,
+            action="avatar.session_created",
+            resource_type="avatar_session",
+            resource_id=None,
+            actor_type="USER",
+            actor_id=getattr(user, "user_id", None) or getattr(user, "id", None),
+            actor_role=str(getattr(user, "role", "") or "") or None,
+            tenant_id=getattr(user, "tenant_id", None),
+            payload={
+                "surface": surface,
+                "lang": lang,
+                "provider": provider,
+                "mode": settings.anam_mode,
+                "succeeded": succeeded,
+                "error_code": error_code,
+            },
+        )
+    except Exception as exc:  # noqa: BLE001 - audit failure is logged, not raised
+        logger.warning("avatar audit write failed: %s", type(exc).__name__)
+
+
+# --------------------------------------------------------------------------- #
+# session creation
+# --------------------------------------------------------------------------- #
+def _degraded(reason: str = "PROVIDER_UNAVAILABLE") -> dict[str, Any]:
+    """The graceful envelope: the citizen keeps a working audio guide."""
+    return {
+        "available": False,
+        "fallback": "AUDIO_ONLY",
