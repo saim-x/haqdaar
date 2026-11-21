@@ -5,6 +5,7 @@ import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ConsentAccessLog, ConsentGrant } from '../shared/api/types';
 import { grantRecipientLabel } from '../shared/lib/consent';
+import { dayMonth, stamp } from '../shared/lib/dates';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
@@ -26,14 +27,14 @@ const PURPOSE_LABELS: Record<string, { ur: string; en: string }> = {
   COMPLAINT_RESOLUTION: { ur: 'شکایت کا حل', en: 'Complaint resolution' },
 };
 
-function fmtDate(iso: string | null, lang: 'ur' | 'en'): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString(lang === 'ur' ? 'ur-PK' : 'en-PK', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+/** Why a grant is no longer live. The section heading says "withdrawn", so the
+ *  row has to say which of the two it actually was. */
+const INACTIVE_LABELS: Record<string, { ur: string; en: string }> = {
+  WITHDRAWN: { ur: 'واپس لی گئی', en: 'Withdrawn' },
+  EXPIRED: { ur: 'ختم ہو گئی', en: 'Expired' },
+};
+
+
 
 /**
  * Consent Center — docs/11 §3.3, F-11.
@@ -145,13 +146,19 @@ export function ConsentPage() {
                     .join(' · ')}
                 </dd>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-ink-3">
-                <span>
-                  {t('consent.since')} <span className="num font-mono">{fmtDate(grant.granted_at, lang)}</span>
-                </span>
-                <span>
-                  {t('consent.until')} <span className="num font-mono">{fmtDate(grant.expires_at, lang)}</span>
-                </span>
+              <div className="flex flex-wrap gap-x-8 gap-y-2.5">
+                <div>
+                  <dt className="text-meta text-ink-3">{t('consent.grantedOn')}</dt>
+                  <dd className="num mt-0.5 text-ink">
+                    <bdi>{dayMonth(grant.granted_at, lang)}</bdi>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-meta text-ink-3">{t('consent.expiresOn')}</dt>
+                  <dd className="num mt-0.5 text-ink">
+                    <bdi>{dayMonth(grant.expires_at, lang)}</bdi>
+                  </dd>
+                </div>
               </div>
             </dl>
 
@@ -180,7 +187,10 @@ export function ConsentPage() {
                 <span className="min-w-0 flex-1 truncate text-caption text-ink-2">
                   {grantRecipientLabel(grant, lang)}
                 </span>
-                <span className="shrink-0 text-meta text-ink-3">{grant.status}</span>
+                <span className="shrink-0 text-meta text-ink-3">
+                  {(lang === 'ur' ? INACTIVE_LABELS[grant.status]?.ur : INACTIVE_LABELS[grant.status]?.en) ??
+                    grant.status}
+                </span>
               </li>
             ))}
           </ul>
@@ -205,7 +215,7 @@ export function ConsentPage() {
                   {(lang === 'ur' ? CATEGORY_LABELS[log.category]?.ur : CATEGORY_LABELS[log.category]?.en) ??
                     log.category}
                   {' · '}
-                  <span className="num font-mono">{new Date(log.created_at).toLocaleString()}</span>
+                  <bdi className="num">{stamp(log.created_at, lang)}</bdi>
                 </p>
               </div>
               <span

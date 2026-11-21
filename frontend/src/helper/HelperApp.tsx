@@ -153,9 +153,12 @@ export function HelperRosterPage() {
                   onClick={() => void switchTo(family)}
                   className="press flex min-h-primary flex-1 items-center gap-3 px-4 py-3 text-start disabled:opacity-60"
                 >
+                  {/* A rounded square, not a circle: the circle is the speaker
+                      button's shape, and two circles on one row read as two
+                      buttons. */}
                   <span
                     aria-hidden
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-body-lg font-medium text-white"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-control text-body-lg font-medium text-white"
                     style={{ backgroundColor: family.avatar_color }}
                   >
                     {family.full_name.slice(0, 1)}
@@ -165,9 +168,19 @@ export function HelperRosterPage() {
                     <span className="block truncate text-body-lg font-medium text-ink">
                       {family.full_name}
                     </span>
-                    <span className="num mt-0.5 block truncate text-meta text-ink-3" dir="ltr">
-                      {family.cnic_masked ?? '—'}
-                      {family.district ? ` · ${districtLabel(family.district, lang)}` : ''}
+                    {/* The CNIC is isolated so its digits stay in order; the
+                        district is ordinary Urdu and must not be dragged into
+                        the same left-to-right run. */}
+                    <span className="mt-0.5 flex items-center gap-1.5 text-meta text-ink-3">
+                      <bdi className="num shrink-0">{family.cnic_masked ?? '—'}</bdi>
+                      {family.district && (
+                        <>
+                          <span aria-hidden className="shrink-0 text-ink-3/60">
+                            ·
+                          </span>
+                          <span className="truncate">{districtLabel(family.district, lang)}</span>
+                        </>
+                      )}
                     </span>
                     <span className="mt-1 flex items-center gap-3">
                       <span className="flex items-center gap-1.5">
@@ -187,6 +200,17 @@ export function HelperRosterPage() {
                         </span>
                       )}
                     </span>
+                  </span>
+
+                  {/* The row selects a family, it does not navigate, so the
+                      affordance is a radio mark and not a chevron. */}
+                  <span
+                    aria-hidden
+                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                      active ? 'border-accent bg-accent text-white' : 'border-ink/[0.20] text-transparent'
+                    }`}
+                  >
+                    <IconCheck size={12} />
                   </span>
                 </button>
 

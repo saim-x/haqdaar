@@ -75,8 +75,12 @@ export function CasesPage() {
                   <p className="truncate text-body font-medium text-ink">
                     {pick(item.program.name_ur, item.program.name)}
                   </p>
-                  <p className="num mt-0.5 font-mono text-meta text-ink-3">{item.reference_code}</p>
-                  <div className="mt-1.5">
+                  {/* Reference and status share one line: the reference is the
+                      row's identity, the status is its state, and stacking them
+                      made a two-line row three lines tall. */}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="num font-mono text-meta text-ink-3">{item.reference_code}</span>
+                    <span aria-hidden className="h-3 w-px bg-ink/[0.14]" />
                     <StatusBadge status={item.status} size="sm" />
                   </div>
                 </div>

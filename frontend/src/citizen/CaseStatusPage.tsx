@@ -6,10 +6,11 @@ import { errorMessage } from '../shared/api/errors';
 import { useCasePolling } from '../shared/api/useCasePolling';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { stamp } from '../shared/lib/dates';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge, statusLabelKey } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconArrowLeft, IconCheck, IconWarning } from '../shared/ui/Icons';
+import { IconArrowLeft, IconWarning } from '../shared/ui/Icons';
 
 const PKR = new Intl.NumberFormat('en-PK');
 
@@ -122,7 +123,7 @@ export function CaseStatusPage() {
           <ul className="border-y border-ink/[0.08]">
             {reasons.slice(0, 3).map((reason) => (
               <li key={reason} className="flex items-start gap-2.5 border-b border-ink/[0.08] py-2.5 last:border-b-0">
-                <IconCheck size={16} className="mt-1 shrink-0 text-positive" />
+                <span aria-hidden className="mt-[11px] h-1 w-1 shrink-0 rounded-full bg-ink-3" />
                 <span className="text-body leading-[1.7] text-ink">{reason}</span>
               </li>
             ))}
@@ -138,18 +139,24 @@ export function CaseStatusPage() {
       {data.timeline.length > 0 && (
         <section className="enter enter-4 mt-6">
           <h2 className="section-label mb-3">{t('cases.timeline')}</h2>
-          {/* The signature hairline, used as the timeline spine. */}
-          <ol className="relative ms-1 border-s border-ink/[0.08] ps-4">
+          {/* The signature hairline, used as the timeline spine. Marker and
+              spine share one grid column, so the dot sits on the line in both
+              directions without a magic offset. */}
+          <ol>
             {data.timeline.map((entry, index) => (
-              <li key={`${entry.at}-${index}`} className="relative pb-4 last:pb-0">
-                <span
-                  aria-hidden
-                  className="absolute -start-[21px] top-1.5 h-1.5 w-1.5 rounded-full bg-ink-3 ring-4 ring-paper"
-                />
-                <p className="text-body leading-[1.6] text-ink">{pick(entry.label_ur, entry.label_en)}</p>
-                <p className="num mt-0.5 font-mono text-meta text-ink-3">
-                  {new Date(entry.at).toLocaleString(lang === 'ur' ? 'en-PK' : 'en-GB')}
-                </p>
+              <li key={`${entry.at}-${index}`} className="grid grid-cols-[auto_1fr] gap-x-3">
+                <span aria-hidden className="flex flex-col items-center">
+                  <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-ink-3" />
+                  {index < data.timeline.length - 1 && (
+                    <span className="mt-1 w-px flex-1 bg-ink/[0.08]" />
+                  )}
+                </span>
+                <div className="pb-4">
+                  <p className="text-body leading-[1.6] text-ink">{pick(entry.label_ur, entry.label_en)}</p>
+                  <p className="mt-0.5 text-meta text-ink-3">
+                    <bdi className="num">{stamp(entry.at, lang)}</bdi>
+                  </p>
+                </div>
               </li>
             ))}
           </ol>

@@ -6,21 +6,40 @@ import type { CorrectionRequest, MyDataResponse, MyDataValue } from '../shared/a
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconCheck, IconRefresh } from '../shared/ui/Icons';
+import { IconCheck, IconPencil, IconRefresh } from '../shared/ui/Icons';
+import { dayMonth } from '../shared/lib/dates';
 import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 
 /** Human labels for the canonical fact keys the server returns in `/me/data`. */
 const FIELD_LABELS: Record<string, { ur: string; en: string }> = {
+  // The five identity keys `/me/data` always returns.
   full_name: { ur: 'پورا نام', en: 'Full name' },
   cnic_masked: { ur: 'شناختی کارڈ نمبر', en: 'CNIC number' },
   phone_masked: { ur: 'فون نمبر', en: 'Phone number' },
   district: { ur: 'ضلع', en: 'District' },
   dob: { ur: 'تاریخ پیدائش', en: 'Date of birth' },
-  household_size: { ur: 'گھر میں افراد', en: 'People in household' },
+  // The canonical fact keys from docs/04 §5, which is the only other set the
+  // server can put in this payload.
+  applicant_cnic: { ur: 'شناختی کارڈ نمبر', en: 'CNIC number' },
+  applicant_full_name: { ur: 'پورا نام', en: 'Full name' },
+  applicant_dob: { ur: 'تاریخ پیدائش', en: 'Date of birth' },
+  applicant_age_years: { ur: 'عمر', en: 'Age' },
+  applicant_is_alive: { ur: 'زندہ ہیں', en: 'Recorded as alive' },
+  applicant_cnic_valid: { ur: 'کارڈ کی مدت', en: 'Card validity' },
+  applicant_district: { ur: 'ضلع', en: 'District' },
+  marital_status_widow: { ur: 'بیوہ', en: 'Recorded as widowed' },
+  spouse_death_verified: { ur: 'شوہر کی وفات کی تصدیق', en: 'Spouse death verified' },
+  spouse_full_name: { ur: 'شوہر کا نام', en: 'Spouse name' },
+  spouse_cnic: { ur: 'شوہر کا شناختی کارڈ', en: 'Spouse CNIC' },
   children_under_18: { ur: '18 سال سے کم بچے', en: 'Children under 18' },
+  household_size: { ur: 'گھر میں افراد', en: 'People in household' },
   monthly_income_pkr: { ur: 'ماہانہ آمدنی', en: 'Monthly income' },
   poverty_score: { ur: 'غربت سکور', en: 'Poverty score' },
+  has_conflicting_active_grant: { ur: 'کوئی اور گرانٹ', en: 'Another active grant' },
   payout_phone: { ur: 'رقم والا فون', en: 'Payout phone' },
+  cnic_doc_verified: { ur: 'شناختی کارڈ کی تصدیق', en: 'CNIC photo verified' },
+  death_cert_doc_verified: { ur: 'وفات کے سرٹیفکیٹ کی تصدیق', en: 'Death certificate verified' },
+  citizen_has_active_dept_consent: { ur: 'محکمے کی اجازت', en: 'Department access' },
 };
 
 const DOC_STATUS_LABELS: Record<string, { ur: string; en: string }> = {
@@ -47,13 +66,13 @@ function fieldLabel(key: string, lang: 'ur' | 'en'): string {
   return prettyKey(key);
 }
 
-function fmtDate(iso: string | null, lang: 'ur' | 'en'): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString(lang === 'ur' ? 'ur-PK' : 'en-PK', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+/** A value that is a bare ISO date is a date, not a string of digits. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function fieldValue(value: MyDataValue['value'], lang: 'ur' | 'en'): string {
+  if (value === null || value === '') return '—';
+  const text = String(value);
+  return ISO_DATE.test(text) ? dayMonth(text, lang) : text;
 }
 
 interface Group {
@@ -189,24 +208,16 @@ export function MyDataPage() {
         {groups.map((group) => (
           <section key={group.key} className="enter enter-2">
             <h2 className="section-label mb-3">{lang === 'ur' ? group.label_ur : group.label_en}</h2>
-            <dl className="border-y border-ink/[0.08]">
+            {/* The row is the button. Seven identical "request a correction"
+                links down one column is seven pieces of furniture; a pencil at
+                the end of each row says the same thing once per row and keeps
+                the value the loudest thing on the line. */}
+            <ul className="border-y border-ink/[0.08]">
               {group.fields.map(([fieldKey, field]) => {
                 const registry = field.source !== 'SELF_DECLARED';
                 const label = fieldLabel(fieldKey, lang);
                 return (
-                  <div
-                    key={fieldKey}
-                    className="flex items-start justify-between gap-4 border-b border-ink/[0.08] py-3 last:border-b-0"
-                  >
-                    <div className="min-w-0">
-                      <dt className="text-meta text-ink-3">{label}</dt>
-                      <dd className="num mt-0.5 break-words font-mono text-body text-ink">
-                        {field.value === null || field.value === '' ? '—' : String(field.value)}
-                      </dd>
-                      <dd className="mt-0.5 text-meta text-ink-3">
-                        {registry ? t('consent.sourceRegistry') : t('consent.sourceSelf')}
-                      </dd>
-                    </div>
+                  <li key={fieldKey} className="border-b border-ink/[0.08] last:border-b-0">
                     <button
                       type="button"
                       onClick={() =>
@@ -216,14 +227,28 @@ export function MyDataPage() {
                           current: field.value === null ? '' : String(field.value),
                         })
                       }
-                      className="press shrink-0 rounded-control px-1 text-meta font-medium text-accent-ink underline decoration-1 underline-offset-4 hover:bg-accent-wash"
+                      aria-label={`${t('consent.requestCorrection')}: ${label}`}
+                      className="press flex min-h-primary w-full items-start gap-3 px-1 py-3 text-start hover:bg-raised/50"
                     >
-                      {t('consent.requestCorrection')}
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-meta text-ink-3">{label}</span>
+                        {/* `<bdi>` isolates the value without forcing a
+                            direction, so a CNIC stays left-to-right and an
+                            Urdu date stays right-to-left, and the block still
+                            aligns to the start edge either way. */}
+                        <span className="mt-0.5 block break-words font-mono text-body tabular-nums text-ink">
+                          <bdi>{fieldValue(field.value, lang)}</bdi>
+                        </span>
+                        <span className="mt-0.5 block text-meta text-ink-3">
+                          {registry ? t('consent.sourceRegistry') : t('consent.sourceSelf')}
+                        </span>
+                      </span>
+                      <IconPencil size={16} className="mt-1 shrink-0 text-ink-3" />
                     </button>
-                  </div>
+                  </li>
                 );
               })}
-            </dl>
+            </ul>
           </section>
         ))}
 
@@ -248,7 +273,7 @@ export function MyDataPage() {
                       <p className="text-caption font-medium text-ink">{lang === 'ur' ? typeLabel.ur : typeLabel.en}</p>
                       <p className="mt-0.5 text-meta text-ink-3">
                         {lang === 'ur' ? status.ur : status.en} ·{' '}
-                        <span className="num font-mono">{fmtDate(doc.created_at, lang)}</span>
+                        <bdi className="num">{dayMonth(doc.created_at, lang)}</bdi>
                       </p>
                     </div>
                     {ok ? (

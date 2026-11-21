@@ -228,6 +228,13 @@ export const IconFilter = (p: IconProps) => (
   </svg>
 );
 
+export const IconPencil = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5 4 20z" />
+    <path d="M13.5 7.5 16.5 10.5" />
+  </svg>
+);
+
 export const IconRefresh = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M20 12a8 8 0 1 1-2.6-5.9" />
