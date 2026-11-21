@@ -363,3 +363,71 @@ class TestLiveSession:
         assert telemetry.succeeded is True
 
 
+# --------------------------------------------------------------------------- #
+# graceful degradation
+# --------------------------------------------------------------------------- #
+class TestDegradation:
+    @pytest.mark.parametrize(
+        ("status", "reason"),
+        [
+            (402, "QUOTA_EXHAUSTED"),
+            (429, "RATE_LIMITED"),
+            (401, "AUTH_FAILED"),
+            (502, "PROVIDER_ERROR"),
+            (500, "PROVIDER_ERROR"),
+        ],
+    )
+    def test_http_errors_degrade_to_audio_only(
+        self, live: None, recorder: _Recorder, status: int, reason: str
+    ) -> None:
+        recorder.post_response = _Response(status, {"error": "nope"})
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["available"] is False
+        assert session["fallback"] == "AUDIO_ONLY"
+        assert session["reason"] == reason
+        assert session["message_ur"] == avatar.DEGRADED_MESSAGE_UR
+        assert session["message_en"] == avatar.DEGRADED_MESSAGE_EN
+
+    def test_timeout_degrades(self, live: None, recorder: _Recorder) -> None:
+        recorder.post_exc = httpx.TimeoutException("slow")
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["available"] is False
+        assert session["reason"] == "TIMEOUT"
+
+    def test_transport_error_degrades(self, live: None, recorder: _Recorder) -> None:
+        recorder.post_exc = httpx.ConnectError("down")
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["available"] is False
+        assert session["fallback"] == "AUDIO_ONLY"
+
+    def test_missing_token_degrades(self, live: None, recorder: _Recorder) -> None:
+        recorder.post_response = _Response(200, {"unexpected": True})
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert session["available"] is False
+        assert session["reason"] == "NO_TOKEN"
+
+    def test_failure_is_recorded_in_telemetry(self, live: None, recorder: _Recorder, real_db: Any) -> None:
+        from sqlalchemy import select
+
+        from app.models.ai import AiTelemetry
+
+        recorder.post_response = _Response(402, {"error": "quota"})
+        avatar.create_avatar_session(real_db, _Actor(), surface="ask")
+        real_db.commit()
+
+        telemetry = real_db.execute(
+            select(AiTelemetry)
+            .where(AiTelemetry.task_type == "AVATAR_SESSION")
+            .order_by(AiTelemetry.created_at.desc())
+            .limit(1)
+        ).scalar_one()
+        assert telemetry.succeeded is False
+        assert telemetry.error_code == "QUOTA_EXHAUSTED"
+
+    def test_degraded_envelope_is_bilingual(self, live: None, recorder: _Recorder) -> None:
+        recorder.post_response = _Response(502, {})
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+        assert any("؀" <= ch <= "ۿ" for ch in session["message_ur"])
+        assert session["message_en"].strip()
+
+
