@@ -19,9 +19,9 @@
  * citizen names arrive from the API and a missing glyph is tofu in someone's
  * name — 8 KB is the cheaper mistake.
  *
- * 26.2 KB + 26.6 KB = 51.6 KB, still under the 54 KB single file this replaces,
- * and an English-only page fetches just the 26.2 KB Latin face. Static assets,
- * so neither counts against the 150 KB JS budget. If a file is missing the
+ * The Urdu subset retains positional forms and mark placement. An
+ * English-only page still fetches just the Latin face. These static assets
+ * are outside the 150 KB JS budget. If a file is missing, the
  * system stacks below render close enough that nothing breaks — the fonts are
  * an enhancement, never a dependency.
  *

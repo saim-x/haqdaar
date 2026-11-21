@@ -9,9 +9,8 @@ only when the character inventory of the UI changes.
     pip install "fonttools[woff]" brotli
     python frontend/scripts/build-fonts.py
 
-Why two files and not one: the browser picks a face per character from
-`unicode-range`, so an English-only page downloads 28.6 KB and never fetches
-the Urdu face. One combined file would cost every page the full 46.7 KB.
+The browser uses `unicode-range` to choose the face for each script. An
+English-only page downloads the Latin face without fetching the Urdu face.
 
 Order matters, and it is not the same for both fonts:
 
@@ -26,6 +25,7 @@ Both orders were found by trying the other one first and reading the traceback.
 
 from __future__ import annotations
 
+import argparse
 import io
 import sys
 import urllib.request
@@ -74,9 +74,13 @@ def fetch(url: str) -> TTFont:
         return TTFont(io.BytesIO(response.read()))
 
 
-def subset(font: TTFont, unicodes: list[int]) -> TTFont:
+def subset(font: TTFont, unicodes: list[int], *, preserve_shaping: bool = False) -> TTFont:
     options = Options()
-    options.layout_features = ["kern", "liga", "calt", "mark", "mkmk", "rlig"]
+    if preserve_shaping:
+        # Keep positional forms and mark placement for Arabic-script text.
+        options.layout_features = ["*"]
+    else:
+        options.layout_features = ["kern", "liga", "calt", "mark", "mkmk", "rlig"]
     options.name_IDs = ["*"]
     options.notdef_outline = True
     options.recalc_bounds = True
@@ -109,18 +113,22 @@ def save(font: TTFont, name: str) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--urdu-only", action="store_true", help="Rebuild only the Urdu font.")
+    args = parser.parse_args()
     FONT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Instrument Sans (Latin) — instance wdth, then subset")
-    latin = fetch(INSTRUMENT_SANS_URL)
-    latin = pin_axis(latin, "wdth", 100)
-    latin = limit_axis(latin, "wght", 400, 700)
-    latin = subset(latin, LATIN_UNICODES)
-    save(latin, "InstrumentSans-subset.woff2")
+    if not args.urdu_only:
+        print("Instrument Sans (Latin) — instance wdth, then subset")
+        latin = fetch(INSTRUMENT_SANS_URL)
+        latin = pin_axis(latin, "wdth", 100)
+        latin = limit_axis(latin, "wght", 400, 700)
+        latin = subset(latin, LATIN_UNICODES)
+        save(latin, "InstrumentSans-subset.woff2")
 
     print("Noto Sans Arabic (Urdu) — subset, then pin wdth and clamp wght")
     urdu = fetch(NOTO_ARABIC_URL)
-    urdu = subset(urdu, ARABIC_UNICODES)
+    urdu = subset(urdu, ARABIC_UNICODES, preserve_shaping=True)
     urdu = pin_axis(urdu, "wdth", 100)
     urdu = limit_axis(urdu, "wght", 400, 700)
     save(urdu, "NotoSansArabic-subset.woff2")
