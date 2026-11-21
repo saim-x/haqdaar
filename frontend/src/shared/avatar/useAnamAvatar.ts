@@ -103,3 +103,44 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
+export interface AnamAvatarController {
+  state: AvatarState;
+  mood: AvatarMood;
+  caption: string;
+  citation: string | null;
+  notSure: boolean;
+  muted: boolean;
+  secondsLeft: number;
+  /** True inside the renew window; the stage shows the Renew button. */
+  warning: boolean;
+  provider: AvatarProvider;
+  mode: AvatarMode;
+  /** True when the stage should offer the microphone. */
+  conversational: boolean;
+  simulated: boolean;
+  videoId: string;
+  /** Set only in `degraded`; the stage renders it as the audio-only notice. */
+  degradedMessage: string | null;
+  /** The citizen's microphone is off. Only meaningful in `conversational`. */
+  micMuted: boolean;
+  /** The browser refused the microphone; the stage shows the bilingual notice. */
+  micDenied: boolean;
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  renew(): Promise<void>;
+  interrupt(): void;
+  toggleMute(): void;
+  toggleMic(): void;
+  speak(request: SpeakRequest): void;
+  /**
+   * Drive the two evidence chips without speaking. In `conversational` mode the
+   * vendor owns the voice, so the page's grounded `/rag/ask` result has to reach
+   * the stage some other way - this is that way.
+   */
+  setEvidence(evidence: { citation?: string | null; notSure?: boolean }): void;
+  /** Send the citizen's own words to the guide (conversational mode). */
+  sendTextToAvatar(text: string): void;
+  /** Subscribe to every live turn the vendor reports. Returns an unsubscribe. */
+  onTurn(listener: ((turn: AvatarTurn) => void) | null): void;
+}
+
