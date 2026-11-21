@@ -9,6 +9,7 @@ import {
   ConfidenceBar,
   EmptyState,
   ErrorState,
+  humanize,
   Loading,
   PageHeader,
   PriorityBand,
@@ -201,7 +202,9 @@ export default function QueuePage() {
                   <td>
                     <div className="flex flex-wrap gap-1">
                       {item.reason_codes.slice(0, 2).map((code) => (
-                        <Chip key={code}>{code}</Chip>
+                        <Chip key={code} title={code}>
+                          {humanize(code)}
+                        </Chip>
                       ))}
                       {item.reason_codes.length > 2 && <Chip>+{item.reason_codes.length - 2}</Chip>}
                     </div>

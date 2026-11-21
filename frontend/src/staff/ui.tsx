@@ -229,12 +229,16 @@ const CHIP_TONES: Record<string, string> = {
 export function Chip({
   children,
   tone = 'neutral',
+  title,
 }: {
   children: ReactNode;
   tone?: 'neutral' | 'danger' | 'warn' | 'ok' | 'info';
+  /** The machine value behind a humanized label, for officers who use the code. */
+  title?: string;
 }) {
   return (
     <span
+      title={title}
       className={`inline-flex items-center rounded-[6px] border px-1.5 py-0.5 text-meta ${CHIP_TONES[tone]}`}
     >
       {children}
