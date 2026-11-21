@@ -18,6 +18,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 
 from app.ai import api_support, voice
@@ -99,7 +100,8 @@ async def transcribe_parse(
     language = _normalise_lang(lang)
 
     try:
-        result = voice.transcribe_and_parse(
+        result = await run_in_threadpool(
+            voice.transcribe_and_parse,
             db,
             audio_bytes=payload,
             mime_type=mime_type,
