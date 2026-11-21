@@ -105,6 +105,7 @@ export const ur = {
   'cases.complaintFiled': 'شکایت درج ہو گئی۔ افسر دیکھے گا۔',
   'cases.amount': 'رقم',
   'cases.explanation': 'وجوہات سنیں',
+  'cases.approvedStamp': 'منظور شدہ',
 
   'wizard.consent.title': 'آپ کی اجازت',
   'wizard.consent.body': 'ہم آپ کا شناختی کارڈ، گھریلو معلومات اور دستاویزات محکمہ سماجی بہبود کو دکھائیں گے تاکہ آپ کی درخواست جانچی جا سکے۔ آپ کسی بھی وقت اجازت واپس لے سکتی ہیں۔',
@@ -332,6 +333,7 @@ export const en: Record<DictKey, string> = {
   'cases.complaintFiled': 'Complaint filed. An officer will look at it.',
   'cases.amount': 'Amount',
   'cases.explanation': 'Hear the reasons',
+  'cases.approvedStamp': 'Approved',
 
   'wizard.consent.title': 'Your permission',
   'wizard.consent.body': 'We will show your CNIC, household information and documents to the Social Protection Department so your application can be checked. You can take this permission back at any time.',
