@@ -25,7 +25,10 @@ const StaffRoutes = lazy(() => import('./staff/StaffApp').then((m) => ({ default
 function RouteFallback() {
   const { t } = useI18n();
   return (
-    <div className="grid min-h-[50dvh] place-items-center px-6 text-center text-sm text-ink-soft" role="status">
+    <div
+      className="grid min-h-[50dvh] place-items-center px-6 text-center text-caption text-ink-3"
+      role="status"
+    >
       {t('common.loading')}
     </div>
   );
@@ -42,12 +45,15 @@ function NotFound() {
   const { t, lang } = useI18n();
   return (
     <div className="screen">
-      <div className="card mt-8 p-6 text-center">
-        <p className="num text-4xl font-bold text-ink-soft">404</p>
-        <p className="mt-2 text-sm text-ink-soft">
+      <div className="card enter mt-10 px-6 py-10 text-center">
+        <p className="num font-mono text-display font-medium text-ink-3">404</p>
+        <p className="mt-2 text-body text-ink-2">
           {lang === 'ur' ? 'یہ صفحہ موجود نہیں۔' : 'This page does not exist.'}
         </p>
-        <a href="/" className="mt-4 inline-flex min-h-primary items-center rounded-2xl bg-teal-600 px-5 text-sm font-bold text-white">
+        <a
+          href="/"
+          className="press mt-6 inline-flex min-h-primary items-center rounded-control bg-accent px-6 text-body-lg font-medium text-white hover:bg-accent-ink"
+        >
           {t('app.name')}
         </a>
       </div>
@@ -58,7 +64,7 @@ function NotFound() {
 /** Helper shell — the roster and add-family screens own their own layout. */
 function HelperLayout() {
   return (
-    <div className="mx-auto w-full max-w-[520px] px-3 pb-8">
+    <div className="mx-auto w-full max-w-[560px]">
       <Outlet />
     </div>
   );
