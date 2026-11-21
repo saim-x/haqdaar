@@ -6,6 +6,8 @@ import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
 import type { CaseDocument, CaseView, ConsentGrant, DraftAnswer, DraftAnswers, Program } from '../shared/api/types';
 import { useAudio, useAutoReadPrompt } from '../shared/audio/AudioProvider';
+import { AvatarPiPBubble } from '../shared/avatar/AvatarPiPBubble';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import type { DictKey } from '../shared/i18n/dictionary';
@@ -141,6 +143,7 @@ export function ApplyWizard() {
   const { session, actFor } = useAuth();
   const { lite } = useLiteMode();
   const { play } = useAudio();
+  const guide = useAvatarGuide('wizard');
 
   const citizenId = actFor?.citizenId ?? session?.citizen?.id ?? null;
   const actForCitizenId = actFor?.citizenId ?? null;
