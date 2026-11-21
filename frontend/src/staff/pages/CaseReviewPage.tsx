@@ -352,54 +352,75 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           <Card>
             <CardTitle>Case summary</CardTitle>
             {caseData.ai_case_note ? (
-              <div className="grid gap-5 border-t border-ink/[0.08] pt-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   {
-                    label: 'Verified',
-                    dot: 'bg-positive',
-                    items: caseData.ai_case_note.verified,
+                    label: 'What to check next',
+                    marker: 'bg-info',
+                    skin: 'border-info/20 bg-raised/60 sm:col-span-2',
+                    empty: 'No follow-up checks suggested.',
+                    followUp: true,
+                    items: caseData.ai_case_note.suggested_checks,
                   },
                   {
-                    label: 'Uncertain',
-                    dot: 'bg-warn',
+                    label: 'Needs verification',
+                    marker: 'bg-warn',
+                    skin: 'border-warn/25 bg-warn-wash/50',
+                    empty: 'No uncertainties recorded.',
+                    followUp: false,
                     items: caseData.ai_case_note.uncertain,
                   },
                   {
-                    label: 'AI suggestions to verify',
-                    dot: 'bg-info',
-                    items: caseData.ai_case_note.suggested_checks,
+                    label: 'Verified',
+                    marker: 'bg-positive',
+                    skin: 'border-positive/20 bg-positive-wash/50',
+                    empty: 'No findings marked as verified.',
+                    followUp: false,
+                    items: caseData.ai_case_note.verified,
                   },
-                ].map((group) => (
-                  <div key={group.label}>
-                    <p className="flex items-center gap-1.5 text-meta text-ink-2">
-                      <span className={`live-dot ${group.dot}`} aria-hidden />
-                      {group.label}
-                    </p>
-                    <ul className="mt-1.5 space-y-1">
-                      {group.items.map((item) => {
-                        const rule = ruleTrace.find((entry) =>
-                          item.startsWith(`${entry.rule_id}:`) ||
-                          item.includes(`rule ${entry.rule_id}:`) ||
-                          item === `Ask the applicant for: ${entry.ask_prompt_en || entry.label_en}`,
-                        );
-                        const fact = rule?.fact;
-                        return (
-                        <li key={item} className="text-caption leading-[1.6] text-ink">
-                          {item}
-                          {fact && Object.hasOwn(facts, fact) ? (
-                            <> <a href={`#case-fact-${fact}`} className="text-accent-ink underline">See {factLabel(fact)}</a></>
-                          ) : group.label === 'AI suggestions to verify' && (
-                            <> <a href="#case-review-evidence" className="text-accent-ink underline">Review evidence</a></>
-                          )}
-                        </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+                ].map(({ label, marker, skin, empty, followUp, items }) => (
+                  <section key={label} className={`min-w-0 rounded-control border p-3 sm:p-4 ${skin}`}>
+                    <h3 className="flex items-center gap-2 text-caption font-semibold text-ink">
+                      <span className={`live-dot ${marker}`} aria-hidden />
+                      {label}
+                    </h3>
+                    {items.length === 0 ? (
+                      <p className="mt-2 text-caption text-ink-2">{empty}</p>
+                    ) : (
+                      <ul className="mt-2 divide-y divide-ink/[0.08]">
+                        {items.map((item) => {
+                          const rule = ruleTrace.find((entry) =>
+                            item.startsWith(`${entry.rule_id}:`) ||
+                            item.includes(`rule ${entry.rule_id}:`) ||
+                            item === `Ask the applicant for: ${entry.ask_prompt_en || entry.label_en}`,
+                          );
+                          const fact = rule?.fact;
+                          const prefix = rule ? `${rule.rule_id}:` : '';
+                          const description = prefix && item.startsWith(prefix)
+                            ? item.slice(prefix.length).trim()
+                            : item;
+                          return (
+                            <li key={item} className="break-words py-2 text-caption leading-relaxed text-ink first:pt-0 last:pb-0">
+                              <p>{description || item}</p>
+                              {fact && Object.hasOwn(facts, fact) ? (
+                                <a href={`#case-fact-${fact}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
+                                  See {factLabel(fact)}
+                                </a>
+                              ) : followUp && (
+                                <a href="#case-review-evidence" className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
+                                  Review application evidence
+                                </a>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
                 ))}
               </div>
             ) : (
-              <p className="text-caption text-ink-3">There is no summary for this case yet.</p>
+              <p className="text-caption text-ink-2">A case summary is not available yet. <a href="#case-review-evidence" className="font-medium text-accent-ink underline">See application details</a></p>
             )}
           </Card>
 
