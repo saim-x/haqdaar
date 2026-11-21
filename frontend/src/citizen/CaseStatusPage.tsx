@@ -4,6 +4,10 @@ import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import { useCasePolling } from '../shared/api/useCasePolling';
+import type { CaseStatus } from '../shared/api/types';
+import { AvatarToggleCard } from '../shared/avatar/AvatarToggleCard';
+import type { AvatarMood } from '../shared/avatar/types';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
@@ -11,10 +15,22 @@ import { pkr } from '../shared/lib/money';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge, statusLabelKey } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconArrowLeft, IconWarning } from '../shared/ui/Icons';
+import { IconArrowLeft, IconPlay, IconWarning } from '../shared/ui/Icons';
 import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 import { CaseNextStep } from './CaseNextStep';
 
+
+/**
+ * The guide's tone for a status. Deterministic, and deliberately conservative:
+ * only a settled case gets `happy`, and only a rejection gets `warning`. A case
+ * under human review is `calm` - the citizen is waiting, not in trouble.
+ */
+function moodForStatus(status: CaseStatus): AvatarMood {
+  if (status === 'APPROVED' || status === 'PAID') return 'happy';
+  if (status === 'NEEDS_INFO') return 'reassuring';
+  if (status === 'REJECTED' || status === 'PAYMENT_FAILED') return 'warning';
+  return 'calm';
+}
 
 /**
  * Case status - docs/11 §3.3 / F-10.
