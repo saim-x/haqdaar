@@ -71,6 +71,11 @@ export const ur = {
   'home.greeting': 'السلام علیکم',
   'home.helperStrip': 'آپ مدد کر رہی ہیں',
   'home.switchFamily': 'گھرانہ بدلیں',
+  'home.inProgress': 'جاری درخواست',
+  'home.viewApplication': 'درخواست دیکھیں',
+  'home.startApplication': 'درخواست شروع کریں',
+  'home.applyHint': 'آواز اور تصویروں سے جواب دیں۔ پڑھنا ضروری نہیں۔ انٹرنیٹ کٹ جائے تو بھی آپ کا کام محفوظ رہتا ہے۔',
+  'home.offlineNote': 'سگنل کمزور ہو تو بھی درخواست محفوظ رہتی ہے اور سگنل آنے پر خود بھیج دی جاتی ہے۔',
 
   'status.DRAFT': 'درخواست محفوظ ہے',
   'status.SUBMITTED': 'جانچ جاری ہے',
@@ -293,6 +298,11 @@ export const en: Record<DictKey, string> = {
   'home.greeting': 'Assalam-o-Alaikum',
   'home.helperStrip': 'You are helping',
   'home.switchFamily': 'Switch family',
+  'home.inProgress': 'Application in progress',
+  'home.viewApplication': 'View application',
+  'home.startApplication': 'Start application',
+  'home.applyHint': 'Answer by voice and pictures. Reading is not required. Your work is saved even when the internet drops.',
+  'home.offlineNote': 'On a weak signal the application is saved and sent by itself when the signal returns.',
 
   'status.DRAFT': 'Draft saved',
   'status.SUBMITTED': 'Checking your application',
