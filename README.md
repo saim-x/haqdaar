@@ -106,6 +106,8 @@ For the Docker rehearsal, start with `AI_PROVIDER=fake` and `ANAM_ENABLED=false`
 
 In a local API smoke check, Deepgram Nova-3 transcribed the repository's Urdu submission confirmation clip exactly in 1.58 seconds. A dynamic Urdu sentence returned an MP3. The document requirements question returned a cited answer through the deterministic fallback, and the weather question returned `NOT_SURE` with no citations. These are individual API checks. Measure human speech across multiple recordings and run the same scenarios on the judge deployment before reporting accuracy or latency figures.
 
+Three generated Urdu clips also went through the live application field parser. It matched the expected income and date of birth. The CNIC transcription contained an extra digit, and the parser requested a retry. The sample is too small to estimate accuracy, but it demonstrates why the numeric keypad and readback matter.
+
 ## 3. The Problem & Personas
 
 > We help widowed women in low-income Sindh households claim and safely receive the (fictional) Sahara Widow Support Grant, even though they cannot read the forms, have weak and dropping mobile signal, have records that are misspelled or incomplete across government systems, and are targeted by fake "relief payment" scam messages.
