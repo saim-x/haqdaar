@@ -151,3 +151,52 @@ class _Actor:
         self.api_key_id = None
 
 
+# --------------------------------------------------------------------------- #
+# configuration
+# --------------------------------------------------------------------------- #
+class TestConfig:
+    def test_fake_mode_is_enabled_and_simulated(self) -> None:
+        config = avatar.get_avatar_config()
+        assert config["enabled"] is True
+        assert config["provider"] == "fake"
+        assert config["sample_rate"] == 24000
+        assert config["avatar_id"] == avatar.FAKE_AVATAR_ID
+        assert config["max_session_seconds"] == 165
+        assert config["idle_timeout_seconds"] == 90
+
+    def test_persona_is_named_in_both_languages(self) -> None:
+        config = avatar.get_avatar_config()
+        assert config["persona_name_ur"] == "سائرہ — حقدار گائیڈ"
+        assert config["persona_name_en"] == "Saima — Haqdaar Guide"
+
+    def test_live_mode_without_a_key_is_disabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "live")
+        monkeypatch.setattr(settings, "anam_enabled", False)
+        monkeypatch.setattr(settings, "anam_api_key", "")
+        config = avatar.get_avatar_config()
+        assert config["enabled"] is False
+        assert config["provider"] == "fake"
+
+    def test_live_mode_with_a_key_is_enabled(
+        self, monkeypatch: pytest.MonkeyPatch, live_override: None
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "live")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "test-anam-key-not-real")
+        config = avatar.get_avatar_config()
+        assert config["enabled"] is True
+        assert config["provider"] == "anam"
+
+    def test_config_never_carries_the_api_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AI_PROVIDER", "live")
+        monkeypatch.setattr(settings, "anam_enabled", True)
+        monkeypatch.setattr(settings, "anam_api_key", "super-secret-anam-key")
+        rendered = json.dumps(avatar.get_avatar_config())
+        assert "super-secret-anam-key" not in rendered
+        assert "api_key" not in rendered
+
+
