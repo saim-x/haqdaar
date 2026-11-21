@@ -47,6 +47,7 @@ export function CaseStatusPage() {
   const { data, error, loading, fromCache } = useCasePolling(id, actFor?.citizenId ?? session?.citizen?.id ?? null);
   const [complaintState, setComplaintState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [complaintError, setComplaintError] = useState<string | null>(null);
+  const guide = useAvatarGuide('case_status');
 
   async function fileComplaint() {
     setComplaintState('sending');
@@ -110,6 +111,17 @@ export function CaseStatusPage() {
   const nextStep = explanation ? pick(explanation.next_step_ur, explanation.next_step_en) : '';
   const canComplain = ['APPROVED', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_INITIATED'].includes(data.status);
   const settled = ['APPROVED', 'PAID', 'PAYMENT_INITIATED'].includes(data.status);
+
+  // The briefing is assembled from the deterministic explanation the server
+  // already computed. No model is called, so the guide cannot add a fact that
+  // the decision did not contain.
+  const briefing = [headline, ...reasons.slice(0, 3), nextStep].filter(Boolean).join('۔ ');
+  const briefingMood = moodForStatus(data.status);
+
+  function explainWithSaima() {
+    guide.start();
+    guide.speak({ text: briefing, caption: briefing, mood: briefingMood });
+  }
 
   return (
     <div className="screen">
