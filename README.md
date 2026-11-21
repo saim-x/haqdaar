@@ -90,6 +90,14 @@ No setup or external phone required - log in with one click on `/login` (`DEMO_M
 
 The registry checks, payout, and SMS delivery are simulated. The queue, decisions, and audit trail are recorded by the application.
 
+### Sindhi speech
+
+Select **سنڌي** in the language menu. The application microphone, its transcription preview, and the Ask microphone use Deepgram Nova-3 with `language=sd`. The wizard still requires confirmation before accepting a dictated value. In Ask, Sindhi dictation fills the editable question field. Policy answers currently use the Urdu answer path.
+
+For live Sindhi playback, enable the Cloud Text-to-Speech API on a Google Cloud billing project. Set `AI_PROVIDER=live`, `DEEPGRAM_API_KEY`, `GOOGLE_CLOUD_PROJECT`, and `GOOGLE_TTS_ACCESS_TOKEN` in the ignored root `.env`. The Google token is a short-lived OAuth token with the cloud-platform scope. With Google Cloud CLI application default credentials configured, obtain it with `gcloud auth application-default print-access-token`. Restart the backend or recreate the API container after updating the token.
+
+For offline instructions, place reviewed native-speaker MP3 recordings under `frontend/public/audio/sd/` using the existing prompt keys as filenames, such as `wizard_welcome.mp3`. The PWA caches those clips after playback. Check the recordings and Gemini's `sd-IN` pronunciation with a Pakistani Sindhi speaker using synthetic examples before a judge demo.
+
 ### Evidence to capture before judging
 
 Use only synthetic records and watermarked specimens. Record the commit, device, network profile, and whether the providers were live or simulated beside each result.

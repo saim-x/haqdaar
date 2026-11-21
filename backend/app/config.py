@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     ai_provider: Literal["live", "fake"] = "fake"
     openai_api_key: str = ""
     deepgram_api_key: str = ""
+    google_cloud_project: str = ""
+    google_tts_access_token: str = ""
     openai_chat_model: str = "gpt-4o-mini"
     openai_embed_model: str = "text-embedding-3-small"
     openai_stt_model: str = "whisper-1"

@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
@@ -111,6 +111,7 @@ async def ask(
 @router.post("/transcribe")
 async def transcribe_question(
     audio: UploadFile = File(...),
+    lang: str = Form("ur"),
     db: Any = Depends(_db),
     user: Any = Depends(require_any_authenticated),
 ) -> JSONResponse:
@@ -126,7 +127,11 @@ async def transcribe_question(
     def _run() -> dict[str, Any]:
         provider = get_provider()
         with telemetry(db, tenant_id=api_support.user_tenant(user), resource_type="rag_voice"):
-            stt = provider.transcribe_urdu(payload, mime_type)
+            stt = (
+                provider.transcribe_urdu(payload, mime_type, language="sd")
+                if lang == "sd"
+                else provider.transcribe_urdu(payload, mime_type)
+            )
         transcript = guardrails.sanitize(db, stt.transcript or "", resource_type="rag_voice").strip()
         return {
             "transcript": transcript,

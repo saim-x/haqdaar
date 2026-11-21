@@ -53,6 +53,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
       pending = true;
       const form = new FormData();
       form.append('audio', audio, 'preview');
+      form.append('lang', lang);
       void api.upload<{ transcript: string }>('/rag/transcribe', form, { signal: controller.signal })
         .then(({ transcript }) => {
           if (!controller.signal.aborted && transcript) setPreview(transcript);
@@ -66,7 +67,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
       clearInterval(timer);
       controller.abort();
     };
-  }, [recording, snapshot]);
+  }, [recording, snapshot, lang]);
 
   // The recorder hands the blob back after `stop()`; upload it once.
   useEffect(() => {
@@ -77,7 +78,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
     const form = new FormData();
     form.append('audio', readyBlob, 'answer.webm');
     form.append('field_key', fieldKey);
-    form.append('lang', isRtl ? 'ur' : 'en');
+    form.append('lang', lang);
     api
       .upload<VoiceParseResult>('/voice/transcribe-parse', form)
       .then((result) => {

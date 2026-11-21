@@ -149,13 +149,15 @@ export function AskPage() {
     setTranscribing(true);
     const form = new FormData();
     form.append('audio', readyBlob, 'question.webm');
+    form.append('lang', lang);
     api
       .upload<{ transcript: string; available: boolean }>('/rag/transcribe', form)
       .then((res) => {
         if (cancelled) return;
         capture.reset();
         if (res.transcript?.trim()) {
-          void ask(res.transcript.trim());
+          if (lang === 'sd') setQuestion(res.transcript.trim());
+          else void ask(res.transcript.trim());
         }
       })
       .catch(() => {
@@ -168,7 +170,7 @@ export function AskPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [readyBlob]);
+  }, [readyBlob, lang]);
 
   const suggestions = lang === 'sd' ? SUGGESTIONS_SD : lang === 'ur' ? SUGGESTIONS_UR : SUGGESTIONS_EN;
   const recording = capture.state === 'recording';

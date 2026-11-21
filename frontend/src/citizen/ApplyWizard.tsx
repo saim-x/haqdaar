@@ -607,11 +607,11 @@ export function ApplyWizard() {
   /** Mandatory readback, spoken face-to-face when the guide is open. */
   const handleReadback = useCallback(
     (text: string): boolean => {
-      if (!guide.active) return false;
+      if (!guide.active || lang === 'sd') return false;
       guide.speak({ text, caption: text, mood: 'listening' });
       return true;
     },
-    [guide.active, guide.speak],
+    [guide.active, guide.speak, lang],
   );
 
   /**

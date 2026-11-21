@@ -95,7 +95,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\/audio\/ur\/.*\.mp3$/,
+            urlPattern: /\/audio\/(ur|sd)\/.*\.mp3$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'urdu-audio',

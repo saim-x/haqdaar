@@ -46,7 +46,7 @@ def _db() -> Any:
 
 def _normalise_lang(value: str | None) -> str:
     lang = (value or "ur").strip().lower()
-    return lang if lang in {"ur", "en"} else "ur"
+    return lang if lang in {"ur", "sd", "en"} else "ur"
 
 
 def _sniff_mime(upload: UploadFile, payload: bytes) -> str:
@@ -186,7 +186,7 @@ async def text_to_speech(
         media_type=mime_type,
         headers={
             "Cache-Control": "public, max-age=86400",
-            "X-Audio-Cache-Key": voice.cache_key(text),
+            "X-Audio-Cache-Key": voice.cache_key(text, voice="sd-IN" if language == "sd" else "flux-ambreen-ur"),
             "X-Audio-Lang": language,
         },
     )

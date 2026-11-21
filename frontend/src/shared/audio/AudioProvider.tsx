@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import { getAccessToken } from '../auth/session';
 import { STORAGE_KEYS } from '../config';
+import { useI18n } from '../i18n/I18nProvider';
 import { audioUrl, loadManifest, resolveAudioKey } from './manifest';
 
 /**
@@ -37,6 +38,7 @@ function readAutoRead(): boolean {
 }
 
 export function AudioProvider({ children }: { children: ReactNode }) {
+  const { lang: locale } = useI18n();
   const elRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
   const playbackRef = useRef<AbortController | null>(null);
@@ -119,12 +121,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         return;
       }
       const voices = window.speechSynthesis.getVoices();
+      if (locale === 'sd' && !voices.some((voice) => voice.lang.toLowerCase().startsWith('sd'))) {
+        stop();
+        return;
+      }
       const hasUrdu = voices.some((voice) => voice.lang.toLowerCase().startsWith('ur'));
-      const spokenText = !hasUrdu && /[\u0600-\u06ff]/.test(text) && fallbackText && !/[\u0600-\u06ff]/.test(fallbackText)
+      const spokenText = locale !== 'sd' && !hasUrdu && /[\u0600-\u06ff]/.test(text) && fallbackText && !/[\u0600-\u06ff]/.test(fallbackText)
         ? fallbackText
         : text;
       const utterance = new SpeechSynthesisUtterance(spokenText);
-      const lang = /[\u0600-\u06ff]/.test(spokenText) ? 'ur-PK' : 'en-US';
+      const lang = locale === 'sd' ? 'sd-IN' : /[\u0600-\u06ff]/.test(spokenText) ? 'ur-PK' : 'en-US';
       utterance.lang = lang;
       utterance.voice = voices.find((voice) => voice.lang.toLowerCase().startsWith(lang.slice(0, 2))) ?? null;
       utterance.onend = utterance.onerror = () => {
@@ -137,7 +143,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         stop();
       }
     },
-    [stop],
+    [locale, stop],
   );
 
   const playDynamic = useCallback(
@@ -148,7 +154,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         const res = await fetch('/api/v1/voice/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ text, lang: 'ur' }),
+          body: JSON.stringify({ text, lang: locale === 'sd' ? 'sd' : 'ur' }),
           signal,
         });
         if (!res.ok) return false;
@@ -165,7 +171,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [playAudioResponse],
+    [locale, playAudioResponse],
   );
 
   const play = useCallback(
@@ -176,7 +182,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       playbackRef.current = playback;
       const { signal } = playback;
       let text = fallbackText ?? null;
-      if (key) {
+      if (key && locale === 'sd' && /^[a-z0-9_]+$/.test(key)) {
+        try {
+          const clip = await fetch(`/audio/sd/${key}.mp3`, { signal });
+          if (clip.headers.get('Content-Type')?.startsWith('audio/') && await playAudioResponse(clip, signal)) return;
+        } catch { /* Dynamic speech or a device voice may still be available. */ }
+      }
+      if (key && locale !== 'sd') {
         if (await playClip(key, signal) || signal.aborted) return;
         const manifest = await loadManifest();
         if (signal.aborted) return;
@@ -194,7 +206,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         stop();
       }
     },
-    [playClip, playDynamic, playBrowser, stop],
+    [locale, playAudioResponse, playClip, playDynamic, playBrowser, stop],
   );
 
   const setAutoRead = useCallback((next: boolean) => {

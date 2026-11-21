@@ -269,7 +269,7 @@ def _emit(
 class AIProvider(Protocol):
     name: str
 
-    def transcribe_urdu(self, audio_bytes: bytes, mime_type: str) -> STTResult: ...
+    def transcribe_urdu(self, audio_bytes: bytes, mime_type: str, *, language: str = "ur") -> STTResult: ...
 
     def parse_structured_field(
         self, transcript: str, field_key: str, schema: dict[str, Any]
@@ -384,7 +384,9 @@ class FakeDeterministicProvider:
         self._transcripts[hashlib.sha256(audio_bytes).hexdigest()] = transcript
 
     # -- STT --------------------------------------------------------------- #
-    def transcribe_urdu(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> STTResult:
+    def transcribe_urdu(
+        self, audio_bytes: bytes, mime_type: str = "audio/wav", *, language: str = "ur"
+    ) -> STTResult:
         started = time.perf_counter()
         digest = hashlib.sha256(audio_bytes or b"").hexdigest()
         transcript = self._transcripts.get(digest)
@@ -400,7 +402,7 @@ class FakeDeterministicProvider:
         confidence = 0.94 if transcript else 0.0
         result = STTResult(
             transcript=transcript,
-            language="ur",
+            language=language,
             confidence=confidence,
             duration_s=round(len(audio_bytes or b"") / 32_000, 3),
             provider="fake",
@@ -1053,7 +1055,9 @@ class LiveOpenAIProvider:
         return (response.choices[0].message.content or "").strip()
 
     # -- STT --------------------------------------------------------------- #
-    def transcribe_urdu(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> STTResult:
+    def transcribe_urdu(
+        self, audio_bytes: bytes, mime_type: str = "audio/wav", *, language: str = "ur"
+    ) -> STTResult:
         started = time.perf_counter()
         model = "nova-3"
         api_key = get_settings().deepgram_api_key.strip()
@@ -1062,7 +1066,7 @@ class LiveOpenAIProvider:
                 raise ProviderError("DEEPGRAM_API_KEY is not set", code="NO_API_KEY", retryable=False)
             response = httpx.post(
                 "https://api.deepgram.com/v1/listen",
-                params={"model": model, "language": "ur", "mip_opt_out": "true"},
+                params={"model": model, "language": language, "mip_opt_out": "true"},
                 headers={"Authorization": f"Token {api_key}", "Content-Type": mime_type},
                 content=audio_bytes,
                 timeout=self.timeout_s,
@@ -1097,7 +1101,7 @@ class LiveOpenAIProvider:
         )
         return STTResult(
             transcript=transcript,
-            language="ur",
+            language=language,
             confidence=confidence,
             duration_s=duration,
             provider="deepgram",
@@ -1576,7 +1580,11 @@ class ResilientProvider:
         breaker.record_success()
         return result
 
-    def transcribe_urdu(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> STTResult:
+    def transcribe_urdu(
+        self, audio_bytes: bytes, mime_type: str = "audio/wav", *, language: str = "ur"
+    ) -> STTResult:
+        if language == "sd":
+            return self._call("transcribe_urdu", audio_bytes, mime_type, language=language)
         return self._call("transcribe_urdu", audio_bytes, mime_type)
 
     def parse_structured_field(

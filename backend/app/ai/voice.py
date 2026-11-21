@@ -17,7 +17,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.ai import guardrails, urdu_nlp
+from app.ai import guardrails, sindhi, urdu_nlp
 from app.ai.provider import ParsedFieldResult, _emit, get_provider, telemetry
 
 logger = logging.getLogger("haqdaar.ai.voice")
@@ -268,6 +268,9 @@ def readback(field_key: str, value: Any, *, lang: str = "ur") -> tuple[str, str]
     """Build the mandatory confirmation sentence in both languages."""
     label_en, label_ur = _FIELD_LABELS.get(field_key, ("this value", "یہ معلومات"))
     value_ur, value_en = _format_value(field_key, value)
+    if lang == "sd":
+        spoken = sindhi.readback(field_key, value)
+        return spoken, readback(field_key, value)[1]
 
     if value is None:
         return (
@@ -306,7 +309,10 @@ def transcribe_and_parse(
         resource_type="voice",
         resource_id=field_key,
     ):
-        stt = provider.transcribe_urdu(audio_bytes, mime_type)
+        stt = (
+            provider.transcribe_urdu(audio_bytes, mime_type, language="sd")
+            if lang == "sd" else provider.transcribe_urdu(audio_bytes, mime_type)
+        )
         transcript = guardrails.sanitize(db, stt.transcript or "", resource_type="voice", resource_id=field_key)
 
         if not transcript.strip():
@@ -316,14 +322,15 @@ def transcribe_and_parse(
                 parsed_value=None,
                 confidence=0.0,
                 missing_reason="NO_SPEECH",
-                readback_ur="ہم آپ کی آواز نہیں سن سکے۔ براہ کرم دوبارہ بولیں یا کی پیڈ استعمال کریں۔",
+                readback_ur=sindhi.RETRY if lang == "sd" else "ہم آپ کی آواز نہیں سن سکے۔ براہ کرم دوبارہ بولیں یا کی پیڈ استعمال کریں۔",
                 readback_en="We could not hear you. Please speak again or use the keypad.",
                 needs_retry=True,
                 provider=stt.provider,
                 model=stt.model,
             )
 
-        local = _local_parse(field_key, transcript)
+        normalized = sindhi.normalize_field(field_key, transcript) if lang == "sd" else transcript
+        local = _local_parse(field_key, normalized)
         if stt.provider == "deepgram":
             if (
                 local.value is None
@@ -374,6 +381,8 @@ def transcribe_and_parse(
     needs_retry = value is None and missing_reason != "USER_UNKNOWN"
     if confidence < CONFIDENCE_THRESHOLD and missing_reason != "USER_UNKNOWN":
         needs_retry = True
+    if lang == "sd" and needs_retry:
+        readback_ur = sindhi.RETRY
 
     return VoiceParseResult(
         field_key=field_key,
@@ -408,7 +417,10 @@ def synthesize(db: Any, text: str, *, lang: str = "ur", tenant_id: Any = None) -
 
     provider = get_provider()
     with telemetry(db, tenant_id=tenant_id, resource_type="voice_tts", resource_id=None):
-        audio = provider.synthesize_urdu_tts(safe_text)
+        audio = (
+            sindhi.synthesize(safe_text) if lang == "sd"
+            else provider.synthesize_urdu_tts(safe_text)
+        )
 
     mime = "audio/wav" if audio[:4] == b"RIFF" else "audio/mpeg"
     return audio, mime
