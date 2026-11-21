@@ -182,6 +182,17 @@
     @apply mx-auto w-full max-w-[1440px] px-6 py-6 lg:px-8;
   }
 
+  /* Dense console inputs. The 56px citizen floor does not apply here: the
+     pointer is a mouse and the operator is trained. */
+  .field {
+    @apply min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-2.5 text-caption text-ink;
+  }
+
+  .field:focus {
+    @apply border-accent outline-none;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
   /* A ledger table: hairline rules, tabular figures, one header treatment. */
   .ledger {
     @apply w-full border-collapse text-caption;

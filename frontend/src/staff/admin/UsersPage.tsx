@@ -3,15 +3,26 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { Role, User } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, CardTitle, ErrorState, Loading, PageHeader } from '../ui';
 
 const ROLES: Role[] = ['CITIZEN', 'HELPER', 'OFFICER', 'ADMIN', 'AUDITOR'];
 
-/** Admin users — docs/11 §6.2.3. Tenant-scoped server-side. */
+/**
+ * Admin users — docs/11 §6.2.3. Tenant-scoped server-side.
+ *
+ * Two surfaces: a create row that stays one line wide, and a ledger of accounts
+ * where the role is an inline select and the only destructive action is a
+ * hairline button. Nothing here is filled with colour except the status dot.
+ */
 export default function UsersPage() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<string | null>(null);
-  const [form, setForm] = useState({ full_name: '', email: '', role: 'OFFICER' as Role, password: '' });
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    role: 'OFFICER' as Role,
+    password: '',
+  });
 
   const query = useQuery({
     queryKey: ['admin-users'],
@@ -36,7 +47,8 @@ export default function UsersPage() {
   });
 
   const changeRole = useMutation({
-    mutationFn: ({ id, role }: { id: string; role: Role }) => api.patch<User>(`/admin/users/${id}`, { role }),
+    mutationFn: ({ id, role }: { id: string; role: Role }) =>
+      api.patch<User>(`/admin/users/${id}`, { role }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
     onError: (err) => setMessage(errorMessage(err, 'en')),
   });
@@ -46,29 +58,39 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Users" subtitle="Create accounts, change roles, disable access. Every change is audited." />
+      <PageHeader
+        title="Users"
+        subtitle="Create accounts, change roles, disable access. Every change is audited."
+      />
 
-      {message && <div className="rounded-lg border border-ink/15 bg-white px-3 py-2 text-xs font-semibold text-ink">{message}</div>}
+      {message && (
+        <div className="rounded-control border border-ink/[0.12] bg-card px-4 py-2.5 text-caption text-ink">
+          {message}
+        </div>
+      )}
 
       <Card>
         <CardTitle>Create user</CardTitle>
-        <div className="grid gap-2 sm:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_140px_1fr_auto]">
           <input
             placeholder="Full name"
+            aria-label="Full name"
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            className="min-h-tap rounded-lg border border-ink/15 px-2 text-xs"
+            className="field"
           />
           <input
             placeholder="Email"
+            aria-label="Email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="min-h-tap rounded-lg border border-ink/15 px-2 text-xs"
+            className="field"
           />
           <select
             value={form.role}
+            aria-label="Role"
             onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
-            className="min-h-tap rounded-lg border border-ink/15 px-2 text-xs"
+            className="field"
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -79,15 +101,16 @@ export default function UsersPage() {
           <input
             type="password"
             placeholder="Password"
+            aria-label="Password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="min-h-tap rounded-lg border border-ink/15 px-2 text-xs"
+            className="field"
           />
           <button
             type="button"
             onClick={() => create.mutate()}
             disabled={create.isPending || !form.full_name || !form.email}
-            className="min-h-tap rounded-lg bg-teal-700 text-xs font-bold text-white disabled:opacity-50"
+            className="press min-h-[36px] rounded-control bg-accent px-4 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
           >
             Create
           </button>
@@ -95,26 +118,29 @@ export default function UsersPage() {
       </Card>
 
       <Card className="overflow-x-auto p-0">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="ledger min-w-[760px]">
           <thead>
-            <tr className="border-b border-ink/10 text-[11px] uppercase tracking-wide text-ink-soft">
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Email / phone</th>
-              <th className="px-3 py-2">Role</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2" />
+            <tr>
+              <th>Name</th>
+              <th>Email / phone</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th />
             </tr>
           </thead>
           <tbody>
             {query.data?.items.map((user) => (
-              <tr key={user.id} className="border-b border-ink/5 last:border-0">
-                <td className="px-3 py-2 font-semibold text-ink">{user.full_name}</td>
-                <td className="px-3 py-2 text-xs text-ink-soft">{user.email ?? user.phone ?? '—'}</td>
-                <td className="px-3 py-2">
+              <tr key={user.id}>
+                <td className="font-medium text-ink">{user.full_name}</td>
+                <td className="text-meta text-ink-2">{user.email ?? user.phone ?? '—'}</td>
+                <td>
                   <select
                     value={user.role}
-                    onChange={(e) => changeRole.mutate({ id: user.id, role: e.target.value as Role })}
-                    className="rounded border border-ink/15 px-1 py-0.5 text-[11px]"
+                    aria-label={`Role for ${user.full_name}`}
+                    onChange={(e) =>
+                      changeRole.mutate({ id: user.id, role: e.target.value as Role })
+                    }
+                    className="min-h-[30px] rounded-[7px] border border-ink/[0.12] bg-card px-1.5 text-meta text-ink"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>
@@ -123,20 +149,35 @@ export default function UsersPage() {
                     ))}
                   </select>
                 </td>
-                <td className="px-3 py-2">
-                  <Chip tone={user.is_active ? 'ok' : 'neutral'}>{user.is_active ? 'active' : 'disabled'}</Chip>
+                <td>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`live-dot ${user.is_active ? 'bg-positive' : 'bg-ink-3'}`}
+                      aria-hidden
+                    />
+                    <span className="text-meta text-ink-2">
+                      {user.is_active ? 'active' : 'disabled'}
+                    </span>
+                  </span>
                 </td>
-                <td className="px-3 py-2 text-right">
+                <td className="text-end">
                   <button
                     type="button"
                     onClick={() => toggle.mutate({ id: user.id, is_active: !user.is_active })}
-                    className="rounded border border-ink/15 px-2 py-1 text-[11px] font-semibold text-ink-soft hover:bg-ink/5"
+                    className="press min-h-[30px] rounded-[7px] border border-ink/[0.12] px-2 text-meta text-ink-2 hover:bg-raised hover:text-ink"
                   >
                     {user.is_active ? 'Disable' : 'Enable'}
                   </button>
                 </td>
               </tr>
             ))}
+            {query.data?.items.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-caption text-ink-3">
+                  No accounts in this tenant yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Card>
