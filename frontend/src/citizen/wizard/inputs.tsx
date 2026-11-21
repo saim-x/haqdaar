@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useI18n } from '../../shared/i18n/I18nProvider';
 import { AudioButton } from '../../shared/ui/AudioButton';
-import { IconArrowLeft, IconCheck, IconCross, IconMinus, IconPlus, IconQuestion } from '../../shared/ui/Icons';
+import { IconBackspace, IconCheck, IconCross, IconMinus, IconPlus, IconQuestion } from '../../shared/ui/Icons';
 import { SINDH_DISTRICTS, districtLabel } from '../../shared/lib/districts';
 import { formatCnic } from '../../shared/lib/cnic';
 
@@ -74,7 +74,7 @@ export function DigitPad({
           aria-label={t('common.delete')}
           className="press grid min-h-primary place-items-center rounded-control border border-ink/[0.10] bg-raised text-ink-2 hover:text-ink"
         >
-          <IconArrowLeft size={22} />
+          <IconBackspace size={24} />
         </button>
         <button
           type="button"

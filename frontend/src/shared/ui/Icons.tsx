@@ -63,6 +63,13 @@ export const IconLogout = (p: IconProps) => (
   </svg>
 );
 
+export const IconBackspace = (p: IconProps) => (
+  <svg {...base(p)} data-directional>
+    <path d="M20 5H9.5L3 12l6.5 7H20a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z" />
+    <path d="m17 9-5 6M12 9l5 6" />
+  </svg>
+);
+
 export const IconExternal = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M14 4h6v6M20 4l-8 8" />
