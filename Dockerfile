@@ -13,9 +13,11 @@ ARG BUILD_FRONTEND=true
 
 WORKDIR /build
 
-# The frontend is owned by another agent and may not exist yet; the build is
-# skipped cleanly instead of failing the whole image.
-COPY frontend/ ./frontend/
+# Copy inputs explicitly so local environment files and Windows dependencies
+# cannot enter the Linux build.
+COPY frontend/package.json frontend/package-lock.json frontend/index.html frontend/postcss.config.js frontend/tailwind.config.js frontend/tsconfig.json frontend/vite.config.ts ./frontend/
+COPY frontend/src/ ./frontend/src/
+COPY frontend/public/ ./frontend/public/
 RUN if [ "$BUILD_FRONTEND" = "true" ] && [ -f frontend/package.json ]; then \
         cd frontend && npm ci --no-audit --no-fund && npm run build; \
     else \
@@ -46,9 +48,7 @@ COPY backend/app ./app
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./alembic.ini
 
-RUN pip install --upgrade pip \
-    && pip install . \
-    && pip install "pytest==9.2.0" "ruff==0.17.6"
+RUN pip install .
 
 COPY --from=frontend /build/frontend/dist ./static
 

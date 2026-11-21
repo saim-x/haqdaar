@@ -14,7 +14,7 @@
 | **Document Verifier** | **100% genuine · 100% forged caught · 0.00% false-tamper** | 30-image eval set (clean, WhatsApp-compressed, forged, blurry) |
 | **Decision Router Safety** | **0.0% false approvals** at `τ = 0.90` · **`AUTO_REJECT` absent** | 133-case cost-matrix sweep + `test_no_auto_reject_route_action_exists` |
 | **Inclusion & Regional Languages** | **Urdu (`ur`, default) + Sindhi (`sd`, سنڌي) + English (`en`)** | RTL, 73 Urdu MP3s, voice on every wizard step + Policy Q&A, Auto-Read, WCAG AA ≥ 5.4:1 |
-| **2G / Weak-Internet PWA** | **136.0 KB gzipped** (`≤ 150 KB` budget) · **59 precache entries (1.0 MB)** | CI-enforced `npm run budget`, Dexie offline outbox + `Idempotency-Key`, Lite Mode |
+| **2G / Weak-Internet PWA** | **138.7 KB gzipped** (`≤ 150 KB` budget) · **63 precache entries (1,218 KiB)** | Local production build and `npm run budget`, Dexie offline outbox + `Idempotency-Key`, Lite Mode |
 | **Multi-Tenant SaaS & API** | **75 `/api/v1` endpoints** (85 total ops) · **5 RBAC roles** · **34 DB tables** | Strict JWT RBAC on every route, tenant isolation (`404` anti-leak), SHA-256 audit chain |
 
 ---
@@ -85,10 +85,26 @@ No setup or external phone required - log in with one click on `/login` (`DEMO_M
 
 1. Sign in as demo citizen Fatima and submit an application with `fatima_cnic_forged_name.jpg` and the genuine synthetic death certificate. The CNIC specimen intentionally has a printed name that differs from its QR data. Show the voice transcript, confirm or correct the parsed value, then note the case reference in **My cases**.
 2. Sign in as Officer Sana and find that reference in **Cases to review** after the background checks finish. Compare the case summary with the evidence and document checks. Select **Start review**. If you need to start at the review step, use seeded case `HQ-2026-000101` and follow that reference for the rest of the demo.
-3. Record the first approval with a reason and note. Show **Awaiting second approval**, then sign in as Officer Imran and record the second approval.
+3. Select **Approve** and **Save decision**. Show **Awaiting second approval** and point out that Sana cannot approve a second time. Sign in as Officer Imran and record the second approval.
 4. Once the background worker processes the simulated payout, open **Device Simulator** and look for the notification for the approved case. Use its verification code in the scam checker to show how a citizen can verify the message.
 
 The registry checks, payout, and SMS delivery are simulated. The queue, decisions, and audit trail are recorded by the application.
+
+### Evidence to capture before judging
+
+Use only synthetic records and watermarked specimens. Record the commit, device, network profile, and whether the providers were live or simulated beside each result.
+
+| Rubric area | Rehearsal | Evidence to keep |
+|---|---|---|
+| AI quality | Dictate a synthetic CNIC, date of birth, payout phone, and income. Ask a supported policy question, then an off-topic question. | Exact field matches before correction, successful readback, retries, response times, and whether the answer's source supports it. Report the number of attempts. |
+| Accessibility | On a phone-width screen, select Sindhi and check the translated controls. Use Urdu audio and readback. On a throttled connection, go offline after the app loads, submit once, then reconnect. | Time until the first screen is usable, the queued status, and one server-side case after reconnecting. Label Urdu speech separately from the Sindhi interface. |
+| Reliability and privacy | Withdraw a demo helper's consent and repeat a read. With the mock registry down, submit a separate case, then restore the mock. | Blocked read in the access log, the case's waiting state, recovery after the worker retries, and the audit verification result. Use a disposable demo database for this rehearsal. |
+| Practical impact | Have a teammate unfamiliar with the app complete the application and verify a suspicious SMS without coaching. | Completion time, whether each task was completed, and where help was needed. Report this as a small usability rehearsal. |
+| Innovation | Simulate an eligibility rule change before publishing it. | Cases that change outcome, the estimated budget impact, and the rule version on an earlier decision. |
+
+For the Docker rehearsal, start with `AI_PROVIDER=fake` and `ANAM_ENABLED=false`. For the live Urdu speech rehearsal, set `AI_PROVIDER=live` and configure `DEEPGRAM_API_KEY` in the root `.env`. Live policy Q&A also uses `OPENAI_API_KEY`. If you want live video, enable Anam and set `ANAM_API_KEY` there. Recreate the containers after changing their environment. Before the demo, confirm the worker heartbeat in `/health` as well as the HTTP status.
+
+In a local API smoke check, Deepgram Nova-3 transcribed the repository's Urdu submission confirmation clip exactly in 1.58 seconds. A dynamic Urdu sentence returned an MP3. The document requirements question returned a cited answer through the deterministic fallback, and the weather question returned `NOT_SURE` with no citations. These are individual API checks. Measure human speech across multiple recordings and run the same scenarios on the judge deployment before reporting accuracy or latency figures.
 
 ## 3. The Problem & Personas
 
