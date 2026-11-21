@@ -207,7 +207,7 @@ def _upload_demo_document(
 
 
 def _submit_fatima_application(
-    api: httpx.Client, token: str, program_id: str, tenant_id: Any
+    api: httpx.Client, token: str, program_id: str, tenant_id: Any, *, retake_cnic: bool = False
 ) -> str:
     """Create → fill → upload → submit. Returns the case id."""
     _ensure_department_consent(api, token, tenant_id)
@@ -239,10 +239,15 @@ def _submit_fatima_application(
     )
     assert saved.status_code == 200, saved.text
 
-    _upload_demo_document(api, token, case_id, "CNIC_FRONT", "fatima_cnic_genuine.jpg")
     _upload_demo_document(
         api, token, case_id, "SPOUSE_DEATH_CERTIFICATE", "ghulam_rasool_death_cert_genuine.jpg"
     )
+    if retake_cnic:
+        _upload_demo_document(api, token, case_id, "CNIC_FRONT", "fatima_cnic_blurry.jpg")
+        blocked = api.post(f"/api/v1/cases/{case_id}/submit", headers=_auth(token))
+        assert blocked.status_code == 400 and "retake_documents" in blocked.text, blocked.text
+
+    _upload_demo_document(api, token, case_id, "CNIC_FRONT", "fatima_cnic_genuine.jpg")
 
     submitted = api.post(f"/api/v1/cases/{case_id}/submit", headers=_auth(token))
     assert submitted.status_code == 200, submitted.text
@@ -382,7 +387,7 @@ def test_fatima_golden_path_auto_approves_and_pays_exactly_once(
 
     token = _demo_login(api, "widow_fatima")
     case_id = _submit_fatima_application(
-        api, token, seeded["program_id"], seeded["tenant_id"]
+        api, token, seeded["program_id"], seeded["tenant_id"], retake_cnic=True
     )
 
     # PROCESS_CASE handler — exactly what the worker calls.

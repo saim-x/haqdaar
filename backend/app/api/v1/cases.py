@@ -748,7 +748,7 @@ def submit_case(
             "from": previous,
             "to": case.status,
             "fact_keys": sorted(answers),
-            "document_types": sorted(uploaded),
+            "document_types": sorted(latest_documents),
         },
         **_audit_actor(actor),
     )
