@@ -234,10 +234,21 @@ def _iter_routes(app: object) -> list[tuple[str, object]]:
     """Every ``APIRoute`` in the app with its fully-prefixed path.
 
     FastAPI 0.165 stores ``include_router`` calls as lazy ``_IncludedRouter``
-    wrappers, so ``app.routes`` alone only exposes the docs routes. Unwrap them
-    and re-apply the include prefix plus the router's own prefix.
+    wrappers, so ``app.routes`` alone only exposes the docs routes. Earlier
+    releases flatten the same call into ``app.routes`` with the include prefix
+    already applied.
+
+    The wrapper is imported only when the installed release has it. The invariant
+    is about the route table, not about how one FastAPI version happens to store
+    it, so pinning this test to a private name would make the check pass or fail
+    on the version rather than on the code.
     """
-    from fastapi.routing import APIRoute, _IncludedRouter
+    from fastapi.routing import APIRoute
+
+    try:  # FastAPI >= 0.165
+        from fastapi.routing import _IncludedRouter
+    except ImportError:  # pragma: no cover - exercised on FastAPI < 0.165
+        _IncludedRouter = None  # type: ignore[assignment,misc]
 
     found: list[tuple[str, object]] = []
 
@@ -247,7 +258,7 @@ def _iter_routes(app: object) -> list[tuple[str, object]]:
                 # ``APIRouter.add_api_route`` already baked the router's own
                 # prefix into ``route.path``; only the include prefix is missing.
                 found.append((base + route.path, route))
-            elif isinstance(route, _IncludedRouter):
+            elif _IncludedRouter is not None and isinstance(route, _IncludedRouter):
                 context = route.include_context
                 _walk(
                     getattr(route.original_router, "routes", []),

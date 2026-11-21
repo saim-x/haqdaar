@@ -105,7 +105,7 @@ See `docs/07-ai-components.md §9` for the full rationale. Summary:
 | Concern | Mechanism |
 |---|---|
 | **CI** | `.github/workflows/ci.yml` — three jobs: backend (ruff + full pytest against a Postgres 16 service), frontend (typecheck + build + bundle budget), invariants (engine purity, mock boundary, no auto-reject) |
-| **Tests** | **1143 passing** of 1144 collected, across engine (596), ai (347), integration (86), mocks (69), security (21), conftest-heal (14), invariants (11) |
+| **Tests** | **1153 passing** of 1153 collected, across engine (596), ai (347), integration (95), mocks (69), security (21), conftest-heal (14), invariants (11) — green on the pinned dependency set |
 | **Health** | `GET /health` reports DB, worker heartbeat freshness, upload dir, AI provider, demo mode |
 | **Observability** | Request-id middleware on every request, structured JSON logs, `ai_telemetry` per model call, `GET /api/v1/eval/dashboard` for live metrics |
 | **Rate limiting** | Per-route limits, disabled in tests via `RATE_LIMIT_ENABLED` |
