@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
+import { useAuth } from '../../shared/auth/AuthProvider';
 import type { QueueItem, QueueResponse } from '../../shared/api/types';
 import {
   Card,
@@ -75,6 +76,8 @@ function waitingFor(iso: string): string {
 
 export default function QueuePage() {
   const qc = useQueryClient();
+  const { session } = useAuth();
+  const [showWorkload, setShowWorkload] = useState(false);
   const [sort, setSort] = useState<Sort>('priority');
   const [status, setStatus] = useState('');
   const [assigned, setAssigned] = useState<'all' | 'me' | 'unassigned'>('all');
@@ -93,6 +96,35 @@ export default function QueuePage() {
     queryKey: ['officer-corrections'],
     queryFn: () => api.get<CorrectionsListResponse>('/officer/corrections?status=PENDING_OFFICER'),
     refetchInterval: 30_000,
+  });
+
+  const workload = useQuery({
+    queryKey: ['officer-queue', 'workload'],
+    enabled: showWorkload,
+    queryFn: async ({ signal }) => {
+      const seen = new Set<string>();
+      const grouped = new Map<string, { count: number; oldest: string }>();
+      const limit = 100;
+      for (let offset = 0; ; offset += limit) {
+        const page = await api.get<QueueResponse>(
+          `/officer/queue?assigned=all&sort=oldest&limit=${limit}&offset=${offset}`,
+          { signal },
+        );
+        for (const item of page.items) {
+          if (seen.has(item.id)) continue;
+          seen.add(item.id);
+          const key = item.assigned_officer_id ?? '';
+          const since = item.submitted_at ?? item.created_at;
+          const entry = grouped.get(key);
+          grouped.set(key, {
+            count: (entry?.count ?? 0) + 1,
+            oldest: entry && Date.parse(entry.oldest) < Date.parse(since) ? entry.oldest : since,
+          });
+        }
+        if (!page.items.length || offset + page.items.length >= page.total) break;
+      }
+      return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
+    },
   });
 
   const resolveCorrection = useMutation({
@@ -121,6 +153,22 @@ export default function QueuePage() {
           </button>
         }
       />
+
+      <details className="mb-4 rounded-panel border border-ink/[0.10] bg-card p-4" onToggle={(e) => setShowWorkload(e.currentTarget.open)}>
+        <summary className="cursor-pointer font-medium text-ink">Officer workload</summary>
+        <p className="mt-2 text-caption text-ink-2">Open cases in this department’s queue and how long the oldest has been waiting.</p>
+        {workload.isLoading && <Loading label="Loading workload…" />}
+        {workload.error && <ErrorState error={workload.error} />}
+        {workload.data?.length === 0 && <p className="mt-2 text-caption text-ink-2">No open cases in the queue.</p>}
+        <ul className="mt-2 space-y-2">
+          {workload.data?.map(([officerId, entry]) => (
+            <li key={officerId} className="flex flex-wrap items-center justify-between gap-2 text-caption">
+              <span className="font-medium">{!officerId ? 'Unassigned' : officerId === session?.user.id ? 'My cases' : `Officer ${officerId.slice(0, 8)}`}</span>
+              <span>{entry.count} open · oldest submitted {waitingFor(entry.oldest)}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       <div data-tour="queue-filters" className="mb-4 flex flex-wrap items-center gap-2">
         <div className="inline-flex flex-wrap gap-1 rounded-control bg-raised p-1" role="group" aria-label="Sort cases">

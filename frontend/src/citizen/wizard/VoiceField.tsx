@@ -177,7 +177,12 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
             </p>
             <AudioButton audioKey={null} text={isRtl ? parsed.readback_ur : parsed.readback_en} />
           </div>
-          <p className="mt-1 text-meta leading-[1.7] text-ink-3" dir="auto">{parsed.transcript}</p>
+          {parsed.transcript && (
+            <div className="mt-2 rounded-control bg-raised p-2">
+              <p className="text-meta font-medium text-ink-2">{t('wizard.voice.preview')}</p>
+              <p className="text-meta leading-[1.7] text-ink" dir="auto">{parsed.transcript}</p>
+            </div>
+          )}
           {numeric && <p className="mt-1 text-meta text-ink-3">{t('wizard.voice.correct')}</p>}
 
           <div className="mt-4 flex gap-2">

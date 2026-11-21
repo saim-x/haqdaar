@@ -227,12 +227,14 @@ export default function EvalPage() {
     document_verifier,
     live_operations,
   } = query.data;
+  const activeResult = decision_router_sweep.find((row) => Math.abs(row.threshold - active_threshold) < 0.001);
+  const speech = live_operations.ai_telemetry_by_task?.find((row) => row.task_type === 'VOICE_STT');
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Evaluation"
-        subtitle="The cost of being wrong, measured - not asserted."
+        subtitle="Review results from synthetic cases and recent system activity."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -260,6 +262,27 @@ export default function EvalPage() {
           hint="Genuine compressed docs"
         />
       </div>
+
+      <Card>
+        <CardTitle>How to read the results</CardTitle>
+        <dl className="grid gap-4 text-caption text-ink-2 sm:grid-cols-3">
+          <div>
+            <dt className="font-medium text-ink">False approval</dt>
+            <dd>A synthetic case labelled ineligible is automatically approved.</dd>
+            <dd>At the active threshold: {activeResult ? pct(activeResult.false_approval_rate) : 'No result'}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-ink">Unnecessary review</dt>
+            <dd>For example, a safe, eligible synthetic case goes to an officer because confidence is too low.</dd>
+            <dd>All review referrals: {activeResult ? pct(activeResult.human_review_rate) : 'No result'}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-ink">Speech transcription error</dt>
+            <dd>For example, a spoken zero is skipped and the resulting phone number needs correction.</dd>
+            <dd>Recent speech requests: {speech?.calls ?? 'No data'}. Accuracy needs recordings with reference transcripts.</dd>
+          </div>
+        </dl>
+      </Card>
 
       <Card>
         <CardTitle hint="Click any τ point · wrong approval = 100, review = 8, ask = 5">
