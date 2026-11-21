@@ -30,3 +30,40 @@ import type {
   SpeakRequest,
 } from './types';
 
+/** Five minutes, per ADR-025: the config is static for a deployment. */
+const CONFIG_TTL_MS = 5 * 60 * 1000;
+
+interface CachedConfig {
+  value: AvatarConfig;
+  at: number;
+}
+
+let configCache: CachedConfig | null = null;
+let configInflight: Promise<AvatarConfig | null> | null = null;
+
+/** Test seam: forget the cached config so a spec can re-read it. */
+export function resetAvatarConfigCache(): void {
+  configCache = null;
+  configInflight = null;
+}
+
+async function loadConfig(): Promise<AvatarConfig | null> {
+  if (configCache && Date.now() - configCache.at < CONFIG_TTL_MS) return configCache.value;
+  if (configInflight) return configInflight;
+  configInflight = (async () => {
+    try {
+      const value = await api.get<AvatarConfig>('/avatar/config');
+      if (!value) return null;
+      configCache = { value, at: Date.now() };
+      return value;
+    } catch {
+      // A guide that cannot be configured is simply not offered. This is not an
+      // error state for the page: every screen works without it.
+      return null;
+    } finally {
+      configInflight = null;
+    }
+  })();
+  return configInflight;
+}
+
