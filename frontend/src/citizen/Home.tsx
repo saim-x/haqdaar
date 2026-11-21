@@ -230,10 +230,10 @@ export function CitizenHome() {
       <h2 className="section-label enter enter-3 mb-2 mt-6">{t('home.helpAndTools')}</h2>
       <ul className="card enter enter-3 overflow-hidden">
         {rows.map(({ key, to, label, hint, Icon }) => (
-          <li key={key} className="flex items-center gap-1 border-b border-ink/[0.08] last:border-b-0">
+          <li key={key} className="flex items-center gap-2 border-b border-ink/[0.08] px-2 last:border-b-0">
             <Link
               to={to}
-              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-3 py-3.5 text-start hover:bg-raised/60 transition-colors"
+              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-2 py-3.5 text-start hover:bg-raised/60 rounded-control transition-colors"
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-accent-wash text-accent-ink shadow-hair">
                 <Icon size={20} />
@@ -244,12 +244,14 @@ export function CitizenHome() {
               </span>
               <IconChevron size={18} className="shrink-0 text-accent-ink" />
             </Link>
-            <AudioButton
-              audioKey={key === 'ask' ? 'ask_intro' : isHelper && key === 'data' ? undefined : `home_${key}`}
-              label={`${t('common.listen')} · ${label}`}
-              text={hint}
-              variant="quiet"
-            />
+            <div className="shrink-0 pe-1">
+              <AudioButton
+                audioKey={key === 'ask' ? 'ask_intro' : isHelper && key === 'data' ? undefined : `home_${key}`}
+                label={`${t('common.listen')} · ${label}`}
+                text={hint}
+                variant="quiet"
+              />
+            </div>
           </li>
         ))}
       </ul>
