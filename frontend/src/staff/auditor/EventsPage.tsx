@@ -12,6 +12,10 @@ const ACTOR_TYPES = ['', 'USER', 'AI', 'AGENT', 'SYSTEM', 'API_KEY'];
 /**
  * Auditor event stream — docs/11 §6.3, AC-18.x.
  * Strictly read-only: this screen never issues a mutating request.
+ *
+ * The stream is a ledger with a sequence number, because the sequence number is
+ * the thing the hash chain is built on. Reading down the column is reading the
+ * chain.
  */
 export default function EventsPage() {
   const [actorType, setActorType] = useState('');
@@ -46,7 +50,7 @@ export default function EventsPage() {
             type="button"
             onClick={() => verify.mutate()}
             disabled={verify.isPending}
-            className="inline-flex min-h-tap items-center gap-1.5 rounded-lg bg-teal-700 px-3 text-xs font-bold text-white disabled:opacity-50"
+            className="press inline-flex min-h-[36px] items-center gap-1.5 rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
           >
             <IconShield size={14} />
             {verify.isPending ? 'Verifying…' : 'Verify hash chain'}
@@ -57,24 +61,36 @@ export default function EventsPage() {
       {chain && (
         <div
           role="status"
-          className={`rounded-lg border-2 px-3 py-2 text-xs font-bold ${
+          className={`flex items-center gap-2 rounded-control border px-4 py-2.5 text-caption font-medium ${
             chain.valid
-              ? 'border-[#0F7B3F]/40 bg-[#0F7B3F]/5 text-[#0F7B3F]'
-              : 'border-[#B42318]/40 bg-[#B42318]/5 text-[#B42318]'
+              ? 'border-positive/25 bg-positive-wash text-positive'
+              : 'border-negative/25 bg-negative-wash text-negative'
           }`}
         >
+          <span
+            className={`live-dot ${chain.valid ? 'bg-positive' : 'bg-negative'}`}
+            aria-hidden
+          />
           {chain.valid
             ? `Chain intact: ${chain.checked_count.toLocaleString()} events verified.`
             : `Chain broken at seq ${chain.first_broken_seq}. ${chain.checked_count.toLocaleString()} events checked.`}
         </div>
       )}
-      {error && <div className="rounded-lg border-2 border-[#B42318]/30 bg-[#B42318]/5 px-3 py-2 text-xs font-semibold text-[#B42318]">{error}</div>}
+
+      {error && (
+        <div
+          role="alert"
+          className="rounded-control border border-negative/25 bg-negative-wash px-4 py-2.5 text-caption font-medium text-negative"
+        >
+          {error}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <select
           value={actorType}
           onChange={(e) => setActorType(e.target.value)}
-          className="min-h-tap rounded-lg border border-ink/15 bg-white px-2 text-xs font-semibold"
+          className="field w-auto"
           aria-label="Actor type"
         >
           {ACTOR_TYPES.map((t) => (
@@ -85,15 +101,17 @@ export default function EventsPage() {
         </select>
         <input
           placeholder="Action (e.g. case.submitted)"
+          aria-label="Action"
           value={action}
           onChange={(e) => setAction(e.target.value)}
-          className="min-h-tap min-w-[200px] rounded-lg border border-ink/15 px-2 text-xs"
+          className="field min-w-[220px] flex-1 font-mono"
         />
         <input
           placeholder="Case id"
+          aria-label="Case id"
           value={caseId}
           onChange={(e) => setCaseId(e.target.value)}
-          className="min-h-tap min-w-[200px] rounded-lg border border-ink/15 px-2 text-xs"
+          className="field min-w-[220px] flex-1 font-mono"
         />
       </div>
 
@@ -102,40 +120,62 @@ export default function EventsPage() {
 
       {query.data && (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table className="ledger min-w-[940px]">
             <thead>
-              <tr className="border-b border-ink/10 text-[11px] uppercase tracking-wide text-ink-soft">
-                <th className="px-3 py-2">Seq</th>
-                <th className="px-3 py-2">When</th>
-                <th className="px-3 py-2">Actor</th>
-                <th className="px-3 py-2">Action</th>
-                <th className="px-3 py-2">Resource</th>
-                <th className="px-3 py-2">Hash</th>
+              <tr>
+                <th className="text-end">Seq</th>
+                <th>When</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Resource</th>
+                <th>Hash</th>
               </tr>
             </thead>
             <tbody>
               {query.data.items.map((event) => (
-                <tr key={event.id} className="border-b border-ink/5 last:border-0 hover:bg-teal-50/40">
-                  <td className="num px-3 py-1.5 text-[11px] text-ink-soft">{event.seq}</td>
-                  <td className="num px-3 py-1.5 text-[11px] text-ink-soft">{new Date(event.created_at).toLocaleString()}</td>
-                  <td className="px-3 py-1.5">
-                    <Chip tone={event.actor_type === 'AI' ? 'info' : event.actor_type === 'AGENT' ? 'warn' : 'neutral'}>
+                <tr key={event.id}>
+                  <td className="num text-end font-mono text-meta text-ink-3">{event.seq}</td>
+                  <td className="num text-meta text-ink-3">
+                    {new Date(event.created_at).toLocaleString()}
+                  </td>
+                  <td>
+                    <Chip
+                      tone={
+                        event.actor_type === 'AI'
+                          ? 'info'
+                          : event.actor_type === 'AGENT'
+                            ? 'warn'
+                            : 'neutral'
+                      }
+                    >
                       {event.actor_type}
                     </Chip>
                   </td>
-                  <td className="px-3 py-1.5 font-mono text-[11px] font-semibold text-ink">{event.action}</td>
-                  <td className="px-3 py-1.5 text-[11px] text-ink-soft">
+                  <td className="font-mono text-meta font-medium text-ink">{event.action}</td>
+                  <td className="text-meta text-ink-2">
                     {event.resource_type === 'case' && event.resource_id ? (
-                      <Link to={`/auditor/cases/${event.resource_id}`} className="text-teal-700 hover:underline">
+                      <Link
+                        to={`/auditor/cases/${event.resource_id}`}
+                        className="text-accent-ink hover:underline"
+                      >
                         {event.resource_type}:{event.resource_id.slice(0, 8)}
                       </Link>
                     ) : (
                       `${event.resource_type}${event.resource_id ? `:${event.resource_id.slice(0, 8)}` : ''}`
                     )}
                   </td>
-                  <td className="px-3 py-1.5 font-mono text-[10px] text-ink-soft">{event.event_hash.slice(0, 12)}…</td>
+                  <td className="font-mono text-meta text-ink-3">
+                    {event.event_hash.slice(0, 12)}…
+                  </td>
                 </tr>
               ))}
+              {query.data.items.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-caption text-ink-3">
+                    No events match these filters.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </Card>
@@ -143,10 +183,13 @@ export default function EventsPage() {
 
       <Card>
         <CardTitle hint="how it works">Tamper evidence</CardTitle>
-        <p className="text-xs leading-relaxed text-ink-soft">
-          Each event stores <code className="font-mono">prev_hash</code> and{' '}
-          <code className="font-mono">event_hash = SHA256(prev_hash | seq | created_at | action | resource | payload)</code>.
-          Editing any historical row breaks every hash after it, and Verify reports the exact first broken sequence number.
+        <p className="text-caption leading-[1.8] text-ink-2">
+          Each event stores <code className="font-mono text-ink">prev_hash</code> and{' '}
+          <code className="font-mono text-ink">
+            event_hash = SHA256(prev_hash | seq | created_at | action | resource | payload)
+          </code>
+          . Editing any historical row breaks every hash after it, and Verify reports the exact
+          first broken sequence number.
         </p>
       </Card>
     </div>
