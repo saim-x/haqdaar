@@ -114,7 +114,12 @@ export default function DeviceSimPage() {
                   <div className="mb-1.5 flex flex-wrap items-center gap-2">
                     <span className="font-mono text-meta text-ink-3">{msg.kind ?? 'SMS'}</span>
                     <span className="num text-meta text-ink-3">
-                      {new Date(msg.created_at).toLocaleString()}
+                      {new Date(msg.created_at).toLocaleString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                     <span className="ms-auto flex flex-wrap items-center gap-1.5">
                       {otp && <CopyCode value={otp} label="OTP" tone="teal" />}
@@ -123,15 +128,17 @@ export default function DeviceSimPage() {
                   </div>
 
                   {msg.title_ur && (
-                    <p className="text-caption font-medium text-ink" dir="rtl">
+                    <p className="text-caption font-medium text-ink" dir="rtl" lang="ur">
                       {msg.title_ur}
                     </p>
                   )}
-                  <p className="text-body leading-[1.8] text-ink" dir="rtl">
+                  <p className="max-w-[62ch] text-body leading-[1.8] text-ink" dir="rtl" lang="ur">
                     {msg.body_ur ?? msg.body ?? ''}
                   </p>
                   {msg.body_en && (
-                    <p className="mt-1 text-meta leading-[1.7] text-ink-3">{msg.body_en}</p>
+                    <p className="mt-1.5 max-w-[62ch] text-meta leading-[1.7] text-ink-2">
+                      {msg.body_en}
+                    </p>
                   )}
                 </li>
               );

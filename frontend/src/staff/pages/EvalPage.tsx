@@ -173,7 +173,7 @@ export default function EvalPage() {
         <ThresholdSweep data={decision_router_sweep} active={active_threshold} />
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardTitle hint={`${scam_classifier.test_size} held-out`}>Scam classifier</CardTitle>
           <dl className="grid grid-cols-2 gap-x-6 border-t border-ink/[0.08]">
@@ -185,10 +185,20 @@ export default function EvalPage() {
             <Metric label="User disputed" value={String(scam_classifier.user_disputed_count)} />
           </dl>
 
-          <table className="ledger mt-3 text-center">
+          <table className="ledger mt-4 text-center">
+            <thead>
+              <tr>
+                <th className="text-start">actual</th>
+                <th>predicted scam</th>
+                <th>predicted benign</th>
+              </tr>
+            </thead>
             <tbody>
               {scam_classifier.confusion_matrix.map((row, i) => (
                 <tr key={i}>
+                  <td className="text-start text-meta text-ink-2">
+                    {i === 0 ? 'scam' : 'benign'}
+                  </td>
                   {row.map((cell, j) => (
                     <td key={j} className="num font-mono font-medium">
                       {cell}
@@ -214,16 +224,17 @@ export default function EvalPage() {
       <Card>
         <CardTitle hint="last 24h">Live operations</CardTitle>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Kpi label="Decisions" value={String(live_operations.total_decisions)} />
-          <Kpi label="Override rate" value={pct(live_operations.officer_override_rate)} />
-          <Kpi label="p50" value={`${live_operations.latency_p50_ms}ms`} />
-          <Kpi label="p95" value={`${live_operations.latency_p95_ms}ms`} />
+          <Kpi bare label="Decisions" value={String(live_operations.total_decisions)} />
+          <Kpi bare label="Override rate" value={pct(live_operations.officer_override_rate)} />
+          <Kpi bare label="p50" value={`${live_operations.latency_p50_ms}ms`} />
+          <Kpi bare label="p95" value={`${live_operations.latency_p95_ms}ms`} />
           <Kpi
+            bare
             label="LLM calls"
             value={String(live_operations.llm_calls_24h)}
             hint={`$${live_operations.llm_cost_usd_24h.toFixed(4)}`}
           />
-          <Kpi label="LLM failures" value={pct(live_operations.llm_failure_rate)} />
+          <Kpi bare label="LLM failures" value={pct(live_operations.llm_failure_rate)} />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-ink/[0.08] pt-3">

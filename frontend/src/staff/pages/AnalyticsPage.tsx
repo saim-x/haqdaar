@@ -4,6 +4,28 @@ import type { TenantAnalytics } from '../../shared/api/types';
 import { Card, ErrorState, Kpi, Loading, PageHeader } from '../ui';
 
 /**
+ * Status enums are contract values, not words. The console shows the word and
+ * keeps the enum for the API — an officer reading "HUMAN_REVIEW" has to decode
+ * it, and a screen full of shouting snake_case has no hierarchy left.
+ */
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Submitted',
+  PROCESSING: 'Processing',
+  HUMAN_REVIEW: 'Human review',
+  WAIT_EXTERNAL: 'Waiting on external',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  PAID: 'Paid',
+  WITHDRAWN: 'Withdrawn',
+  ON_HOLD_CONSENT: 'On hold — consent',
+  ESCALATED: 'Escalated',
+};
+
+const statusWord = (status: string) =>
+  STATUS_LABEL[status] ?? status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
+
+/**
  * Tenant analytics — docs/11 §6.4. Always tenant-filtered server-side (AC-02.2).
  *
  * Two ledgers, not two pie charts. A count next to a proportional hairline bar
@@ -31,7 +53,7 @@ export default function AnalyticsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Tenant analytics"
-        subtitle={`${data.total_cases} cases · ${data.decided_cases} decided · tenant ${data.tenant_id.slice(0, 8)}`}
+        subtitle={`${data.total_cases} cases · ${data.decided_cases} decided`}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -44,7 +66,7 @@ export default function AnalyticsPage() {
         <Kpi label="Open cases" value={String(data.open_cases)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card className="p-0">
           <div className="border-b border-ink/[0.08] px-4 py-3">
             <h2 className="text-body font-medium text-ink">Cases by status</h2>
@@ -53,7 +75,7 @@ export default function AnalyticsPage() {
             <tbody>
               {statusRows.map(([status, count]) => (
                 <tr key={status}>
-                  <td className="w-[46%] font-mono text-meta text-ink-2">{status}</td>
+                  <td className="w-[46%] text-caption text-ink">{statusWord(status)}</td>
                   <td>
                     <span className="block h-0.5 w-full overflow-hidden rounded-full bg-ink/[0.08]">
                       <span

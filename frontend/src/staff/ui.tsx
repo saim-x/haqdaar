@@ -153,9 +153,23 @@ export function ConfidenceBar({ value }: { value: number | null }) {
   );
 }
 
-export function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
+/**
+ * A single number with its label. `bare` drops the card shell so a row of KPIs
+ * can sit inside an existing card without becoming a grid of cards-in-cards.
+ */
+export function Kpi({
+  label,
+  value,
+  hint,
+  bare = false,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  bare?: boolean;
+}) {
   return (
-    <div className="card p-4">
+    <div className={bare ? undefined : 'card p-4'}>
       <p className="text-meta text-ink-3">{label}</p>
       <p className="num mt-1 text-display font-medium leading-[1.2] text-ink">{value}</p>
       {hint && <p className="mt-1 text-meta text-ink-3">{hint}</p>}

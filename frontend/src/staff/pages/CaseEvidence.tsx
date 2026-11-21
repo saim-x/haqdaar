@@ -201,13 +201,13 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
 
       {reasonEn && <p className="mt-1.5 text-caption leading-[1.6] text-ink">{reasonEn}</p>}
       {reasonUr && (
-        <p className="mt-0.5 text-caption leading-[1.7] text-ink-2" dir="rtl">
+        <p className="mt-0.5 text-caption leading-[1.7] text-ink-2" dir="rtl" lang="ur">
           {reasonUr}
         </p>
       )}
       {askEn && <p className="mt-1.5 text-meta leading-[1.6] text-warn">Asks: {askEn}</p>}
       {askUr && (
-        <p className="text-meta leading-[1.7] text-warn" dir="rtl">
+        <p className="text-meta leading-[1.7] text-warn" dir="rtl" lang="ur">
           {askUr}
         </p>
       )}
