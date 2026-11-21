@@ -42,6 +42,18 @@ const VERDICT: Record<
 };
 
 /**
+ * The guide's tone for a verdict. `warning` for a scam and `not_sure` for
+ * `CANNOT_TELL` are the two that matter: the first is a shield, the second is an
+ * honest shrug, and neither is allowed to look like the other.
+ */
+function moodForVerdict(verdict: ScamVerdict): AvatarMood {
+  if (verdict === 'LIKELY_SCAM') return 'warning';
+  if (verdict === 'VERIFIED_OFFICIAL') return 'happy';
+  if (verdict === 'CANNOT_TELL') return 'not_sure';
+  return 'calm';
+}
+
+/**
  * Scam checker - docs/11 §3.4, F-14.
  * Public: no login. Advisory only - it never blocks or deletes anything (AC-14.5).
  *
@@ -59,6 +71,12 @@ export function ScamCheckPage() {
   const [disputed, setDisputed] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const capture = useVoiceCapture(20);
+  const { session } = useAuth();
+  const guide = useAvatarGuide('scam_check');
+  // The public route stays audio-only on purpose: an anonymous visitor must not
+  // be able to spend the deployment's video minutes, and there is no account to
+  // rate-limit against.
+  const canGuide = Boolean(session && ['CITIZEN', 'HELPER'].includes(session.user.role));
 
   async function check(payload: { text?: string; image?: File; audio?: Blob }) {
     setBusy(true);
