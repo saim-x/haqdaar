@@ -10,11 +10,11 @@ and the ``PROCESS_CASE`` job reschedules with backoff. **Zero decision is record
 
 Idempotency (AC-05.3): re-running the pipeline for the same case, facts and rule
 version finds the existing decision by ``(case_id, input_snapshot_hash,
-rule_content_hash)`` and writes nothing new — no duplicate decision, no duplicate
+rule_content_hash)`` and writes nothing new - no duplicate decision, no duplicate
 payment job.
 
 Purity boundary: this module may import ``httpx``, ``sqlalchemy``, ``app.models`` and
-the pinned BE helpers. It must never import ``app.mocks`` — the DPI services are only
+the pinned BE helpers. It must never import ``app.mocks`` - the DPI services are only
 reachable over HTTP.
 """
 
@@ -155,7 +155,7 @@ def _record_step(
             case_id=ctx.case.id,
             author_user_id=None,
             note_type="AGENT_STEP",
-            body=f"{name}: {status}" + (f" — {detail}" if detail else ""),
+            body=f"{name}: {status}" + (f" - {detail}" if detail else ""),
             metadata_json={
                 "step": name,
                 "status": status,
@@ -204,7 +204,7 @@ def _step_verify_consent(ctx: _Context) -> None:
     Those three are the citizen's own data (docs/04 §3.1 ``data_category``). The
     benefits-registry and payout-alias lookups in step 7 are cross-program fraud and
     eligibility checks, not reads of the applicant's record, so they are not gated on
-    ``PAYMENT`` / ``CASE_HISTORY`` consent — gating them would park a case that the
+    ``PAYMENT`` / ``CASE_HISTORY`` consent - gating them would park a case that the
     citizen has fully authorised.
     """
     actor = deps.agent_actor(ctx.case.tenant_id)
@@ -803,7 +803,7 @@ def reevaluate_case(
             note_type="OFFICER_NOTE",
             body=(
                 f"Re-evaluation requested against rule version {change}"
-                + (f" — {reason}" if reason else "")
+                + (f" - {reason}" if reason else "")
             ),
             metadata_json={
                 "action": "REEVALUATE",

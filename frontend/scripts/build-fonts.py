@@ -2,7 +2,7 @@
 """
 Rebuild the two self-hosted UI subsets in frontend/public/fonts/.
 
-The woff2 files are committed, so this script is not part of the build — it is
+The woff2 files are committed, so this script is not part of the build - it is
 here so the subsets are reproducible instead of being magic binaries. Run it
 only when the character inventory of the UI changes.
 
@@ -60,7 +60,7 @@ LATIN_UNICODES = (
 #
 # The presentation-forms blocks (U+FB50-FDFF, U+FE70-FEFF) are deliberately
 # excluded: they exist for legacy encodings that pre-date Unicode Arabic, no
-# modern text uses them, and keeping them costs ~97 KB — five times the rest of
+# modern text uses them, and keeping them costs ~97 KB - five times the rest of
 # the file. The @font-face `unicode-range` still lists them so that any stray
 # codepoint routes here and falls through to the system Arabic face rather than
 # to a Latin one.
@@ -77,7 +77,7 @@ def subset(font: TTFont, unicodes: list[int], *, preserve_shaping: bool = False)
     options = Options()
     if preserve_shaping:
         # `init`/`medi`/`fina`/`isol` are the Arabic contextual-joining features.
-        # Dropping them does not error — it silently ships a font whose letters can
+        # Dropping them does not error - it silently ships a font whose letters can
         # only ever render in their isolated forms, so every Urdu word comes out
         # spelled letter-by-letter. `ccmp` composes base+mark sequences before
         # joining, and `rlig` carries required ligatures.
@@ -137,14 +137,14 @@ def main() -> int:
     FONT_DIR.mkdir(parents=True, exist_ok=True)
 
     if not args.urdu_only:
-        print("Instrument Sans (Latin) — instance wdth, then subset")
+        print("Instrument Sans (Latin) - instance wdth, then subset")
         latin = fetch(INSTRUMENT_SANS_URL)
         latin = pin_axis(latin, "wdth", 100)
         latin = limit_axis(latin, "wght", 400, 700)
         latin = subset(latin, LATIN_UNICODES)
         save(latin, "InstrumentSans-subset.woff2")
 
-    print("Noto Sans Arabic — instance regular width and weight, then subset")
+    print("Noto Sans Arabic - instance regular width and weight, then subset")
     urdu = fetch(NOTO_SANS_ARABIC_URL)
     urdu = instancer.instantiateVariableFont(
         urdu, {"wdth": 100, "wght": 400}, inplace=False

@@ -19,7 +19,7 @@ function pickMimeType(): string | undefined {
 }
 
 /**
- * Minimal MediaRecorder wrapper — docs/11 §2.3.
+ * Minimal MediaRecorder wrapper - docs/11 §2.3.
  * Voice is always an accelerator: every caller must render a tap/keypad path
  * next to it, and `unsupported`/`denied` must degrade silently, never block.
  */

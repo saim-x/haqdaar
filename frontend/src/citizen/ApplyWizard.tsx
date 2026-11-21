@@ -91,7 +91,7 @@ const STEP_HINT: Partial<Record<StepKey, DictKey>> = {
 const DEPT_CATEGORIES = ['IDENTITY', 'HOUSEHOLD', 'DOCUMENTS', 'PAYMENT', 'CASE_HISTORY'] as const;
 
 /**
- * docs/04 §5 — these facts are derived by the document verifier, never declared
+ * docs/04 §5 - these facts are derived by the document verifier, never declared
  * by a citizen. The wizard keeps them locally for the review screen, but the
  * draft endpoint rejects the whole payload with `NOT_SELF_DECLARABLE` if they
  * travel, so they are stripped before every write.
@@ -124,7 +124,7 @@ function numberOf(answers: DraftAnswers, key: string, fallback = 0): number {
 }
 
 /**
- * Guided application wizard — docs/11 §3.2, F-01..F-06.
+ * Guided application wizard - docs/11 §3.2, F-01..F-06.
  *
  * One question per screen, an audio prompt on every screen, a tap/keypad path
  * beside every voice path, and a draft that survives a dead battery: every step
@@ -299,7 +299,7 @@ export function ApplyWizard() {
     [actForCitizenId, citizenId, lang, persist, serverCaseId],
   );
 
-  // Autosave on every answer change — local first, network second.
+  // Autosave on every answer change - local first, network second.
   useEffect(() => {
     if (!hydrated) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -345,7 +345,7 @@ export function ApplyWizard() {
   );
 
   // Counters show a default the moment the step opens, so record it as the
-  // answer — otherwise the citizen sees "1" and Next stays disabled.
+  // answer - otherwise the citizen sees "1" and Next stays disabled.
   useEffect(() => {
     if (step === 'children_under_18' && !valueOf(answers, 'children_under_18')) {
       setAnswer('children_under_18', 0);
@@ -453,7 +453,7 @@ export function ApplyWizard() {
             ? t('wizard.doc.unverifiable')
             : t('wizard.doc.checking'),
       );
-      // Spoken retake feedback — docs/11 §3.2 step 12.
+      // Spoken retake feedback - docs/11 §3.2 step 12.
       if (doc.verify_status === 'NEEDS_RETAKE' || doc.verify_status === 'UNVERIFIABLE') {
         void play(null, lang === 'ur' ? doc.retake_reason_ur ?? t('wizard.doc.unverifiable') : doc.retake_reason_en ?? t('wizard.doc.unverifiable'));
       }
@@ -1112,7 +1112,7 @@ export function ApplyWizard() {
               const display = unknown
                 ? t('common.dontKnow')
                 : raw === null || raw === undefined || raw === ''
-                  ? '—'
+                  ? '-'
                   : key === 'applicant_cnic' || key === 'spouse_cnic'
                     ? formatCnic(String(raw))
                     : key === 'applicant_dob'

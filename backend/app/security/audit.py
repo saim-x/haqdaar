@@ -1,4 +1,4 @@
-"""Tamper-evident audit hash chain — docs/09 §5, implemented exactly.
+"""Tamper-evident audit hash chain - docs/09 §5, implemented exactly.
 
 Formula (frozen):
 

@@ -39,9 +39,9 @@ interface CorrectionsListResponse {
 function unwrapVal(v: unknown): string {
   if (v && typeof v === 'object' && 'value' in v) {
     const inner = (v as { value?: unknown }).value;
-    return inner === null || inner === undefined ? '—' : String(inner);
+    return inner === null || inner === undefined ? '-' : String(inner);
   }
-  return v === null || v === undefined ? '—' : String(v);
+  return v === null || v === undefined ? '-' : String(v);
 }
 
 type Sort = 'priority' | 'confidence_asc' | 'oldest';
@@ -71,7 +71,7 @@ function waitingFor(iso: string): string {
 }
 
 /**
- * Officer queue — docs/11 §6.1 / AC-07.1.
+ * Officer queue - docs/11 §6.1 / AC-07.1.
  * Sorting and filtering are server-side so the queue is correct at any page size.
  *
  * The queue is a ledger: one row per case, hairline rules, tabular figures. The
@@ -226,7 +226,7 @@ export default function QueuePage() {
                     {item.rule_stale && (
                       <span
                         className="ms-1.5 inline-flex items-center gap-0.5 text-meta text-warn"
-                        title="Evaluated with an older rule version — re-evaluate before deciding"
+                        title="Evaluated with an older rule version - re-evaluate before deciding"
                       >
                         <IconWarning size={11} />
                         stale
@@ -261,7 +261,7 @@ export default function QueuePage() {
                     {waitingFor(item.submitted_at ?? item.created_at)}
                   </td>
                   <td className="whitespace-nowrap text-meta text-ink-3">
-                    {item.assigned_officer_id ? 'Assigned' : '—'}
+                    {item.assigned_officer_id ? 'Assigned' : '-'}
                   </td>
                 </tr>
               ))}
@@ -301,7 +301,7 @@ export default function QueuePage() {
                     <td className="text-meta font-medium text-ink">
                       {unwrapVal(c.requested_value)}
                     </td>
-                    <td className="text-meta text-ink-2">{c.reason ?? '—'}</td>
+                    <td className="text-meta text-ink-2">{c.reason ?? '-'}</td>
                     <td className="text-end">
                       <div className="inline-flex gap-1.5">
                         <button

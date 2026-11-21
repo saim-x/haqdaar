@@ -23,7 +23,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 /**
  * Role gate. A signed-in user who lacks the role is sent to their own home
- * rather than shown a 403 page — the server is still the real authority
+ * rather than shown a 403 page - the server is still the real authority
  * (AC-01.2), this only avoids dead ends in the UI.
  */
 export function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {

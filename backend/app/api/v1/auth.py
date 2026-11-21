@@ -1,4 +1,4 @@
-"""Authentication endpoints — docs/05 §3.1.
+"""Authentication endpoints - docs/05 §3.1.
 
 OTP delivery goes through the simulated SMS inbox: the 6-digit code is written into
 the notification body (the Device Simulator reads those rows) while the

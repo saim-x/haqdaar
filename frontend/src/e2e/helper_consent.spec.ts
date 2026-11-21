@@ -2,11 +2,11 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { demoLogin, useEnglish } from './helpers';
 
 /**
- * Helper Mode + consent withdrawal — docs/11 §4, AC-13.2, AC-11.2.
+ * Helper Mode + consent withdrawal - docs/11 §4, AC-13.2, AC-11.2.
  *
  * Ayesha switches to Fatima on a shared phone. Fatima then withdraws the HELPER
  * grant from her own device. The helper's very next read must be refused with
- * `403 CONSENT_REVOKED` and must render a zero-PII lock screen — no name, no
+ * `403 CONSENT_REVOKED` and must render a zero-PII lock screen - no name, no
  * CNIC, no case reference.
  *
  * The seeded HELPER grant is single-use: once withdrawn it stays withdrawn, so
@@ -124,7 +124,7 @@ test('helper consent: withdrawal locks the helper out with zero PII', async ({ p
   await page.goto('/c/cases');
 
   // Zero PII inside the content area: no case reference, no citizen name. The
-  // header strip still names whose session is active — that is the helper's own
+  // header strip still names whose session is active - that is the helper's own
   // roster entry and the affordance they need to switch away (docs/11 §4).
   const content = page.locator('main');
   await expect(page.locator('[data-testid="consent-revoked"]')).toBeVisible({ timeout: 30_000 });

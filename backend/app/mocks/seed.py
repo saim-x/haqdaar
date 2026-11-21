@@ -4,7 +4,7 @@ Creates, in one transaction:
 
 * 2 tenants (``SPD``, ``ZWB``) and 2 config-driven programs
   (``SAHARA_WIDOW_GRANT`` with the exact docs/06 §2.1 rule set, and
-  ``GUZARA_ALLOWANCE`` v1 — pure configuration, zero program-specific Python).
+  ``GUZARA_ALLOWANCE`` v1 - pure configuration, zero program-specific Python).
 * The 9 demo personas with their exact credentials, phones and CNICs.
 * Helper Ayesha's 8 linked families with active ``HELPER`` consent grants.
 * Mock registries carrying realistic drift: ``Mst. Fatima Bibi`` vs
@@ -1513,7 +1513,7 @@ def seed_all(
 
 
 def reset_and_seed(db: Session, *, with_rag: bool = True) -> dict[str, Any]:
-    """Wipe and reseed — the ``POST /admin/demo/reset`` target."""
+    """Wipe and reseed - the ``POST /admin/demo/reset`` target."""
     return seed_all(db, reset=True, with_rag=with_rag)
 
 

@@ -1,4 +1,4 @@
-"""Document upload, verification and consent-gated download — docs/05 §3.3."""
+"""Document upload, verification and consent-gated download - docs/05 §3.3."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ def _audit_actor(actor: ActorContext) -> dict[str, Any]:
 
 
 def _storage_root() -> Path:
-    """The one upload directory — the same one ``app/ai/doc_verify.py`` reads."""
+    """The one upload directory - the same one ``app/ai/doc_verify.py`` reads."""
     return upload_root()
 
 
@@ -116,7 +116,7 @@ def _try_sync_verify(db: Session, document: Document) -> dict[str, Any] | None:
 
     ``app.ai.doc_verify.verify_document(db, document_id)`` persists the outcome
     itself, so the caller only has to refresh the row. A missing module or a slow
-    run degrades to the ``VERIFY_DOCUMENT`` job — upload never fails because of it.
+    run degrades to the ``VERIFY_DOCUMENT`` job - upload never fails because of it.
     """
     try:
         module = importlib.import_module("app.ai.doc_verify")

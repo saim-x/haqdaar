@@ -1,5 +1,5 @@
 /**
- * Session store — the single source of truth for "who is signed in" and
+ * Session store - the single source of truth for "who is signed in" and
  * "who is the helper acting for".
  *
  * Kept outside React so the API client can read tokens synchronously, and
@@ -71,7 +71,7 @@ function persist(): void {
   try {
     localStorage.setItem(STORAGE_KEYS.auth, JSON.stringify({ session, actFor } satisfies Persisted));
   } catch {
-    /* storage full or blocked — session stays in memory for this tab */
+    /* storage full or blocked - session stays in memory for this tab */
   }
 }
 

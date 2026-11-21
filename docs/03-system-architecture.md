@@ -1,4 +1,4 @@
-# 03 — System Architecture & Technical Foundation
+# 03 - System Architecture & Technical Foundation
 
 > **Status:** FROZEN v1.0. Source of truth for technology selection, runtime topology, module boundaries, deployment, and error handling.
 > **Audience:** All coding agents (A1–A7) and Integration Lead.
@@ -29,10 +29,10 @@ This architecture is intentionally chosen for a 48-hour, multi-agent hackathon w
 | **Background Jobs** | **Postgres-backed job table (`jobs`) + Python worker** | Custom ~180 LOC | Transactional enqueue in the same DB commit as case submit; zero Redis dependency; admin Jobs UI reads the same table directly. | Celery + Redis (extra infra service, serialization/broker failure modes). |
 | **Frontend & PWA** | **React 18 + Vite + TypeScript + Tailwind CSS + `vite-plugin-pwa`** | React 18, Vite 5, TS 5 | Route-based code splitting keeps Citizen PWA ≤ 150 KB gzipped; Workbox service worker handles true offline app-shell caching without SSR hydration failures. | Next.js App Router (larger client runtime, fragile offline-first caching). |
 | **Offline Storage & State** | **Dexie.js (IndexedDB) + TanStack Query v5 + React Router v6** | Dexie 4, TQ 5 | Structured local drafts + persistent offline mutation outbox with `Idempotency-Key` replay; ETag-friendly polling. | localStorage (5 MB cap, no blobs/photos, synchronous blocking). |
-| **AI — LLM / Voice / Embeddings** | **OpenAI API (`gpt-4o-mini`, `whisper-1`, `text-embedding-3-small`) + Deepgram Flux TTS for pre-cached Urdu MP3s + `edge-tts` for dynamic speech** | SDK v1.50+ | Reliable JSON schema outputs, Urdu Whisper transcription, and pre-generated static Urdu prompts that work offline. | Self-hosted LLMs (GPU/deployment overhead); ElevenLabs (expensive, rate-limited). |
-| **AI — Scam Classifier** | **scikit-learn (`TfidfVectorizer` + `CalibratedClassifierCV`) + Rule Engine** | sklearn 1.5+ | < 5 ms local inference, genuinely calibrated probabilities, reproducible confusion matrix & false-positive rate on held-out test set. | LLM-only scam classifier (uncalibrated scores, high latency, brittle eval). |
-| **AI — Computer Vision** | **OpenCV (`opencv-python-headless`) + Pillow + `qrcode` + HMAC-SHA256** | OpenCV 4.10+ | Built-in `QRCodeDetector` + Laplacian blur detection without native `libzbar` OS library issues; signed QR enables verifiable forgery detection; vision LLM/fixture OCR compares printed vs QR text. | Tesseract system binary (flaky Docker/Windows setup, noisy on Urdu/angled photos). |
-| **AI — RAG** | **Hybrid Postgres `tsvector` + NumPy cosine similarity over stored `FLOAT8[]` embeddings** | Built-in | Works on any standard PostgreSQL 16 (Railway/Supabase/Docker) without requiring `pgvector` extension; fast (< 15 ms for < 5,000 chunks). | Chroma/Pinecone (extra vector DB service to host and sync). |
+| **AI - LLM / Voice / Embeddings** | **OpenAI API (`gpt-4o-mini`, `whisper-1`, `text-embedding-3-small`) + Deepgram Flux TTS for pre-cached Urdu MP3s + `edge-tts` for dynamic speech** | SDK v1.50+ | Reliable JSON schema outputs, Urdu Whisper transcription, and pre-generated static Urdu prompts that work offline. | Self-hosted LLMs (GPU/deployment overhead); ElevenLabs (expensive, rate-limited). |
+| **AI - Scam Classifier** | **scikit-learn (`TfidfVectorizer` + `CalibratedClassifierCV`) + Rule Engine** | sklearn 1.5+ | < 5 ms local inference, genuinely calibrated probabilities, reproducible confusion matrix & false-positive rate on held-out test set. | LLM-only scam classifier (uncalibrated scores, high latency, brittle eval). |
+| **AI - Computer Vision** | **OpenCV (`opencv-python-headless`) + Pillow + `qrcode` + HMAC-SHA256** | OpenCV 4.10+ | Built-in `QRCodeDetector` + Laplacian blur detection without native `libzbar` OS library issues; signed QR enables verifiable forgery detection; vision LLM/fixture OCR compares printed vs QR text. | Tesseract system binary (flaky Docker/Windows setup, noisy on Urdu/angled photos). |
+| **AI - RAG** | **Hybrid Postgres `tsvector` + NumPy cosine similarity over stored `FLOAT8[]` embeddings** | Built-in | Works on any standard PostgreSQL 16 (Railway/Supabase/Docker) without requiring `pgvector` extension; fast (< 15 ms for < 5,000 chunks). | Chroma/Pinecone (extra vector DB service to host and sync). |
 | **Entity Resolution** | **RapidFuzz + Custom Urdu/Roman-Urdu Canonicalizer** | RapidFuzz 3.x | C++-accelerated Jaro-Winkler & token-set ratios; deterministic, explainable per-field match breakdown. | Embedding similarity (opaque, hallucinates matches on short names). |
 | **Deployment** | **Docker Compose (local/fallback) + Railway (cloud)** | Docker v2 | Railway provides always-on managed Postgres + 2 container services (no Render free-tier 50 s cold starts). Local Docker Compose guarantees demo immunity to venue Wi-Fi outages. | Render free tier (cold starts kill live demos); Kubernetes (massive overkill). |
 
@@ -181,7 +181,7 @@ haqdaar/
 Every unhandled or domain exception is converted by FastAPI exception handlers into the uniform error envelope defined in [05-api-contracts.md §2](05-api-contracts.md). Stack traces are logged server-side and never returned to clients.
 
 ### 6.3 Rate Limiting
-In-memory sliding-window limiter (keyed by IP, phone, user_id, or api_key_id; resets cleanly on restart — sufficient for single-instance hackathon deployment):
+In-memory sliding-window limiter (keyed by IP, phone, user_id, or api_key_id; resets cleanly on restart - sufficient for single-instance hackathon deployment):
 - `POST /api/v1/auth/otp/request`: 3 / 10 min per phone + 10 / 10 min per IP.
 - `POST /api/v1/auth/login`: 10 / 10 min per IP.
 - `POST /api/v1/scam/check` (anonymous): 20 / min per IP.
@@ -198,7 +198,7 @@ In-memory sliding-window limiter (keyed by IP, phone, user_id, or api_key_id; re
    - `postgres`: Managed PostgreSQL 16.
    - `web-api`: Multi-stage Dockerfile (Stage 1 builds `frontend/` with Vite; Stage 2 installs Python backend + copies `frontend/dist` to `/app/static`). Runs `alembic upgrade head && python -m app.mocks.seed --if-empty && uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
    - `worker`: Same backend image, command `python -m app.jobs.worker`.
-   - Shared Railway Volume mounted at `/data/uploads` on both `web-api` and `worker` (or if single volume sharing is unavailable on Railway plan, run the worker as a background thread/subprocess inside `web-api` via `RUN_EMBEDDED_WORKER=true` — **Decision:** Support both `RUN_EMBEDDED_WORKER=true` for simple single-container shared-volume Railway deploy AND separate `worker` service in `docker-compose.yml`!).
+   - Shared Railway Volume mounted at `/data/uploads` on both `web-api` and `worker` (or if single volume sharing is unavailable on Railway plan, run the worker as a background thread/subprocess inside `web-api` via `RUN_EMBEDDED_WORKER=true` - **Decision:** Support both `RUN_EMBEDDED_WORKER=true` for simple single-container shared-volume Railway deploy AND separate `worker` service in `docker-compose.yml`!).
 2. **Local Venue Fallback (Mandatory):** `docker compose up --build` on a team laptop running the exact same image, pre-warmed and tested Sunday night, ready to present locally if FAST-NUCES Karachi Wi-Fi drops.
 
 ---

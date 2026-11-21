@@ -1,4 +1,4 @@
-"""Consent grants, withdrawal and access logs — docs/05 §3.4, docs/09 §4."""
+"""Consent grants, withdrawal and access logs - docs/05 §3.4, docs/09 §4."""
 
 from __future__ import annotations
 

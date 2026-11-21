@@ -1,4 +1,4 @@
-"""FastAPI application factory — middleware, error envelope, routers, health.
+"""FastAPI application factory - middleware, error envelope, routers, health.
 
 Everything the platform exposes is mounted here from day one: BE's real routers,
 EN's rule editor and eval routers, and the one-time stubs owned by other agents.
@@ -36,7 +36,7 @@ from app.security.ratelimit import check_ai_limit, check_otp_verify_limit, check
 logger = logging.getLogger("app.main")
 
 REQUEST_ID_HEADER = "X-Request-ID"
-PROTOTYPE_BANNER = "Haqdaar prototype — simulated government services, synthetic data only"
+PROTOTYPE_BANNER = "Haqdaar prototype - simulated government services, synthetic data only"
 
 #: Paths that never require an RBAC dependency (docs/03 §7 invariant 3).
 PUBLIC_PATH_PREFIXES = (
@@ -456,7 +456,7 @@ def create_app() -> FastAPI:
 
         Every series is derived from the database, so a metric cannot report a
         number the system does not actually hold. A failure to read returns the
-        ``up`` gauge at 0 rather than an empty body — a scrape that silently
+        ``up`` gauge at 0 rather than an empty body - a scrape that silently
         returns nothing looks identical to a healthy instance with no traffic.
         """
         lines: list[str] = []

@@ -3,7 +3,7 @@
 Every ``/mock/v1/*`` response passes through :class:`ChaosRoute`, which:
 
 1. reads ``mock_service_configs`` for the service that owns the path,
-2. applies the configured mode —
+2. applies the configured mode -
    ``NORMAL`` 30–80 ms jitter, ``SLOW`` ``latency_ms`` sleep,
    ``FLAKY`` sleep + HTTP 503 at ``failure_rate``,
    ``DOWN`` immediate HTTP 503 ``MOCK_SERVICE_DOWN``,

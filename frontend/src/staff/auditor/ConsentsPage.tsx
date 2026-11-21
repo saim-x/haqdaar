@@ -7,11 +7,11 @@ import { dayMonth, stamp } from '../../shared/lib/dates';
 import { Card, ErrorState, humanize, Loading, PageHeader } from '../ui';
 
 /**
- * Consent audit — docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access.
+ * Consent audit - docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access.
  *
  * The access log is the important half: a blocked attempt is a row that exists
  * precisely because the system refused something, so it is drawn with the same
- * weight as an allowed one — a dot and a word, never a red block that reads as
+ * weight as an allowed one - a dot and a word, never a red block that reads as
  * an error in the console itself.
  */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,7 +36,7 @@ export default function ConsentsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Consent audit"
-        subtitle="Every grant, withdrawal, and blocked access attempt — including the ones that returned 403."
+        subtitle="Every grant, withdrawal, and blocked access attempt - including the ones that returned 403."
         actions={
           <input
             placeholder="Filter by citizen id"
@@ -96,7 +96,7 @@ export default function ConsentsPage() {
                   {dayMonth(grant.granted_at, 'en')}
                 </td>
                 <td className="num whitespace-nowrap text-meta text-ink-3">
-                  {grant.expires_at ? dayMonth(grant.expires_at, 'en') : '—'}
+                  {grant.expires_at ? dayMonth(grant.expires_at, 'en') : '-'}
                 </td>
               </tr>
             ))}

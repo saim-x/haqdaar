@@ -3,7 +3,7 @@
 ``app/agent/case_agent.py`` and ``app/api/v1/{admin_rules,eval}.py`` import
 ``app.models``, ``app.db``, ``app.security.*``, ``app.jobs.queue`` and ``app.notify``.
 None of those exist on ``feat/engine`` yet, so the tests install minimal stand-ins with
-``monkeypatch.setitem`` — they are removed again at teardown and cannot leak.
+``monkeypatch.setitem`` - they are removed again at teardown and cannot leak.
 
 This is a test scaffold, not a substitute for the real modules: it exists so the frozen
 *interfaces* (function signatures, the nine step names, the route surface) are locked

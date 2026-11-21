@@ -1,5 +1,5 @@
 /**
- * API DTOs — transcribed from docs/04 (data model) and docs/05 (contracts).
+ * API DTOs - transcribed from docs/04 (data model) and docs/05 (contracts).
  * Do not add fields that are not in the frozen docs; request a contract change instead.
  */
 
@@ -130,7 +130,7 @@ export interface WizardStepDef {
 }
 
 /**
- * Draft answer — docs/04 §5 fact object. The wizard PATCHes the narrow
+ * Draft answer - docs/04 §5 fact object. The wizard PATCHes the narrow
  * `{value, confirmed, missing_reason}` subset; the server echoes the full object.
  */
 export interface DraftAnswer {
@@ -215,7 +215,7 @@ export interface FactObject {
 }
 
 /**
- * One entry of `decisions.rule_trace_json` — docs/04 §5 / docs/06 §2.
+ * One entry of `decisions.rule_trace_json` - docs/04 §5 / docs/06 §2.
  *
  * The minimal shape (`rule_id`, `result`, `actual`, `expected`, `reason_ur`,
  * `reason_en`) is what the decision row always carries. The rule-DSL context
@@ -260,7 +260,7 @@ export interface CaseView {
   program: { code: string; name: string; name_ur: string };
   case_type?: CaseType;
   status: CaseStatus;
-  /** docs/04 §3.3 — the citizen-facing status string, server-supplied. */
+  /** docs/04 §3.3 - the citizen-facing status string, server-supplied. */
   status_label?: { label_en: string; label_ur: string };
   previous_status?: CaseStatus | null;
   approved_amount_pkr: number | null;
@@ -302,7 +302,7 @@ export interface CaseView {
   rule_stale?: boolean;
 }
 
-/** `GET /officer/cases/{case_id}` — CaseView plus the review-only extras. */
+/** `GET /officer/cases/{case_id}` - CaseView plus the review-only extras. */
 export interface OfficerCaseReview extends CaseView {
   citizen: { id: string; full_name: string; district: string | null; cnic_masked: string } | null;
   notes: TraceNote[];
@@ -346,7 +346,7 @@ export interface ConsentGrant {
   granted_at: string;
   expires_at: string | null;
   withdrawn_at: string | null;
-  /** Present on `POST /consent/grants` — cases resumed from `ON_HOLD_CONSENT`. */
+  /** Present on `POST /consent/grants` - cases resumed from `ON_HOLD_CONSENT`. */
   resumed_case_ids?: string[];
 }
 
@@ -619,11 +619,11 @@ export interface Notification {
 }
 
 /**
- * One provenance-tagged value inside `GET /me/data` — docs/04 §5 tri-state.
+ * One provenance-tagged value inside `GET /me/data` - docs/04 §5 tri-state.
  *
  * `UNKNOWN` is a real answer, not an absent one: `value` and `source` are null
  * and `missing_reason` says why. Never coerce it to a default, and never infer
- * it from `value === null` alone — the backend states it.
+ * it from `value === null` alone - the backend states it.
  */
 export interface MyDataValue {
   state: 'KNOWN' | 'UNKNOWN';
@@ -632,7 +632,7 @@ export interface MyDataValue {
   missing_reason: MissingReason | null;
 }
 
-/** Why a fact is `UNKNOWN` — mirrors `app.engine.facts.MissingReason`. */
+/** Why a fact is `UNKNOWN` - mirrors `app.engine.facts.MissingReason`. */
 export type MissingReason =
   | 'USER_UNKNOWN'
   | 'NOT_PROVIDED'
@@ -640,7 +640,7 @@ export type MissingReason =
   | 'SERVICE_UNAVAILABLE'
   | 'DOCUMENT_MISSING';
 
-/** `GET /me/data` — grouped view of everything stored about the citizen. */
+/** `GET /me/data` - grouped view of everything stored about the citizen. */
 export interface MyDataResponse {
   citizen_id: string;
   identity: Record<string, MyDataValue>;
@@ -835,10 +835,10 @@ export interface RagAnswer {
   retrieved?: number;
 }
 
-/** Three-way honesty badge — `backend/app/api/v1/transparency.py` `COMPONENTS`. */
+/** Three-way honesty badge - `backend/app/api/v1/transparency.py` `COMPONENTS`. */
 export type TransparencyStatus = 'REAL' | 'SIMULATED' | 'SYNTHETIC';
 
-/** `GET /transparency` — the Real vs Simulated table (docs/15 §1). */
+/** `GET /transparency` - the Real vs Simulated table (docs/15 §1). */
 export interface TransparencyPayload {
   prototype: boolean;
   banner: string;

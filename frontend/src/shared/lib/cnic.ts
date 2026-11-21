@@ -1,5 +1,5 @@
 /**
- * CNIC helpers — docs/11 §3.2 step 3.
+ * CNIC helpers - docs/11 §3.2 step 3.
  * Display format is `XXXXX-XXXXXXX-X`; the wire format is 13 bare digits.
  * All demo CNICs start with `99900` (synthetic-data rule).
  */
@@ -24,13 +24,13 @@ export function isCompleteCnic(input: string): boolean {
 
 /** `99900-1000001-2` → `99900-•••••••-2`. Never render a full CNIC in staff UI. */
 export function maskCnic(input: string | null | undefined): string {
-  if (!input) return '—';
+  if (!input) return '-';
   const d = digitsOnly(input);
   if (d.length !== CNIC_DIGITS) return formatCnic(d);
   return `${d.slice(0, 5)}-•••••••-${d.slice(12)}`;
 }
 
-/** Phone helpers — Raast payout numbers are stored as `+92XXXXXXXXXX`. */
+/** Phone helpers - Raast payout numbers are stored as `+92XXXXXXXXXX`. */
 export function digitsOnlyPhone(input: string): string {
   return input.replace(/\D+/g, '').slice(0, 12);
 }
@@ -57,7 +57,7 @@ export function toE164Pk(input: string): string {
 }
 
 export function formatPhonePk(input: string | null | undefined): string {
-  if (!input) return '—';
+  if (!input) return '-';
   const nat = nationalPhoneDigits(input);
   if (nat.length === 10) return `0${nat.slice(0, 3)} ${nat.slice(3)}`;
   const d = input.replace(/\D+/g, '');

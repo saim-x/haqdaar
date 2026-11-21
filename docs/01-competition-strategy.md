@@ -1,4 +1,4 @@
-# 01 — Competition Analysis & Winning Strategy
+# 01 - Competition Analysis & Winning Strategy
 
 > **Status:** FROZEN v1.0 (Fri 20 Nov 2026). Changes only via the Integration Lead and [17-decision-log.md](17-decision-log.md).
 > **Audience:** Everyone. Read this first after [00-index.md](00-index.md).
@@ -19,7 +19,7 @@ Coder's Cup '26 asks for **one multi-user SaaS platform** on top of (mocked) Pak
 
 The platform must **decide, explain, protect**, and be able to say **"I am not sure"** and hand over to a human. *"This is not a chatbot."* It needs users, roles, cases, rules, and audit trails.
 
-The organisers explicitly say: **judges score judgment — how the system handles risk, mistakes, and surprises — and actual behaviour, not claims.**
+The organisers explicitly say: **judges score judgment - how the system handles risk, mistakes, and surprises - and actual behaviour, not claims.**
 
 ---
 
@@ -27,7 +27,7 @@ The organisers explicitly say: **judges score judgment — how the system handle
 
 Every item below is tracked in [16-traceability-matrix.md](16-traceability-matrix.md) with an owner and a verification method.
 
-### 2.1 Hard rules (eligibility — violating any one can disqualify)
+### 2.1 Hard rules (eligibility - violating any one can disqualify)
 
 | ID | Rule | Our compliance mechanism |
 |---|---|---|
@@ -42,16 +42,16 @@ Every item below is tracked in [16-traceability-matrix.md](16-traceability-matri
 
 | ID | Constraint |
 |---|---|
-| CON-1 | Wrong approvals cost more than slow approvals — show the trade-off |
-| CON-2 | Weak internet — works on slow/dropping connection |
-| CON-3 | Low literacy — usable by someone who cannot read |
-| CON-4 | Rules change without notice — adapt without code changes |
-| CON-5 | Bad data — missing, duplicated, wrong |
-| CON-6 | Explainable decisions — to the user and to an auditor |
-| CON-7 | User control — control sharing and take it back |
-| CON-8 | "I am not sure" — low confidence stops and hands to a human |
+| CON-1 | Wrong approvals cost more than slow approvals - show the trade-off |
+| CON-2 | Weak internet - works on slow/dropping connection |
+| CON-3 | Low literacy - usable by someone who cannot read |
+| CON-4 | Rules change without notice - adapt without code changes |
+| CON-5 | Bad data - missing, duplicated, wrong |
+| CON-6 | Explainable decisions - to the user and to an auditor |
+| CON-7 | User control - control sharing and take it back |
+| CON-8 | "I am not sure" - low confidence stops and hands to a human |
 
-### 2.3 Roles (≥ 3 required) — **we implement all 5**
+### 2.3 Roles (≥ 3 required) - **we implement all 5**
 
 Citizen · Community helper · Department officer · Admin · Auditor.
 
@@ -67,7 +67,7 @@ Citizen · Community helper · Department officer · Admin · Auditor.
 | CORE-6 | Consent management (see, share, withdraw, correct) |
 | CORE-7 | Mock identity, payment and data services behind clean APIs |
 
-### 2.5 "Pick at least 3" platform features — our selection
+### 2.5 "Pick at least 3" platform features - our selection
 
 | Feature | Decision | Priority | Why |
 |---|---|---|---|
@@ -80,11 +80,11 @@ Citizen · Community helper · Department officer · Admin · Auditor.
 | Rate limiting & error handling | **BUILD** | P1 | Cheap; demonstrates security/reliability. |
 | Analytics dashboard per tenant | **BUILD** | P1 | Shares data with the evaluation dashboard. |
 | Webhooks | Stretch | P2 | Low judging value relative to effort. |
-| Subscription plans & usage limits | **SKIP** | — | No relevance to the public-service story; judges would see it as filler. |
+| Subscription plans & usage limits | **SKIP** | - | No relevance to the public-service story; judges would see it as filler. |
 
 We claim in the README **only** features that actually work at submission time.
 
-### 2.6 AI features (≥ 3 required) — our selection
+### 2.6 AI features (≥ 3 required) - our selection
 
 | AI feature | Decision | Priority | Role in product |
 |---|---|---|---|
@@ -119,7 +119,7 @@ All eight are specified as concrete behaviour in [08-responsible-ai-challenges.m
 | 07 | Works for everyone | Icon + audio-first wizard, one question per screen, tap or speak, readback confirmation, PWA offline outbox with idempotent sync, < 150 KB citizen bundle. |
 | 08 | Scams & fake documents | Every official message carries a verifiable code; hybrid rules + calibrated classifier with an explicit "suspicious/cannot tell" band; signed-QR document verification; false-alarm rates displayed honestly; nothing is ever blocked automatically. |
 
-### 2.9 Bonus features — our selection
+### 2.9 Bonus features - our selection
 
 | Bonus | Decision | Priority | Rationale |
 |---|---|---|---|
@@ -147,7 +147,7 @@ The brief says *"One bonus feature that really works is worth more than four hal
 1. **Pick one task and go deep** (brief: "A deep solution for one task beats a thin solution for many").
 2. **Separate the LLM from the decision.** *LLM proposes, deterministic policy disposes.* The LLM extracts, transcribes, phrases and retrieves. A versioned, auditable rules engine decides. Confidence is computed from measurable evidence, not self-reported by a model.
 3. **Show numbers** for thresholds and false alarms, computed live by the system on a labelled set.
-4. **Demonstrate failure behaviour live**: forged document, ambiguous identity, mock service outage, consent withdrawal mid-review, offline submission — each producing a safe, explainable outcome.
+4. **Demonstrate failure behaviour live**: forged document, ambiguous identity, mock service outage, consent withdrawal mid-review, offline submission - each producing a safe, explainable outcome.
 5. **Enforce everything server-side** (judging note: "server-side enforcement of access controls and permissions").
 6. **Be honest**: what is simulated, where the model is weak, what the false-alarm rate is.
 
@@ -161,19 +161,19 @@ The brief says *"One bonus feature that really works is worth more than four hal
 
 | Candidate task | Fit with 3 personas | Exercises all 8 challenges? | Demo clarity | Verdict |
 |---|---|---|---|---|
-| **Cash-relief grant application → decision → payment** | Widow applies; helper assists 40 families; shopkeeper receives fake *relief payment* messages about this exact program | Yes — money (cost of wrong), documents (forgery), identity (bad data), eligibility rules (change), consent (department + helper), payment (Raast mock) | Very high | **CHOSEN** |
+| **Cash-relief grant application → decision → payment** | Widow applies; helper assists 40 families; shopkeeper receives fake *relief payment* messages about this exact program | Yes - money (cost of wrong), documents (forgery), identity (bad data), eligibility rules (change), consent (department + helper), payment (Raast mock) | Very high | **CHOSEN** |
 | Complaint filing about a public service | Weak link to scams and payments | Weak on cost-of-wrong & rules | Medium | Rejected (complaints exist only as a sub-flow: "payment not received") |
 | Utility bill / subsidy correction | Weak helper story | Weak on documents | Medium | Rejected |
-| Generic "document assistant" for many services | Thin | Thin | Low | Rejected — exactly what the brief warns against |
+| Generic "document assistant" for many services | Thin | Thin | Low | Rejected - exactly what the brief warns against |
 
 The brief's own vocabulary ("one wrong approval can cost someone their savings", "fake relief payment messages", "40 families") points at a benefit-payment flow. Every one of the three personas meets the same program from a different side, which gives us **one cohesive platform**, not three demos.
 
 ### Product identity
 
-- **Name:** **Haqdaar** (حقدار — "the rightful claimant").
-- **Tagline (ur):** "ہر حقدار تک، محفوظ طریقے سے" — *To every rightful person, safely.*
+- **Name:** **Haqdaar** (حقدار - "the rightful claimant").
+- **Tagline (ur):** "ہر حقدار تک، محفوظ طریقے سے" - *To every rightful person, safely.*
 - **Fictional program:** *Sahara Widow Support Grant* run by the fictional *Social Protection Department (Mock)* tenant.
-- **Second tenant (multi-tenancy proof):** *Zakat & Welfare Board (Mock)* running the *Guzara Allowance* — created **purely by configuration** (P1).
+- **Second tenant (multi-tenancy proof):** *Zakat & Welfare Board (Mock)* running the *Guzara Allowance* - created **purely by configuration** (P1).
 - Never use real agency logos. Mock services are named "Identity Registry (NADRA-like, simulated)", "Instant Payments (Raast-like, simulated)".
 
 ---

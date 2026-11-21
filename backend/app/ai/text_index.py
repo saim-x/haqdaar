@@ -2,15 +2,15 @@
 
 Two jobs, both pure Python and both reproducible byte-for-byte:
 
-1. **Markdown chunking** — heading-aware slices of ~300–450 tokens with a
+1. **Markdown chunking** - heading-aware slices of ~300–450 tokens with a
    50-token overlap (docs/07 §4.2).
-2. **Hashed TF-IDF embeddings** — a 64-dimension vector (docs/04 §4.5) built from
+2. **Hashed TF-IDF embeddings** - a 64-dimension vector (docs/04 §4.5) built from
    the policy corpus's own inverse document frequencies.
 
 Why TF-IDF and not a plain hash: a raw bag-of-words hash at 64 dimensions is
 noise-dominated, so an out-of-domain question ("what is the capital of France")
 scores as high as a real one. Weighting each term by its corpus IDF and dropping
-stopwords fixes that — a question whose content words never appear in the corpus
+stopwords fixes that - a question whose content words never appear in the corpus
 produces a zero vector, and therefore a zero cosine against every chunk. That is
 what makes the abstention gate in ``rag.py`` mean something in fake mode.
 
@@ -32,7 +32,7 @@ from typing import Any
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 POLICY_DIR = DATA_DIR / "policy_docs"
 
-#: docs/04 §4.5 — 64 dims in fake mode, 1536 in live mode.
+#: docs/04 §4.5 - 64 dims in fake mode, 1536 in live mode.
 FAKE_EMBEDDING_DIM = 64
 
 #: Chunking. A chunk is one policy section, because a section is the unit a
@@ -51,7 +51,7 @@ CHUNK_MAX_TOKENS = 450
 #: quotes sentences: it lets a match that straddles a boundary be found twice.
 #: Here it did the opposite. Every chunk began with the last 50 tokens of the
 #: previous one, so the chunk titled "3. Required Documents" opened with the tail
-#: of the eligibility list in Urdu — the heading no longer described the content,
+#: of the eligibility list in Urdu - the heading no longer described the content,
 #: and an extractive answer quoted the neighbour's text under this section's
 #: citation. A section is the unit a citation names, so a section is the unit a
 #: chunk holds.
@@ -73,7 +73,7 @@ _TOKEN_RE = re.compile(r"[\w\u0600-\u06ff]+")
 # tokenisation
 # --------------------------------------------------------------------------- #
 def count_tokens(text: str) -> int:
-    """Whitespace token count — good enough for Urdu and English alike."""
+    """Whitespace token count - good enough for Urdu and English alike."""
     return len(_WORD_RE.findall(text or ""))
 
 

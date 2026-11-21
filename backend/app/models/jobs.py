@@ -1,4 +1,4 @@
-"""Job queue, idempotency cache & worker heartbeats — docs/04 §4.5."""
+"""Job queue, idempotency cache & worker heartbeats - docs/04 §4.5."""
 
 from __future__ import annotations
 

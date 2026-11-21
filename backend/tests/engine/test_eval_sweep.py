@@ -20,7 +20,7 @@ from app.engine.facts import FactBundle, FactState
 from app.engine.rules_dsl import RuleSetSchema
 
 #: 18 cases. Every case passes every rule, so the route depends only on confidence.
-#: ``truly_eligible`` is ground truth the engine cannot see — that is the whole point.
+#: ``truly_eligible`` is ground truth the engine cannot see - that is the whole point.
 ELIGIBLE_CONFIDENCES = (0.99, 0.97, 0.95, 0.93, 0.91, 0.90, 0.88, 0.85, 0.80, 0.75, 0.70, 0.60)
 INELIGIBLE_CONFIDENCES = (0.89, 0.86, 0.82, 0.78, 0.72, 0.65)
 
@@ -424,7 +424,7 @@ def test_the_shipped_eval_set_loads_and_sweeps() -> None:
         assert case.confidence.identity in {0.25, 0.30, 0.75, 0.78, 0.93, 0.98}
         assert case.confidence.consent_assurance in {0.82, 1.0}
         # Documents is a measured score, not a band: a verified document contributes
-        # its own confidence, "typically 0.92-0.98" (docs/06 §3.2 pillar 2) — that
+        # its own confidence, "typically 0.92-0.98" (docs/06 §3.2 pillar 2) - that
         # range is descriptive, and a compressed-but-genuine card legitimately
         # measures lower. The three failure outcomes are the discrete values.
         documents = case.confidence.documents

@@ -5,7 +5,7 @@ import type { TenantAnalytics } from '../../shared/api/types';
 import { Card, ErrorState, flagWord, Kpi, Loading, PageHeader, statusWord } from '../ui';
 
 /**
- * Tenant analytics — docs/11 §6.4. Always tenant-filtered server-side (AC-02.2).
+ * Tenant analytics - docs/11 §6.4. Always tenant-filtered server-side (AC-02.2).
  *
  * Two ledgers, not two pie charts. A count next to a proportional hairline bar
  * answers "which status dominates" faster than any chart, and it stays readable
@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
           label="Avg time to decision"
           value={
             !data.avg_time_to_decision_seconds
-              ? '—'
+              ? '-'
               : data.avg_time_to_decision_seconds < 60
                 ? `${data.avg_time_to_decision_seconds.toFixed(1)}s`
                 : data.avg_time_to_decision_seconds < 3600

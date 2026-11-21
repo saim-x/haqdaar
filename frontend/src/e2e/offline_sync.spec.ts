@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { demoLogin, passConsentGate, tapDigits, uploadDoc, useEnglish, wizardNext } from './helpers';
 
 /**
- * Offline truth — docs/11 §5, AC-10.x.
+ * Offline truth - docs/11 §5, AC-10.x.
  *
  * The wizard must survive a dropped connection: drafts autosave to IndexedDB on
  * every step, the submit queues in the Dexie outbox with a client-generated
@@ -74,7 +74,7 @@ test('offline sync: submit queues offline and replays exactly once', async ({ pa
   await tapDigits(page, '3001000001');
   await wizardNext(page);
 
-  // Documents cannot reach the server offline — the wizard keeps the compressed
+  // Documents cannot reach the server offline - the wizard keeps the compressed
   // photo on the phone and queues the upload, so the submit still goes through.
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'cnic_doc');
   await uploadDoc(page, 'cnic');
@@ -91,7 +91,7 @@ test('offline sync: submit queues offline and replays exactly once', async ({ pa
   await page.locator('[data-testid="wizard-submit"]').click();
 
   // The citizen is told the application is saved on the phone and will be sent
-  // automatically — never a dead end.
+  // automatically - never a dead end.
   await expect(page.getByText(/saved|queued|محفوظ|بھیج دیا جائے گا/i).first()).toBeVisible({ timeout: 30_000 });
 
   // The outbox holds at least one row.

@@ -116,7 +116,7 @@ def _spec(
     )
 
 
-#: docs/04-data-model.md §5 — the complete canonical fact contract (20 keys).
+#: docs/04-data-model.md §5 - the complete canonical fact contract (20 keys).
 FACT_REGISTRY: dict[str, FactSpec] = {
     spec.key: spec
     for spec in (
@@ -483,7 +483,7 @@ class FactBundle(BaseModel):
 
 
 def is_valid_cnic(value: str | None) -> bool:
-    """13 ASCII digits. Format only — registry existence is a separate check."""
+    """13 ASCII digits. Format only - registry existence is a separate check."""
     if not isinstance(value, str) or len(value) != 13:
         return False
     return value.isascii() and value.isdigit()

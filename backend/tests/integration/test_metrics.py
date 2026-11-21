@@ -1,4 +1,4 @@
-"""``GET /metrics`` — the scrape endpoint a dashboard reads.
+"""``GET /metrics`` - the scrape endpoint a dashboard reads.
 
 ``/health`` answers "can this instance serve?" for a load balancer. ``/metrics``
 answers "what is this instance doing?" for a dashboard. These tests hold the
@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-#: ``name{label="value"} 1.0`` — the Prometheus text exposition grammar.
+#: ``name{label="value"} 1.0`` - the Prometheus text exposition grammar.
 _SAMPLE = re.compile(r"^(?P<name>[a-zA-Z_][a-zA-Z0-9_]*)(?:\{(?P<labels>[^}]*)\})? (?P<value>\S+)$")
 
 
@@ -80,7 +80,7 @@ def test_process_is_up_and_database_is_reachable(client: Any) -> None:
 def test_case_and_decision_counters_carry_tenant_and_status_labels(client: Any) -> None:
     series = _parse(client.get("/metrics").text)
     # The seeded world has cases and decisions, so both counters must be present
-    # and labelled — an unlabelled total would be a number nobody can act on, and
+    # and labelled - an unlabelled total would be a number nobody can act on, and
     # an unlabelled total is also what makes /metrics disagree with the
     # tenant-scoped eval dashboard.
     assert "haqdaar_cases_total" in series

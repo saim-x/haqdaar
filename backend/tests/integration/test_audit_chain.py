@@ -1,4 +1,4 @@
-"""Hash-chained audit trail — docs/09 §5, docs/13 §1.
+"""Hash-chained audit trail - docs/09 §5, docs/13 §1.
 
 The chain is the evidence that nothing was quietly changed, so these tests do the
 two things a judge will do: verify it end to end, and tamper with a row behind the

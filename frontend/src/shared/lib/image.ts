@@ -1,5 +1,5 @@
 /**
- * Client-side image compression — docs/11 §3.2 steps 12–13.
+ * Client-side image compression - docs/11 §3.2 steps 12–13.
  * Target: longest edge ≤ 1280 px, JPEG quality 0.7, ≤ 250 KB, before upload.
  * A woman on 3G must never wait for a 4 MB phone photo to travel.
  */

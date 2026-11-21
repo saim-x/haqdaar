@@ -1,4 +1,4 @@
-"""Simulated DPI services — ``/mock/v1/*`` (docs/05 §3.11, docs/10 §1.2).
+"""Simulated DPI services - ``/mock/v1/*`` (docs/05 §3.11, docs/10 §1.2).
 
 Mounted by ``app/main.py`` as ``app.include_router(router, prefix="/mock")``.
 The case agent reaches these endpoints **only** over HTTP via ``MOCK_BASE_URL``;
@@ -35,7 +35,7 @@ from app.mocks.payout_aliases import account_title_for, is_dormant_alias
 
 router = APIRouter(route_class=ChaosRoute, tags=["mock"])
 
-#: Deterministic Raast failure alias (docs/10 §1.2 E) — powers Journey J-9.
+#: Deterministic Raast failure alias (docs/10 §1.2 E) - powers Journey J-9.
 DETERMINISTIC_FAILURE_ALIAS = "+923009999999"
 
 _HONORIFICS = {"mst", "musammat", "mr", "mrs", "ms", "smt", "haji", "syed", "s", "m"}
@@ -453,7 +453,7 @@ def sms_inbox(phone: str) -> dict[str, Any]:
     """Newest-first simulated SMS inbox for ``phone``.
 
     Reads the ``notifications`` rows BE writes (channel ``SMS_SIMULATED``) and
-    the OTP SMS bodies it stores there — OTP codes arrive inside the body text,
+    the OTP SMS bodies it stores there - OTP codes arrive inside the body text,
     never from ``otp_challenges.code_hash``.
     """
     model = _notification_model()

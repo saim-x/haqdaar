@@ -1,4 +1,4 @@
-"""Programs, versioned rules & Digital Twin runs — docs/04 §4.2."""
+"""Programs, versioned rules & Digital Twin runs - docs/04 §4.2."""
 
 from __future__ import annotations
 

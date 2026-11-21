@@ -1,4 +1,4 @@
-# 11 — UX, Accessibility, Low-Bandwidth PWA & Console Specifications
+# 11 - UX, Accessibility, Low-Bandwidth PWA & Console Specifications
 
 > **Status:** FROZEN v1.0. Source of truth for `frontend/`.
 > **Owners:** A5 (`shared/`, `citizen/`, `helper/`), A6 (`staff/`).
@@ -14,10 +14,10 @@ To serve both a low-literacy widow on a 2G/Slow-3G phone **and** a department of
 | **Citizen & Helper PWA** | `/`, `/c/*`, `/h/*`, `/scam-check`, `/help`, `/transparency` | A5 | **≤ 150 KB JS gzipped** (first load ≤ 300 KB total) | **Urdu (`ur`, `dir="rtl"`) default** with 1-tap toggle to English (`en`, `dir="ltr"`) |
 | **Staff Consoles** | `/staff/*`, `/admin/*`, `/auditor/*` | A6 | Lazy-loaded (`React.lazy` separate chunks) | English (`dir="ltr"`) with inline Urdu explanation preview |
 
-### Global Prototype Banner (Mandatory — RULE-5)
+### Global Prototype Banner (Mandatory - RULE-5)
 Rendered persistently at the top of every route (compact 28 px amber bar):
-- **ur:** `پروٹوٹائپ — یہ سرکاری سروس نہیں ہے۔ تمام شناختی اور ادائیگی کے نظام نقلی ہیں۔` + `[تفصیلات]` (`/transparency`)
-- **en:** `PROTOTYPE — Not an official government service. Identity, payment & data services are simulated.` + `[Real vs Simulated]`
+- **ur:** `پروٹوٹائپ - یہ سرکاری سروس نہیں ہے۔ تمام شناختی اور ادائیگی کے نظام نقلی ہیں۔` + `[تفصیلات]` (`/transparency`)
+- **en:** `PROTOTYPE - Not an official government service. Identity, payment & data services are simulated.` + `[Real vs Simulated]`
 
 ---
 
@@ -33,14 +33,14 @@ Non-negotiable rules enforced across all `/c/*` and `/h/*` screens:
    - Waiting External: Grey/Blue + Clock/Cloud pictogram
    - Consent Paused: Purple + Lock pictogram
    - Rejected: Red + Cross pictogram
-4. **Touch & Contrast:** All tap targets ≥ 48×48 px (primary actions ≥ 56 px tall); WCAG AA contrast ≥ 4.5:1; readable Urdu font (**Decision, ADR-023:** use **`Noto Nastaliq Urdu`** for the citizen UI — Nastaliq is the script Urdu is written in, and the earlier `Noto Sans Arabic` choice rendered Urdu in a Naskh face that reads as Arabic rather than Urdu. The subset is 194 KB WOFF2, self-hosted and precached, and the type scale gives it ~1.9 leading under `html[lang='ur']` because Nastaliq hangs its descenders far below the baseline. The subset MUST retain the Arabic joining features `init`/`medi`/`fina`/`isol`; without them the font loads but every word renders letter-by-letter).
+4. **Touch & Contrast:** All tap targets ≥ 48×48 px (primary actions ≥ 56 px tall); WCAG AA contrast ≥ 4.5:1; readable Urdu font (**Decision, ADR-023:** use **`Noto Nastaliq Urdu`** for the citizen UI - Nastaliq is the script Urdu is written in, and the earlier `Noto Sans Arabic` choice rendered Urdu in a Naskh face that reads as Arabic rather than Urdu. The subset is 194 KB WOFF2, self-hosted and precached, and the type scale gives it ~1.9 leading under `html[lang='ur']` because Nastaliq hangs its descenders far below the baseline. The subset MUST retain the Arabic joining features `init`/`medi`/`fina`/`isol`; without them the font loads but every word renders letter-by-letter).
 5. **Voice is an accelerator, never a single point of failure:** Every step offers tap choices / numeric keypad / large `+` / `–` counter alongside the 🎤 Speak button.
 6. **Mandatory Voice Readback:** After speaking, a large confirmation card shows the parsed value, plays Urdu audio readback (*"آپ نے 28,000 روپے بتایا۔ کیا یہ درست ہے؟"*), and offers only two giant buttons: ✅ Yes / ❌ Try Again.
 7. **Lite Mode:** Toggle in top bar (auto-enabled if `navigator.connection.saveData === true` or `effectiveType === '2g'|'slow-2g'`). Strips decorative illustrations, uses inline SVG icons (< 1 KB each), and disables non-essential polling.
 
 ---
 
-## 3. Citizen PWA Flows (`/c/*`) — Owner: A5
+## 3. Citizen PWA Flows (`/c/*`) - Owner: A5
 
 ### 3.1 Citizen Home (`/c`)
 Four giant pictogram tiles (2×2 grid, each with 🔊 audio label):
@@ -73,25 +73,25 @@ Progress dots at top (no dense text). Steps:
 - **Who viewed my data (Access Log):** Chronological list with green ✅ Allowed and red 🚫 **Blocked** badges (so Fatima sees blocked helper/officer attempts live!).
 - **My Data:** Grouped facts with source badge (`Self-declared` vs `Registry`) + **Request Correction** button.
 
-### 3.4 Scam Checker (`/scam-check` — Public + Logged-in)
+### 3.4 Scam Checker (`/scam-check` - Public + Logged-in)
 - Accessible directly without login (for Shopkeeper Rasool).
 - Three input tabs: **Paste Text**, **Upload Screenshot**, **Speak Message**.
 - Big traffic-light + icon verdict card + Urdu audio playback:
   - 🟢 **Verified Official Message** (shows matched official notification timestamp & program)
   - 🔴 **Likely Scam** (lists exact red flags in Urdu/English bullets)
-  - 🟡 **Cannot Tell — Be Careful** (safety checklist: never share PIN or pay fees)
+  - 🟡 **Cannot Tell - Be Careful** (safety checklist: never share PIN or pay fees)
   - 🟢 **Likely Safe** (with reminder to still never share OTPs)
 - Honest feedback link at bottom: **"I think this result is wrong"** → calls `POST /api/v1/scam/{id}/feedback`.
 
 ---
 
-## 4. Helper Mode (`/h/*`) — Owner: A5 (Bonus Feature)
+## 4. Helper Mode (`/h/*`) - Owner: A5 (Bonus Feature)
 
 Designed for **Ayesha serving 40 families on one shared phone**:
-1. **Family Roster (`/h`):** Searchable list of families with colour-coded avatar circles, name, masked CNIC, active case badge, consent status (`Active` / `Expired — Renew`), and 🔊 play-name button.
+1. **Family Roster (`/h`):** Searchable list of families with colour-coded avatar circles, name, masked CNIC, active case badge, consent status (`Active` / `Expired - Renew`), and 🔊 play-name button.
 2. **Add Family (`/h/new`):** Captures basic profile + **Consent Capture Choice**:
    - **Recommended:** Citizen's own phone OTP (high assurance `CITIZEN_OTP`).
-   - **Fallback (no own phone):** Witnessed verbal consent — records a 5–10 s Urdu audio clip of the citizen consenting + helper attestation checkbox (`VERBAL_WITNESSED`, explicitly warns that officer review will be required).
+   - **Fallback (no own phone):** Witnessed verbal consent - records a 5–10 s Urdu audio clip of the citizen consenting + helper attestation checkbox (`VERBAL_WITNESSED`, explicitly warns that officer review will be required).
 3. **Safe Context Switch (≤ 2 Taps):**
    - Tapping a family **synchronously wipes** TanStack Query cache (`queryClient.clear()`) and active in-memory wizard state, sets `actForCitizenId`, and opens a full-screen confirmation interstitial:
      - Large colour avatar + **"You are now helping Fatima Bibi (`اب آپ فاطمہ بی بی کی مدد کر رہی ہیں`)"** + plays audio cue + single **Continue** button.
@@ -120,27 +120,27 @@ stateDiagram-v2
     Syncing --> QueuedInOutbox: Network error / 5xx -> exponential backoff (2s, 5s, 15s, 30s)
     Syncing --> NeedsAttention: HTTP 4xx (non-409-replay) -> show clear Urdu error card
 ```
-- Top status pill indicates: 🟢 Online · 🟡 Offline (X items saved locally — will send automatically) · 🔄 Syncing...
+- Top status pill indicates: 🟢 Online · 🟡 Offline (X items saved locally - will send automatically) · 🔄 Syncing...
 - Guarantees zero lost drafts and **exact-once** submission on reconnect (tested by `offline_sync.spec.ts`).
 
 ---
 
-## 6. Staff Consoles (`/staff/*`, `/admin/*`, `/auditor/*`) — Owner: A6
+## 6. Staff Consoles (`/staff/*`, `/admin/*`, `/auditor/*`) - Owner: A6
 
 ### 6.1 Officer Workspace (`/staff/queue`, `/staff/cases/:id`)
 - **Queue Table:** Sort tabs (`Priority` default, `Lowest Confidence`, `Oldest`), filters (`Status`, `Flag`, `Assigned to me`, `Awaiting 2nd Approval`), colour-coded priority band badges, weakest confidence score bar, top escalation reason chips, stale-rule warning icon.
 - **Case Review Screen (2-Column Layout):**
   - **Left (Evidence):** AI Case Handoff Card (Verified / Uncertain / Suggested Checks), Canonical Facts Table with source badges & conflict highlights, Rule Evaluation Trace (`PASS`/`FAIL`/`UNKNOWN`), Uploaded Documents viewer with CV check breakdown (Blur score, QR HMAC badge, OCR-vs-QR diff), Active Risk Flags, Agent Step Timeline.
-  - **Right (Decision Panel):** Stale-rule banner (*"Evaluated with v1; v2 active — Re-evaluate"*), Action buttons (`Assign to Me`, `Approve`, `Request Info`, `Reject`, `Escalate`), mandatory Reason Code checkboxes + Note box for Reject/Approve-with-flags, Four-eyes indicator (*"HIGH flag present: your approval sends to a second officer"*).
-  - If citizen withdrew consent while officer had page open: crisp `403 CONSENT_REVOKED` banner hides all PII and shows *"Citizen withdrew consent — access blocked and logged."*
+  - **Right (Decision Panel):** Stale-rule banner (*"Evaluated with v1; v2 active - Re-evaluate"*), Action buttons (`Assign to Me`, `Approve`, `Request Info`, `Reject`, `Escalate`), mandatory Reason Code checkboxes + Note box for Reject/Approve-with-flags, Four-eyes indicator (*"HIGH flag present: your approval sends to a second officer"*).
+  - If citizen withdrew consent while officer had page open: crisp `403 CONSENT_REVOKED` banner hides all PII and shows *"Citizen withdrew consent - access blocked and logged."*
 
 ### 6.2 Admin Console (`/admin/*`)
 1. **Rule Editor (`/admin/rules`):** Program selector, version list with SHA-256 hashes & change notes, visual form editor for each rule (`fact`, `op`, `value`, `on_fail`, `on_unknown`, Urdu/English reasons) + benefit formula + confidence threshold + read-only JSON preview. Buttons: **Save Draft**, **Validate**, **Simulate (Digital Twin)**, **Publish**.
 2. **Digital Twin Drawer/Page (`/admin/rules/:id/twin`):** Side-by-side before/after outcome chart (`APPROVED` / `NEEDS_INFO` / `HUMAN_REVIEW`), prominent **Budget Delta (PKR)** KPI card, filterable table of every flipped historical case with exact reason why it flipped.
 3. **Users & API Keys (`/admin/users`, `/admin/api-keys`):** CRUD tables; API key creation modal shows plaintext key once with copy button.
-4. **Mock Services & Jobs (`/admin/mocks`, `/admin/jobs` — Platform Admin):** Live toggle cards for all 7 mock DPI services (`NORMAL` / `SLOW` / `FLAKY` / `DOWN`, latency slider, failure rate), Jobs queue table with retry button, and **Demo Reset** button (with confirmation).
+4. **Mock Services & Jobs (`/admin/mocks`, `/admin/jobs` - Platform Admin):** Live toggle cards for all 7 mock DPI services (`NORMAL` / `SLOW` / `FLAKY` / `DOWN`, latency slider, failure rate), Jobs queue table with retry button, and **Demo Reset** button (with confirmation).
 
-### 6.3 Auditor Console (`/auditor/*` — Strict Read-Only)
+### 6.3 Auditor Console (`/auditor/*` - Strict Read-Only)
 1. **Audit Event Stream (`/auditor/events`):** Filter by case, actor type (`USER`/`AI`/`AGENT`/`SYSTEM`), action, tenant, date.
 2. **Chain Integrity Banner:** Prominent **Verify Hash Chain** button → displays *"Chain Intact: X,XXX events verified"* (or highlights exact tampered `seq`).
 3. **Decision Trace Inspector (`/auditor/cases/:id`):** Complete JSON + visual view of `input_snapshot_json` + hash, `rule_version` + hash, `model_versions`, 4-pillar confidence breakdown, rule trace, agent steps, and citizen explanation.

@@ -1,5 +1,5 @@
 /**
- * Sindh districts offered in the wizard — docs/06 §4 rule `district_in`.
+ * Sindh districts offered in the wizard - docs/06 §4 rule `district_in`.
  * Frozen list: do not add districts the rule engine does not know about.
  */
 export const SINDH_DISTRICTS = [

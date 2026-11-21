@@ -17,16 +17,16 @@ import { formatCnic, formatPhonePk } from '../../shared/lib/cnic';
 import { pkr } from '../../shared/lib/money';
 
 /**
- * Officer evidence renderers — docs/11 §6.1, docs/04 §5, docs/06 §2.
+ * Officer evidence renderers - docs/11 §6.1, docs/04 §5, docs/06 §2.
  *
  * Contract-first: `GET /officer/cases/{id}` documents `facts` and `rule_trace`,
  * but the shipped endpoint may omit either. Every component here is strictly
- * optional — when the field is absent the caller renders the "Why this route"
+ * optional - when the field is absent the caller renders the "Why this route"
  * fallback instead, and nothing throws.
  *
  * The visual rule for this file: a KNOWN fact is ink on paper, an UNKNOWN fact
  * is a gap in the paper. So UNKNOWN is drawn as an em-dash with the reason in
- * small type underneath — never as a filled badge, which would make missing
+ * small type underneath - never as a filled badge, which would make missing
  * information look like a finding.
  *
  * The vocabulary rule: nothing here prints a contract value. `monthly_income_pkr`
@@ -40,7 +40,7 @@ type FactLike = DraftAnswer | FactObject;
  * Tri-state is NEVER coerced (docs/04 §5).
  *
  * `UNKNOWN` stays `UNKNOWN`. A `false` or a `0` is a real, KNOWN answer and must
- * never be mistaken for "missing" — that is the whole point of the tri-state.
+ * never be mistaken for "missing" - that is the whole point of the tri-state.
  * Legacy draft answers carry no `state`, so only a null value is treated as
  * UNKNOWN there.
  */
@@ -58,7 +58,7 @@ export function resolveFactState(fact: FactLike): FactState {
  */
 export function renderFactValue(value: unknown): string {
   if (typeof value === 'boolean') return value ? 'yes' : 'no';
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '-';
   if (Array.isArray(value)) return value.map((v) => renderFactValue(v)).join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
@@ -68,7 +68,7 @@ export function renderFactValue(value: unknown): string {
  * The same value, shaped by the fact it belongs to.
  *
  * A date of birth arrives as `1978-04-12` and a payout number as
- * `03001234042` — both correct on the wire, both unreadable on a screen. The
+ * `03001234042` - both correct on the wire, both unreadable on a screen. The
  * fact key is the only thing that knows which is which, so it is passed in.
  */
 export function formatFactValue(key: string | null | undefined, value: unknown): string {
@@ -115,7 +115,7 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
       <td>
         {unknown ? (
           <span className="inline-flex flex-wrap items-baseline gap-2">
-            <span className="text-caption text-ink-3">—</span>
+            <span className="text-caption text-ink-3">-</span>
             {fact.missing_reason && (
               <span className="text-meta leading-[1.6] text-ink-3">{fact.missing_reason}</span>
             )}
@@ -145,10 +145,10 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
         {fact.source ? (
           <Chip tone={sourceTone(fact.source)}>{sourceWord(fact.source)}</Chip>
         ) : (
-          <span className="text-caption text-ink-3">—</span>
+          <span className="text-caption text-ink-3">-</span>
         )}
         <p className="mt-1 text-meta text-ink-3">
-          {fact.entered_by ? enteredByWord(fact.entered_by) : '—'}
+          {fact.entered_by ? enteredByWord(fact.entered_by) : '-'}
           {confidence && <span className="num"> · {confidence}</span>}
         </p>
       </td>
@@ -160,7 +160,7 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
  * Canonical facts with provenance, alternatives and conflict highlighting.
  *
  * Three columns, not six. The reading column is ~590px wide, so a six-column
- * table pushed "Entered by" and "Conflict" off the right edge — the officer had
+ * table pushed "Entered by" and "Conflict" off the right edge - the officer had
  * to scroll sideways to see who supplied a value, which is exactly the question
  * this table exists to answer. Provenance now stacks under the source chip.
  */
@@ -220,7 +220,7 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
   const tone = RESULT_TONE[entry.result] ?? RESULT_FALLBACK;
 
   // The predicate, in words: "Monthly income ≤ 25,000". This is the rule the
-  // engine actually ran, so it stays visible — but as a sentence, not as DSL.
+  // engine actually ran, so it stays visible - but as a sentence, not as DSL.
   const predicate = entry.fact
     ? [
         factLabel(entry.fact),
@@ -296,7 +296,7 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
  *
  * A list, not a table. Five columns of prose (rule, result, actual/expected,
  * reason EN + UR, policy) cannot fit the reading column, and a horizontally
- * scrolling trace hides the reason — the one thing the officer came to read.
+ * scrolling trace hides the reason - the one thing the officer came to read.
  * Stacked, each rule is one paragraph you finish before moving to the next.
  */
 export function RuleTraceTable({ trace }: { trace: RuleTraceEntry[] }) {
@@ -349,21 +349,21 @@ export function WhyThisRoute({
             <Chip
               tone={route === 'AUTO_APPROVE' ? 'ok' : route === 'HUMAN_REVIEW' ? 'warn' : 'info'}
             >
-              {route ? routeWord(route) : '—'}
+              {route ? routeWord(route) : '-'}
             </Chip>
           </dd>
         </div>
         <div className="border-b border-ink/[0.06] py-2">
           <dt className="text-meta text-ink-3">Confidence</dt>
           <dd className="num mt-0.5 font-mono text-caption font-medium text-ink">
-            {confidence !== null && confidence !== undefined ? confidence.toFixed(3) : '—'}
+            {confidence !== null && confidence !== undefined ? confidence.toFixed(3) : '-'}
           </dd>
         </div>
         <div className="border-b border-ink/[0.06] py-2">
           <dt className="text-meta text-ink-3">Priority</dt>
           <dd className="mt-0.5 text-caption font-medium text-ink">
-            {priorityBand ? bandWord(priorityBand) : '—'}{' '}
-            <span className="num font-mono text-meta text-ink-3">({priorityScore ?? '—'})</span>
+            {priorityBand ? bandWord(priorityBand) : '-'}{' '}
+            <span className="num font-mono text-meta text-ink-3">({priorityScore ?? '-'})</span>
           </dd>
         </div>
       </dl>
@@ -373,7 +373,7 @@ export function WhyThisRoute({
           {flags.map((flag) => (
             <li key={flag.code} className="text-meta text-ink">
               <span className="font-medium">{flagWord(flag.code)}</span>
-              {flag.detail && <span className="text-ink-3"> — {flag.detail}</span>}
+              {flag.detail && <span className="text-ink-3"> - {flag.detail}</span>}
             </li>
           ))}
         </ul>

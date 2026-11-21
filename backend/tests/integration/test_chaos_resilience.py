@@ -6,7 +6,7 @@ These are the four scenarios the judges will run live:
 2. Service restored → the same case completes without a human touching it.
 3. Payment service ``FLAKY`` → retries produce **exactly one** transfer.
 4. AI provider fails → the citizen gets a template, and a document is
-   ``UNVERIFIABLE`` — never ``TAMPER_SUSPECTED``.
+   ``UNVERIFIABLE`` - never ``TAMPER_SUSPECTED``.
 
 Scenarios 1–3 run against the real Postgres on ``HOST_DB_PORT`` with the real
 mock router and the real chaos route. Scenario 4 runs in fake mode with a
@@ -63,7 +63,7 @@ def _specimen_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     ``app/data/demo_docs`` is pre-signed, so the secret is part of the fixture
     contract. The root ``tests/conftest.py`` overrides ``QR_HMAC_SECRET`` for its
     own QR tests; left alone that makes every genuine specimen fail its signature
-    and the verifier reports ``TAMPER_SUSPECTED`` for a good card — which would
+    and the verifier reports ``TAMPER_SUSPECTED`` for a good card - which would
     make the AI-outage scenario below pass for the wrong reason.
     """
     from app.ai import qr_sign
@@ -122,7 +122,7 @@ def mock_db(engine: Any) -> Iterator[Any]:
 
 @pytest.fixture(scope="module")
 def seeded(mock_db: Any) -> Any:
-    """Seed only the simulated registries — the app tables belong to A1."""
+    """Seed only the simulated registries - the app tables belong to A1."""
     from app.mocks import seed
 
     session = mock_db.SessionLocal()
@@ -205,7 +205,7 @@ def _verified_documents() -> list[Any]:
 
 
 # --------------------------------------------------------------------------- #
-# scenario 1 + 2 — identity DOWN, then restored
+# scenario 1 + 2 - identity DOWN, then restored
 # --------------------------------------------------------------------------- #
 class TestIdentityOutage:
     def test_down_returns_a_machine_readable_error(
@@ -303,7 +303,7 @@ class TestIdentityOutage:
 
 
 # --------------------------------------------------------------------------- #
-# scenario 3 — FLAKY payments, exactly one transfer
+# scenario 3 - FLAKY payments, exactly one transfer
 # --------------------------------------------------------------------------- #
 class TestPaymentIdempotency:
     def _transfer(self, client: TestClient, key: str, alias: str = "+923001234567") -> Any:
@@ -396,7 +396,7 @@ class TestPaymentIdempotency:
 
 
 # --------------------------------------------------------------------------- #
-# scenario 4 — AI failure degrades to a template, never to a verdict
+# scenario 4 - AI failure degrades to a template, never to a verdict
 # --------------------------------------------------------------------------- #
 class _AlwaysFailingProvider:
     """A provider that fails every call, the way a dead API key would."""
@@ -430,7 +430,7 @@ class TestAiFailure:
 
         # Prove the pipeline actually reached the OCR step. Without this the test
         # would also pass when a signature mismatch short-circuits the run at the
-        # QR check — which is exactly how it once passed for the wrong reason.
+        # QR check - which is exactly how it once passed for the wrong reason.
         by_name = {check.check: check for check in result.checks}
         assert by_name["qr_signature"].passed, "the specimen's own signature must be valid"
         assert "ocr_extraction" in by_name, "the outage must be observed at the OCR step"

@@ -2,8 +2,8 @@
 
 The worker forwards a stored payload to ``run_handler``, which used to splat it
 straight into the handler. Job payloads carry queue bookkeeping the handler has no
-business knowing about — ``tenant_id`` (derivable from the case row),
-``parent_case_id``, ``rule_version_id`` — so every ``PROCESS_CASE`` job died with
+business knowing about - ``tenant_id`` (derivable from the case row),
+``parent_case_id``, ``rule_version_id`` - so every ``PROCESS_CASE`` job died with
 ``TypeError: run_case_agent() got an unexpected keyword argument 'tenant_id'``.
 The worker turned that into ``FAILED_RETRY``, so every case sat in ``SUBMITTED``
 forever and the queue quietly filled with poison jobs.
@@ -107,7 +107,7 @@ def test_client_is_never_forwarded_from_a_payload(handlers: Any) -> None:
 def test_every_enqueued_payload_matches_its_handler_signature(
     handlers: Any, job_type: str, payload: dict[str, Any]
 ) -> None:
-    """Normalizing must yield arguments the real handler accepts — no more, no less."""
+    """Normalizing must yield arguments the real handler accepts - no more, no less."""
     handler = handlers.resolve_handler(job_type)
     accepted = {
         name
@@ -120,7 +120,7 @@ def test_every_enqueued_payload_matches_its_handler_signature(
     unexpected = set(normalized) - accepted
     assert not unexpected, (
         f"{job_type} would call {handler.__module__}.{handler.__name__} with "
-        f"unexpected keyword(s) {sorted(unexpected)} — the worker would mark the job "
+        f"unexpected keyword(s) {sorted(unexpected)} - the worker would mark the job "
         f"FAILED_RETRY with a TypeError"
     )
     # The handler's first positional parameter is the session, which the dispatcher
@@ -146,7 +146,7 @@ def test_the_registry_covers_every_job_type(handlers: Any) -> None:
 def test_run_handler_normalizes_before_calling(
     handlers: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """``run_handler`` is the seam the worker uses — it must filter, not splat."""
+    """``run_handler`` is the seam the worker uses - it must filter, not splat."""
     seen: dict[str, Any] = {}
 
     def pinned(db: Any, case_id: str, *, correlation_id: str | None = None) -> str:
@@ -305,7 +305,7 @@ def test_process_case_job_leaves_submitted_through_the_dispatcher(
 
     db.refresh(case)
     assert case.status != "SUBMITTED", (
-        "the case never left SUBMITTED — the dispatcher did not reach the case agent"
+        "the case never left SUBMITTED - the dispatcher did not reach the case agent"
     )
     assert case.status in {"APPROVED", "HUMAN_REVIEW", "NEEDS_INFO", "WAITING_EXTERNAL"}
     assert case.latest_route is not None
@@ -344,7 +344,7 @@ def test_a_replayed_process_case_job_does_not_strand_the_case_in_processing(
     decided_status = case.status
     assert decided_status != "PROCESSING"
 
-    # The same job again — a retry, a re-grant, a double submit.
+    # The same job again - a retry, a re-grant, a double submit.
     handlers.run_handler(db, "PROCESS_CASE", payload)
     db.commit()
     db.refresh(case)

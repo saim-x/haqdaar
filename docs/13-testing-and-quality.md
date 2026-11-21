@@ -1,4 +1,4 @@
-# 13 — Testing Strategy, Quality Gates & Definition of Done
+# 13 - Testing Strategy, Quality Gates & Definition of Done
 
 > **Status:** FROZEN v1.0. Source of truth for `backend/tests/` and `frontend/src/e2e/`.
 > **Owner:** A7 (framework, integration, security, chaos, E2E) + every agent owns unit tests for their modules.

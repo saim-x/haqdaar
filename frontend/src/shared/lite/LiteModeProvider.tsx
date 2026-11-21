@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { LITE_AUTO_TYPES, STORAGE_KEYS } from '../config';
 
 /**
- * Lite Mode — docs/11 §2.7.
+ * Lite Mode - docs/11 §2.7.
  * Auto-enables on `navigator.connection.saveData` or a 2g/slow-2g effective type,
  * and can always be toggled by hand. When on, decorative art is dropped and
  * non-essential polling is disabled.

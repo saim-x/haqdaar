@@ -1,4 +1,4 @@
-"""Idempotent offline mutations — docs/05 §1, docs/13 §1.
+"""Idempotent offline mutations - docs/05 §1, docs/13 §1.
 
 A citizen on a flaky connection retries; the server must not create two
 applications. Same ``Idempotency-Key`` + same body replays the exact cached

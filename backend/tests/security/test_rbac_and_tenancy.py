@@ -1,4 +1,4 @@
-"""RBAC matrix, tenant isolation and demo-mode gating — docs/09 §2–3, docs/13 §1.
+"""RBAC matrix, tenant isolation and demo-mode gating - docs/09 §2–3, docs/13 §1.
 
 The judging brief calls out "server-side enforcement of access controls and
 permissions", so these tests drive the real HTTP surface with real JWTs for every
@@ -165,7 +165,7 @@ def test_role_matrix_matches_docs_05(client: Any, persona_headers: Any) -> None:
 
 
 def test_demo_reset_is_admin_only(client: Any, persona_headers: Any) -> None:
-    """Never called as ADMIN — it would wipe the seeded world mid-session."""
+    """Never called as ADMIN - it would wipe the seeded world mid-session."""
     method, path, allowed = DESTRUCTIVE
     for role in ALL_ROLES:
         if role in allowed:

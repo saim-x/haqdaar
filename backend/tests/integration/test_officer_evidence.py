@@ -1,6 +1,6 @@
 """docs/05 §3.2: an officer reviewing a case gets the full facts and the rule trace.
 
-Both live on the append-only ``decisions`` row — ``input_snapshot_json`` holds the
+Both live on the append-only ``decisions`` row - ``input_snapshot_json`` holds the
 tri-state canonical facts the engine actually saw, ``rule_trace_json`` the per-rule
 outcome. The officer endpoints returned neither, so an officer could see a
 confidence number and a route action but not the evidence behind them: an override
@@ -187,7 +187,7 @@ def test_officer_case_file_carries_facts_and_rule_trace(
     for entry in body["rule_trace"]:
         assert {"rule_id", "fact", "op", "result", "fact_state"} <= set(entry)
 
-    # And they are byte-identical to what the engine persisted — nothing recomputed.
+    # And they are byte-identical to what the engine persisted - nothing recomputed.
     decision = db.get(models.Decision, body["latest_decision_id"])
     assert decision is not None
     assert body["facts"] == decision.input_snapshot_json

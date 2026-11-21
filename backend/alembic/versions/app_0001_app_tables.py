@@ -1,12 +1,12 @@
-"""Application schema — every table in docs/04 §4.1–4.5.
+"""Application schema - every table in docs/04 §4.1–4.5.
 
 The ``mock_*`` tables are a separate chain (``dpi_mock_0001``) owned by the DPI
 agent; this revision never touches them.
 
 Two sequences are created explicitly because Alembic does not autogenerate them:
 
-* ``audit_events_seq_seq`` — the monotonic ``seq`` the hash chain is built over.
-* ``case_reference_seq`` — human-readable ``HQ-YYYY-NNNNNN`` case references.
+* ``audit_events_seq_seq`` - the monotonic ``seq`` the hash chain is built over.
+* ``case_reference_seq`` - human-readable ``HQ-YYYY-NNNNNN`` case references.
 
 Revision ID: app_0001
 Revises:

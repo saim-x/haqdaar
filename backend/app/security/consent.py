@@ -1,4 +1,4 @@
-"""Consent enforcement — the single gate for every citizen-data read (docs/09 §4).
+"""Consent enforcement - the single gate for every citizen-data read (docs/09 §4).
 
 **ADR-008, the pitfall judges probe:** a denied access must be visible to the
 citizen even though the endpoint answers ``403`` and its transaction rolls back.
@@ -82,7 +82,7 @@ def _access_log_row(
         citizen_id=citizen_id,
         # ADR-019: AGENT/SYSTEM actors have no user row, so this is NULL rather than a
         # sentinel UUID. The sentinel used to violate the users FK, and because the
-        # isolated session swallows write errors the row was silently dropped — every
+        # isolated session swallows write errors the row was silently dropped - every
         # consent read the case agent made vanished from the citizen's access log.
         actor_user_id=actor.user_id,
         actor_role=actor.role_value,

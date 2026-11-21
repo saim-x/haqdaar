@@ -1,4 +1,4 @@
-"""Identity, tenants & auth tables — docs/04 §4.1."""
+"""Identity, tenants & auth tables - docs/04 §4.1."""
 
 from __future__ import annotations
 

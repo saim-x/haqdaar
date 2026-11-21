@@ -1,6 +1,6 @@
 """Frozen enum vocabularies (docs/04 §3).
 
-Columns are stored as VARCHAR with the exact literals below — no PostgreSQL enum
+Columns are stored as VARCHAR with the exact literals below - no PostgreSQL enum
 types are created, so adding a value never needs a migration. Every value here is
 copied verbatim from docs/04 §3 and must not be extended without a contract change.
 """

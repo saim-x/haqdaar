@@ -5,7 +5,7 @@ while ``app/ai/doc_verify.py`` resolved its own root with
 ``getattr(settings, "UPLOAD_DIR", None)``. ``Settings`` only ever had the lowercase
 field, so that lookup returned ``None`` and the verifier fell back to
 ``backend/app/uploads``. Every uploaded document therefore came back
-``verify_checks[0].file_present == false`` — the verifier was reading an empty
+``verify_checks[0].file_present == false`` - the verifier was reading an empty
 directory, and the pipeline treated genuine cards as unreadable.
 
 The fix is one attribute and one helper: ``Settings.UPLOAD_DIR`` (uppercase alias,
@@ -41,7 +41,7 @@ def test_upload_root_is_absolute_and_anchored_at_the_backend_root() -> None:
     assert root.is_dir()
     assert root == config.settings.upload_dir
 
-    # A relative UPLOAD_DIR — the documented default — resolves against the backend
+    # A relative UPLOAD_DIR - the documented default - resolves against the backend
     # root, not against whatever directory the process happened to start in.
     fresh = config.Settings(upload_dir=Path("./data/uploads"))
     assert fresh.upload_dir == config.BACKEND_DIR / "data" / "uploads"
@@ -97,14 +97,14 @@ def test_uploaded_document_lands_where_the_verifier_looks(client: Any, db: Any) 
     document = db.get(models.Document, response.json()["id"])
     assert document is not None
 
-    # Canonical, relative, forward-slashed — portable across containers.
+    # Canonical, relative, forward-slashed - portable across containers.
     assert not Path(document.storage_path).is_absolute()
     assert "\\" not in document.storage_path
 
     resolved = doc_verify._resolve_path(document.storage_path)
     assert resolved.is_file(), (
         f"the verifier resolves {document.storage_path!r} to {resolved}, which does not "
-        f"exist — the writer and the verifier disagree on UPLOAD_DIR"
+        f"exist - the writer and the verifier disagree on UPLOAD_DIR"
     )
     assert resolved.read_bytes() == specimen.read_bytes()
 

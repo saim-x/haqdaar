@@ -53,7 +53,7 @@ LEXICAL_WEIGHT = 0.30
 #: at 0.1–0.3. Dividing by the peak instead would promote those to 1.0.
 LEXICAL_SATURATION = 0.5
 
-#: docs/07 §4.2 — abstain rather than guess.
+#: docs/07 §4.2 - abstain rather than guess.
 ABSTAIN_THRESHOLD_LIVE = 0.42
 ABSTAIN_THRESHOLD_FAKE = 0.25
 
@@ -61,7 +61,7 @@ ABSTAIN_THRESHOLD_FAKE = 0.25
 #:
 #: The score gate asks "is some chunk similar to this question?"; this asks "is
 #: this question about our corpus?". They are different questions and only the
-#: second one rejects "what is the weather in Karachi tomorrow?" — Karachi is a
+#: second one rejects "what is the weather in Karachi tomorrow?" - Karachi is a
 #: district in the eligibility list, so one word of three matches and the cosine
 #: clears the threshold. Measured over the corpus: in-domain questions cover
 #: 0.67–1.00 of their content words, off-topic ones 0.00–0.33.
@@ -332,7 +332,7 @@ def render_rule_summary(ruleset: dict[str, Any], *, program_name: str, version: 
     policy = ruleset.get("policy") or {}
     formula = ruleset.get("benefit_formula") or {}
     lines = [
-        f"# {program_name} — Active Eligibility Rules",
+        f"# {program_name} - Active Eligibility Rules",
         "",
         f"Rule version **v{version}**. This summary is generated automatically from the "
         "published rule set, so it always matches what the decision engine is running.",
@@ -364,7 +364,7 @@ def render_rule_summary(ruleset: dict[str, Any], *, program_name: str, version: 
             rendered = str(value)
         lines.extend(
             [
-                f"### {rule.get('id')} — {rule.get('label_en')}",
+                f"### {rule.get('id')} - {rule.get('label_en')}",
                 "",
                 f"- Fact: `{rule.get('fact')}` {op} `{rendered}`",
                 f"- If it fails: **{rule.get('on_fail')}**",
@@ -458,7 +458,7 @@ def reindex_program_rules(db: Any, program_id: Any) -> dict[str, Any]:
     body = render_rule_summary(ruleset, program_name=program_name, version=version_number)
     result = index_document(
         db,
-        title=f"{program_name} — Active Eligibility Rules",
+        title=f"{program_name} - Active Eligibility Rules",
         body=body,
         version=f"v{version_number}",
         source_type="AUTO_RULE_SUMMARY",
@@ -492,8 +492,8 @@ def abstain_threshold() -> float:
 def _corpus_coverage(question: str) -> float:
     """Share of the question's content words that the corpus contains.
 
-    A question that shares one incidental proper noun with a policy — a district
-    name, a programme name — is not a question about that policy. Counting how
+    A question that shares one incidental proper noun with a policy - a district
+    name, a programme name - is not a question about that policy. Counting how
     much of the question the corpus can even speak to is what separates the two,
     and unlike a similarity score it does not move when chunk sizes change.
     """
@@ -704,7 +704,7 @@ def ask(
         low_coverage = False
 
     if not chunks or top_score < threshold or low_coverage:
-        # Zero LLM calls on abstention — the whole point of the gate.
+        # Zero LLM calls on abstention - the whole point of the gate.
         return RagAnswer(
             status="NOT_SURE",
             answer=NOT_SURE_UR if language == "ur" else NOT_SURE_EN,

@@ -6,12 +6,12 @@ program_code: SAHARA_WIDOW_GRANT
 source_type: POLICY
 language: bilingual
 effective_from: "2026-01-01"
-issuer: Social Protection Department (Sindh) — simulated
+issuer: Social Protection Department (Sindh) - simulated
 ---
 
 # Sahara Widow Grant Policy
 
-> **MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT.** This policy text is synthetic and
+> **MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT.** This policy text is synthetic and
 > exists only to demonstrate the Haqdaar prototype. It is not legal advice and it
 > does not describe any real government programme.
 
@@ -80,8 +80,8 @@ payment is initiated automatically once the application is approved, and the
 citizen receives an SMS with a verification code when the money leaves the
 department. Payment normally reaches a mobile wallet within one working day.
 
-If a payment fails — for example because the wallet account is dormant or the
-account title does not match the applicant's name — the case is flagged for an
+If a payment fails - for example because the wallet account is dormant or the
+account title does not match the applicant's name - the case is flagged for an
 officer. The citizen is never asked to pay a fee to release the grant.
 
 گرانٹ ماہانہ دی جاتی ہے۔ بنیادی رقم بارہ ہزار روپے ماہانہ ہے۔ منظوری کے بعد ادائیگی

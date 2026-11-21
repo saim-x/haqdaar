@@ -1,4 +1,4 @@
-# 16 — Requirements Traceability Matrix
+# 16 - Requirements Traceability Matrix
 
 > **Status:** FROZEN v1.0. Maps **100 %** of items in the official 7-page Coder's Cup 2026 PDF to Product Features, Specifications, Owners, and Verification Tests.
 
@@ -61,7 +61,7 @@
 | Background jobs & queues | Pick ≥3 (#4) | F-05 | `03 §2`, `04 §4.5` | A1 | `test_chaos_resilience.py` |
 | Multi-tenant workspaces (`SPD` + `ZWB`) | Pick ≥3 (#5) | F-02, F-27 | `09 §3`, `10 §2` | A1, A3 | `test_rbac_and_tenancy.py` |
 | Notifications (in-app + simulated SMS + codes) | Pick ≥3 (#6) | F-20 | `04 §4.5`, `10 §1.2` | A1, A3 | `test_golden_path_and_rules.py` |
-| Rate limiting & error handling | Pick ≥3 (#7) | — | `03 §6.3`, `05 §2` | A1 | `test_rbac_and_tenancy.py` |
+| Rate limiting & error handling | Pick ≥3 (#7) | - | `03 §6.3`, `05 §2` | A1 | `test_rbac_and_tenancy.py` |
 | Analytics dashboard per tenant | Pick ≥3 (#8) | F-23 | `05 §3.9`, `11 §6.4` | A1, A6 | Integration test |
 
 ---

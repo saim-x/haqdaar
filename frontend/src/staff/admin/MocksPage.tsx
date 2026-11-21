@@ -30,7 +30,7 @@ const MODE_TONE: Record<MockMode, { dot: string; text: string; on: string }> = {
 };
 
 /**
- * Mock chaos controls — docs/11 §6.2.4, AC-17.2.
+ * Mock chaos controls - docs/11 §6.2.4, AC-17.2.
  * Platform admin only. Setting a service to DOWN must produce WAITING_EXTERNAL,
  * never a guess.
  *

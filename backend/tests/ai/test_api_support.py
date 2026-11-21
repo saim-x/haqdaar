@@ -6,8 +6,8 @@ The Lead confirmed the canonical audit signature:
            actor_id=None, actor_role=None, tenant_id=None, request_id=None,
            payload=None)
 
-The shim must mirror it exactly — including ``payload`` rather than
-``payload_json``, which is the database column name — so it binds to BE's real
+The shim must mirror it exactly - including ``payload`` rather than
+``payload_json``, which is the database column name - so it binds to BE's real
 writer at S1 with zero rework. These tests fail loudly if the two drift apart.
 """
 

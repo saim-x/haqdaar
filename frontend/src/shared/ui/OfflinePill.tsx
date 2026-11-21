@@ -3,7 +3,7 @@ import { useOffline } from '../offline/OfflineProvider';
 import { IconCloud, IconRefresh } from './Icons';
 
 /**
- * Connectivity state — docs/11 §5.3.
+ * Connectivity state - docs/11 §5.3.
  *
  * Offline (X saved locally) · Syncing. Text is always present; colour is never
  * the only signal.
@@ -46,7 +46,7 @@ export function OfflinePill({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={retryNow}
         data-testid="offline-pill"
-        aria-label={`${t('common.offline')} — ${pending} · ${t('common.queued')}`}
+        aria-label={`${t('common.offline')} - ${pending} · ${t('common.queued')}`}
         title={t('common.queued')}
         className="press inline-flex min-h-tap items-center gap-1.5 rounded-control bg-warn-wash px-2 text-meta font-medium text-warn"
       >

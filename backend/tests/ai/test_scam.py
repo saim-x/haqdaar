@@ -2,7 +2,7 @@
 
 Every assertion here is a promise made to a citizen: a fee demand is caught, an
 official message is not accused, and a message we cannot read is never called
-safe. The classifier is advisory only — nothing in this module may block, delete
+safe. The classifier is advisory only - nothing in this module may block, delete
 or auto-reject anything.
 """
 
@@ -64,12 +64,12 @@ def audit_spy(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
 
 @pytest.fixture(scope="module")
 def model() -> Any:
-    """Train once for the whole module — training is deterministic but slow."""
+    """Train once for the whole module - training is deterministic but slow."""
     return sc.get_model()
 
 
 # --------------------------------------------------------------------------- #
-# stage 1 — verification codes
+# stage 1 - verification codes
 # --------------------------------------------------------------------------- #
 class TestVerificationCodes:
     def test_genuine_code_with_matching_body_is_verified_official(self) -> None:
@@ -113,7 +113,7 @@ class TestVerificationCodes:
 
 
 # --------------------------------------------------------------------------- #
-# stage 2 — deterministic red flags
+# stage 2 - deterministic red flags
 # --------------------------------------------------------------------------- #
 class TestRedFlags:
     def test_fee_demand_is_caught(self) -> None:
@@ -167,7 +167,7 @@ class TestRedFlags:
 
 
 # --------------------------------------------------------------------------- #
-# stage 4 — thresholds and the honest middle
+# stage 4 - thresholds and the honest middle
 # --------------------------------------------------------------------------- #
 class TestThresholds:
     def test_short_ambiguous_message_cannot_tell(self) -> None:
@@ -208,7 +208,7 @@ class TestThresholds:
 
 
 # --------------------------------------------------------------------------- #
-# hard negatives — the false-positive budget (Challenge 08)
+# hard negatives - the false-positive budget (Challenge 08)
 # --------------------------------------------------------------------------- #
 class TestHardNegatives:
     def test_benign_family_transfer_is_not_a_scam(self) -> None:
@@ -244,7 +244,7 @@ class TestHardNegatives:
 
 
 # --------------------------------------------------------------------------- #
-# guardrails — injection must never move the verdict
+# guardrails - injection must never move the verdict
 # --------------------------------------------------------------------------- #
 class TestInjection:
     def test_injection_is_stripped_and_logged_but_verdict_holds(
@@ -274,7 +274,7 @@ class TestInjection:
 
 
 # --------------------------------------------------------------------------- #
-# dataset integrity — the honesty engine
+# dataset integrity - the honesty engine
 # --------------------------------------------------------------------------- #
 class TestDataset:
     def test_dataset_has_the_frozen_bucket_counts(self) -> None:

@@ -1,4 +1,4 @@
-"""Public partner REST API — ``X-API-Key`` + scopes (docs/05 §3.10)."""
+"""Public partner REST API - ``X-API-Key`` + scopes (docs/05 §3.10)."""
 
 from __future__ import annotations
 

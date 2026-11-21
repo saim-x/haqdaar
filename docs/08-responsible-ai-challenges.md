@@ -1,12 +1,12 @@
-# 08 — Responsible AI & The Eight Technical Challenges
+# 08 - Responsible AI & The Eight Technical Challenges
 
 > **Status:** FROZEN v1.0. Translates Challenges 01–08 from the official PDF into concrete system behaviour, decision tables, and judge-verifiable demonstrations.
 
-Every technical challenge in Section 04 of the official problem statement is engineered as a **first-class mechanism** in Haqdaar — never a prompt instruction or UI mock.
+Every technical challenge in Section 04 of the official problem statement is engineered as a **first-class mechanism** in Haqdaar - never a prompt instruction or UI mock.
 
 ---
 
-## Challenge 01 — The Cost of Being Wrong
+## Challenge 01 - The Cost of Being Wrong
 
 - **PDF Requirement:** *"A wrong approval is worse than a slow one. Define your own rule for when the system acts alone, when it asks for more proof, and when it sends the case to a human. Show the numbers behind your choice."*
 - **Concrete System Behaviour:**
@@ -23,7 +23,7 @@ Every technical challenge in Section 04 of the official problem statement is eng
 
 ---
 
-## Challenge 02 — Saying "I Am Not Sure"
+## Challenge 02 - Saying "I Am Not Sure"
 
 - **PDF Requirement:** *"The system must know when it does not know. Low confidence must lead to a clear handoff to a human, with the case notes attached. Silent guessing earns zero."*
 - **Concrete System Behaviour:**
@@ -40,7 +40,7 @@ Every technical challenge in Section 04 of the official problem statement is eng
 
 ---
 
-## Challenge 03 — Bad Data
+## Challenge 03 - Bad Data
 
 - **PDF Requirement:** *"Missing fields, duplicate people, and names spelled in many ways (e.g., Muhammad / Mohammad / Muhammed). Handle them without crashing and without a wrong match."*
 - **Concrete System Behaviour:**
@@ -53,20 +53,20 @@ Every technical challenge in Section 04 of the official problem statement is eng
 
 ---
 
-## Challenge 04 — Rules That Change
+## Challenge 04 - Rules That Change
 
 - **PDF Requirement:** *"An admin changes an eligibility rule. The system must follow the new rule at once, with no code change and no redeploy. Old decisions must still show which rule version was used."*
 - **Concrete System Behaviour:**
-  1. Eligibility rules and benefit formulas live strictly in `rule_versions.rules_json` (database), evaluated by the pure DSL engine — zero hardcoded thresholds in Python.
+  1. Eligibility rules and benefit formulas live strictly in `rule_versions.rules_json` (database), evaluated by the pure DSL engine - zero hardcoded thresholds in Python.
   2. **Lifecycle:** `DRAFT` → `Validate` → `Simulate (Digital Twin)` → `Publish` (requires `change_note`). Published versions are immutable (`409 RULE_VERSION_IMMUTABLE` on edit).
   3. **Immediate Effect:** Publishing atomically updates `programs.active_rule_version_id`. The very next case evaluation loads the new version with zero restart or deploy, AND triggers `REINDEX_RAG` so policy Q&A updates automatically.
-  4. **Historical Preservation:** Every `decisions` row records `rule_version_id` and `rule_content_hash` (SHA-256). Viewing an older case shows v1 + its exact rule trace; officers reviewing an older pending case see a staleness banner (*"Evaluated with v1; current active is v2 — Re-evaluate"*).
+  4. **Historical Preservation:** Every `decisions` row records `rule_version_id` and `rule_content_hash` (SHA-256). Viewing an older case shows v1 + its exact rule trace; officers reviewing an older pending case see a staleness banner (*"Evaluated with v1; current active is v2 - Re-evaluate"*).
   5. **Digital Twin Preview:** Before publishing, admins replay the draft against historical decided cases to inspect outcome flips and PKR budget delta.
 - **Verification:** `tests/integration/test_rule_versioning_and_twin.py`.
 
 ---
 
-## Challenge 05 — Explain and Audit
+## Challenge 05 - Explain and Audit
 
 - **PDF Requirement:** *"Every AI decision needs two views: a simple reason for the user, and a full trace for the auditor (input, rule or model version, confidence, result)."*
 - **Concrete System Behaviour:**
@@ -82,7 +82,7 @@ Every technical challenge in Section 04 of the official problem statement is eng
 
 ---
 
-## Challenge 06 — Consent and Take-Back
+## Challenge 06 - Consent and Take-Back
 
 - **PDF Requirement:** *"A user can see who has their data, change what is shared, and withdraw it. Withdrawal must truly stop access, and the audit log must show it."*
 - **Concrete System Behaviour:**
@@ -92,12 +92,12 @@ Every technical challenge in Section 04 of the official problem statement is eng
      - Withdrawal sets `consent_grants.status = 'WITHDRAWN'` immediately, appends `consent_events`, writes `audit_events` (`consent.withdrawn`).
      - Next request by the withdrawn Helper or Officer returns `403 CONSENT_REVOKED`, writes a `consent_access_logs` row with `allowed=false, denial_reason='CONSENT_REVOKED'`, and writes `audit_events` (`consent.access_denied`).
      - Withdrawing a Department's consent with an open case prompts confirmation and transitions open cases to `ON_HOLD_CONSENT` (officer only sees reference code + paused status, zero PII/documents). Re-granting restores `previous_status`.
-  4. **Citizen Visibility:** Citizen's Consent Center shows active grants, one-tap withdraw, and the full access log including **blocked attempts** (*"Helper Ayesha tried to view your documents at 15:40 — Blocked"*).
+  4. **Citizen Visibility:** Citizen's Consent Center shows active grants, one-tap withdraw, and the full access log including **blocked attempts** (*"Helper Ayesha tried to view your documents at 15:40 - Blocked"*).
 - **Verification:** `tests/security/test_consent_enforcement.py`.
 
 ---
 
-## Challenge 07 — Works for Everyone
+## Challenge 07 - Works for Everyone
 
 - **PDF Requirement:** *"A person who cannot read, on a weak connection, must still finish the task. Think voice, icons, small pages, and saved progress."*
 - **Concrete System Behaviour:**
@@ -114,14 +114,14 @@ Every technical challenge in Section 04 of the official problem statement is eng
 
 ---
 
-## Challenge 08 — Scams and Fake Documents
+## Challenge 08 - Scams and Fake Documents
 
 - **PDF Requirement:** *"Catch fake 'relief payment' messages and edited or forged documents. Show false alarms honestly. Blocking a real person is also a cost."*
 - **Concrete System Behaviour:**
   1. **Anti-Scam Verification Codes:** Every genuine Haqdaar notification carries a unique `HQ-XXXXX` code + `body_sha256`. Checking it gives `VERIFIED_OFFICIAL`; forged or altered text gives `LIKELY_SCAM` (`RF_FAKE_CODE` / `RF_CODE_MISMATCH`).
-  2. **Hybrid Scam Classifier:** Deterministic red flags + calibrated scikit-learn TF-IDF+LR model with an explicit `CANNOT_TELL` uncertainty band. Never blocks/deletes messages — advises with clear Urdu/English red flags.
-  3. **Signed-QR Document Forgery Detection:** OpenCV Laplacian blur check (`NEEDS_RETAKE`), HMAC-SHA256 signed QR verification, and printed-OCR vs signed-QR cross-check (`TAMPER_SUSPECTED`). Re-compressed/noisy genuine photos stay `VERIFIED` or `UNVERIFIABLE` — never falsely accused of forgery.
+  2. **Hybrid Scam Classifier:** Deterministic red flags + calibrated scikit-learn TF-IDF+LR model with an explicit `CANNOT_TELL` uncertainty band. Never blocks/deletes messages - advises with clear Urdu/English red flags.
+  3. **Signed-QR Document Forgery Detection:** OpenCV Laplacian blur check (`NEEDS_RETAKE`), HMAC-SHA256 signed QR verification, and printed-OCR vs signed-QR cross-check (`TAMPER_SUSPECTED`). Re-compressed/noisy genuine photos stay `VERIFIED` or `UNVERIFIABLE` - never falsely accused of forgery.
   4. **Honest False-Alarm Reporting:**
      - Evaluation Dashboard displays scam classifier false-positive rate (specifically on hard negatives mentioning money/banks), document false-tamper rate, and user-disputed verdict counts (`POST /scam/{id}/feedback`).
-     - Suspected tampered documents route to **officer human review** with neutral wording to the citizen — never automatic rejection or account ban, respecting that blocking a genuine widow is a severe cost.
+     - Suspected tampered documents route to **officer human review** with neutral wording to the citizen - never automatic rejection or account ban, respecting that blocking a genuine widow is a severe cost.
 - **Verification:** `tests/ai/test_scam_classifier.py` + `tests/ai/test_doc_verifier.py`.

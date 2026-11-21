@@ -1,11 +1,11 @@
-"""ADR-019 — ``consent_access_logs.actor_user_id`` becomes nullable.
+"""ADR-019 - ``consent_access_logs.actor_user_id`` becomes nullable.
 
 The case agent reads citizen data as ``actor_type=AGENT`` with no user row. The old
 code wrote ``actor.user_id or uuid.UUID(int=0)``, which violated
 ``fk_consent_access_logs_actor_user_id_users``; because the isolated session that
 persists access logs swallows write errors (it must never mask the security
 decision), every one of those rows was silently dropped. That destroyed the
-Challenge-06 evidence trail for agent reads — invariant 5 says every citizen-data
+Challenge-06 evidence trail for agent reads - invariant 5 says every citizen-data
 read is logged.
 
 ``AGENT``/``SYSTEM`` rows now carry ``actor_user_id = NULL`` with ``actor_role`` and

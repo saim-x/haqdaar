@@ -7,10 +7,10 @@ persona.
 
 The registry deliberately encodes the Challenge 03 / Challenge 08 scenarios:
 
-* ``SHARED_PAYOUT_ALIAS`` — one alias reused by three unrelated applicants
+* ``SHARED_PAYOUT_ALIAS`` - one alias reused by three unrelated applicants
   (drives ``PAYOUT_ACCOUNT_SHARED`` HIGH).
-* ``DORMANT_ALIAS`` — deterministic Raast failure (drives Journey J-9).
-* ``MISMATCH_ALIAS`` — account title does not match the applicant name
+* ``DORMANT_ALIAS`` - deterministic Raast failure (drives Journey J-9).
+* ``MISMATCH_ALIAS`` - account title does not match the applicant name
   (drives ``PAYOUT_NAME_MISMATCH`` MEDIUM).
 """
 

@@ -1,4 +1,4 @@
-"""Admin API keys — plaintext returned exactly once, revoke is immediate (docs/05 §3.7)."""
+"""Admin API keys - plaintext returned exactly once, revoke is immediate (docs/05 §3.7)."""
 
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def list_api_keys(actor: AdminActor, db: DbSession) -> dict[str, Any]:
 @router.post(
     "/api-keys",
     status_code=status.HTTP_201_CREATED,
-    summary="Create an API key — the plaintext key is returned once",
+    summary="Create an API key - the plaintext key is returned once",
 )
 def create_api_key(payload: ApiKeyCreateIn, actor: AdminActor, db: DbSession) -> dict[str, Any]:
     tenant_id = _require_tenant(actor)

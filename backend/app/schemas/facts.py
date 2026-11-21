@@ -11,7 +11,7 @@ from typing import Any
 
 from app.models.enums import FactState
 
-#: docs/04 §5 — the only fact keys the wizard, agent and rules engine may use.
+#: docs/04 §5 - the only fact keys the wizard, agent and rules engine may use.
 CANONICAL_FACT_KEYS: tuple[str, ...] = (
     "applicant_cnic",
     "applicant_full_name",
@@ -77,7 +77,7 @@ def normalize_fact(raw: Any, *, entered_by: str = "CITIZEN") -> dict[str, Any]:
 
     Accepts either a bare value (``28000``) or a partial fact object
     (``{"value": 28000, "confirmed": true}``). A missing/``null`` value stays
-    ``UNKNOWN`` — never zero, never an empty string.
+    ``UNKNOWN`` - never zero, never an empty string.
     """
     if isinstance(raw, dict):
         value = raw.get("value")

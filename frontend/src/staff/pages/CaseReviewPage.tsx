@@ -83,7 +83,7 @@ const ACTIONS = [
 type ActionKey = (typeof ACTIONS)[number]['key'];
 
 /**
- * Officer case review — docs/11 §6.1.
+ * Officer case review - docs/11 §6.1.
  * Two columns: evidence on the left, decision on the right. A withdrawn consent
  * replaces the whole screen with a lock view that contains zero PII.
  *
@@ -178,7 +178,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const consentRevoked = query.error instanceof ApiError && query.error.isConsentRevoked;
   const caseData = query.data;
 
-  // docs/05 §3.6 — `facts` is the canonical tri-state bundle. Older payloads
+  // docs/05 §3.6 - `facts` is the canonical tri-state bundle. Older payloads
   // only carry `draft_answers`, which has the same shape minus `state`.
   const facts = useMemo(() => caseData?.facts ?? caseData?.draft_answers ?? {}, [caseData]);
   const ruleTrace = caseData?.rule_trace ?? [];

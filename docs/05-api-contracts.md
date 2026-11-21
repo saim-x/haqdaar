@@ -1,4 +1,4 @@
-# 05 — API Architecture & Endpoint Contracts
+# 05 - API Architecture & Endpoint Contracts
 
 > **Status:** FROZEN v1.0. Source of truth for all HTTP endpoints, payloads, headers, error codes, and OpenAPI docs.
 > **Base URL:** `/api/v1` (App API) · `/mock/v1` (Simulated DPI APIs) · `/api/docs` (Swagger UI) · `/api/openapi.json`
@@ -59,7 +59,7 @@ Every 4xx/5xx error returns:
 
 ## 3. Endpoint Catalogue
 
-### 3.1 Authentication (`/api/v1/auth`) — Owner: A1
+### 3.1 Authentication (`/api/v1/auth`) - Owner: A1
 
 | Method | Path | Roles | Request | Response (200/201) |
 |---|---|---|---|---|
@@ -69,11 +69,11 @@ Every 4xx/5xx error returns:
 | `POST` | `/auth/demo-login` | Public (`DEMO_MODE=true`) | `{ "persona_key": "widow_fatima" \| "shopkeeper_rasool" \| "helper_ayesha" \| "officer_sana" \| "officer_imran" \| "admin_bilal" \| "admin_platform" \| "auditor_nadia" \| "officer_zakat" }` | Same token payload as `/auth/login` |
 | `POST` | `/auth/refresh` | Public | `{ "refresh_token": "..." }` | `{ "access_token", "refresh_token" }` |
 | `POST` | `/auth/logout` | Any auth | `{ "refresh_token": "..." }` | `{ "ok": true }` |
-| `GET` | `/auth/me` | Any auth | — | `{ "user": {...}, "citizen": {...} \| null, "tenant": {...} \| null }` |
+| `GET` | `/auth/me` | Any auth | - | `{ "user": {...}, "citizen": {...} \| null, "tenant": {...} \| null }` |
 
 ---
 
-### 3.2 Programs & Citizen/Helper Cases (`/api/v1/programs`, `/api/v1/cases`) — Owner: A1
+### 3.2 Programs & Citizen/Helper Cases (`/api/v1/programs`, `/api/v1/cases`) - Owner: A1
 
 | Method | Path | Roles | Consent Required | Summary |
 |---|---|---|---|---|
@@ -112,7 +112,7 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.3 Documents (`/api/v1/documents`) — Owner: A1 (CRUD/storage) + A4 (verification)
+### 3.3 Documents (`/api/v1/documents`) - Owner: A1 (CRUD/storage) + A4 (verification)
 
 | Method | Path | Roles | Summary |
 |---|---|---|---|
@@ -122,7 +122,7 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.4 Consent & My Data (`/api/v1/consent`, `/api/v1/me`) — Owner: A1
+### 3.4 Consent & My Data (`/api/v1/consent`, `/api/v1/me`) - Owner: A1
 
 | Method | Path | Roles | Summary |
 |---|---|---|---|
@@ -131,13 +131,13 @@ Every 4xx/5xx error returns:
 | `PATCH` | `/consent/grants/{grant_id}` | CITIZEN | Modify categories/purposes |
 | `POST` | `/consent/grants/{grant_id}/withdraw` | CITIZEN | Immediately sets `status = 'WITHDRAWN'`. If `DEPARTMENT` grant withdrawn and open cases exist, requires `{ "confirm_case_hold": true }` and moves open cases in that tenant to `ON_HOLD_CONSENT`. |
 | `GET` | `/consent/access-logs` | CITIZEN, AUDITOR | Paginated list of **allowed and denied** data accesses on this citizen |
-| `GET` | `/me/data` | CITIZEN, HELPER (with consent) | Grouped view of all stored citizen data + provenance badges. Every `identity`/`household` value is the docs/04 §5 fact shape `{state, value, source, missing_reason}` — `UNKNOWN` is stated with a reason, never omitted or coerced (ADR-020). |
+| `GET` | `/me/data` | CITIZEN, HELPER (with consent) | Grouped view of all stored citizen data + provenance badges. Every `identity`/`household` value is the docs/04 §5 fact shape `{state, value, source, missing_reason}` - `UNKNOWN` is stated with a reason, never omitted or coerced (ADR-020). |
 | `POST` | `/me/corrections` | CITIZEN, HELPER | Request correction `{ "field_key", "requested_value", "reason" }`. Self-declared applied immediately; registry-sourced queued for officer. |
 | `GET` | `/me/notifications` | CITIZEN, HELPER | In-app notifications with verification codes |
 
 ---
 
-### 3.5 Helper Mode (`/api/v1/helper`) — Owner: A1
+### 3.5 Helper Mode (`/api/v1/helper`) - Owner: A1
 
 | Method | Path | Roles | Summary |
 |---|---|---|---|
@@ -148,7 +148,7 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.6 Officer Queue & Case Review (`/api/v1/officer`) — Owner: A1 (endpoints) + A2 (re-eval)
+### 3.6 Officer Queue & Case Review (`/api/v1/officer`) - Owner: A1 (endpoints) + A2 (re-eval)
 
 | Method | Path | Roles | Summary |
 |---|---|---|---|
@@ -162,7 +162,7 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.7 Admin: Rules, Digital Twin, Users, API Keys, Mocks, Jobs (`/api/v1/admin`) — Owners: A1, A2, A3
+### 3.7 Admin: Rules, Digital Twin, Users, API Keys, Mocks, Jobs (`/api/v1/admin`) - Owners: A1, A2, A3
 
 | Method | Path | Roles | Scope | Summary |
 |---|---|---|---|---|
@@ -181,7 +181,7 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.8 Auditor Console (`/api/v1/auditor`) — Owner: A1 (Strict Read-Only)
+### 3.8 Auditor Console (`/api/v1/auditor`) - Owner: A1 (Strict Read-Only)
 
 | Method | Path | Roles | Summary |
 |---|---|---|---|
@@ -192,14 +192,14 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.9 AI Endpoints: Voice, Scam Checker, RAG, Evaluation (`/api/v1/*`) — Owners: A4, A2
+### 3.9 AI Endpoints: Voice, Scam Checker, RAG, Evaluation (`/api/v1/*`) - Owners: A4, A2
 
 | Method | Path | Roles | Summary |
 |---|---|---|---|
 | `POST` | `/voice/transcribe-parse` | CITIZEN, HELPER | `multipart/form-data`: `audio`, `field_key` (e.g. `monthly_income_pkr`), `lang=ur`. Returns `{ "transcript", "parsed_value", "confidence", "readback_ur", "readback_en", "needs_retry" }` |
 | `POST` | `/voice/tts` | Any auth | `{ "text": "...", "lang": "ur" }` → streams/returns cached MP3 URL for dynamic explanations |
 | `POST` | `/scam/check` | Public or Any auth | JSON `{ "text", "district" }` or multipart (`image` / `audio`). Returns `{ "check_id", "verdict", "confidence", "red_flags", "matched_official": {...} \| null, "explanation_ur", "explanation_en", "advice_ur", "advice_en" }` |
-| `POST` | `/scam/{check_id}/feedback` | Public or Any auth | `{ "disputed": true, "note": "This was real" }` — logs false-alarm feedback |
+| `POST` | `/scam/{check_id}/feedback` | Public or Any auth | `{ "disputed": true, "note": "This was real" }` - logs false-alarm feedback |
 | `POST` | `/rag/ask` | Any auth | `{ "question": "...", "program_id": "uuid" \| null, "lang": "ur" \| "en" }`. Returns `{ "status": "ANSWERED" \| "NOT_SURE", "answer", "citations": [{ "doc_title", "section", "version", "excerpt", "score" }], "top_score", "lang", "provider", "model", "guardrail_triggered", "retrieved", "coverage" }`. `coverage` is the share of the question's content words the corpus contains; below `MIN_CORPUS_COVERAGE` (0.5) the answer is `NOT_SURE` regardless of `top_score` |
 | `GET` | `/eval/dashboard` | ADMIN, AUDITOR, OFFICER | Returns threshold sweep curve, scam confusion matrix + FPR, doc verifier metrics + false tamper rate, live decision breakdown, officer override rate, p50/p95 latency, LLM calls/cost/failures |
 | `GET` | `/analytics/tenant` | ADMIN, OFFICER, AUDITOR | Per-tenant counts: cases by status, avg time-to-decision, auto-approve %, disbursed PKR, top flags |
@@ -207,7 +207,7 @@ Every 4xx/5xx error returns:
 
 ---
 
-### 3.10 Public REST API (`/api/v1/public`) — Owner: A1 (`X-API-Key` Required)
+### 3.10 Public REST API (`/api/v1/public`) - Owner: A1 (`X-API-Key` Required)
 
 Documented with rich examples in Swagger (`/api/docs`):
 - `GET /api/v1/public/programs` (scope `rules:read`): Active programs & current published rule summary (no PII).
@@ -217,7 +217,7 @@ Documented with rich examples in Swagger (`/api/docs`):
 
 ---
 
-### 3.11 Simulated DPI Services (`/mock/v1/*`) — Owner: A3
+### 3.11 Simulated DPI Services (`/mock/v1/*`) - Owner: A3
 
 Every response includes `"simulated": true` and `"service_mode": "NORMAL|SLOW|FLAKY"`. Full specs in [10-mock-services-and-seed-data.md](10-mock-services-and-seed-data.md):
 - `GET /mock/v1/identity/lookup` (`cnic` or `name` + `district` + `dob`)

@@ -39,13 +39,13 @@ const INACTIVE_LABELS: Record<string, { ur: string; en: string }> = {
 
 
 /**
- * Consent Center — docs/11 §3.3, F-11.
+ * Consent Center - docs/11 §3.3, F-11.
  *
  * Grant cards, the department-withdrawal warning (AC-11.3), and the access log
  * that shows BLOCKED attempts too (AC-11.2).
  *
  * The access log is the point of this screen, so it is a hairline list where the
- * verdict is a dot and a word — not two competing coloured pills per row.
+ * verdict is a dot and a word - not two competing coloured pills per row.
  */
 export function ConsentPage() {
   const { t, lang, isRtl } = useI18n();
@@ -106,8 +106,8 @@ export function ConsentPage() {
       setResumedBanner(
         count > 0
           ? isRtl
-            ? `اجازت دوبارہ فعال ہو گئی — ${count} روکی ہوئی درخواست دوبارہ شروع ہو گئی۔`
-            : `Access restored — ${count} held application(s) resumed automatically.`
+            ? `اجازت دوبارہ فعال ہو گئی - ${count} روکی ہوئی درخواست دوبارہ شروع ہو گئی۔`
+            : `Access restored - ${count} held application(s) resumed automatically.`
           : isRtl
             ? 'اجازت دوبارہ فعال ہو گئی۔'
             : 'Access restored.',
@@ -303,7 +303,7 @@ export function ConsentPage() {
               </span>
             </li>
           ))}
-          {logs.data?.items.length === 0 && <li className="py-2.5 text-meta text-ink-3">—</li>}
+          {logs.data?.items.length === 0 && <li className="py-2.5 text-meta text-ink-3">-</li>}
         </ul>
       </section>}
 

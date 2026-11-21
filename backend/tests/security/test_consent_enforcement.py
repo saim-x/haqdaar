@@ -1,4 +1,4 @@
-"""Consent enforcement — docs/09 §4 and ADR-008, docs/13 §1.
+"""Consent enforcement - docs/09 §4 and ADR-008, docs/13 §1.
 
 The headline test is :func:`test_denied_access_is_logged_even_though_the_request_rolls_back`.
 A blocked read answers ``403 CONSENT_REVOKED`` and its request transaction rolls
@@ -279,7 +279,7 @@ def test_confirmed_withdrawal_holds_cases_and_regrant_restores_them(
 def test_helper_without_a_grant_cannot_see_the_citizen(
     client: Any, db: Any, helper_headers: dict[str, str]
 ) -> None:
-    """No grant at all is a 404 — a helper must not learn the citizen exists."""
+    """No grant at all is a 404 - a helper must not learn the citizen exists."""
     from app.models.identity import Citizen
 
     stranger = db.execute(
@@ -389,7 +389,7 @@ def test_expired_helper_grant_is_denied(
 def test_citizen_reads_their_own_data_without_a_grant(
     client: Any, db: Any, citizen_headers: dict[str, str], citizen_scope: dict[str, Any]
 ) -> None:
-    """Own data needs no grant — but the read is still logged."""
+    """Own data needs no grant - but the read is still logged."""
     grant = db.get(ConsentGrant, citizen_scope["grant_id"])
     grant.status = ConsentStatus.WITHDRAWN.value
     db.commit()
@@ -447,7 +447,7 @@ def test_agent_consent_reads_persist_an_access_log_row(
     Before ADR-019 the access-log insert used ``uuid.UUID(int=0)`` as a stand-in for
     the missing user, which violated the ``users`` FK. The isolated session that
     persists access logs swallows write errors by design (it must never mask the
-    security decision), so every agent read was silently dropped — the citizen's
+    security decision), so every agent read was silently dropped - the citizen's
     access log lost exactly the reads they most need to see. This pins the fix.
     """
     from app.agent.deps import agent_actor

@@ -56,7 +56,7 @@ function Hash({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Decision trace inspector — docs/11 §6.3.3, AC-18.2. */
+/** Decision trace inspector - docs/11 §6.3.3, AC-18.2. */
 export default function TracePage({ caseId }: { caseId?: string } = {}) {
   const params = useParams();
   const id = caseId ?? params.id ?? '';
@@ -122,14 +122,14 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 <dd className="num mt-1 font-mono text-caption font-medium text-ink">
                   {decision.computed_amount_pkr !== null
                     ? `PKR ${pkr(decision.computed_amount_pkr)}`
-                    : '—'}
+                    : '-'}
                 </dd>
               </div>
             </dl>
 
             {decision.is_override && (
               <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta text-warn">
-                Officer override — counted in the evaluation dashboard.
+                Officer override - counted in the evaluation dashboard.
               </p>
             )}
 
@@ -231,7 +231,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 <td>
                   {fact.value === null ? (
                     <span className="inline-flex flex-wrap items-baseline gap-2">
-                      <span className="text-caption text-ink-3">—</span>
+                      <span className="text-caption text-ink-3">-</span>
                       {fact.missing_reason && (
                         <span className="text-meta text-ink-3">
                           {humanize(fact.missing_reason)}
@@ -245,10 +245,10 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                   )}
                 </td>
                 <td className="text-meta text-ink-3">
-                  {fact.source ? sourceWord(fact.source) : '—'}
+                  {fact.source ? sourceWord(fact.source) : '-'}
                 </td>
                 <td className="text-meta text-ink-3">
-                  {fact.entered_by ? enteredByWord(fact.entered_by) : '—'}
+                  {fact.entered_by ? enteredByWord(fact.entered_by) : '-'}
                 </td>
               </tr>
             ))}

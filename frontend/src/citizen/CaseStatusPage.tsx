@@ -17,7 +17,7 @@ import { CaseNextStep } from './CaseNextStep';
 
 
 /**
- * Case status — docs/11 §3.3 / F-10.
+ * Case status - docs/11 §3.3 / F-10.
  *
  * The moment on this screen is the amount: one large tabular figure with the
  * currency as a quiet suffix, and the stamp beside it once the case is approved.
@@ -73,7 +73,7 @@ export function CaseStatusPage() {
   if (!data) return null;
 
   const explanation = data.citizen_explanation;
-  // docs/04 §3.3 — the server owns the citizen-facing status string; the local
+  // docs/04 §3.3 - the server owns the citizen-facing status string; the local
   // dictionary is only a fallback for a cached payload from an older build.
   const serverLabel = data.status_label
     ? lang === 'ur'

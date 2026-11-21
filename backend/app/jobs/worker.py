@@ -7,7 +7,7 @@
 * can run inside the API process with ``RUN_EMBEDDED_WORKER=true``
 
 A handler whose module is not merged yet fails as ``FAILED_RETRY`` with a clear
-error — the worker never crashes and the API never notices.
+error - the worker never crashes and the API never notices.
 """
 
 from __future__ import annotations

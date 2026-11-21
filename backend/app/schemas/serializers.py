@@ -26,11 +26,11 @@ STATUS_LABELS: dict[str, tuple[str, str]] = {
     "HUMAN_REVIEW": ("Officer will check", "افسر جانچ کرے گا"),
     "IN_REVIEW": ("Officer is reviewing", "افسر جائزہ لے رہا ہے"),
     "PENDING_SECOND_APPROVAL": ("Final check in progress", "حتمی منظوری جاری ہے"),
-    "ON_HOLD_CONSENT": ("Paused — consent withdrawn", "رضامندی واپس لی گئی"),
+    "ON_HOLD_CONSENT": ("Paused - consent withdrawn", "رضامندی واپس لی گئی"),
     "APPROVED": ("Approved! Sending payment", "منظور! رقم بھیجی جا رہی ہے"),
     "PAYMENT_INITIATED": ("Sending payment", "رقم بھیجی جا رہی ہے"),
     "PAID": ("Money sent", "رقم موصول ہو گئی"),
-    "PAYMENT_FAILED": ("Payment issue — officer notified", "ادائیگی میں مسئلہ"),
+    "PAYMENT_FAILED": ("Payment issue - officer notified", "ادائیگی میں مسئلہ"),
     "REJECTED": ("Not approved (see reasons)", "منظور نہیں ہوئی"),
     "WITHDRAWN": ("Withdrawn", "واپس لے لی گئی"),
     "CLOSED": ("Completed", "مکمل"),
@@ -155,7 +155,7 @@ def decision_evidence(decision: Decision | None) -> dict[str, Any]:
     docs/05 §3.2 gives officers and auditors "full facts, trace, flags, notes".
     Both live on the append-only ``decisions`` row: ``input_snapshot_json`` holds the
     tri-state canonical facts the engine actually saw, ``rule_trace_json`` the
-    per-rule outcome. Nothing is recomputed here — the officer reviews exactly what
+    per-rule outcome. Nothing is recomputed here - the officer reviews exactly what
     the engine decided on, which is what makes an override auditable.
     """
     if decision is None:

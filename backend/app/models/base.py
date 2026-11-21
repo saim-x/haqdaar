@@ -33,7 +33,7 @@ def new_uuid() -> uuid.UUID:
     return uuid.uuid4()
 
 
-#: TIMESTAMPTZ — every timestamp column in the schema uses this type.
+#: TIMESTAMPTZ - every timestamp column in the schema uses this type.
 TSTAMPTZ = DateTime(timezone=True)
 
 

@@ -14,7 +14,7 @@ import { BrandLockup } from '../ui/Brand';
 
 type Tab = 'citizen' | 'staff';
 
-/** Role word for the demo ledger — the same five labels the rest of the app uses. */
+/** Role word for the demo ledger - the same five labels the rest of the app uses. */
 const ROLE_LABEL = {
   CITIZEN: 'login.roleCitizen',
   HELPER: 'login.roleHelper',
@@ -24,14 +24,14 @@ const ROLE_LABEL = {
 } as const satisfies Record<Role, string>;
 
 /**
- * Sign-in — docs/02 F-01.
+ * Sign-in - docs/02 F-01.
  *  - citizens: phone + 6-digit OTP (simulated SMS)
  *  - staff/helpers: email + password
  *  - judges: one-tap demo persona login, clearly labelled as a prototype affordance
  *
  * The page has one job: get you in. So it is a wordmark, a two-way switch, one
  * card of fields, and the demo list beside it as a plain ledger of people. No
- * hero, no illustration, no gradient — a government counter does not sell itself.
+ * hero, no illustration, no gradient - a government counter does not sell itself.
  *
  * On a wide screen the two halves sit side by side, so the whole page fits one
  * viewport instead of scrolling past a long strip of empty paper.

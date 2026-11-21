@@ -28,7 +28,7 @@ const MODE_TONE: Record<string, string> = {
 };
 
 /**
- * /transparency — RULE-5 / AC-25.2.
+ * /transparency - RULE-5 / AC-25.2.
  *
  * The Real vs Simulated table from docs/15 §1, rendered identically for citizens
  * and judges. Public: no login required.
@@ -117,7 +117,7 @@ export function TransparencyPage() {
                       {t('common.retry')}
                     </button>
                   ) : (
-                    '—'
+                    '-'
                   )}
                 </td>
               </tr>

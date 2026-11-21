@@ -16,7 +16,7 @@ import { IconChevron, IconList, IconQuestion, IconShield, IconUsers } from '../s
 /**
  * Where a case sits on the five-stage track the citizen actually understands.
  * The engine's 16 statuses collapse into these; the label still comes from
- * StatusBadge, so nothing is lost — only the position is simplified.
+ * StatusBadge, so nothing is lost - only the position is simplified.
  */
 const STAGE: Record<CaseStatus, number> = {
   DRAFT: 0,
@@ -40,7 +40,7 @@ const STAGE: Record<CaseStatus, number> = {
 const TERMINAL: CaseStatus[] = ['PAID', 'REJECTED', 'WITHDRAWN', 'CLOSED'];
 
 /**
- * Citizen Home — docs/11 §3.1.
+ * Citizen Home - docs/11 §3.1.
  *
  * One lead surface and three quiet rows, not four equal tiles. The lead surface
  * is the only place the accent appears, and it answers the question the citizen
@@ -115,12 +115,12 @@ export function CitizenHome() {
 
   const displayName = actFor?.fullName ?? session?.citizen?.full_name ?? session?.user.full_name ?? '';
   // In helper mode the citizen's own CNIC is not in the act-for payload, so the
-  // identity line shows the district instead — still enough to confirm who.
+  // identity line shows the district instead - still enough to confirm who.
   const identity = actFor ? actFor.district : (session?.citizen?.cnic_masked ?? null);
   const programName = program ? pick(program.name_ur, program.name) : t('app.tagline');
 
   // Each row carries a line of its own. Without it the three rows are just the
-  // tab bar again, one screen taller — the same four words in two places.
+  // tab bar again, one screen taller - the same four words in two places.
   const rows = [
     { key: 'cases', to: '/c/cases', label: t('home.cases'), hint: t('home.casesHint'), Icon: IconList },
     { key: 'scam', to: '/scam-check', label: t('home.scam'), hint: t('home.scamHint'), Icon: IconShield },

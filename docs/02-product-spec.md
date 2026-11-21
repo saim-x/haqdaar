@@ -1,4 +1,4 @@
-# 02 — Product Specification
+# 02 - Product Specification
 
 > **Status:** FROZEN v1.0. Source of truth for *what* we build. *How* lives in 03–11.
 > Feature IDs (`F-xx`) and acceptance criteria (`AC-xx.y`) are referenced by tests ([13-testing-and-quality.md](13-testing-and-quality.md)) and the traceability matrix ([16-traceability-matrix.md](16-traceability-matrix.md)).
@@ -30,7 +30,7 @@
 **Solution.** A multi-tenant platform where:
 1. Citizens (or helpers on their behalf) apply through a **voice + icon wizard** that works offline and confirms every answer by reading it back.
 2. A **case-processing agent** gathers evidence from simulated identity, civil-registry, household-survey and benefits registries, verifies documents, checks for duplicates and anomalies.
-3. A **versioned rules engine** evaluates eligibility with tri-state logic; a **router** computes weakest-link confidence and decides: auto-approve, ask for more, or hand to a human — never auto-reject.
+3. A **versioned rules engine** evaluates eligibility with tri-state logic; a **router** computes weakest-link confidence and decides: auto-approve, ask for more, or hand to a human - never auto-reject.
 4. **Officers** work a prioritised review queue with AI-prepared case notes; risky approvals need a second officer.
 5. Approved cases are paid through a **simulated Raast-like payment service**; every official message carries a **verification code** citizens can check.
 6. Citizens see and control **who has their data**; withdrawal is enforced on the server and shown in the audit trail.
@@ -56,7 +56,7 @@
 
 ## 4. Core user journeys
 
-### J-1 Widow applies (alone, weak signal) — **golden path**
+### J-1 Widow applies (alone, weak signal) - **golden path**
 1. Fatima opens the PWA link (cached after first visit). Taps 🔊 on every screen to hear Urdu audio.
 2. Logs in with phone + OTP (OTP shown in the simulated SMS inbox in the demo).
 3. Consent step: hears what data is used, by whom, why; taps ✅ to grant the Social Protection Dept access for *Benefit application* + *Payment*.
@@ -76,7 +76,7 @@
 ### J-3 Shopkeeper checks a suspicious message
 1. Rasool opens "Is this message real?" (no login required for basic check; logged-in adds history).
 2. Pastes text / shares screenshot / reads it aloud.
-3. Result in large icon + audio: e.g. **"Likely scam"** — reasons: asks for a fee; asks for PIN; amount Rs 25,000 does not match the program's real amounts; official messages always carry a code you can check here.
+3. Result in large icon + audio: e.g. **"Likely scam"**: reasons: asks for a fee; asks for PIN; amount Rs 25,000 does not match the program's real amounts; official messages always carry a code you can check here.
 4. A genuine message with code `HQ-7K3P9` → **"Verified official message"** (provenance match).
 5. Optional: "I think this result is wrong" feedback → recorded for false-alarm tracking.
 
@@ -93,7 +93,7 @@
 
 ### J-6 Citizen withdraws consent
 1. Fatima opens "My data" (🔒 icon) → sees who has access (Department, Helper Ayesha) and a log of who viewed what.
-2. Withdraws Ayesha's access → Ayesha's next attempt to open Fatima's profile is blocked; Fatima sees "Ayesha tried to view your documents at 15:40 — blocked".
+2. Withdraws Ayesha's access → Ayesha's next attempt to open Fatima's profile is blocked; Fatima sees "Ayesha tried to view your documents at 15:40 - blocked".
 3. If she withdraws the Department's access while a case is open → case goes ON_HOLD_CONSENT; officer sees only reference code and status; clear explanation to citizen of the consequence before confirming.
 
 ### J-7 Auditor reviews
@@ -160,14 +160,14 @@ Conventions: "citizen" includes a helper acting for that citizen unless stated. 
 
 ### F-01 Authentication & RBAC
 - Citizens: phone + 6-digit OTP (simulated SMS). Staff & helpers: email + password. Access JWT 15 min, refresh 30 days (citizens) / 12 h (staff).
-- Demo persona login (`DEMO_MODE=true` only) — one-tap login for judges, clearly labelled "Prototype demo login".
+- Demo persona login (`DEMO_MODE=true` only) - one-tap login for judges, clearly labelled "Prototype demo login".
 - **AC-01.1** Each of the 5 roles can log in and lands on its own home screen.
 - **AC-01.2** Calling any staff endpoint with a citizen token returns `403 FORBIDDEN`; the attempt is audited (`auth.forbidden`).
 - **AC-01.3** OTP request limited to 3 per phone per 10 min (`429 RATE_LIMITED`).
 - **AC-01.4** With `DEMO_MODE=false`, `/auth/demo-login` returns 404.
 
 ### F-02 Tenants
-- **AC-02.1** An officer of tenant ZWB requesting a case of tenant SPD gets `404 NOT_FOUND` (not 403 — no existence leak).
+- **AC-02.1** An officer of tenant ZWB requesting a case of tenant SPD gets `404 NOT_FOUND` (not 403 - no existence leak).
 - **AC-02.2** Queue, analytics, rule sets, API keys are always tenant-filtered server-side.
 
 ### F-03 Application wizard
@@ -265,7 +265,7 @@ Conventions: "citizen" includes a helper acting for that citizen unless stated. 
 - **AC-16.2** Simulation causes no side effects (no decisions, payments, notifications on real cases); only a `simulation_runs` record and an audit event.
 
 ### F-17 Admin
-- Users (create, disable, change role within tenant), API keys (create shows secret once, revoke), mock services (mode NORMAL/SLOW/FLAKY/DOWN, latency, failure rate) — platform admin only, jobs (list, retry dead).
+- Users (create, disable, change role within tenant), API keys (create shows secret once, revoke), mock services (mode NORMAL/SLOW/FLAKY/DOWN, latency, failure rate) - platform admin only, jobs (list, retry dead).
 - **AC-17.1** A revoked API key fails on the next call with `401`.
 - **AC-17.2** Mock service set to DOWN causes J-8 behaviour.
 
@@ -299,7 +299,7 @@ Conventions: "citizen" includes a helper acting for that citizen unless stated. 
 - **AC-24.3** Citizen initial JS ≤ 150 KB gzipped; lite mode disables non-essential images.
 
 ### F-25 Transparency
-- **AC-25.1** Every page shows "PROTOTYPE — not an official government service. All identity, payment and data services are simulated."
+- **AC-25.1** Every page shows "PROTOTYPE - not an official government service. All identity, payment and data services are simulated."
 - **AC-25.2** `/transparency` lists real vs simulated components (table in [15-demo-and-submission.md](15-demo-and-submission.md)).
 
 ---
@@ -333,12 +333,12 @@ Conventions: "citizen" includes a helper acting for that citizen unless stated. 
 | E-6 | Applicant marked deceased in registry | `APPLICANT_DECEASED` (HIGH) → human |
 | E-7 | Same payout number on 3 unrelated applicants | `PAYOUT_ACCOUNT_SHARED` (HIGH) → human (helper's own phone excluded only for *contact* phone, not payout) |
 | E-8 | Payout account title doesn't match applicant name | `PAYOUT_NAME_MISMATCH` (MEDIUM) |
-| E-9 | CNIC last digit odd (male convention) for a widow applicant | `CNIC_GENDER_MISMATCH` (LOW) — could be data entry error |
+| E-9 | CNIC last digit odd (male convention) for a widow applicant | `CNIC_GENDER_MISMATCH` (LOW) - could be data entry error |
 | E-10 | Expired CNIC | Rule fails with `on_fail: ASK` → NEEDS_INFO "please renew/upload valid CNIC" |
 | E-11 | Rule set published while a case is mid-pipeline | Case uses version active at evaluation start (recorded) |
 | E-12 | Case in NEEDS_INFO when new rules publish | Re-evaluated with the new version on resubmission; timeline notes the change |
 | E-13 | Consent withdrawn while officer has case open | Officer's next action/refresh → `403 CONSENT_REVOKED`; case ON_HOLD_CONSENT |
-| E-14 | Helper consent expires | Helper loses access automatically; family list shows "consent expired — renew" |
+| E-14 | Helper consent expires | Helper loses access automatically; family list shows "consent expired - renew" |
 | E-15 | LLM API down | Explanations from templates; voice falls back to tap; doc OCR → `UNVERIFIABLE` (not tamper) → human; RAG returns NOT_SURE |
 | E-16 | Payment service FLAKY | Retries with same idempotency key; after max attempts PAYMENT_FAILED + officer notified |
 | E-17 | Upload of non-image/oversized file | `415`/`413` with spoken message |

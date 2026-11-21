@@ -1,4 +1,4 @@
-"""HTTP caching helpers — weak ETags for slow-connection clients (docs/05 §1)."""
+"""HTTP caching helpers - weak ETags for slow-connection clients (docs/05 §1)."""
 
 from __future__ import annotations
 

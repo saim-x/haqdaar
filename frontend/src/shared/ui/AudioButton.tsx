@@ -15,7 +15,7 @@ interface AudioButtonProps {
   /**
    * `circle` is the screen-level affordance docs/11 §2.2 asks for: a hairline
    * ring, one per screen. `quiet` is for the speaker that sits beside every
-   * field in a review list — ten rings down one column is a wall of circles,
+   * field in a review list - ten rings down one column is a wall of circles,
    * and the ring is what makes the screen-level button the prominent one.
    * Both keep the 48 px target.
    */
@@ -30,7 +30,7 @@ interface AudioButtonProps {
  *
  * It is a hairline circle, not a 2px teal ring: it appears on every screen, so
  * it must not compete with the one primary action. While speaking it swaps to a
- * pause glyph and a filled surface — a state change, not a looping pulse.
+ * pause glyph and a filled surface - a state change, not a looping pulse.
  */
 export function AudioButton({
   audioKey,

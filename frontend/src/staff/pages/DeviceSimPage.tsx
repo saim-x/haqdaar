@@ -34,14 +34,14 @@ const PHONES = [
 ];
 
 /**
- * Device Simulator — docs/11 §6.5.
+ * Device Simulator - docs/11 §6.5.
  * Reads the simulated SMS inbox so judges can watch OTPs and official payment
  * messages arrive live, then paste them into the scam checker or the helper's
  * consent form. Every code is one tap from the clipboard.
  *
  * The inbox is drawn as a phone would draw it: one message per ruled block, the
  * Urdu body at reading size, the code as a figure you can copy. Nothing here is
- * a badge — a judge is reading these out loud.
+ * a badge - a judge is reading these out loud.
  */
 export default function DeviceSimPage() {
   const [phone, setPhone] = useState(PHONES[0]?.phone ?? '');
@@ -62,7 +62,7 @@ export default function DeviceSimPage() {
     <div className="space-y-4">
       <PageHeader
         title="Device simulator"
-        subtitle="Simulated SMS inbox — no real telecom gateway is involved. Tap any code to copy it."
+        subtitle="Simulated SMS inbox - no real telecom gateway is involved. Tap any code to copy it."
         actions={
           <button
             type="button"

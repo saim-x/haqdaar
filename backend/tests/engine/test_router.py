@@ -45,7 +45,7 @@ def _policy(sahara_v1: RuleSetSchema) -> Policy:
 
 # -- the enum ------------------------------------------------------------
 def test_auto_reject_does_not_exist() -> None:
-    """docs/13 §2.1 — the single most important negative assertion."""
+    """docs/13 §2.1 - the single most important negative assertion."""
     assert "AUTO_REJECT" not in RouteAction.__members__
 
 

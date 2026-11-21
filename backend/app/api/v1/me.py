@@ -1,4 +1,4 @@
-"""Citizen self-service: my data, correction requests, notifications — docs/05 §3.4."""
+"""Citizen self-service: my data, correction requests, notifications - docs/05 §3.4."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 DbSession = Annotated[Session, Depends(get_db)]
 CitizenActor = Annotated[ActorContext, Depends(require_roles(UserRole.CITIZEN, UserRole.HELPER))]
 
-#: Facts whose authoritative source is a government registry — a citizen cannot
+#: Facts whose authoritative source is a government registry - a citizen cannot
 #: overwrite them, only ask an officer to review.
 REGISTRY_FACT_KEYS = frozenset(
     {
@@ -85,7 +85,7 @@ def _fact(value: Any, source: str) -> dict[str, Any]:
 
     `UNKNOWN` is a real answer, not an absence: the citizen is told which field
     we do not hold and why, instead of the row disappearing or a zero standing
-    in for a number nobody supplied. `NOT_PROVIDED` is the honest reason here —
+    in for a number nobody supplied. `NOT_PROVIDED` is the honest reason here -
     nothing failed, the value was simply never collected.
     """
     if value is None or value == "":
@@ -142,14 +142,14 @@ def my_data(request: Request, actor: CitizenActor, db: DbSession) -> dict[str, A
         "dob": _fact(citizen.dob.isoformat() if citizen.dob else None, "SELF_DECLARED"),
     }
 
-    # `profile_data` is flat — the canonical fact keys sit directly on it, not
+    # `profile_data` is flat - the canonical fact keys sit directly on it, not
     # under a `household` sub-object. Reading the nested key silently returned
     # `{}` for every citizen, which is the one thing this endpoint must never do:
     # an empty household reads as "we hold nothing", not "we hold nothing *yet*".
     #
     # Every canonical key is emitted, present or not. A key that is absent comes
     # back as `UNKNOWN` with a reason, so the citizen sees "we do not know this"
-    # rather than the row quietly disappearing — docs/04 §5, and the same
+    # rather than the row quietly disappearing - docs/04 §5, and the same
     # tri-state the decision engine consumes.
     household = {
         key: _fact(profile.get(key), source) for key, source in _HOUSEHOLD_FACT_KEYS.items()
@@ -246,7 +246,7 @@ def my_data(request: Request, actor: CitizenActor, db: DbSession) -> dict[str, A
     }
 
 
-#: AC-12.1 — a corrected self-declared fact can change the outcome of a case that is
+#: AC-12.1 - a corrected self-declared fact can change the outcome of a case that is
 #: still being worked, so those two statuses are re-evaluated immediately.
 _REEVALUATION_TRIGGER_STATUSES = ("NEEDS_INFO", "IN_REVIEW")
 
@@ -259,7 +259,7 @@ def _reevaluate_after_correction(
     Called only after the correction itself is committed: the citizen's intent must
     survive even if a simulated registry is down and the re-evaluation parks the case
     in ``WAITING_EXTERNAL``. A case that cannot be re-evaluated is reported, never
-    raised — a correction must not fail because a downstream service is unhappy.
+    raised - a correction must not fail because a downstream service is unhappy.
     """
     from app.agent.case_agent import ReevaluationNotAllowed, reevaluate_case
 
@@ -448,8 +448,8 @@ def request_correction(
     db.commit()
 
     # AC-12.1: a corrected self-declared fact can flip a case that is still open.
-    # Registry-sourced corrections change nothing yet — an officer has to accept them
-    # first — so only an applied correction re-evaluates.
+    # Registry-sourced corrections change nothing yet - an officer has to accept them
+    # first - so only an applied correction re-evaluates.
     reevaluated = (
         _reevaluate_after_correction(db, citizen_id, field_key) if applied else []
     )

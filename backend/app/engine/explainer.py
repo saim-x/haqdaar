@@ -64,7 +64,7 @@ _MAX_REASONS = 3
 
 
 class CitizenExplanation(BaseModel):
-    """``cases.citizen_explanation`` — what the citizen reads and hears."""
+    """``cases.citizen_explanation`` - what the citizen reads and hears."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -109,14 +109,14 @@ def _approved(
 ) -> CitizenExplanation:
     if provisional:
         headline_en = (
-            f"Approved — an estimated PKR {amount_pkr:,} will be sent to your account."
+            f"Approved - an estimated PKR {amount_pkr:,} will be sent to your account."
         )
         headline_ur = (
-            f"منظوری — تخمیناً {amount_pkr:,} روپے آپ کے اکاؤنٹ میں بھیجے جائیں گے۔"
+            f"منظوری - تخمیناً {amount_pkr:,} روپے آپ کے اکاؤنٹ میں بھیجے جائیں گے۔"
         )
     else:
-        headline_en = f"Approved — PKR {amount_pkr:,} will be sent to your account."
-        headline_ur = f"منظوری — {amount_pkr:,} روپے آپ کے اکاؤنٹ میں بھیجے جائیں گے۔"
+        headline_en = f"Approved - PKR {amount_pkr:,} will be sent to your account."
+        headline_ur = f"منظوری - {amount_pkr:,} روپے آپ کے اکاؤنٹ میں بھیجے جائیں گے۔"
 
     passing = [trace for trace in eval_result.rules if trace.result is RuleResult.PASS]
     reasons_en = tuple(trace.reason_en for trace in passing[:_MAX_REASONS])
@@ -183,11 +183,11 @@ def _human_review(eval_result: EvaluationResult) -> CitizenExplanation:
 
     return CitizenExplanation(
         headline_ur=(
-            "ایک افسر آپ کی درخواست کا جائزہ لیں گے — عام طور پر 2 دن میں۔ "
+            "ایک افسر آپ کی درخواست کا جائزہ لیں گے - عام طور پر 2 دن میں۔ "
             "آپ کو کچھ کرنے کی ضرورت نہیں۔"
         ),
         headline_en=(
-            "An officer will review your application — usually within 2 days. "
+            "An officer will review your application - usually within 2 days. "
             "You do not need to do anything."
         ),
         reasons_ur=reasons_ur,

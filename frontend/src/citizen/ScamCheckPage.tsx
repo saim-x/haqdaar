@@ -37,8 +37,8 @@ const VERDICT: Record<
 };
 
 /**
- * Scam checker — docs/11 §3.4, F-14.
- * Public: no login. Advisory only — it never blocks or deletes anything (AC-14.5).
+ * Scam checker - docs/11 §3.4, F-14.
+ * Public: no login. Advisory only - it never blocks or deletes anything (AC-14.5).
  *
  * All three input tabs are real: `POST /scam/check` takes JSON text, a
  * screenshot as `image`, or a voice note as `audio`. The voice tab used to be a

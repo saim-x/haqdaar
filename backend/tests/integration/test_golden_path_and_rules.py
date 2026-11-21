@@ -1,4 +1,4 @@
-"""Golden path & live rule change — the C2 drill (docs/13 §1, docs/12 C2).
+"""Golden path & live rule change - the C2 drill (docs/13 §1, docs/12 C2).
 
 Three bodies, in the order the demo runs them:
 
@@ -14,7 +14,7 @@ Three bodies, in the order the demo runs them:
    ``simulation_runs`` is written.
 
 Everything that depends on a teammate's surface is isolated in the ``S1 ADAPTERS``
-section below, so the merge is a mechanical fix in one place — the same discipline as
+section below, so the merge is a mechanical fix in one place - the same discipline as
 ``app/agent/deps.py``. The module skips (with the reason) until the S1 stack lands.
 """
 
@@ -65,10 +65,10 @@ _UNAVAILABLE = _unavailable_modules()
 
 pytestmark = pytest.mark.skipif(
     bool(_UNAVAILABLE),
-    reason="S1 stack not merged yet — " + "; ".join(_UNAVAILABLE),
+    reason="S1 stack not merged yet - " + "; ".join(_UNAVAILABLE),
 )
 
-#: docs/10 §2 — the golden-path persona.
+#: docs/10 §2 - the golden-path persona.
 FATIMA_CNIC = "9990010000012"
 FATIMA_PHONE = "+923001000001"
 FATIMA_CARD_NAME = "Fatima Bibi"
@@ -93,7 +93,7 @@ SPECIMEN_QR_SECRET = "dev-qr-secret-change-me"  # noqa: S105 - public dev defaul
 
 
 # =======================================================================
-# S1 ADAPTERS — every teammate-surface assumption lives here
+# S1 ADAPTERS - every teammate-surface assumption lives here
 # =======================================================================
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -259,7 +259,7 @@ def _submit_fatima_application(
 # =======================================================================
 @pytest.fixture(scope="session")
 def live_server() -> Iterator[str]:
-    """Run the real app — API and ``/mock/v1`` — on a free port for the session."""
+    """Run the real app - API and ``/mock/v1`` - on a free port for the session."""
     uvicorn = pytest.importorskip("uvicorn")
     main = importlib.import_module("app.main")
 
@@ -331,7 +331,7 @@ def db() -> Iterator[Any]:
 
 @pytest.fixture(scope="session")
 def seeded(mock_base_url: str) -> dict[str, Any]:
-    """The demo seed must already be loaded — docker compose runs it on boot."""
+    """The demo seed must already be loaded - docker compose runs it on boot."""
     from sqlalchemy import select
 
     assert mock_base_url  # the seed fixture must run after the mock base URL is set
@@ -390,7 +390,7 @@ def test_fatima_golden_path_auto_approves_and_pays_exactly_once(
         api, token, seeded["program_id"], seeded["tenant_id"], retake_cnic=True
     )
 
-    # PROCESS_CASE handler — exactly what the worker calls.
+    # PROCESS_CASE handler - exactly what the worker calls.
     decision = case_agent.run_case_agent(db, case_id)
     assert decision is not None, "the pipeline recorded no decision"
 

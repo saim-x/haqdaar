@@ -11,7 +11,7 @@ import {
 } from './helpers';
 
 /**
- * Golden path — docs/13 §3, AC-01.x.
+ * Golden path - docs/13 §3, AC-01.x.
  *
  * Fatima logs in with one tap, walks the 14-step wizard (one question per
  * screen, keypad + picture alternatives everywhere), uploads two documents,
@@ -29,25 +29,25 @@ test('golden path: Fatima applies for the widow grant end to end', async ({ page
   await page.goto('/c/apply/new');
   await expect(page.locator('[data-testid="wizard"]')).toBeVisible();
 
-  // 1 — consent gate (auto-skips when a live DEPARTMENT grant already exists).
+  // 1 - consent gate (auto-skips when a live DEPARTMENT grant already exists).
   await passConsentGate(page);
 
-  // 2–11 — name, CNIC, DOB, spouse, district, counters, income, payout phone.
+  // 2–11 - name, CNIC, DOB, spouse, district, counters, income, payout phone.
   await fillWizardToPhone(page);
 
-  // 12 — CNIC photo
+  // 12 - CNIC photo
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'cnic_doc');
   await uploadDoc(page, 'cnic');
   await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
   await wizardNext(page);
 
-  // 13 — death certificate photo
+  // 13 - death certificate photo
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'death_cert_doc');
   await uploadDoc(page, 'deathCertificate');
   await expect(page.locator('[data-testid="wizard-next"]')).toBeEnabled({ timeout: 30_000 });
   await wizardNext(page);
 
-  // 14 — review + submit
+  // 14 - review + submit
   await expect(page.locator('[data-testid="wizard"]')).toHaveAttribute('data-step', 'review');
   await page.locator('[data-testid="wizard-submit"]').click();
 

@@ -2,7 +2,7 @@
  * One icon set. Inline SVG, 24×24 viewBox, stroke 1.5, round caps and joins.
  *
  * Rules this file enforces so callers cannot drift:
- *  - one stroke weight (1.5) at every size — no per-call `strokeWidth`
+ *  - one stroke weight (1.5) at every size - no per-call `strokeWidth`
  *  - icons inherit `currentColor` and never carry their own colour
  *  - `aria-hidden` by default; a caller that needs a label puts it on the button
  *  - directional glyphs are marked `data-directional` so the RTL rule in

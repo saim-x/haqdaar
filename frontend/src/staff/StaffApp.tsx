@@ -234,7 +234,7 @@ function StaffApp({ children, session, groups, current }: {
 }
 
 /**
- * Route table for /staff/*, /admin/*, /auditor/* — mounted lazily from App.
+ * Route table for /staff/*, /admin/*, /auditor/* - mounted lazily from App.
  *
  * Deliberately a `matchPath` switch rather than a nested `<Routes>`: the same
  * component is mounted under three different prefixes, and absolute paths in a

@@ -62,7 +62,7 @@ def _err(code: str, message: str) -> ValueError:
 
 
 class RuleOperator(str, Enum):
-    """docs/06 §2.2 — the complete operator set. Nothing else is accepted."""
+    """docs/06 §2.2 - the complete operator set. Nothing else is accepted."""
 
     EQ = "eq"
     NEQ = "neq"
@@ -187,7 +187,7 @@ class EligibilityRule(BaseModel):
 
 
 class CostMatrix(BaseModel):
-    """docs/06 §3.3 — the numbers behind "a wrong approval is worse than a slow one"."""
+    """docs/06 §3.3 - the numbers behind "a wrong approval is worse than a slow one"."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -218,7 +218,7 @@ class Policy(BaseModel):
 
 
 class BenefitFormula(BaseModel):
-    """docs/06 §2.4 — amount = min(cap, base + min(children, max_counted) * bonus)."""
+    """docs/06 §2.4 - amount = min(cap, base + min(children, max_counted) * bonus)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -250,7 +250,7 @@ class RuleSetSchema(BaseModel):
 
     #: The exact JSON document this schema was validated from. ``content_hash`` must
     #: cover what is stored in ``rule_versions.rules_json`` (docs/04 §4.2), not the
-    #: normalised model dump — the two differ whenever the document carries an int
+    #: normalised model dump - the two differ whenever the document carries an int
     #: where the model holds a float, and a hash that disagrees with the stored row
     #: breaks the audit proof on every decision.
     _raw_payload: dict[str, Any] | None = PrivateAttr(default=None)

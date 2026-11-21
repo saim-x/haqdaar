@@ -1,4 +1,4 @@
-"""Admin job queue inspection & retry — docs/05 §3.7."""
+"""Admin job queue inspection & retry - docs/05 §3.7."""
 
 from __future__ import annotations
 

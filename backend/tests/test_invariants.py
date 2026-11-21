@@ -1,4 +1,4 @@
-"""Architectural invariants — docs/13 §1, enforced by scanning the source tree.
+"""Architectural invariants - docs/13 §1, enforced by scanning the source tree.
 
 Three checks, all static (no database needed):
 

@@ -2,11 +2,11 @@
 
 Produces two committed artefacts:
 
-* ``app/data/scam_dataset.jsonl`` — 240 labelled synthetic Pakistani messages
+* ``app/data/scam_dataset.jsonl`` - 240 labelled synthetic Pakistani messages
   (docs/07 §3.3): 90 clear scams, 90 legitimate, 35 hard negatives and 25
   ambiguous. Splits are assigned **per template family**, never per sample, so
   the held-out set cannot leak a template it was trained on.
-* ``app/data/eval_cases.jsonl`` — 133 labelled benefit cases with independently
+* ``app/data/eval_cases.jsonl`` - 133 labelled benefit cases with independently
   injected noise, feeding EN's decision-router sweep (Challenge 01). The corpus is
   built from explicit cohorts so the cost curve has a designed shape: at tau = 0.90
   it auto-approves 55.6 % of the sample with zero false approvals, and the expected
@@ -37,7 +37,7 @@ EVAL_PATH = DATA_DIR / "eval_cases.jsonl"
 GENERATOR_SEED = 20261120
 
 # --------------------------------------------------------------------------- #
-# scam dataset — (family, lang, text)
+# scam dataset - (family, lang, text)
 # --------------------------------------------------------------------------- #
 SCAM_FAMILIES: dict[str, list[tuple[str, str]]] = {
     "bisp_fee": [
@@ -667,7 +667,7 @@ class _Cohort:
 
 #: The corpus, by cohort. Counts are chosen so that at tau = 0.90 the sweep
 #: auto-approves 74/133 (55.6 %) with zero false approvals, and the expected cost
-#: bottoms out at 0.90 — docs/06 §3.3's target shape, asserted by
+#: bottoms out at 0.90 - docs/06 §3.3's target shape, asserted by
 #: ``tests/mocks/test_eval_corpus.py``.
 _COHORTS: tuple[_Cohort, ...] = (
     # -- genuinely eligible, evidence strong enough to auto-approve at tau = 0.90 --
@@ -749,7 +749,7 @@ _COHORTS: tuple[_Cohort, ...] = (
         truth_note=(
             "The applicant presented a relative's CNIC. The registry record resolves "
             "on the number, but the name similarity sits in the 0.55-0.69 soft band "
-            "(identity 0.75) — the only visible trace of the substitution."
+            "(identity 0.75) - the only visible trace of the substitution."
         ),
     ),
     _Cohort(
@@ -857,7 +857,7 @@ def _is_eligible(facts: dict[str, Any]) -> bool:
 
     ``children_under_18`` is deliberately absent: R09_CHILDREN_KNOWN (ADR-015) gates
     the *amount*, not eligibility. A citizen whose children count is unknown is still
-    genuinely eligible — the engine routes ASK_MORE/HUMAN_REVIEW instead of approving,
+    genuinely eligible - the engine routes ASK_MORE/HUMAN_REVIEW instead of approving,
     and the ground-truth label must not pretend otherwise.
 
     The ``HIDDEN_*`` cohorts pass this predicate and are still labelled ineligible:

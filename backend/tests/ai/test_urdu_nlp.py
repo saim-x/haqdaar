@@ -2,7 +2,7 @@
 
 Every function here sits between a citizen speaking Urdu and a fact the decision
 engine will act on. The rule under test throughout: a value is either parsed
-correctly or reported as unknown — never defaulted, never guessed.
+correctly or reported as unknown - never defaulted, never guessed.
 """
 
 from __future__ import annotations

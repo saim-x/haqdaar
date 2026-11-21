@@ -8,7 +8,7 @@ import { Card, CardTitle, ErrorState, Loading, PageHeader, roleWord } from '../u
 const ROLES: Role[] = ['HELPER', 'OFFICER', 'ADMIN', 'AUDITOR'];
 
 /**
- * Admin users — docs/11 §6.2.3. Tenant-scoped server-side.
+ * Admin users - docs/11 §6.2.3. Tenant-scoped server-side.
  *
  * Two surfaces: a create row that stays one line wide, and a ledger of accounts
  * where the role is an inline select and the only destructive action is a
@@ -144,7 +144,7 @@ export default function UsersPage() {
               <tr key={user.id}>
                 <td className="font-medium text-ink">{user.full_name}</td>
                 <td className="text-meta text-ink-2">
-                  {user.email ?? (user as User & { phone_masked?: string | null }).phone_masked ?? user.phone ?? '—'}
+                  {user.email ?? (user as User & { phone_masked?: string | null }).phone_masked ?? user.phone ?? '-'}
                 </td>
                 <td>
                   <select

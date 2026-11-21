@@ -15,7 +15,7 @@ interface PollState {
 }
 
 /**
- * ETag-aware case polling — AC-10.2.
+ * ETag-aware case polling - AC-10.2.
  * Never more than one request per 5 s; backs off to 60 s while the case is in a
  * terminal state or the network is unhappy. A 304 keeps the previous body and
  * costs ~0 bytes, which is the whole point on a dropping 3G connection.

@@ -1,4 +1,4 @@
-"""Tenant analytics — docs/05 §3.9."""
+"""Tenant analytics - docs/05 §3.9."""
 
 from __future__ import annotations
 

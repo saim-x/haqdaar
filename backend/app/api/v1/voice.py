@@ -1,11 +1,11 @@
-"""Voice API (docs/05 §3.9) — spoken wizard answers and dynamic Urdu speech.
+"""Voice API (docs/05 §3.9) - spoken wizard answers and dynamic Urdu speech.
 
 ``POST /voice/transcribe-parse`` takes one recorded answer, transcribes it, parses
 exactly one wizard field and returns the mandatory readback sentence. The
 frontend may only save a spoken value after the citizen confirms that readback.
 
 ``POST /voice/tts`` streams a cached Urdu clip for a dynamic sentence (an
-explanation, a rejection reason). Static wizard prompts never come through here —
+explanation, a rejection reason). Static wizard prompts never come through here -
 they are pre-rendered into ``frontend/public/audio/ur/`` by ``app.ai.tts_pregen``.
 
 Both endpoints are advisory: a failure returns a structured error and the UI

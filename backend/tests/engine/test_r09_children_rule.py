@@ -1,4 +1,4 @@
-"""ADR-015: R09_CHILDREN_KNOWN — no auto-approval on a provisional amount.
+"""ADR-015: R09_CHILDREN_KNOWN - no auto-approval on a provisional amount.
 
 The rule is data, not code: ``children_under_18`` is now referenced by an eligibility
 rule, so tri-state exposure forces UNKNOWN children to ASK_MORE and then HUMAN_REVIEW.

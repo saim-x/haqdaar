@@ -2,7 +2,7 @@
 
 The seeder is ~1,500 lines of row construction. This harness executes the whole
 ``seed_all`` path against a recording fake session so that every dict, rule
-trace and showcase flag is actually built at least once in CI — long before the
+trace and showcase flag is actually built at least once in CI - long before the
 application schema exists. It asserts the counts and invariants the demo depends
 on (docs/10 §2).
 """
@@ -51,7 +51,7 @@ def _stub_audit_writer(monkeypatch: pytest.MonkeyPatch, stub: Any) -> None:
 
     ``seed_showcase`` does ``from app.mocks.seed import _record_audit`` at import
     time, so patching ``seed_module._record_audit`` alone leaves that reference
-    pointing at the real writer — which then runs a ``select(table.c.seq, ...)``
+    pointing at the real writer - which then runs a ``select(table.c.seq, ...)``
     against the fake metadata and dies on the missing ``.c``. Patch every module
     that holds its own binding.
     """
@@ -266,7 +266,7 @@ def test_showcase_ids_are_uuid5(seeded: tuple[dict[str, Any], _FakeSession]) -> 
 
 
 # --------------------------------------------------------------------------- #
-# ADR-015: R09_CHILDREN_KNOWN — no auto-approval with a provisional amount
+# ADR-015: R09_CHILDREN_KNOWN - no auto-approval with a provisional amount
 # --------------------------------------------------------------------------- #
 def test_both_programs_carry_the_children_known_rule() -> None:
     for ruleset in (sd.SAHARA_RULES_V1, sd.GUZARA_RULES_V1):

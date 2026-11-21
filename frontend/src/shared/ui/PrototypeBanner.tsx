@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
- * RULE-5 / AC-25.1 — a persistent 28 px bar on EVERY route.
+ * RULE-5 / AC-25.1 - a persistent 28 px bar on EVERY route.
  *
  * It is rendered once in the app shell, above the router outlet, so no screen
  * can accidentally ship without it. The height is a hard requirement, so the
@@ -20,7 +20,7 @@ export function PrototypeBanner() {
       aria-label={`${t('banner.claim')} ${t('banner.detail')}`}
       className="sticky top-0 z-50 flex min-h-[var(--banner-h)] items-center justify-center gap-1 border-b border-warn/25 bg-warn-wash px-2 py-0.5 text-meta text-warn sm:gap-2 sm:px-3 sm:py-0"
     >
-      {/* leading-[23px] is the measured height of an Urdu line at 12 px — the
+      {/* leading-[23px] is the measured height of an Urdu line at 12 px - the
           19.2 px a 1.6 ratio gives clips the ascenders inside the 28 px band.
           Below `sm` the detail clause waits for the room rather than pushing the
           bar past 28 px: the claim is the part RULE-3 requires on screen, and it
@@ -31,7 +31,7 @@ export function PrototypeBanner() {
       </span>
       {/* "Real vs Simulated" is 88 px at 12 px. Beside the 277 px claim that is
           385 px of content in a 360 px bar, which forces the claim onto a second
-          line — and a bar taller than `--banner-h` slides under the sticky
+          line - and a bar taller than `--banner-h` slides under the sticky
           headers that offset themselves by it. The short label keeps the bar at
           exactly 28 px on the narrowest phones; the full name returns at `sm`. */}
       <Link

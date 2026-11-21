@@ -3,7 +3,7 @@
 The citizen speaks one answer per wizard step. We transcribe it, parse exactly
 that one field against a strict schema, and return a **readback** sentence the
 frontend must speak before it may save ``confirmed: true``. Anything below
-``0.70`` confidence — or a schema failure — sets ``needs_retry`` so the UI falls
+``0.70`` confidence - or a schema failure - sets ``needs_retry`` so the UI falls
 back to the keypad.
 
 Urdu numerals are normalised locally (``اٹھائیس ہزار`` → ``28000``) and

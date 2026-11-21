@@ -1,4 +1,4 @@
-"""PII masking helpers — mandatory for every log line, audit payload and list view.
+"""PII masking helpers - mandatory for every log line, audit payload and list view.
 
 Rule 7 of the charter: raw 13-digit CNICs, phone numbers, OTPs, passwords and JWTs
 must never be logged. These helpers are the only sanctioned way to render them.

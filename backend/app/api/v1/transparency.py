@@ -1,4 +1,4 @@
-"""Public transparency endpoint — real vs simulated (docs/05 §3.9, RULE-3).
+"""Public transparency endpoint - real vs simulated (docs/05 §3.9, RULE-3).
 
 The eleven components below are the docs/15 §1 table, in the same order and with
 the same wording. ``README.md`` reproduces this table verbatim and the frontend
@@ -26,14 +26,14 @@ router = APIRouter(prefix="/transparency", tags=["transparency"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 
-#: docs/15 §1 — the honest Real vs Simulated table shown to judges and citizens.
+#: docs/15 §1 - the honest Real vs Simulated table shown to judges and citizens.
 COMPONENTS: list[dict[str, Any]] = [
     {
         "component": "Auth, JWT, RBAC, Multi-Tenancy, Consent Engine, Audit Hash Chain",
         "name_ur": "تصدیق، رضامندی اور آڈٹ",
         "status": "REAL",
         "details": "Enforced server-side in FastAPI + PostgreSQL 16 (Alembic migrations).",
-        "details_ur": "FastAPI اور PostgreSQL 16 میں سرور کی طرف نافذ — JWT، کردار کی بنیاد پر رسائی، رضامندی کا انجن اور آڈٹ کی زنجیر۔",
+        "details_ur": "FastAPI اور PostgreSQL 16 میں سرور کی طرف نافذ - JWT، کردار کی بنیاد پر رسائی، رضامندی کا انجن اور آڈٹ کی زنجیر۔",
     },
     {
         "component": (
@@ -44,7 +44,7 @@ COMPONENTS: list[dict[str, Any]] = [
         "status": "REAL",
         "details": "Pure Python deterministic engine (app/engine/) evaluating live DB rules.",
                 "details_ur": (
-            "خالص Python کا انجن (app/engine/) جو ڈیٹابیس کے قواعد پر فیصلہ کرتا ہے — "
+            "خالص Python کا انجن (app/engine/) جو ڈیٹابیس کے قواعد پر فیصلہ کرتا ہے - "
             "تین حالتوں والا جائزہ، ناموں کی تطبیق اور ڈیجیٹل ٹوئن۔"
         ),
     },
@@ -58,7 +58,7 @@ COMPONENTS: list[dict[str, Any]] = [
         ),
                 "details_ur": (
             "Workbox سروس ورکر، Dexie IndexedDB اور سرور کی طرف Idempotency-Key کی "
-            "جانچ — ایک ہی درخواست دو بار اثر نہیں کرتی۔"
+            "جانچ - ایک ہی درخواست دو بار اثر نہیں کرتی۔"
         ),
     },
     {
@@ -135,7 +135,7 @@ COMPONENTS: list[dict[str, Any]] = [
             "transfers & test failure alias."
         ),
                 "details_ur": (
-            "mock REST API (/mock/v1/payments/*، /complaints) — ادائیگیاں دہرانے پر "
+            "mock REST API (/mock/v1/payments/*، /complaints) - ادائیگیاں دہرانے پر "
             "بھی ایک ہی اثر، اور ناکامی کی آزمائش کا راستہ۔"
         ),
     },
@@ -170,10 +170,10 @@ COMPONENTS: list[dict[str, Any]] = [
 
 @router.get("", summary="Machine-readable Real vs Simulated disclosure")
 def transparency(db: DbSession) -> dict[str, Any]:
-    """Public: no auth, no consent gate — this is the honesty page (RULE-5/RULE-6)."""
+    """Public: no auth, no consent gate - this is the honesty page (RULE-5/RULE-6)."""
     return {
         "prototype": True,
-        "banner": "Haqdaar prototype — simulated government services, synthetic data only",
+        "banner": "Haqdaar prototype - simulated government services, synthetic data only",
         "synthetic_data": {
             "cnic_prefix": "99900",
             "note": "Every citizen, CNIC, phone number and document in this system is synthetic.",

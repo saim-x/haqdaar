@@ -1,6 +1,6 @@
 """OTP challenges: SHA-256 + per-challenge salt, 5 min TTL, max 5 attempts.
 
-docs/09 §1.1 — the plaintext code is never stored, never logged, and is delivered
+docs/09 §1.1 - the plaintext code is never stored, never logged, and is delivered
 to the citizen only through the simulated SMS inbox (``notifications`` rows).
 """
 

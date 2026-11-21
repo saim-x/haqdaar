@@ -1,4 +1,4 @@
-"""Case state machine — docs/04 §3.3, implemented literally.
+"""Case state machine - docs/04 §3.3, implemented literally.
 
 Two invariants are load-bearing for judging:
 

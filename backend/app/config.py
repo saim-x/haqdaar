@@ -1,4 +1,4 @@
-"""Pydantic Settings — every variable documented in docs/03 §5.3 plus runtime knobs.
+"""Pydantic Settings - every variable documented in docs/03 §5.3 plus runtime knobs.
 
 Reads ``.env`` from the repo root (and ``backend/.env`` if present). Nothing here
 may hold a real secret: defaults are the documented dev values only.
@@ -129,7 +129,7 @@ class Settings(BaseSettings):
         ``getattr(settings, "UPLOAD_DIR", None)``. Without this alias that lookup
         returned ``None``, so the verifier fell back to its own default
         (``backend/app/uploads``) while the writer stored under
-        ``backend/data/uploads`` — every uploaded document came back
+        ``backend/data/uploads`` - every uploaded document came back
         ``file_present: false``. One attribute, one directory.
         """
         return self.upload_dir
@@ -148,7 +148,7 @@ def upload_root() -> Path:
 
     ``upload_dir`` is already resolved against the backend root by
     :meth:`Settings._resolve_path`, so this is independent of the process working
-    directory — the writer, the download endpoint, ``/health`` and the document
+    directory - the writer, the download endpoint, ``/health`` and the document
     verifier all land on the same absolute path.
     """
     root = settings.upload_dir

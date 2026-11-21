@@ -3,14 +3,14 @@
 The pipeline is deliberately ordered so that **image degradation can never be
 mistaken for forgery**:
 
-1. **Image quality** — Laplacian variance and minimum dimension. Fails to
+1. **Image quality** - Laplacian variance and minimum dimension. Fails to
    ``NEEDS_RETAKE`` with spoken Urdu/English guidance.
-2. **Signed QR** — multi-scale ``cv2.QRCodeDetector`` then HMAC-SHA256 over the
+2. **Signed QR** - multi-scale ``cv2.QRCodeDetector`` then HMAC-SHA256 over the
    canonical payload. No QR at all → ``UNVERIFIABLE`` (never tamper). A QR that
    decodes but fails HMAC → ``TAMPER_SUSPECTED``.
-3. **Printed-text OCR** — via :class:`AIProvider`. If the provider is
+3. **Printed-text OCR** - via :class:`AIProvider`. If the provider is
    unavailable the verdict is ``UNVERIFIABLE``; we never guess.
-4. **Cross-check** — exact 13-digit CNIC match plus ``name_sim >= 0.80`` between
+4. **Cross-check** - exact 13-digit CNIC match plus ``name_sim >= 0.80`` between
    the printed text and the signed QR. A legible mismatch is the only semantic
    route to ``TAMPER_SUSPECTED``.
 
@@ -37,7 +37,7 @@ from app.ai.provider import OCRResult, get_provider, telemetry
 
 logger = logging.getLogger("haqdaar.ai.doc_verify")
 
-#: docs/07 §5.1 thresholds — frozen.
+#: docs/07 §5.1 thresholds - frozen.
 LAPLACIAN_THRESHOLD = 65.0
 MIN_DIMENSION = 320
 NAME_SIMILARITY_THRESHOLD = 0.80
@@ -108,7 +108,7 @@ class DocVerification:
 
 
 # --------------------------------------------------------------------------- #
-# check 1 — image quality
+# check 1 - image quality
 # --------------------------------------------------------------------------- #
 def _decode_image(image_bytes: bytes) -> Any:
     try:
@@ -132,7 +132,7 @@ def check_image_quality(image_bytes: bytes) -> tuple[CheckResult, Any]:
                 False,
                 {"laplacian_var": None, "width": None, "height": None},
                 {"laplacian_var": LAPLACIAN_THRESHOLD, "min_dimension": MIN_DIMENSION},
-                "opencv unavailable — cannot assess quality",
+                "opencv unavailable - cannot assess quality",
             ),
             None,
         )
@@ -177,10 +177,10 @@ def check_image_quality(image_bytes: bytes) -> tuple[CheckResult, Any]:
 
 
 # --------------------------------------------------------------------------- #
-# check 2 — signed QR
+# check 2 - signed QR
 # --------------------------------------------------------------------------- #
 def _qr_candidates(image: Any) -> list[Any]:
-    """Decode at several scales — cheap phones produce small QR modules."""
+    """Decode at several scales - cheap phones produce small QR modules."""
     import cv2  # type: ignore
 
     detector = cv2.QRCodeDetector()
@@ -231,7 +231,7 @@ def check_qr(image: Any) -> tuple[CheckResult, dict[str, Any] | None]:
                 False,
                 "no_image",
                 "valid_hmac",
-                "no decodable image — QR not checked",
+                "no decodable image - QR not checked",
             ),
             None,
         )
@@ -244,7 +244,7 @@ def check_qr(image: Any) -> tuple[CheckResult, dict[str, Any] | None]:
                 False,
                 "no_qr",
                 "valid_hmac",
-                "no QR code found — cannot verify authenticity (not treated as tampering)",
+                "no QR code found - cannot verify authenticity (not treated as tampering)",
             ),
             None,
         )
@@ -270,7 +270,7 @@ def check_qr(image: Any) -> tuple[CheckResult, dict[str, Any] | None]:
                 False,
                 "invalid_hmac",
                 "valid_hmac",
-                "QR decoded but its signature does not match — the payload was altered",
+                "QR decoded but its signature does not match - the payload was altered",
             ),
             None,
         )
@@ -288,7 +288,7 @@ def check_qr(image: Any) -> tuple[CheckResult, dict[str, Any] | None]:
 
 
 # --------------------------------------------------------------------------- #
-# check 3 — OCR
+# check 3 - OCR
 # --------------------------------------------------------------------------- #
 def check_ocr(
     image_bytes: bytes, doc_type: str, *, provider: Any = None
@@ -307,7 +307,7 @@ def check_ocr(
                 False,
                 "unavailable",
                 "fields_extracted",
-                "printed text could not be read — verdict degrades to UNVERIFIABLE",
+                "printed text could not be read - verdict degrades to UNVERIFIABLE",
             ),
             result,
         )
@@ -325,7 +325,7 @@ def check_ocr(
 
 
 # --------------------------------------------------------------------------- #
-# check 4 — cross-check
+# check 4 - cross-check
 # --------------------------------------------------------------------------- #
 #: Honorifics that carry no identity signal and must not inflate a match.
 _HONORIFICS = {
@@ -665,7 +665,7 @@ def verify_document(db: Any, document_id: Any) -> dict[str, Any]:
                     # citizen's business. The storage key is what they uploaded.
                     "missing",
                     "exists",
-                    "the stored file is missing — cannot verify",
+                    "the stored file is missing - cannot verify",
                 )
             ],
             retake_reason_en=UNVERIFIABLE_REASON_EN,

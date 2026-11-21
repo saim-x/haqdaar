@@ -100,7 +100,7 @@ export async function expectBanner(page: Page): Promise<void> {
 }
 
 /**
- * Tap the camera button and hand the browser a file — the real user path, so the
+ * Tap the camera button and hand the browser a file - the real user path, so the
  * wizard's own `pendingDocType` bookkeeping is exercised too.
  */
 export async function uploadDoc(page: Page, document: keyof typeof DEMO_DOCUMENTS): Promise<void> {

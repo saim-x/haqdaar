@@ -145,12 +145,12 @@ function Field({
 }
 
 /**
- * Admin rule editor — docs/11 §6.2, AC-15.x.
+ * Admin rule editor - docs/11 §6.2, AC-15.x.
  * Form-first: no JSON typing required. The JSON preview is read-only.
  *
  * A rule is a sentence: fact, operator, value, and what happens when the fact is
  * missing. So each rule is laid out as one line of that sentence, with the
- * bilingual labels underneath — reading a ruleset should feel like reading the
+ * bilingual labels underneath - reading a ruleset should feel like reading the
  * policy, not like reading a config file.
  */
 export default function RulesPage({ canEdit }: { canEdit: boolean }) {
@@ -217,7 +217,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
         res.valid
           ? {
               tone: 'ok',
-              text: `Validation passed — ${res.rule_count ?? '?'} rules, hash ${res.content_hash?.slice(0, 12) ?? ''}…`,
+              text: `Validation passed - ${res.rule_count ?? '?'} rules, hash ${res.content_hash?.slice(0, 12) ?? ''}…`,
             }
           : { tone: 'danger', text: `${res.errors.length} validation error(s).` },
       );
@@ -788,11 +788,11 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                     </thead>
                     <tbody>
                       {twin.flipped_cases.slice(0, 20).map((c) => {
-                        const beforeRoute = c.before_route ?? c.before_outcome ?? '—';
-                        const afterRoute = c.after_route ?? c.after_outcome ?? '—';
+                        const beforeRoute = c.before_route ?? c.before_outcome ?? '-';
+                        const afterRoute = c.after_route ?? c.after_outcome ?? '-';
                         const beforeAmt = c.before_amount ?? c.before_amount_pkr ?? null;
                         const afterAmt = c.after_amount ?? c.after_amount_pkr ?? null;
-                        const reason = c.primary_reason ?? c.reason_en ?? '—';
+                        const reason = c.primary_reason ?? c.reason_en ?? '-';
                         return (
                           <tr key={c.case_id}>
                             <td className="font-mono text-meta text-ink-2">{c.reference_code}</td>
@@ -801,7 +801,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             <td className="num font-mono text-meta text-ink-2">
                               {beforeAmt !== null || afterAmt !== null
                                 ? `${beforeAmt !== null ? pkr(beforeAmt) : '0'} → ${afterAmt !== null ? pkr(afterAmt) : '0'}`
-                                : '—'}
+                                : '-'}
                             </td>
                             <td className="text-meta text-ink-2">{reason}</td>
                           </tr>

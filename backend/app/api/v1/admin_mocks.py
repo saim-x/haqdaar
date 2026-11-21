@@ -12,7 +12,7 @@ Two endpoints, both Platform-ADMIN only:
     five seconds. Gated on ``DEMO_MODE`` so it can never run in a real deployment.
 
 **Boundary note.** This is the one sanctioned place where ``app/api`` may reach
-into ``app.mocks``, and it imports *only* ``app.mocks.config`` — never the mock
+into ``app.mocks``, and it imports *only* ``app.mocks.config`` - never the mock
 ORM models, never a mock session, never a ``mock_*`` table. The invariants test
 pins that.
 """
@@ -242,7 +242,7 @@ def mock_service_statuses(db: Any) -> list[dict[str, Any]]:
 
     ``/transparency`` needs the same seven rows the admin console shows, but it is a
     public route and must not reach into ``app.mocks`` itself. Keeping the read here
-    means ``app.mocks`` is imported by exactly one API module — the sanctioned seam —
+    means ``app.mocks`` is imported by exactly one API module - the sanctioned seam -
     and the invariants test keeps enforcing that.
 
     Returns plain dicts (``service_name``/``mode``/``latency_ms``/``failure_rate``/

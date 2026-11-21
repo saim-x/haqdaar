@@ -134,7 +134,7 @@ def _identity_confidence(record: dict[str, Any], bundle: FactBundle) -> float:
     """docs/06 §3.2 pillar 1, from whatever evidence the record actually carries.
 
     An explicit ``identity_confidence`` wins. Otherwise the band is derived from the
-    registry name similarity the generator stores on ``applicant_full_name`` — the
+    registry name similarity the generator stores on ``applicant_full_name`` - the
     same input :func:`identity_confidence_for_cnic_match` takes in production. A
     record with no registry hit is ``IDENTITY_AMBIGUOUS_OR_MISSING``, never a guess.
     """

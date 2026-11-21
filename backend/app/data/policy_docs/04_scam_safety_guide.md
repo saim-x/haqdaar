@@ -6,12 +6,12 @@ program_code: null
 source_type: POLICY
 language: bilingual
 effective_from: "2026-01-01"
-issuer: Social Protection Department (Sindh) — simulated
+issuer: Social Protection Department (Sindh) - simulated
 ---
 
 # Scam Safety Guide
 
-> **MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT.** This guide is synthetic and exists
+> **MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT.** This guide is synthetic and exists
 > only to demonstrate the Haqdaar prototype. It is not legal advice.
 
 ## 1. The One Rule That Catches Most Frauds
@@ -70,17 +70,17 @@ Fraudsters reuse the same handful of tricks. Learn to recognise them:
   extra letter or a different ending. Do not open it; type the address yourself.
 
 فراڈیئے ہر بار وہی چند حربے استعمال کرتے ہیں: "رقم جاری کرنے کے لیے پندرہ سو روپے
-بھیجیں" — حقیقی گرانٹ میں پیشگی رقم نہیں لگتی۔ "جو کوڈ ابھی آیا ہے وہ بتائیں" — او ٹی پی
-صرف آپ کے لیے ہے، مانگنے والا آپ کی رسائی چرا رہا ہے۔ "رقم لینے کے لیے والٹ پن بتائیں" —
-کوئی محکمہ پن نہیں مانگتا۔ "آپ کی گرانٹ دو گھنٹے میں ختم ہو جائے گی" — جلدی کروانا دھوکہ
-ہے۔ "میں محکمے سے ہوں" کہہ کر آپ کا شناختی نمبر پڑھنا — حوالہ نمبر مانگیں اور خود
-سرکاری ہیلپ لائن پر کال کریں۔ "رقم اس موبائل نمبر پر بھیجیں" — محکمے کی ادائیگی محکمے سے
+بھیجیں" - حقیقی گرانٹ میں پیشگی رقم نہیں لگتی۔ "جو کوڈ ابھی آیا ہے وہ بتائیں" - او ٹی پی
+صرف آپ کے لیے ہے، مانگنے والا آپ کی رسائی چرا رہا ہے۔ "رقم لینے کے لیے والٹ پن بتائیں" -
+کوئی محکمہ پن نہیں مانگتا۔ "آپ کی گرانٹ دو گھنٹے میں ختم ہو جائے گی" - جلدی کروانا دھوکہ
+ہے۔ "میں محکمے سے ہوں" کہہ کر آپ کا شناختی نمبر پڑھنا - حوالہ نمبر مانگیں اور خود
+سرکاری ہیلپ لائن پر کال کریں۔ "رقم اس موبائل نمبر پر بھیجیں" - محکمے کی ادائیگی محکمے سے
 آتی ہے، کسی ذاتی والٹ سے نہیں۔ ملتے جلتے لنک کو نہ کھولیں، پتہ خود ٹائپ کریں۔
 
 ## 4. What the Checker Can and Cannot Do
 
-The scam checker is **advisory**. It gives you a verdict — likely scam, cannot
-tell, likely safe, or verified official — with the reasons behind it. It never
+The scam checker is **advisory**. It gives you a verdict - likely scam, cannot
+tell, likely safe, or verified official - with the reasons behind it. It never
 blocks your account, never deletes a message, and never changes the status of your
 application. If it says "cannot tell", that is an honest answer: short messages
 and forwarded screenshots often do not contain enough evidence either way.
@@ -89,8 +89,8 @@ When the checker is unsure, do not act on the message. Ask a community helper, o
 call the department's helpline, or visit an office in person. Being slow is safe;
 being fast is what fraudsters want.
 
-سکیم چیکر صرف مشورہ دیتا ہے۔ یہ فیصلہ دیتا ہے — ممکنہ فراڈ، نہیں بتا سکتے، ممکنہ محفوظ،
-یا سرکاری تصدیق شدہ — اور اس کی وجوہات بھی بتاتا ہے۔ یہ آپ کا اکاؤنٹ بند نہیں کرتا، پیغام
+سکیم چیکر صرف مشورہ دیتا ہے۔ یہ فیصلہ دیتا ہے - ممکنہ فراڈ، نہیں بتا سکتے، ممکنہ محفوظ،
+یا سرکاری تصدیق شدہ - اور اس کی وجوہات بھی بتاتا ہے۔ یہ آپ کا اکاؤنٹ بند نہیں کرتا، پیغام
 حذف نہیں کرتا، اور درخواست کی حیثیت نہیں بدلتا۔ اگر یہ کہے "نہیں بتا سکتے" تو یہ سچا
 جواب ہے: چھوٹے پیغامات اور فارورڈ شدہ تصاویر میں اکثر کافی ثبوت نہیں ہوتے۔ جب چیکر
 یقین سے نہ کہہ سکے تو پیغام پر عمل نہ کریں۔ مددگار سے پوچھیں، ہیلپ لائن پر کال کریں، یا

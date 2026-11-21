@@ -7,17 +7,17 @@ output.
 
 Public surface:
 
-* :mod:`app.engine.facts` — canonical fact registry and tri-state bundle
-* :mod:`app.engine.rules_dsl` — versioned rules DSL and validator
-* :mod:`app.engine.evaluator` — Kleene tri-state evaluation and benefit formula
-* :mod:`app.engine.confidence` — four-pillar weakest-link confidence
-* :mod:`app.engine.router` — cost-aware routing, priority score, handoff note
-* :mod:`app.engine.entity_resolution` — Urdu/Roman name matching, never name-only
-* :mod:`app.engine.anomalies` — the risk flag catalogue
-* :mod:`app.engine.explainer` — deterministic bilingual citizen explanations
-* :mod:`app.engine.twin` — pure Digital Twin replay
-* :mod:`app.engine.eval_sweep` — cost-of-being-wrong threshold sweep
-* :mod:`app.engine.pipeline` — ``evaluate_and_route``, the single entry point
+* :mod:`app.engine.facts` - canonical fact registry and tri-state bundle
+* :mod:`app.engine.rules_dsl` - versioned rules DSL and validator
+* :mod:`app.engine.evaluator` - Kleene tri-state evaluation and benefit formula
+* :mod:`app.engine.confidence` - four-pillar weakest-link confidence
+* :mod:`app.engine.router` - cost-aware routing, priority score, handoff note
+* :mod:`app.engine.entity_resolution` - Urdu/Roman name matching, never name-only
+* :mod:`app.engine.anomalies` - the risk flag catalogue
+* :mod:`app.engine.explainer` - deterministic bilingual citizen explanations
+* :mod:`app.engine.twin` - pure Digital Twin replay
+* :mod:`app.engine.eval_sweep` - cost-of-being-wrong threshold sweep
+* :mod:`app.engine.pipeline` - ``evaluate_and_route``, the single entry point
 """
 
 from app.engine.anomalies import (

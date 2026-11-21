@@ -1,10 +1,10 @@
-# Haqdaar (حقدار) — To Every Rightful Person, Safely
+# Haqdaar (حقدار) - To Every Rightful Person, Safely
 
-> **PROTOTYPE — THIS IS NOT AN OFFICIAL GOVERNMENT SERVICE.** Haqdaar was built during the Coder's Cup 2026 hackathon as a working prototype. **Every identity, civil-registry, household-survey, benefits, payment, complaint, and SMS service it talks to is simulated** and lives under `/mock/v1/*`; no request ever reaches a real registry, bank, or telecom. **All data is 100 % synthetic** — every citizen, case, phone number, and document is fictional, and **every CNIC in this repository starts with the fictional prefix `99900`**. **Every generated card image is watermarked `MOCK SPECIMEN`.** No real personal data was used at any point, and nothing here should be presented to a citizen as a real entitlement.
+> **PROTOTYPE - THIS IS NOT AN OFFICIAL GOVERNMENT SERVICE.** Haqdaar was built during the Coder's Cup 2026 hackathon as a working prototype. **Every identity, civil-registry, household-survey, benefits, payment, complaint, and SMS service it talks to is simulated** and lives under `/mock/v1/*`; no request ever reaches a real registry, bank, or telecom. **All data is 100 % synthetic**: every citizen, case, phone number, and document is fictional, and **every CNIC in this repository starts with the fictional prefix `99900`**. **Every generated card image is watermarked `MOCK SPECIMEN`.** No real personal data was used at any point, and nothing here should be presented to a citizen as a real entitlement.
 
 ---
 
-### At a Glance — Verified Numbers (100% Green CI)
+### At a Glance - Verified Numbers (100% Green CI)
 
 | Dimension | Verified Result | How It Is Proven |
 |---|---|---|
@@ -23,8 +23,8 @@
 
 Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`** (all 6 categories / 21 criteria). For deep code-level traceability and exact commands per criterion, see [`docs/18-rubric-traceability.md`](docs/18-rubric-traceability.md).
 
-### Category 1 — AI Implementation & Intelligence (30 pts)
-- **5 Distinct Functional AI Systems (12 pts — ≥ 3 required):**
+### Category 1 - AI Implementation & Intelligence (30 pts)
+- **5 Distinct Functional AI Systems (12 pts - ≥ 3 required):**
   1. **Hybrid Anti-Scam Engine** (`app/ai/scam_classifier.py`, `/scam-check`): Accepts **text, screenshot OCR, or voice note**. Stage 1 verifies official `HQ-XXXXX` codes against cryptographic `body_sha256` with a numeric-tampering guard; Stage 2 runs deterministic fraud red flags; Stage 3 runs a `FeatureUnion(word 1–2 + char_wb 3–5)` TF-IDF + calibrated Logistic Regression classifier (**0.9444 F1**, **0.04 FPR**, **0.00 hard-negative FPR**).
   2. **Cryptographic Document Verifier** (`app/ai/doc_verify.py`, `app/agent/assemble.py`): OpenCV Laplacian blur check + `QRCodeDetector` + `HMAC-SHA256` signature verification + Vision OCR cross-check (`ocr_vs_qr`). Forged/Photoshopped cards reliably propagate a `TAMPER_SUSPECTED` (`HIGH`) flag that forces four-eyes officer approval; re-compressed genuine cards stay `VERIFIED`/`UNVERIFIABLE` (**0.00% false-tamper**).
   3. **Grounded Bilingual Policy RAG Assistant** (`app/ai/rag.py`, `/c/ask`): Hybrid Postgres generated `tsvector` + NumPy cosine retrieval (no `pgvector` dependency, dimension-mismatch resilient) with **text AND voice input** (`POST /api/v1/rag/transcribe`), section-pure citations, two-gate abstention (`NOT_SURE` with zero LLM calls below similarity/coverage gates), and PII/injection/personal-claim guardrails.
@@ -33,31 +33,31 @@ Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`**
 - **Deep Workflow Integration & Quality (14 pts):** Every AI call sits directly inside the case state machine, is audited in `audit_events`, metered per-task in `ai_telemetry` (latency, tokens, USD cost, failure rate), guarded by `app/ai/guardrails.py`, and degrades cleanly via strict `AIProvider` (`live | fake`).
 - **Deliberate Model & Tool Selection (4 pts):** Hybrid TF-IDF+LR over a fine-tuned transformer on 172 samples (generalizes at 0.9444 F1, auditable per-feature); cryptographic HMAC QR + OpenCV over vision-only judgment; Postgres `tsvector` + NumPy cosine over `pgvector`; Deepgram Flux offline MP3s + `edge-tts` over live-only TTS for 2G resilience. Full rationale in [`docs/07-ai-components.md`](docs/07-ai-components.md).
 
-### Category 2 — SaaS Functionality & Technical Architecture (20 pts)
+### Category 2 - SaaS Functionality & Technical Architecture (20 pts)
 - **Complete Multi-Tenant SaaS (8 pts):** 5 roles (`CITIZEN`, `HELPER`, `OFFICER`, `ADMIN`, `AUDITOR`), strict JWT RBAC enforced on every non-public route (automated route-table invariant test), `tenant_id` derived exclusively from JWT (foreign tenant/citizen IDs return `404` to prevent existence leaks), versioned JSON-DSL rules, Officer Queue with four-eyes approval (`403 SAME_OFFICER`) & citizen registry-correction resolution, Admin console (Rules + Digital Twin, Users, Reveal-Once scoped & rate-limited API keys, Mock chaos control, Jobs & Live System Health), and Auditor console (hash-chain verification, consent log, decision trace).
 - **Clean Layered Backend & API (5 pts):** **75 `/api/v1` endpoints** (85 total ops) across 21 modules, Pydantic v2 validation, structured bilingual error codes (`CONSENT_REVOKED`, `INVALID_TRANSITION`, `SAME_OFFICER`, `IDEMPOTENCY_CONFLICT`), `Idempotency-Key` replay/conflict handling, `ETag` conditional GETs, CORS + security headers, proxy-aware rate limiting, and OpenAPI at `/api/docs` & `/api/openapi.json`.
 - **PostgreSQL 16 Data Architecture (4 pts):** 27 application tables + 7 isolated mock tables across 4 linear Alembic migrations; transactional broker-free job queue (`SELECT ... FOR UPDATE SKIP LOCKED` with stale-lock recovery); `pg_advisory_xact_lock`-serialized SHA-256 audit hash chain; generated `tsvector` column; stored tri-state facts; DB-backed idempotency & worker heartbeats.
-- **CI, Testing & Observability (3 pts):** 3-job GitHub Actions CI (`Backend — ruff + pytest` with Postgres 16, `Frontend — typecheck + build + budget`, `Architectural invariants`) — **all 1,162 tests green**; `GET /health`, `GET /metrics` (Prometheus), `GET /api/v1/eval/dashboard` (live AI telemetry by task + guardrail counts), structured JSON logs with `X-Request-ID`, and `docker-compose.yml` with healthchecks.
+- **CI, Testing & Observability (3 pts):** 3-job GitHub Actions CI (`Backend - ruff + pytest` with Postgres 16, `Frontend - typecheck + build + budget`, `Architectural invariants`) - **all 1,162 tests green**; `GET /health`, `GET /metrics` (Prometheus), `GET /api/v1/eval/dashboard` (live AI telemetry by task + guardrail counts), structured JSON logs with `X-Request-ID`, and `docker-compose.yml` with healthchecks.
 
-### Category 3 — Real-World Problem Solving (15 pts)
+### Category 3 - Real-World Problem Solving (15 pts)
 - **Grounded in Sindh's Real Failure Modes (5 pts):** Designed around a widowed woman in Thatta who may not read forms, uses a dropping 2G phone, faces misspelled/missing government records, needs a trusted village helper serving 40 families on one phone, and is targeted by fake relief-payment scams.
-- **Full End-to-End Task Completion (7 pts):** Complete working journeys — not mocked UI slides:
+- **Full End-to-End Task Completion (7 pts):** Complete working journeys - not mocked UI slides:
   - Citizen voice/icon offline application → document upload & CV/QR verification → background DPI lookup → policy evaluation → officer four-eyes review → simulated Raast payout → `HQ-XXXXX` SMS verification → `PAID` (plus free complaint escalation, consent withdrawal/re-grant, and data export/correction).
   - Helper multi-family roster → add new family (OTP or witnessed verbal audio) → zero-leak family switching (cache + IndexedDB wipe) → OTP consent renewal on locked families.
 - **Quantified Practical Impact (3 pts):** At `τ = 0.90` on the 133-case benchmark, **55.6%** of cases auto-approve in **16 ms p50** with **0.0% false approvals** (expected cost **451** vs **2,011** at `τ = 0.50`), freeing officers for the uncertain minority.
 
-### Category 4 — Accessibility & Inclusion (10 pts)
+### Category 4 - Accessibility & Inclusion (10 pts)
 - **Voice & Regional Language Support (4 pts):** **Urdu (`ur`) default + full Sindhi (`sd`, سنڌي) regional support** (lazy-split into a 4.3 KB chunk, 0 KB initial cost) + English (`en`), native RTL with self-hosted `Noto Sans Arabic` (covers Urdu & Sindhi codepoints), 73 pre-recorded Urdu prompts, **voice input on every wizard step + Policy Q&A**, dynamic `edge-tts` readback, and a 1-tap **Auto-Read** header toggle.
 - **Low-Literacy Usability (3 pts):** One question per screen, ≥48 px tap targets (56 px primary), WCAG AA `≥ 5.4:1` contrast, **Approximate Age quick-picker** (`~25 / ~35 / ~45 / ~55 / ~65`), visual **Income Band tier bars**, custom digit pad, readback confirmation (including voice `"I don't know"`), and copyable reference codes everywhere.
 - **Weak Internet & 2G Resilience (3 pts):** **136.0 KB gzipped** initial JS bundle (CI-enforced `≤ 150 KB`), Workbox precache trimmed 61% to **59 entries (1.0 MB)** with lazy `CacheFirst` audio caching, Dexie IndexedDB autosave & outbox preserving `X-Act-For-Citizen` + failed-sync **Retry / Discard** recovery controls, `ETag` 304 responses, and **Lite Mode** that actively pauses background polling and suppresses `.webp` illustrations.
 
-### Category 5 — Safety, Privacy & Reliability (15 pts)
+### Category 5 - Safety, Privacy & Reliability (15 pts)
 - **AI Uncertainty & Human Handoff (5 pts):** Tri-state canonical facts (`KNOWN`/`UNKNOWN` with `missing_reason`), **no `AUTO_REJECT` anywhere** (`PROCESSING → REJECTED` raises `409 INVALID_TRANSITION`), 4-pillar weakest-link confidence (`min`, never average), structured AI handoff notes, `CANNOT_TELL` scam band, `NOT_SURE` RAG abstention, and `WAITING_EXTERNAL` when registries fail.
 - **Privacy, Consent & Data Protection (4 pts):** Per-purpose consent grants with 1-tap withdrawal (`ON_HOLD_CONSENT`, never rejected) and 1-tap re-grant; `enforce_consent()` on every citizen-data read commits denied `consent_access_logs` + `audit_events` in an **isolated DB session before raising `403 CONSENT_REVOKED`**; isolated-session OTP attempt persistence (blocks brute-force rollback) + phone/purpose binding; citizen JSON data export (`/c/my-data`); zero raw PII in logs or auditor traces; 100% synthetic `99900` CNICs.
 - **Explainability & Auditability (3 pts):** Plain-language 3-bullet citizen explanations (Urdu/English, no rule IDs), full officer fact table + rule trace + 4-pillar bottleneck view, and auditor SHA-256 hash chain (`GET /api/v1/auditor/verify-chain` returns exact `first_broken_seq`).
 - **Risk Handling & System Reliability (3 pts):** Chaos-tested mock DPI services (`NORMAL | SLOW | FLAKY | DOWN` + malformed JSON recovery in `MockClient`), `AIProvider` fallback, idempotent offline writes, stale-job lock reclaim, and job post-conditions preventing cases from ever getting stuck in `PROCESSING`.
 
-### Category 6 — Innovation & Creativity (10 pts)
+### Category 6 - Innovation & Creativity (10 pts)
 - **Digital Twin Policy Simulator (`/admin/rules`):** Replays historical decisions against a draft rule version before publishing, displaying exact **flipped cases, budget delta (PKR), and a route-shift transition matrix**.
 - **Interactive Expected-Cost Threshold Explorer (`/staff/eval`):** Live clickable U-curve visualizing the Bayes cost tradeoff across `τ = 0.50..0.95` alongside live per-task AI telemetry and calibrated scam confusion matrix.
 - **4-Pillar Weakest-Link Bottleneck View (`/staff/cases/:id`) & Calibrated Scam Risk Gauge (`/scam-check`):** Turns opaque ML/rule scores into immediate human-verifiable evidence.
@@ -68,13 +68,13 @@ Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`**
 
 ## 2. 3-Minute Judge Walkthrough (Live Demo)
 
-No setup or external phone required — log in with one click on `/login` (`DEMO_MODE=true`):
+No setup or external phone required - log in with one click on `/login` (`DEMO_MODE=true`):
 
 | Minute | Persona / Route | What to Try & What It Proves |
 |---|---|---|
 | **0:00–0:45** | `widow_fatima` → `/c` | Switch **اردو / سنڌي / EN**, toggle **Auto-Read** & **Lite Mode**, open the wizard (`/c/apply/...`), use **🎤 Voice input** or **Approximate Age / Income Bands**, try `"I don't know"`, and test offline submit (queues safely in IndexedDB outbox). |
 | **0:45–1:15** | Public → `/scam-check` | No login needed. Paste a fake fee/PIN SMS, upload a screenshot, or record voice → see the **Calibrated Risk Band Gauge** and red flags. Paste a real `HQ-XXXXX` SMS from `/staff/device-sim` → `VERIFIED_OFFICIAL`; edit the PKR amount by 1 digit → numeric-tampering guard catches the forgery! |
-| **1:15–1:45** | `widow_fatima` → `/c/consent` & `/c/my-data` | Withdraw consent for `helper_ayesha` (or department), switch to `helper_ayesha` and try viewing Fatima → **blocked (`403 CONSENT_REVOKED`)**, then look at Fatima's **Access Log** — the blocked attempt is persisted! Click **Download my data (JSON)** or **Grant access again** to auto-resume held cases. |
+| **1:15–1:45** | `widow_fatima` → `/c/consent` & `/c/my-data` | Withdraw consent for `helper_ayesha` (or department), switch to `helper_ayesha` and try viewing Fatima → **blocked (`403 CONSENT_REVOKED`)**, then look at Fatima's **Access Log**: the blocked attempt is persisted! Click **Download my data (JSON)** or **Grant access again** to auto-resume held cases. |
 | **1:45–2:15** | `officer_sana` → `/staff/queue` & `/staff/cases/:id` | Inspect a `TAMPER_SUSPECTED` / `HIGH` case: see the **4-Pillar Weakest-Link Confidence Breakdown** (bottleneck highlighted), **Rule Trace**, **AI Handoff Note**, and **Agent Steps**. Approve once → moves to `PENDING_SECOND_APPROVAL`; try approving again as Sana → blocked (`403 SAME_OFFICER`) until `officer_imran` records second approval! |
 | **2:15–2:45** | `admin_bilal` → `/admin/rules` & `/staff/eval` | Edit an eligibility rule or threshold and click **Run Digital Twin** → preview flipped citizens, PKR budget delta, and **Route-Shift Transition Matrix** before publishing. Open `/staff/eval` → click thresholds on the **Interactive Cost U-Curve** and inspect **Live AI Telemetry by Task**. |
 | **2:45–3:00** | `auditor_nadia` → `/auditor/events` & `/transparency` | Click **Verify Hash Chain** to prove tamper-evident SHA-256 audit integrity, inspect any full decision trace, and visit `/transparency` for the honest 11-row **Real vs. Simulated** disclosure. |
@@ -97,11 +97,11 @@ No setup or external phone required — log in with one click on `/login` (`DEMO
 
 | # | Challenge | Our engineering answer | Where you see it live |
 |---|---|---|---|
-| **01** | The cost of being wrong | Wrong approval costs **100**, needless review **8**, extra question **5** — router acts alone only above `τ = 0.90`, and **`AUTO_REJECT` does not exist anywhere in the codebase**. | `/staff/eval` (interactive U-curve), `/staff/cases/:id` (four-eyes) |
-| **02** | Saying "I am not sure" | Every uncertain path has a named state — `UNKNOWN` facts, `WAITING_EXTERNAL`, `CANNOT_TELL`, `NOT_SURE`, `POSSIBLE_DUPLICATE_IDENTITY` — handing a structured note to a human instead of guessing. | `/admin/mocks` (registry down → `WAITING_EXTERNAL`), `/scam-check`, `/c/ask` |
+| **01** | The cost of being wrong | Wrong approval costs **100**, needless review **8**, extra question **5**: router acts alone only above `τ = 0.90`, and **`AUTO_REJECT` does not exist anywhere in the codebase**. | `/staff/eval` (interactive U-curve), `/staff/cases/:id` (four-eyes) |
+| **02** | Saying "I am not sure" | Every uncertain path has a named state - `UNKNOWN` facts, `WAITING_EXTERNAL`, `CANNOT_TELL`, `NOT_SURE`, `POSSIBLE_DUPLICATE_IDENTITY` - handing a structured note to a human instead of guessing. | `/admin/mocks` (registry down → `WAITING_EXTERNAL`), `/scam-check`, `/c/ask` |
 | **03** | Bad & misspelled data | Names pass Urdu Unicode normalization, transliteration, honorific stripping, Pakistani phonetic canonicalization (`Muhammad`/`Mohammad`/`Muhammed`), and RapidFuzz; name alone never matches. | `"Mst. Fatima Bibi"` vs `"Fatima Bibi"` in case trace |
 | **04** | Rules that change | Rules live in `rule_versions.rules_json` evaluated by a pure DSL engine; Digital Twin simulates impact first; publishing flips `active_rule_version_id` atomically with zero restart. | `/admin/rules` (publish v2; v1 decisions retain v1 hash) |
-| **05** | Explain and audit | Two views of every decision — 3 plain-language reasons for the citizen, and full trace (input snapshot hash, per-rule trace, 4 confidence pillars, agent timeline) over an append-only SHA-256 chain. | `/c/cases/:id`, `/auditor/events` (Verify Chain) |
+| **05** | Explain and audit | Two views of every decision - 3 plain-language reasons for the citizen, and full trace (input snapshot hash, per-rule trace, 4 confidence pillars, agent timeline) over an append-only SHA-256 chain. | `/c/cases/:id`, `/auditor/events` (Verify Chain) |
 | **06** | Consent and take-back | Single enforcement point `enforce_consent(...)` on every citizen-data read; withdrawal applies immediately, and denied attempts commit in an isolated DB session **before** raising `403`. | `/c/consent` (blocked access log + 1-tap re-grant) |
 | **07** | Works for everyone | Urdu default + Sindhi (`sd`), icon-first wizard, ≥48 px targets, WCAG AA contrast, voice everywhere, Auto-Read, 136 KB bundle, 1.0 MB precache, IndexedDB outbox + Lite Mode. | `/c` (offline submit → replays once via `Idempotency-Key`) |
 | **08** | Scams & fake documents | Official SMS carry `HQ-XXXXX` + `body_sha256` with numeric-tamper guard; documents verified by Laplacian blur + HMAC-signed QR + `ocr_vs_qr` cross-check (`0.00%` false-tamper on genuine cards). | `/scam-check`, `/staff/cases/:id` (`TAMPER_SUSPECTED` HIGH) |
@@ -154,7 +154,7 @@ flowchart TB
     Mocks --> PG
 ```
 
-**LLM proposes, deterministic policy disposes.** Models read documents, transcribe speech, or draft explanations — they never decide eligibility. Eligibility lives in versioned DB rules evaluated by a 100% pure-Python engine (`backend/app/engine/`) with zero database, HTTP, or LLM imports (enforced by CI AST import scanning). If the external LLM provider goes down, applications still get decided accurately; only narration degrades.
+**LLM proposes, deterministic policy disposes.** Models read documents, transcribe speech, or draft explanations - they never decide eligibility. Eligibility lives in versioned DB rules evaluated by a 100% pure-Python engine (`backend/app/engine/`) with zero database, HTTP, or LLM imports (enforced by CI AST import scanning). If the external LLM provider goes down, applications still get decided accurately; only narration degrades.
 
 **Unknown is a first-class value, and nothing is auto-rejected.** Canonical facts are tri-state (`KNOWN` / `UNKNOWN` with `missing_reason`) and never coerced to `0` or `false`. Confidence is the weakest link (`min`) across 4 pillars. The router has no `AUTO_REJECT` action; `PROCESSING → REJECTED` raises `409 INVALID_TRANSITION`, and only a human `OFFICER` can reject with explicit reason codes.
 
@@ -239,15 +239,15 @@ Cost matrix stored in `rule_versions.rules_json.policy.cost_matrix`: Wrong auto-
 
 | Persona key | Role | Tenant | Password login (staff consoles) | Synthetic Phone |
 |---|---|---|---|---|
-| `widow_fatima` | CITIZEN | — | OTP via Device Simulator | `+923001000001` |
-| `shopkeeper_rasool` | CITIZEN | — | OTP via Device Simulator | `+923001000002` |
-| `helper_ayesha` | HELPER | — | `ayesha@helper.mock` / `Demo@2026` | — |
-| `officer_sana` | OFFICER | SPD | `sana@spd.mock` / `Demo@2026` | — |
-| `officer_imran` | OFFICER | SPD | `imran@spd.mock` / `Demo@2026` | — |
-| `admin_bilal` | ADMIN | SPD | `bilal@spd.mock` / `Demo@2026` | — |
-| `admin_platform` | ADMIN | — | `platform@haqdaar.mock` / `Demo@2026` | — |
-| `auditor_nadia` | AUDITOR | — | `nadia@audit.mock` / `Demo@2026` | — |
-| `officer_zakat` | OFFICER | ZWB | `tariq@zwb.mock` / `Demo@2026` | — |
+| `widow_fatima` | CITIZEN | - | OTP via Device Simulator | `+923001000001` |
+| `shopkeeper_rasool` | CITIZEN | - | OTP via Device Simulator | `+923001000002` |
+| `helper_ayesha` | HELPER | - | `ayesha@helper.mock` / `Demo@2026` | - |
+| `officer_sana` | OFFICER | SPD | `sana@spd.mock` / `Demo@2026` | - |
+| `officer_imran` | OFFICER | SPD | `imran@spd.mock` / `Demo@2026` | - |
+| `admin_bilal` | ADMIN | SPD | `bilal@spd.mock` / `Demo@2026` | - |
+| `admin_platform` | ADMIN | - | `platform@haqdaar.mock` / `Demo@2026` | - |
+| `auditor_nadia` | AUDITOR | - | `nadia@audit.mock` / `Demo@2026` | - |
+| `officer_zakat` | OFFICER | ZWB | `tariq@zwb.mock` / `Demo@2026` | - |
 
 Synthetic CNICs: `9990010000012` (Fatima), `9990010000021` (Rasool), `9990010000032` (Ayesha).
 

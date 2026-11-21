@@ -2,7 +2,7 @@
 
 Single source of truth shared by the generator (``app/mocks/doc_generator.py``)
 and the verifier (``app/ai/doc_verify.py``). Keeping it in ``app/ai`` means the
-verifier never imports ``app.mocks`` — the mock world and the AI world agree on
+verifier never imports ``app.mocks`` - the mock world and the AI world agree on
 the wire format, not on each other's internals.
 
 Payload (docs/10 §3.1)::
@@ -17,7 +17,7 @@ Payload (docs/10 §3.1)::
     }
 
 The signature covers ``doc_type``, ``cnic``, ``full_name``, ``dob`` and
-``issuer`` — sorted keys, compact separators, UTF-8. Any edit to a signed field
+``issuer`` - sorted keys, compact separators, UTF-8. Any edit to a signed field
 invalidates the HMAC, which is exactly how a Photoshopped name is caught.
 """
 

@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.models.ai import Notification
 from app.models.enums import NotificationChannel
 
-#: Crockford Base32 — no I, L, O, U, so codes are unambiguous when read aloud.
+#: Crockford Base32 - no I, L, O, U, so codes are unambiguous when read aloud.
 CROCKFORD_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 CODE_LENGTH = 5
 CODE_PREFIX = "HQ-"

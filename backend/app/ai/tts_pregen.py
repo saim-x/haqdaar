@@ -10,7 +10,7 @@ Set ``DEEPGRAM_API_KEY`` in the repository-root ``.env`` and run with network ac
     python -m app.ai.tts_pregen --force    # re-render everything
     python -m app.ai.tts_pregen --manifest-only
 
-``manifest.json`` is written after generation — it is the contract the frontend
+``manifest.json`` is written after generation - it is the contract the frontend
 reads (``{key: text}`` plus metadata). If a render fails the key is marked
 ``pending`` and the frontend uses online or browser speech fallback.
 """

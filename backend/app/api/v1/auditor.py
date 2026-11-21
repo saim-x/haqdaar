@@ -1,4 +1,4 @@
-"""Auditor console — strict read-only (docs/05 §3.8)."""
+"""Auditor console - strict read-only (docs/05 §3.8)."""
 
 from __future__ import annotations
 

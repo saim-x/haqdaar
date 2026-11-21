@@ -1,5 +1,5 @@
 /**
- * Codes that arrive inside simulated SMS bodies — docs/11 §6.5.
+ * Codes that arrive inside simulated SMS bodies - docs/11 §6.5.
  *
  * The mock SMS service puts the OTP in the human-readable body
  * ("Your code is 922231" / "آپ کا کوڈ 922231 ہے") and the HQ verification code
@@ -7,13 +7,13 @@
  * they are extracted once here instead of being re-parsed at each call site.
  */
 
-/** `code is 922231`, `کوڈ 922231` — anchored on the keyword, never a bare run. */
+/** `code is 922231`, `کوڈ 922231` - anchored on the keyword, never a bare run. */
 const OTP_AFTER_KEYWORD = /(?:code|کوڈ)\D{0,16}(\d{6})(?!\d)/i;
 
 /** A 6-digit run that is not part of a longer number. */
 const BARE_SIX_DIGITS = /(?:^|\D)(\d{6})(?!\d)/g;
 
-/** `HQ-6JMZT` — the verification code printed on official notifications. */
+/** `HQ-6JMZT` - the verification code printed on official notifications. */
 const HQ_CODE = /\bHQ-[A-Z0-9]{4,10}\b/;
 
 export interface SmsCodes {

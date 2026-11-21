@@ -5,7 +5,7 @@ import { uuid } from '../lib/uuid';
 import { db, type OutboxRow } from './db';
 
 /**
- * Outbox sync engine — docs/11 §5.3.
+ * Outbox sync engine - docs/11 §5.3.
  *
  *   OfflineAction -> QueuedInOutbox  (persist with Idempotency-Key UUID)
  *   QueuedInOutbox -> Syncing        (window 'online' event or manual Retry)
@@ -133,7 +133,7 @@ function backoffFor(attempts: number): number {
   return OUTBOX_BACKOFF_MS[idx] ?? 30_000;
 }
 
-/** Drain the queue. Safe to call concurrently — only one drain runs at a time. */
+/** Drain the queue. Safe to call concurrently - only one drain runs at a time. */
 export async function drain(): Promise<void> {
   if (draining) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) {

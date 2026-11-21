@@ -110,7 +110,7 @@ def _revisions_to_drop(recorded: list[str], script: Any) -> list[str]:
     A single row is a *position*, not a conflict: ``upgrade heads`` walks forward
     from it and applies only what is missing. Deleting it instead reset the
     database to base, so the next upgrade replayed every migration against tables
-    that already existed — the DuplicateTable storms on stale-but-migrated test
+    that already existed - the DuplicateTable storms on stale-but-migrated test
     databases.
 
     Only genuine multi-row states need collapsing, and then the fix is to keep the
@@ -354,7 +354,7 @@ def auditor_headers(persona_headers: Any) -> dict[str, str]:
 
 @pytest.fixture()
 def other_tenant_officer_headers(persona_headers: Any) -> dict[str, str]:
-    """An officer in a different tenant — used for the 404-not-403 assertions."""
+    """An officer in a different tenant - used for the 404-not-403 assertions."""
     return persona_headers("officer_zakat")
 
 

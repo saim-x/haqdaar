@@ -2,16 +2,16 @@
 
 Four jobs, all pure and dependency-free so they can run before any network call:
 
-1. **Prompt-injection defence** — untrusted text (scam messages, OCR output, RAG
+1. **Prompt-injection defence** - untrusted text (scam messages, OCR output, RAG
    questions) is wrapped in ``<untrusted_input>`` delimiters and scanned for
    instruction-override patterns. Matches are stripped and logged to
    ``audit_events`` as ``ai.guardrail_triggered``; they never influence routing.
-2. **PII minimisation** — 13-digit CNICs are masked to ``[CNIC_REDACTED]``
+2. **PII minimisation** - 13-digit CNICs are masked to ``[CNIC_REDACTED]``
    before any text leaves the process for a live LLM.
-3. **No personal eligibility claims** — RAG answers may never tell a citizen they
+3. **No personal eligibility claims** - RAG answers may never tell a citizen they
    personally qualify or are approved; such sentences are replaced with a safe
    disclaimer.
-4. **No decision authority** — this module never touches ``cases.status`` or
+4. **No decision authority** - this module never touches ``cases.status`` or
    ``payments``; it only shapes text.
 """
 
@@ -41,7 +41,7 @@ SYSTEM_GUARDRAIL = (
 #: Appended to RAG system prompts (docs/07 §4.2).
 RAG_GUARDRAIL = (
     "Answer ONLY from the provided context chunks and cite them as [chunk_id]. "
-    "NEVER tell a user whether they personally qualify or will receive money — "
+    "NEVER tell a user whether they personally qualify or will receive money - "
     "tell them to submit an application so the rules engine can check."
 )
 
@@ -168,7 +168,7 @@ def redact_secrets(text: str) -> str:
     """Mask OTP/PIN values and passwords that appear next to their label.
 
     Official Haqdaar verification codes (``HQ-XXXXX``) are public verification
-    identifiers, not secrets — preserve them so Stage 1 anti-scam code lookup
+    identifiers, not secrets - preserve them so Stage 1 anti-scam code lookup
     never loses an all-digit ``HQ-`` code.
     """
     if not text:

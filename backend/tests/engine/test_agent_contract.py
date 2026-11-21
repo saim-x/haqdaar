@@ -20,7 +20,7 @@ from typing import Any
 import be_stubs
 import pytest
 
-#: docs/07 §7 — the nine steps, in order.
+#: docs/07 §7 - the nine steps, in order.
 EXPECTED_STEPS = (
     "verify_consent",
     "fetch_identity",
@@ -44,7 +44,7 @@ def agent(monkeypatch: pytest.MonkeyPatch) -> Iterator[Any]:
 
 # -- exported entry points ----------------------------------------------
 def test_run_case_agent_signature_is_pinned(agent: Any) -> None:
-    """``run_case_agent(db, case_id, *, correlation_id=None)`` — called by the worker."""
+    """``run_case_agent(db, case_id, *, correlation_id=None)`` - called by the worker."""
     signature = inspect.signature(agent.run_case_agent)
     parameters = list(signature.parameters.values())
     assert [p.name for p in parameters[:2]] == ["db", "case_id"]

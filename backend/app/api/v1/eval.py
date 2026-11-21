@@ -2,13 +2,13 @@
 
 Full-file takeover of BE's stub. One endpoint that merges three independent sources:
 
-1. **Decision-router sweep** — ``engine.eval_sweep`` over the labelled case file
+1. **Decision-router sweep** - ``engine.eval_sweep`` over the labelled case file
    ``backend/app/data/eval_cases.jsonl`` (DPI-owned; read-only here). This is the
    Challenge 01 cost curve, with the knee and the active threshold highlighted.
-2. **Model benchmarks** — ``app.ai.benchmarks.scam_metrics()`` and ``doc_metrics()``
+2. **Model benchmarks** - ``app.ai.benchmarks.scam_metrics()`` and ``doc_metrics()``
    (DPI-owned). Import-guarded: if the module has not merged yet the dashboard still
    returns everything else plus ``benchmarks_available: false``.
-3. **Live operations** — SQL over ``decisions``, ``case_notes`` and ``ai_telemetry``:
+3. **Live operations** - SQL over ``decisions``, ``case_notes`` and ``ai_telemetry``:
    decisions by route, officer override rate, p50/p95 pipeline latency, LLM calls,
    cost and failure rate for the last 24 hours.
 

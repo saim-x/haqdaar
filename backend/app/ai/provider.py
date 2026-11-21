@@ -2,9 +2,9 @@
 
 External AI calls go through an :class:`AIProvider`. Two implementations ship:
 
-* :class:`LiveOpenAIProvider` — OpenAI for structured outputs and embeddings,
+* :class:`LiveOpenAIProvider` - OpenAI for structured outputs and embeddings,
   Deepgram Nova-3 for Urdu transcription and Deepgram Flux for Urdu speech.
-* :class:`FakeDeterministicProvider` — zero network, < 20 ms, deterministic,
+* :class:`FakeDeterministicProvider` - zero network, < 20 ms, deterministic,
   keyed by fixture hashes and keywords. Used by every test and by the circuit
   breaker when the live provider misbehaves.
 
@@ -43,7 +43,7 @@ logger = logging.getLogger("haqdaar.ai.provider")
 PROMPT_VERSION = "v1.0.0"
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-#: USD per 1M tokens (or per minute for Whisper) — used for honest cost reporting.
+#: USD per 1M tokens (or per minute for Whisper) - used for honest cost reporting.
 COST_TABLE: dict[str, tuple[float, float]] = {
     "gpt-4o-mini": (0.15, 0.60),
     "whisper-1": (0.006, 0.0),  # per minute, not per token
@@ -206,7 +206,7 @@ def _emit(
     succeeded: bool = True,
     error_code: str | None = None,
 ) -> None:
-    """Record one AI call. Never raises — telemetry must not break a request."""
+    """Record one AI call. Never raises - telemetry must not break a request."""
     context = _TELEMETRY.get()
     if context is None or context.db is None:
         return
@@ -593,7 +593,7 @@ def _hash_embedding(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
     Delegates to :mod:`app.ai.text_index`, which weights each content word by its
     inverse document frequency over the policy corpus and drops stopwords. A
     question whose content words never appear in the corpus therefore produces a
-    zero vector — which is what lets the RAG abstention gate mean something
+    zero vector - which is what lets the RAG abstention gate mean something
     without a real embedding model.
     """
     from app.ai import text_index
@@ -714,7 +714,7 @@ _STOPWORDS = frozenset(
 
 
 def _topic_words(text: str) -> set[str]:
-    """Content words of ``text`` — the ones that say what it is about."""
+    """Content words of ``text`` - the ones that say what it is about."""
     return {word for word in _WORD.findall(text.lower()) if word not in _STOPWORDS}
 
 
@@ -728,7 +728,7 @@ def _unwrap(text: str) -> str:
     """Join hard-wrapped lines inside a paragraph.
 
     The policy corpus is wrapped at ~80 columns, so splitting on newlines cuts
-    sentences in half — "…widowed women living in the" was a real answer. A
+    sentences in half - "…widowed women living in the" was a real answer. A
     paragraph break is still a break; a single newline is just wrapping.
     """
     paragraphs = re.split(r"\n\s*\n", text)
@@ -745,7 +745,7 @@ def _paragraphs(content: str) -> list[str]:
 
     A paragraph is the unit of quotation, not a sentence. The corpus is written
     as an English paragraph followed by its Urdu counterpart, so a paragraph is
-    already one coherent, single-language statement — quoting one whole is what
+    already one coherent, single-language statement - quoting one whole is what
     makes the answer read like a policy rather than like a search result.
     """
     out: list[str] = []
@@ -855,8 +855,8 @@ def _extractive_answer(
             heading_overlap = len(heading_words & question_words) / (
                 len(question_words) or 1
             )
-            # A section titled with an answer cue — "Required Documents", "Who Is
-            # Eligible", "Payout Schedule and Amount" — is the section that
+            # A section titled with an answer cue - "Required Documents", "Who Is
+            # Eligible", "Payout Schedule and Amount" - is the section that
             # answers that kind of question. This is what separates "Who Is
             # Eligible" from "What This Grant Is Not" when both mention the grant.
             heading_cue_bonus = 1.5 if heading_words & cues else 0.0
@@ -1421,12 +1421,12 @@ class ResilientProvider:
         except ProviderError as exc:
             breaker.record_failure(exc)
             self.fallback_count += 1
-            logger.warning("live AI call %s failed (%s) — falling back to fake", method, exc.code)
+            logger.warning("live AI call %s failed (%s) - falling back to fake", method, exc.code)
             return getattr(self.fake, method)(*args, **kwargs)
         except Exception as exc:  # pragma: no cover - defensive
             breaker.record_failure(ProviderError(str(exc), code="UNEXPECTED"))
             self.fallback_count += 1
-            logger.warning("live AI call %s crashed (%s) — falling back to fake", method, exc)
+            logger.warning("live AI call %s crashed (%s) - falling back to fake", method, exc)
             return getattr(self.fake, method)(*args, **kwargs)
         breaker.record_success()
         return result
@@ -1483,7 +1483,7 @@ def get_provider() -> AIProvider:
 
 
 def get_fake_provider() -> FakeDeterministicProvider:
-    """The fake provider, regardless of mode — used by tests and benchmarks."""
+    """The fake provider, regardless of mode - used by tests and benchmarks."""
     return _FAKE_SINGLETON
 
 

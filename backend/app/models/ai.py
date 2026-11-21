@@ -1,4 +1,4 @@
-"""Notifications, scam checks, RAG store & AI telemetry — docs/04 §4.5."""
+"""Notifications, scam checks, RAG store & AI telemetry - docs/04 §4.5."""
 
 from __future__ import annotations
 

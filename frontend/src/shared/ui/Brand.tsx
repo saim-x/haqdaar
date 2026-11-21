@@ -4,7 +4,7 @@
  * Two static files in `/public/brand`, so neither costs a byte of the 150 KB
  * entry budget and both are precached by the service worker.
  *
- * The mark is language-neutral — a person with an open hand — so it sits next to
+ * The mark is language-neutral - a person with an open hand - so it sits next to
  * the localised name. The lockup carries the Latin wordmark and is only used
  * where the surrounding chrome is Latin: the sign-in page and the staff rail.
  * Putting a Latin wordmark inside an Urdu header would be a script mismatch, so

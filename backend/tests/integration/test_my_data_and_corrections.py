@@ -1,10 +1,10 @@
-"""F-12 — my data and corrections (docs/02 AC-12.1, docs/05 §3.4).
+"""F-12 - my data and corrections (docs/02 AC-12.1, docs/05 §3.4).
 
 Two behaviours matter here and both are easy to get subtly wrong:
 
 * a **self-declared** field is applied immediately (the citizen is the authority on
   their own income), while a **registry-sourced** field can only be queued for an
-  officer — we cannot edit a government registry;
+  officer - we cannot edit a government registry;
 * applying a self-declared correction must re-evaluate any case still being worked
   (AC-12.1), because the corrected fact can flip the outcome. A decided case must
   not be touched, and a queued registry correction must not re-evaluate anything
@@ -120,7 +120,7 @@ def test_my_data_reports_the_household_facts_it_actually_holds(
     """Regression: `/me/data` read `profile_data["household"]`, a nested key the
     seed never writes, so every citizen's household came back `{}`.
 
-    An empty household is not a neutral answer — it reads as "we hold nothing
+    An empty household is not a neutral answer - it reads as "we hold nothing
     about you", which is the opposite of the truth for a seeded citizen. The
     old test only asserted the group *existed*, which an empty dict satisfies.
     """
@@ -128,7 +128,7 @@ def test_my_data_reports_the_household_facts_it_actually_holds(
     assert response.status_code == 200, response.text
 
     household = response.json()["household"]
-    assert household, "household is empty — the flat profile_data keys are not being read"
+    assert household, "household is empty - the flat profile_data keys are not being read"
 
     # widow_fatima is seeded with all four canonical household facts.
     for key in ("children_under_18", "household_size", "monthly_income_pkr", "payout_phone"):
@@ -144,13 +144,13 @@ def test_my_data_reports_the_household_facts_it_actually_holds(
 def test_my_data_states_unknown_rather_than_omitting_it(
     client: Any, persona_headers: Any
 ) -> None:
-    """docs/04 §5 — `UNKNOWN` is a first-class value, and it says why.
+    """docs/04 §5 - `UNKNOWN` is a first-class value, and it says why.
 
     A fact the citizen never supplied must come back as `UNKNOWN` with a
     `missing_reason`, not as a zero, an empty string, or a missing row.
 
     `shopkeeper_rasool` is seeded with no household facts at all, so he is the
-    case that actually exercises the branch — asserting over a citizen who has
+    case that actually exercises the branch - asserting over a citizen who has
     every value would pass without ever reaching an `UNKNOWN`.
     """
     response = client.get("/api/v1/me/data", headers=persona_headers("shopkeeper_rasool"))
@@ -158,7 +158,7 @@ def test_my_data_states_unknown_rather_than_omitting_it(
     body = response.json()
 
     household = body["household"]
-    assert household, "household is empty — the flat profile_data keys are not being read"
+    assert household, "household is empty - the flat profile_data keys are not being read"
 
     unknown = {key: entry for key, entry in household.items() if entry["state"] == "UNKNOWN"}
     assert unknown, "a citizen with no household facts reported none as UNKNOWN"

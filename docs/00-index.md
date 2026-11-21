@@ -1,9 +1,9 @@
-# 00 — Haqdaar Master Planning Index
+# 00 - Haqdaar Master Planning Index
 
-> **Competition:** Coder's Cup 2026 — *The Last Mile: AI on Public Rails* (FAST-NUCES Karachi)
+> **Competition:** Coder's Cup 2026 - *The Last Mile: AI on Public Rails* (FAST-NUCES Karachi)
 > **Build Window:** Fri 20 Nov 2026, 18:00 PKT – Sun 22 Nov 2026, 18:00 PKT · **Live Demo:** Mon 23 Nov 2026
-> **Product:** **Haqdaar (حقدار)** — Multi-tenant AI-assisted public benefit delivery, consent, audit, and anti-scam platform (*Sahara Widow Support Grant* & *Guzara Allowance*, prototype with simulated DPI rails).
-> **Status:** **PLANNING SUITE COMPLETE & FROZEN v1.0** — Ready for parallel multi-agent implementation.
+> **Product:** **Haqdaar (حقدار)**: Multi-tenant AI-assisted public benefit delivery, consent, audit, and anti-scam platform (*Sahara Widow Support Grant* & *Guzara Allowance*, prototype with simulated DPI rails).
+> **Status:** **PLANNING SUITE COMPLETE & FROZEN v1.0**: Ready for parallel multi-agent implementation.
 
 ---
 

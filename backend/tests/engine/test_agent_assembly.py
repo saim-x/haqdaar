@@ -1,7 +1,7 @@
 """Pure fact assembly from mock payloads (docs/07 §7 step 8).
 
 No DB, no HTTP: the case agent fetches, ``assemble_facts`` decides what the evidence
-means. These tests pin the tri-state discipline — a registry that answered "not found"
+means. These tests pin the tri-state discipline - a registry that answered "not found"
 is a KNOWN negative, a registry that was never asked is UNKNOWN.
 """
 

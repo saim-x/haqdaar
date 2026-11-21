@@ -1,4 +1,4 @@
-"""Helper mode — assisted onboarding and consent capture (docs/05 §3.5)."""
+"""Helper mode - assisted onboarding and consent capture (docs/05 §3.5)."""
 
 from __future__ import annotations
 

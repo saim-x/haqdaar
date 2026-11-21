@@ -1,4 +1,4 @@
-"""Program catalogue — docs/05 §3.2."""
+"""Program catalogue - docs/05 §3.2."""
 
 from __future__ import annotations
 

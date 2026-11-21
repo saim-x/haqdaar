@@ -10,7 +10,7 @@ const PKR = new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 });
 
 /** `28000` → `28,000`. Anything that is not a number is passed through. */
 export function pkr(value: number | string | null | undefined): string {
-  if (value === null || value === undefined || value === '') return '—';
+  if (value === null || value === undefined || value === '') return '-';
   const amount = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(amount) ? PKR.format(amount) : String(value);
 }

@@ -6,12 +6,12 @@ program_code: GUZARA_ALLOWANCE
 source_type: POLICY
 language: bilingual
 effective_from: "2026-01-01"
-issuer: Zakat and Welfare Board (Mock) — simulated
+issuer: Zakat and Welfare Board (Mock) - simulated
 ---
 
 # Guzara Allowance Policy
 
-> **MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT.** The Zakat and Welfare Board named
+> **MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT.** The Zakat and Welfare Board named
 > here is a simulated body created for the Haqdaar prototype. No real board,
 > fund, or programme is described.
 

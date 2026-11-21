@@ -4,8 +4,8 @@ These three routes were serving anonymous callers through an optional-auth shim,
 which BE recorded in ``tests/test_invariants.py::AUTH_GAP_ALLOWLIST``. They now
 depend on the real ``app.security.rbac`` guards:
 
-* ``POST /rag/ask`` and ``POST /voice/tts`` — any authenticated caller;
-* ``POST /voice/transcribe-parse`` — ``CITIZEN`` or ``HELPER`` only.
+* ``POST /rag/ask`` and ``POST /voice/tts`` - any authenticated caller;
+* ``POST /voice/transcribe-parse`` - ``CITIZEN`` or ``HELPER`` only.
 
 The tests assert the *gate*, not the feature: an authorised caller may still get
 a 4xx for a malformed body, but never 401/403.

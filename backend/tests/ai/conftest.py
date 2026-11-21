@@ -68,7 +68,7 @@ def _specimen_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     ``app/data/demo_docs`` and ``app/data/doc_eval_set`` are pre-signed artifacts:
     their HMAC is part of their content, so the secret is part of the fixture
     contract, not an ambient setting. The generator signs with
-    ``qr_sign.DEFAULT_QR_SECRET`` — the same value the live stack uses — but the
+    ``qr_sign.DEFAULT_QR_SECRET`` - the same value the live stack uses - but the
     root ``tests/conftest.py`` overrides ``QR_HMAC_SECRET`` for its own QR tests.
     Left alone, that override makes every genuine specimen fail its signature and
     the verifier reports ``TAMPER_SUSPECTED`` for a perfectly good card.

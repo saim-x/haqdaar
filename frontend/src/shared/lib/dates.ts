@@ -8,7 +8,7 @@
  *    browser's ICU build, so the same screen reads differently on two phones.
  * 2. Never let a date sit loose inside a sentence. A date is a run of digits
  *    and month names, and in a right-to-left paragraph the bidi algorithm is
- *    free to reorder the pieces around it — which is how "21 Nov 2026" ends up
+ *    free to reorder the pieces around it - which is how "21 Nov 2026" ends up
  *    reading as "Nov 21 2026". Every formatter here returns a single
  *    self-contained string; call sites wrap it in `<bdi>` so it stays one unit.
  *
@@ -57,20 +57,20 @@ function parse(iso: string | null | undefined): Date | null {
 /** `21 Nov 2026` / `21 نومبر 2026`. */
 export function dayMonth(iso: string | null | undefined, lang: 'ur' | 'sd' | 'en'): string {
   const date = parse(iso);
-  if (!date) return '—';
+  if (!date) return '-';
   return `${date.getDate()} ${MONTHS[lang][date.getMonth()]} ${date.getFullYear()}`;
 }
 
-/** `14:05` — 24-hour, because a log is a record and needs no am/pm guesswork. */
+/** `14:05` - 24-hour, because a log is a record and needs no am/pm guesswork. */
 export function clock(iso: string | null | undefined): string {
   const date = parse(iso);
-  if (!date) return '—';
+  if (!date) return '-';
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 /** `21 Nov · 14:05` / `21 نومبر · 14:05`. */
 export function stamp(iso: string | null | undefined, lang: 'ur' | 'sd' | 'en'): string {
   const date = parse(iso);
-  if (!date) return '—';
+  if (!date) return '-';
   return `${date.getDate()} ${MONTHS[lang][date.getMonth()]} · ${clock(iso)}`;
 }

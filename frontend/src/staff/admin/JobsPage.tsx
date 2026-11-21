@@ -37,7 +37,7 @@ const TONE: Record<string, { dot: string; text: string }> = {
 
 const TONE_FALLBACK = { dot: 'bg-ink-3', text: 'text-ink-2' };
 
-/** Jobs queue — docs/11 §6.2.4. Retry a DEAD job without touching the DB. */
+/** Jobs queue - docs/11 §6.2.4. Retry a DEAD job without touching the DB. */
 export default function JobsPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<JobStatus | ''>('');
@@ -71,7 +71,7 @@ export default function JobsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Jobs"
-        subtitle="Postgres SKIP LOCKED queue — no Redis, no Celery."
+        subtitle="Postgres SKIP LOCKED queue - no Redis, no Celery."
         actions={
           <select
             value={status}
@@ -158,7 +158,7 @@ export default function JobsPage() {
                     })}
                   </td>
                   <td className="max-w-[260px] truncate text-meta text-ink-3">
-                    {job.last_error ?? '—'}
+                    {job.last_error ?? '-'}
                   </td>
                   <td className="text-end">
                     {job.status === 'DEAD' && (

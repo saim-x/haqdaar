@@ -1,4 +1,4 @@
-"""Alembic environment — one metadata, one URL, both from ``app``.
+"""Alembic environment - one metadata, one URL, both from ``app``.
 
 The application tables and the ``mock_*`` tables live in two separate revision
 chains (``app_0001`` and ``dpi_mock_0001``) because two agents own them. Both

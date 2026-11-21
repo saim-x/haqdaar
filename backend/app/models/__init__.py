@@ -1,4 +1,4 @@
-"""ORM model registry — importing this package registers every app table.
+"""ORM model registry - importing this package registers every app table.
 
 ``mock_*`` tables are owned by A3 (``app/mocks/models.py``) and are deliberately
 absent here: application code must never import them (ADR-010).

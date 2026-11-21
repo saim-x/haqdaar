@@ -1,11 +1,11 @@
-# 14 — Coding Agent Playbooks (A1–A7 + Integration Lead)
+# 14 - Coding Agent Playbooks (A1–A7 + Integration Lead)
 
 > **Status:** FROZEN v1.0. Hand each coding agent its exact section below plus `AGENTS.md` and the specific docs listed under **Required Reading**.
 > **Golden Rule:** Never modify files outside your **Owned Paths**. Never invent undocumented schemas, error codes, or endpoints.
 
 ---
 
-## Agent A1 — Core Backend Platform, Security, Consent, Audit & Jobs
+## Agent A1 - Core Backend Platform, Security, Consent, Audit & Jobs
 
 - **Required Reading:** `03-system-architecture.md`, `04-data-model.md`, `05-api-contracts.md`, `09-security-consent-audit.md`.
 - **Owned Paths:** `backend/pyproject.toml`, `backend/alembic.ini`, `backend/alembic/`, `backend/app/main.py`, `backend/app/config.py`, `backend/app/db.py`, `backend/app/models/`, `backend/app/schemas/`, `backend/app/security/`, `backend/app/jobs/`, `backend/app/api/v1/{auth,programs,cases,documents,consent,me,helper,officer,admin_users,admin_keys,admin_jobs,auditor,public,analytics,transparency}.py`.
@@ -23,7 +23,7 @@
 
 ---
 
-## Agent A2 — Pure Decision Engine, Case Agent, Rules & Digital Twin
+## Agent A2 - Pure Decision Engine, Case Agent, Rules & Digital Twin
 
 - **Required Reading:** `04-data-model.md`, `05-api-contracts.md` (§3.6, §3.7, §3.9), `06-decision-engine.md`, `08-responsible-ai-challenges.md`.
 - **Owned Paths:** `backend/app/engine/`, `backend/app/agent/`, `backend/app/api/v1/{admin_rules,eval}.py`, `backend/tests/engine/`.
@@ -37,7 +37,7 @@
 
 ---
 
-## Agent A3 — Simulated DPI Services, Chaos Controls & Synthetic Datasets
+## Agent A3 - Simulated DPI Services, Chaos Controls & Synthetic Datasets
 
 - **Required Reading:** `04-data-model.md` (§4.6), `05-api-contracts.md` (§3.11), `10-mock-services-and-seed-data.md`.
 - **Owned Paths:** `backend/app/mocks/`, `backend/app/api/v1/admin_mocks.py`, `backend/app/data/demo_docs/`, `backend/app/data/doc_eval_set/`, `backend/app/data/eval_cases.jsonl`.
@@ -45,14 +45,14 @@
 - **Deliverables (in order):**
   1. `app/mocks/router.py` implementing all 7 simulated DPI APIs (`/mock/v1/identity/lookup`, `/civil/death-records`, `/household/survey`, `/benefits/active`, `/payments/transfer`, `/payments/{ref}`, `/payments/account-title`, `/complaints`, `/sms/inbox/{phone}`) with `"simulated": true` and chaos middleware reading `mock_service_configs`.
   2. Platform Admin endpoints: `GET/PATCH /api/v1/admin/mocks` and `POST /api/v1/admin/demo/reset` (gated by `DEMO_MODE=true`).
-  3. `app/mocks/doc_generator.py`: generates watermarked (`MOCK SPECIMEN`) CNIC & Death Certificate cards with `HMAC-SHA256` signed QR codes — produces both the 7 demo upload files (`data/demo_docs/`) and the 30-image labelled benchmark (`data/doc_eval_set/` incl. WhatsApp-compressed, blurry, forged-name, missing-QR).
+  3. `app/mocks/doc_generator.py`: generates watermarked (`MOCK SPECIMEN`) CNIC & Death Certificate cards with `HMAC-SHA256` signed QR codes - produces both the 7 demo upload files (`data/demo_docs/`) and the 30-image labelled benchmark (`data/doc_eval_set/` incl. WhatsApp-compressed, blurry, forged-name, missing-QR).
   4. `app/mocks/seed.py`: idempotent deterministic seeder creating 2 tenants (`SPD`, `ZWB`), 2 config-driven programs (`SAHARA_WIDOW_GRANT`, `GUZARA_ALLOWANCE`), all 9 demo personas, Helper Ayesha's 8 families with grants, mock registry records (with realistic spelling drift, duplicates, deceased records, dormant payment alias), 60 historical decided cases for Digital Twin, and the 6 showcase queue cases (`HQ-2026-000101..106`).
   5. `backend/app/data/eval_cases.jsonl`: 120 labelled synthetic cases with independent noise injection for A2's `eval_sweep.py`.
 - **Done Criteria:** `seed.py --reset` runs in < 5 s; zero real personal data (all CNICs start with `99900`); all mock endpoints return `"simulated": true` and respond properly to `NORMAL`/`SLOW`/`FLAKY`/`DOWN`.
 
 ---
 
-## Agent A4 — AI Services (Provider, Voice, CV Doc Verify, Scam, RAG, Guardrails)
+## Agent A4 - AI Services (Provider, Voice, CV Doc Verify, Scam, RAG, Guardrails)
 
 - **Required Reading:** `05-api-contracts.md` (§3.3, §3.9), `07-ai-components.md`, `08-responsible-ai-challenges.md`.
 - **Owned Paths:** `backend/app/ai/`, `backend/app/api/v1/{voice,scam,rag}.py`, `backend/app/data/policy_docs/`, `backend/app/data/scam_dataset.jsonl`, `frontend/public/audio/ur/`, `backend/tests/ai/`.
@@ -68,7 +68,7 @@
 
 ---
 
-## Agent A5 — Citizen & Helper PWA Frontend + Offline Engine
+## Agent A5 - Citizen & Helper PWA Frontend + Offline Engine
 
 - **Required Reading:** `02-product-spec.md`, `05-api-contracts.md`, `11-ux-accessibility-offline.md` (§1–§5).
 - **Owned Paths:** `frontend/package.json`, `frontend/vite.config.ts`, `frontend/index.html`, `frontend/src/main.tsx`, `frontend/src/shared/`, `frontend/src/citizen/`, `frontend/src/helper/`, `frontend/public/icons/`.
@@ -84,7 +84,7 @@
 
 ---
 
-## Agent A6 — Staff Consoles Frontend (Officer, Admin, Auditor, Eval, Demo Ops)
+## Agent A6 - Staff Consoles Frontend (Officer, Admin, Auditor, Eval, Demo Ops)
 
 - **Required Reading:** `02-product-spec.md`, `05-api-contracts.md`, `11-ux-accessibility-offline.md` (§6).
 - **Owned Paths:** `frontend/src/staff/` (lazy-loaded entry exported for A5's router).
@@ -100,7 +100,7 @@
 
 ---
 
-## Agent A7 — QA, Security Verification, DevOps & Demo Ops
+## Agent A7 - QA, Security Verification, DevOps & Demo Ops
 
 - **Required Reading:** `03-system-architecture.md`, `12-execution-plan.md`, `13-testing-and-quality.md`, `15-demo-and-submission.md`.
 - **Owned Paths:** `docker-compose.yml`, `Dockerfile`, `.env.example`, `backend/tests/{test_invariants.py,security/,integration/}`, `frontend/src/e2e/`, `README.md`.

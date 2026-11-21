@@ -151,7 +151,7 @@ def seed_showcase_cases(
         return case_id
 
     # ------------------------------------------------------------------ 101
-    # TAMPER_SUSPECTED — forged CNIC name vs signed QR. URGENT.
+    # TAMPER_SUSPECTED - forged CNIC name vs signed QR. URGENT.
     facts_101 = sd.build_facts(
         cnic_value=sd.FORGED_APPLICANT[1],
         full_name=sd.FORGED_APPLICANT[0],
@@ -197,8 +197,8 @@ def seed_showcase_cases(
             amount=None,
             reasons_en=["Your documents need a quick check by an officer."],
             reasons_ur=["آپ کی دستاویزات کا ایک افسر مختصر جائزہ لے گا۔"],
-            next_en="An officer will review your application — usually within 2 days. You do not need to do anything.",
-            next_ur="ایک افسر آپ کی درخواست کا جائزہ لے گا — عام طور پر 2 دن میں۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
+            next_en="An officer will review your application - usually within 2 days. You do not need to do anything.",
+            next_ur="ایک افسر آپ کی درخواست کا جائزہ لے گا - عام طور پر 2 دن میں۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
         ),
         ai_note={
             "verified": ["Identity registry match for the declared CNIC", "Widow status verified via civil registry"],
@@ -262,7 +262,7 @@ def seed_showcase_cases(
     )
 
     # ------------------------------------------------------------------ 102
-    # DATA_CONFLICT_INCOME — self-declared 24k vs survey 54k. HIGH.
+    # DATA_CONFLICT_INCOME - self-declared 24k vs survey 54k. HIGH.
     facts_102 = sd.build_facts(
         cnic_value=sd.cnic(209),
         full_name="Sakina Bibi",
@@ -317,7 +317,7 @@ def seed_showcase_cases(
     )
 
     # ------------------------------------------------------------------ 103
-    # POSSIBLE_DUPLICATE_IDENTITY — Muhammad / Mohammad Akram, no CNIC. HIGH.
+    # POSSIBLE_DUPLICATE_IDENTITY - Muhammad / Mohammad Akram, no CNIC. HIGH.
     facts_103 = sd.build_facts(
         cnic_value=None,
         full_name="Muhammad Akram",
@@ -379,7 +379,7 @@ def seed_showcase_cases(
     )
 
     # ------------------------------------------------------------------ 104
-    # PAYOUT_ACCOUNT_SHARED — 3 unrelated applicants, one alias. HIGH.
+    # PAYOUT_ACCOUNT_SHARED - 3 unrelated applicants, one alias. HIGH.
     facts_104 = sd.build_facts(
         cnic_value=sd.cnic(401),
         full_name="Nasreen Bibi",
@@ -435,7 +435,7 @@ def seed_showcase_cases(
     )
 
     # ------------------------------------------------------------------ 105
-    # LOW_ASSURANCE_CONSENT — helper verbal consent 0.82 < 0.90. NORMAL.
+    # LOW_ASSURANCE_CONSENT - helper verbal consent 0.82 < 0.90. NORMAL.
     facts_105 = sd.build_facts(
         cnic_value=sd.cnic(214),
         full_name="Shahida Bibi",

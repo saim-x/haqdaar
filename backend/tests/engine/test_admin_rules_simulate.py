@@ -1,8 +1,8 @@
 """Digital Twin API seam: a stored row must never turn a preview into a 500.
 
 ``POST /admin/rules/{id}/simulate`` (docs/05 §3.7) replays historical ``decisions``
-rows. A row written by an older code path — a NULL ``input_snapshot_json``, a partial
-``confidence_components`` — used to raise straight through the endpoint and surface as
+rows. A row written by an older code path - a NULL ``input_snapshot_json``, a partial
+``confidence_components`` - used to raise straight through the endpoint and surface as
 ``500 INTERNAL_ERROR``. The twin engine stays strict (it is a pure function and must
 not silently drop inputs); the API layer is the only place that decides what to skip,
 and it reports the skip in the audit payload.

@@ -1,5 +1,5 @@
 /**
- * Sindhi (سنڌي, RTL) dictionary — regional language support for rural Sindh citizens.
+ * Sindhi (سنڌي, RTL) dictionary - regional language support for rural Sindh citizens.
  *
  * Kept in its own lazy chunk (`i18n-sd`) so the citizen initial JS bundle stays
  * well within the 150 KB gzipped budget. NotoSansArabicUrdu-subset.woff2 already
@@ -11,8 +11,8 @@ export const sd: Partial<Record<DictKey, string>> = {
   'app.name': 'حقدار',
   'app.tagline': 'سهارا بيوه امدادي گرانٽ',
 
-  'banner.text': 'پروٽوٽائپ — هي سرڪاري سروس ناهي. سمورا سڃاڻپ ۽ ادائيگي جا نظام نقلي آهن.',
-  'banner.claim': 'پروٽوٽائپ — هي سرڪاري سروس ناهي.',
+  'banner.text': 'پروٽوٽائپ - هي سرڪاري سروس ناهي. سمورا سڃاڻپ ۽ ادائيگي جا نظام نقلي آهن.',
+  'banner.claim': 'پروٽوٽائپ - هي سرڪاري سروس ناهي.',
   'banner.detail': 'سمورا سڃاڻپ ۽ ادائيگي جا نظام نقلي آهن.',
   'banner.link': 'تفصيل',
   'banner.linkShort': 'تفصيل',
@@ -35,7 +35,7 @@ export const sd: Partial<Record<DictKey, string>> = {
   'common.online': 'آن لائن',
   'common.offline': 'آف لائن',
   'common.syncing': 'موڪليو پيو وڃي…',
-  'common.queued': 'محفوظ — سگنل اچڻ تي موڪليو ويندو',
+  'common.queued': 'محفوظ - سگنل اچڻ تي موڪليو ويندو',
   'common.switchLanguage': 'ٻولي تبديل ڪريو',
   'common.liteMode': 'هلڪو موڊ',
   'common.autoRead': 'پاڻ پڙهي ٻڌايو',
@@ -61,7 +61,7 @@ export const sd: Partial<Record<DictKey, string>> = {
   'login.otp': '6 انگن جو ڪوڊ',
   'login.verify': 'تصديق ڪريو',
   'login.demoTitle': 'پروٽوٽائپ ڊيمو لاگ ان',
-  'login.demoHint': 'ججن لاءِ — هڪ ٽيپ ۾ ڪنهن به ڪردار ۾ داخل ٿيو.',
+  'login.demoHint': 'ججن لاءِ - هڪ ٽيپ ۾ ڪنهن به ڪردار ۾ داخل ٿيو.',
   'login.staffTitle': 'عملي جو لاگ ان',
   'login.email': 'اي ميل',
   'login.password': 'پاسورڊ',
@@ -195,7 +195,7 @@ export const sd: Partial<Record<DictKey, string>> = {
   'consent.withdrawDeptWarning': 'جيڪڏهن کاتي جي اجازت واپس وٺندؤ ته جاري درخواست رڪجي ويندي. ٻيهر اجازت ڏيڻ تي اتي کان شروع ٿيندي.',
   'consent.withdrawDeptConfirm': 'ها، اجازت واپس وٺو ۽ درخواست روڪيو',
   'consent.statusActive': 'فعال',
-  'consent.statusExpired': 'ختم ٿي وئي — نئين ڪريو',
+  'consent.statusExpired': 'ختم ٿي وئي - نئين ڪريو',
   'consent.statusWithdrawn': 'واپس ورتي وئي',
   'consent.empty': 'اڃا ڪنهن کي اجازت ناهي ڏني وئي.',
   'consent.myData': 'منهنجو ڊيٽا',
@@ -215,7 +215,7 @@ export const sd: Partial<Record<DictKey, string>> = {
   'scam.check': 'چيڪ ڪريو',
   'scam.verdict.VERIFIED_OFFICIAL': 'هي اصلي سرڪاري پيغام آهي',
   'scam.verdict.LIKELY_SCAM': 'هي جعلي پيغام لڳي ٿو',
-  'scam.verdict.CANNOT_TELL': 'يقين سان نٿو چئي سگهجي — احتياط ڪريو',
+  'scam.verdict.CANNOT_TELL': 'يقين سان نٿو چئي سگهجي - احتياط ڪريو',
   'scam.verdict.LIKELY_SAFE': 'بظاهر محفوظ لڳي ٿو',
   'scam.redFlags': 'خطري جون نشانيون',
   'scam.matchedCode': 'تصديقي ڪوڊ',
@@ -231,7 +231,7 @@ export const sd: Partial<Record<DictKey, string>> = {
   'helper.addFamily': 'نئون خاندان شامل ڪريو',
   'helper.search': 'نالي سان ڳوليو',
   'helper.consentActive': 'اجازت فعال',
-  'helper.consentExpired': 'اجازت ختم — نئين ڪريو',
+  'helper.consentExpired': 'اجازت ختم - نئين ڪريو',
   'helper.switchTitle': 'توهان هاڻي مدد ڪري رهيا آهيو',
   'helper.switchContinue': 'جاري رکو',
   'helper.consentOtp': 'شهري جي فون تي ڪوڊ موڪليو',

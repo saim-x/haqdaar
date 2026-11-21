@@ -103,7 +103,7 @@ class TwinFlip(BaseModel):
 
 
 class TwinResult(BaseModel):
-    """``simulation_runs.summary_json`` — the Digital Twin preview."""
+    """``simulation_runs.summary_json`` - the Digital Twin preview."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

@@ -1,4 +1,4 @@
-# 04 — Data Model, Database Schema & Canonical Facts
+# 04 - Data Model, Database Schema & Canonical Facts
 
 > **Status:** FROZEN v1.0. Source of truth for PostgreSQL tables, Alembic migrations, enums, case state machine, and canonical fact keys.
 > **Owner:** A1 (migrations & ORM models), A2 (reads/writes via engine schemas), A3 (`mock_*` tables).
@@ -67,11 +67,11 @@ erDiagram
 | `HUMAN_REVIEW` | Unassigned in officer queue ("I am not sure" / flagged) | Officer will check / افسر جانچ کرے گا | `IN_REVIEW`, `ON_HOLD_CONSENT` |
 | `IN_REVIEW` | Assigned to a department officer | Officer is reviewing / افسر جائزہ لے رہا ہے | `APPROVED`, `PENDING_SECOND_APPROVAL`, `REJECTED`, `NEEDS_INFO`, `HUMAN_REVIEW` (unassign/escalate), `ON_HOLD_CONSENT` |
 | `PENDING_SECOND_APPROVAL` | HIGH-risk approval awaits different officer (four-eyes) | Final check in progress / حتمی منظوری جاری ہے | `APPROVED`, `IN_REVIEW` (2nd officer returns), `REJECTED`, `ON_HOLD_CONSENT` |
-| `ON_HOLD_CONSENT` | Citizen withdrew department consent while open | Paused — consent withdrawn / رضامندی واپس لی گئی | Restores `previous_status` on re-grant, or `WITHDRAWN` |
+| `ON_HOLD_CONSENT` | Citizen withdrew department consent while open | Paused - consent withdrawn / رضامندی واپس لی گئی | Restores `previous_status` on re-grant, or `WITHDRAWN` |
 | `APPROVED` | Approved (auto or officer); payment job enqueued | Approved! Sending payment / منظور! رقم بھیجی جا رہی ہے | `PAYMENT_INITIATED`, `CLOSED` (for complaint) |
 | `PAYMENT_INITIATED` | Mock Raast transfer sent | Sending payment / رقم بھیجی جا رہی ہے | `PAID`, `PAYMENT_FAILED` |
 | `PAID` | Payment confirmed completed | Money sent / رقم موصول ہو گئی | `CLOSED` |
-| `PAYMENT_FAILED` | Payment failed after retries; officer alerted | Payment issue — officer notified / ادائیگی میں مسئلہ | `PAYMENT_INITIATED` (retry), `HUMAN_REVIEW`, `CLOSED` |
+| `PAYMENT_FAILED` | Payment failed after retries; officer alerted | Payment issue - officer notified / ادائیگی میں مسئلہ | `PAYMENT_INITIATED` (retry), `HUMAN_REVIEW`, `CLOSED` |
 | `REJECTED` | **Officer-only.** Rejected with reason codes | Not approved (see reasons) / منظور نہیں ہوئی | `CLOSED` |
 | `WITHDRAWN` | Citizen withdrew draft/application | Withdrawn / واپس لے لی گئی | (terminal) |
 | `CLOSED` | Final archived state | Completed / مکمل | (terminal) |
@@ -281,7 +281,7 @@ erDiagram
 | `uploaded_by_user_id` | UUID | NOT NULL FK → `users.id` | |
 | `created_at` | TIMESTAMPTZ | NOT NULL | |
 
-#### `decisions` (APPEND-ONLY — Full Auditor Trace + Citizen Explanation)
+#### `decisions` (APPEND-ONLY - Full Auditor Trace + Citizen Explanation)
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
 | `id` | UUID | PK | |
@@ -369,7 +369,7 @@ erDiagram
 | `snapshot_json` | JSONB | NOT NULL | Categories, purposes, status after event |
 | `created_at` | TIMESTAMPTZ | NOT NULL | |
 
-#### `consent_access_logs` (APPEND-ONLY — Shown to Citizen!)
+#### `consent_access_logs` (APPEND-ONLY - Shown to Citizen!)
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
 | `id` | UUID | PK | |
@@ -461,7 +461,7 @@ erDiagram
 
 #### `rag_documents` & `rag_chunks`
 - `rag_documents`: `id`, `tenant_id` (nullable = global), `program_id` (nullable), `title`, `version`, `source_type` (`POLICY_MD` | `AUTO_RULE_SUMMARY`), `is_active`, `created_at`.
-- `rag_chunks`: `id`, `document_id` (FK), `section_heading`, `chunk_index`, `content`, `tsv` (`TSVECTOR` generated/indexed), `embedding` (`DOUBLE PRECISION[]` — 1536 dims in live mode, 64-dim deterministic hash/TF-IDF vector in fake mode), `created_at`.
+- `rag_chunks`: `id`, `document_id` (FK), `section_heading`, `chunk_index`, `content`, `tsv` (`TSVECTOR` generated/indexed), `embedding` (`DOUBLE PRECISION[]` - 1536 dims in live mode, 64-dim deterministic hash/TF-IDF vector in fake mode), `created_at`.
 
 #### `ai_telemetry`
 | Column | Type | Constraints | Notes |
@@ -514,7 +514,7 @@ erDiagram
 
 ---
 
-### 4.6 Mock Service Tables (`mock_*` — Owned Exclusively by A3)
+### 4.6 Mock Service Tables (`mock_*` - Owned Exclusively by A3)
 
 Stored in the same Postgres DB for atomic reset, accessed **only** by `app/mocks/`:
 - `mock_identities`: `cnic_digits PK`, `full_name`, `full_name_ur`, `father_or_spouse_name`, `dob`, `gender`, `district`, `is_alive`, `cnic_expiry_date`, `marital_status`, `variants_json`

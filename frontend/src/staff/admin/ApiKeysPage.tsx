@@ -9,7 +9,7 @@ import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
 const SCOPES = ['cases:read', 'scam:check', 'rules:read'];
 
 /**
- * Admin API keys — docs/11 §6.2.3. The plaintext key is shown exactly once.
+ * Admin API keys - docs/11 §6.2.3. The plaintext key is shown exactly once.
  *
  * The reveal is a stamped panel, not a green success banner: this is the one
  * moment where a secret is on screen, so it should look like a document you are

@@ -1,4 +1,4 @@
-"""Officer queue, decisions, four-eyes approval and corrections — docs/05 §3.6."""
+"""Officer queue, decisions, four-eyes approval and corrections - docs/05 §3.6."""
 
 from __future__ import annotations
 
@@ -297,7 +297,7 @@ def officer_queue(
     else:
         # Applications wait in the review statuses. A complaint is a short-lived case
         # that the CHECK_COMPLAINT job usually closes on its own, but while it is open
-        # an officer should be able to see it — that is the whole point of filing one.
+        # an officer should be able to see it - that is the whole point of filing one.
         query = query.where(
             or_(
                 Case.status.in_(sorted(QUEUE_STATUSES)),

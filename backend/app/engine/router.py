@@ -102,7 +102,7 @@ def is_known_reason_code(code: str) -> bool:
 
 
 class CaseHandoffNote(BaseModel):
-    """``cases.ai_case_note`` — what the officer sees first (docs/06 §4.3)."""
+    """``cases.ai_case_note`` - what the officer sees first (docs/06 §4.3)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

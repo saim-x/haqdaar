@@ -2,8 +2,8 @@
 
 ``app/api/v1/admin_rules.py`` and ``app/api/v1/eval.py`` cannot be imported until BE's
 ``app.db`` / ``app.models`` / ``app.security.*`` / ``app.jobs.queue`` / ``app.notify``
-land at S1. :mod:`be_stubs` supplies stand-ins so the *surface* — path, method, status
-code, role dependency — is locked against docs/05 §3.7 and §3.9 today, and keeps being
+land at S1. :mod:`be_stubs` supplies stand-ins so the *surface* - path, method, status
+code, role dependency - is locked against docs/05 §3.7 and §3.9 today, and keeps being
 checked after the merge.
 """
 
@@ -17,7 +17,7 @@ import pytest
 from app.engine.eval_sweep import LabelledCase
 from app.engine.router import RouteAction
 
-#: docs/05 §3.7 — the six rule-editor endpoints, verbatim.
+#: docs/05 §3.7 - the six rule-editor endpoints, verbatim.
 EXPECTED_ADMIN_ROUTES = {
     ("GET", "/admin/programs/{program_id}/rules", 200),
     ("POST", "/admin/programs/{program_id}/rules", 201),
@@ -27,7 +27,7 @@ EXPECTED_ADMIN_ROUTES = {
     ("POST", "/admin/rules/{rule_version_id}/publish", 200),
 }
 
-#: docs/05 §3.9 — the evaluation dashboard.
+#: docs/05 §3.9 - the evaluation dashboard.
 EXPECTED_EVAL_ROUTES = {("GET", "/eval/dashboard", 200)}
 
 
@@ -192,7 +192,7 @@ def test_benchmarks_absent_is_reported_not_faked(
 ) -> None:
     """docs/07 §8: a missing DPI module must not invent numbers.
 
-    The seam is ``_import_benchmarks`` — patching ``sys.modules`` for a module that now
+    The seam is ``_import_benchmarks`` - patching ``sys.modules`` for a module that now
     exists would not block the import the endpoint actually performs.
     """
 

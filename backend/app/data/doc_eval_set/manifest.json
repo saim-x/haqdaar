@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-11-20T15:59:35.150256+00:00",
-  "watermark": "MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT",
+  "watermark": "MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT",
   "generator_seed": 20261120,
   "count": 30,
   "label_counts": {
@@ -294,7 +294,7 @@
         "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
       },
       "laplacian_var": 2572.56,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_014_genuine_compressed.jpg",
@@ -316,7 +316,7 @@
         "sig": "eeb1b5d8b38f00fb6642ef5ac55ceb2eb152b627c9a64e78865df1c7b4bdca5b"
       },
       "laplacian_var": 2510.57,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_015_genuine_compressed.jpg",
@@ -338,7 +338,7 @@
         "sig": "2372cd7c14bd7588ae09c207f3d4aa4201ea2a19b46d0ffa6cedac934103d5ed"
       },
       "laplacian_var": 2505.45,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_016_genuine_compressed.jpg",
@@ -360,7 +360,7 @@
         "sig": "91e7ab8105ac4a84d1738e7f1907644cbe3f74976b41909f4af785461a8d1356"
       },
       "laplacian_var": 2578.97,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_017_genuine_compressed.jpg",
@@ -382,7 +382,7 @@
         "sig": "b87554dbb761e7ad419d3d99ed60c081ca201e2254cfd7e8444f8fc2b4ec3231"
       },
       "laplacian_var": 2494.13,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_018_genuine_compressed.jpg",
@@ -404,7 +404,7 @@
         "sig": "8ae03480fc0a1bcbcd892c6a2b8b6bf07f8795da443dc5b6c6a7ac3de3090f4a"
       },
       "laplacian_var": 2511.72,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_019_genuine_compressed.jpg",
@@ -426,7 +426,7 @@
         "sig": "f726794a7bfa5b9865ea1fc17a81165697bca9cdc9065341720172c169a4714d"
       },
       "laplacian_var": 2499.69,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_020_genuine_compressed.jpg",
@@ -448,7 +448,7 @@
         "sig": "86f002ba2dd8e3d9ea7e950a6ea13d0442bf1fde1d3f4a7cf1f372f1dd9529d7"
       },
       "laplacian_var": 2500.81,
-      "notes": "Rotated 3°, JPEG q45, noise — genuine photo of a genuine card."
+      "notes": "Rotated 3°, JPEG q45, noise - genuine photo of a genuine card."
     },
     {
       "file": "eval_021_blurry.jpg",
@@ -470,7 +470,7 @@
         "sig": "67b56025c05ebfd1a5a3537dfe8dc839ed58c5647714d05e77d7fa8fbaba1deb"
       },
       "laplacian_var": 1.15,
-      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+      "notes": "Out-of-focus capture - retake guidance, never a tamper verdict."
     },
     {
       "file": "eval_022_blurry.jpg",
@@ -492,7 +492,7 @@
         "sig": "1ab14f025c4d5422a6a3a80dd4e75aec5507f67e65b0c6f637d85e7b75581ddb"
       },
       "laplacian_var": 1.11,
-      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+      "notes": "Out-of-focus capture - retake guidance, never a tamper verdict."
     },
     {
       "file": "eval_023_blurry.jpg",
@@ -514,7 +514,7 @@
         "sig": "bc69736d63de51aea1f0c01cb86d987b2c79bbc53b7e35cb172d9e1608fe54af"
       },
       "laplacian_var": 1.08,
-      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+      "notes": "Out-of-focus capture - retake guidance, never a tamper verdict."
     },
     {
       "file": "eval_024_blurry.jpg",
@@ -536,7 +536,7 @@
         "sig": "2bdd25cc252880233b14aa389500740c91a7694e7ea00f2ec35896715936513e"
       },
       "laplacian_var": 1.07,
-      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+      "notes": "Out-of-focus capture - retake guidance, never a tamper verdict."
     },
     {
       "file": "eval_025_blurry.jpg",
@@ -558,7 +558,7 @@
         "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
       },
       "laplacian_var": 1.06,
-      "notes": "Out-of-focus capture — retake guidance, never a tamper verdict."
+      "notes": "Out-of-focus capture - retake guidance, never a tamper verdict."
     },
     {
       "file": "eval_026_forged.jpg",

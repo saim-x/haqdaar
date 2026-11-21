@@ -1,4 +1,4 @@
-"""Admin user management — docs/05 §3.7."""
+"""Admin user management - docs/05 §3.7."""
 
 from __future__ import annotations
 

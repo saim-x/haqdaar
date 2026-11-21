@@ -7,7 +7,7 @@ import { ApiError } from '../shared/api/errors';
  * The console is where a decision has to be defensible, so the surfaces are
  * flatter and tighter than the citizen app: hairline rules instead of borders,
  * one type step per role, tabular figures everywhere a number can be compared.
- * Nothing here is filled with colour except a semantic dot — a screen with six
+ * Nothing here is filled with colour except a semantic dot - a screen with six
  * saturated pills has no hierarchy left to spend on the one row that matters.
  */
 
@@ -18,7 +18,7 @@ import { ApiError } from '../shared/api/errors';
  * next screen. The enum stays in the request body; the screen gets English.
  *
  * `humanize` is the fallback for a value the backend adds before this file
- * knows about it — it still reads as a sentence rather than shouting
+ * knows about it - it still reads as a sentence rather than shouting
  * snake_case, and it keeps the acronyms the domain actually uses.
  */
 const ACRONYMS: Record<string, string> = {
@@ -62,7 +62,7 @@ const STATUS_WORD: Record<string, string> = {
   HUMAN_REVIEW: 'Human review',
   IN_REVIEW: 'In review',
   PENDING_SECOND_APPROVAL: 'Second approval',
-  ON_HOLD_CONSENT: 'On hold — consent',
+  ON_HOLD_CONSENT: 'On hold - consent',
   APPROVED: 'Approved',
   PAYMENT_INITIATED: 'Payment initiated',
   PAID: 'Paid',
@@ -122,7 +122,7 @@ const RESULT_WORD: Record<string, string> = {
 };
 
 /**
- * docs/04 §5 — the 20 canonical fact keys, in the officer's vocabulary.
+ * docs/04 §5 - the 20 canonical fact keys, in the officer's vocabulary.
  *
  * `humanize` alone gets most of the way (`applicant_cnic` → "Applicant CNIC")
  * but not all of it: it renders `applicant_dob` as "Applicant dob" and
@@ -173,7 +173,7 @@ const ENTERED_BY_WORD: Record<string, string> = {
   SYSTEM: 'System',
 };
 
-/** docs/06 §2.2 — the complete operator set, as the symbols they mean. */
+/** docs/06 §2.2 - the complete operator set, as the symbols they mean. */
 const OP_WORD: Record<string, string> = {
   eq: '=',
   neq: '≠',
@@ -189,7 +189,7 @@ const OP_WORD: Record<string, string> = {
  * The same operators, spoken. A predicate in a trace is read as a formula
  * (`Monthly income ≤ 25,000`), so it takes the symbol; a rule being authored is
  * read as a sentence (`Operator: is at most`), so it takes the words. One enum,
- * two registers — both live here so they cannot drift apart.
+ * two registers - both live here so they cannot drift apart.
  */
 const OPERATOR_WORD: Record<string, string> = {
   eq: 'equals',
@@ -219,7 +219,7 @@ const FLAG_WORD: Record<string, string> = {
   CNIC_NOT_IN_REGISTRY: 'CNIC not in registry',
 };
 
-/** `agent_steps[].step` — the pipeline stages, in order. */
+/** `agent_steps[].step` - the pipeline stages, in order. */
 const STEP_WORD: Record<string, string> = {
   identity_lookup: 'Identity lookup',
   document_verify: 'Document check',
@@ -379,11 +379,11 @@ export function Chip({
 
 /**
  * Confidence as a 2px track plus the number. The number is the fact; the track
- * is the glance. A null value stays a dash — never a zero-width bar, which would
+ * is the glance. A null value stays a dash - never a zero-width bar, which would
  * read as "confidently wrong".
  */
 export function ConfidenceBar({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-meta text-ink-3">—</span>;
+  if (value === null) return <span className="text-meta text-ink-3">-</span>;
   const pct = Math.round(value * 100);
   const tone = value >= 0.9 ? 'bg-positive' : value >= 0.7 ? 'bg-warn' : 'bg-negative';
   return (

@@ -1,4 +1,4 @@
-"""Consent, data corrections & access logs — docs/04 §4.4."""
+"""Consent, data corrections & access logs - docs/04 §4.4."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ class ConsentEvent(Base, UUIDPrimaryKeyMixin, CreatedAtMixin):
 
 
 class ConsentAccessLog(Base, UUIDPrimaryKeyMixin, CreatedAtMixin):
-    """APPEND-ONLY access log shown to the citizen — allowed *and* denied rows."""
+    """APPEND-ONLY access log shown to the citizen - allowed *and* denied rows."""
 
     __tablename__ = "consent_access_logs"
 

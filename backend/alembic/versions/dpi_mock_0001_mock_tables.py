@@ -2,7 +2,7 @@
 
 These seven tables hold the synthetic government world: identity records, civil
 death records, household surveys, active benefits, payment attempts, complaints
-and the chaos-control state. Every row is fictional — CNICs start with ``99900``.
+and the chaos-control state. Every row is fictional - CNICs start with ``99900``.
 
 **Revision chain.** ``down_revision`` is set to ``None`` because this branch was
 cut before the application schema migration existed. At first merge the

@@ -1,4 +1,4 @@
-/** The 9 seeded demo personas — docs/10 §2. Keys are the `/auth/demo-login` contract. */
+/** The 9 seeded demo personas - docs/10 §2. Keys are the `/auth/demo-login` contract. */
 import type { Role } from '../api/types';
 
 export type PersonaKey =
@@ -70,8 +70,8 @@ export const PERSONAS: Persona[] = [
     role: 'OFFICER',
     name: 'Imran Siddiqui',
     nameUr: 'عمران صدیقی',
-    blurbEn: 'Second officer — four-eyes approver.',
-    blurbUr: 'دوسرے افسر — حتمی منظوری۔',
+    blurbEn: 'Second officer - four-eyes approver.',
+    blurbUr: 'دوسرے افسر - حتمی منظوری۔',
     tenant: 'SPD',
     home: '/staff/queue',
   },
@@ -110,8 +110,8 @@ export const PERSONAS: Persona[] = [
     role: 'OFFICER',
     name: 'Tariq Mehmood',
     nameUr: 'طارق محمود',
-    blurbEn: 'Zakat & Welfare Board — tenant isolation proof.',
-    blurbUr: 'زکوٰۃ اینڈ ویلفیئر بورڈ — ٹیننٹ علیحدگی۔',
+    blurbEn: 'Zakat & Welfare Board - tenant isolation proof.',
+    blurbUr: 'زکوٰۃ اینڈ ویلفیئر بورڈ - ٹیننٹ علیحدگی۔',
     tenant: 'ZWB',
     home: '/staff/queue',
   },

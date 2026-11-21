@@ -24,13 +24,13 @@ function manualChunks(id: string): string | undefined {
   // initial JS bundle stays well below the 150 KB gzipped budget.
   if (norm.includes('/src/shared/i18n/sindhi')) return 'i18n-sd';
   // Shared code is used by the citizen entry AND by every lazy console. Pin it
-  // to its own chunk so Rollup never parks it inside a staff chunk — otherwise
+  // to its own chunk so Rollup never parks it inside a staff chunk - otherwise
   // the entry ends up statically importing `staff-*.js` and the budget gate
   // (correctly) fails.
   if (norm.includes('/src/shared/')) return 'shared';
   // Staff/admin/auditor are NOT named here on purpose. Naming them makes Rollup
   // hoist Vite's shared `__vite__mapDeps` helper into the staff chunk, which the
-  // entry then imports statically — the budget gate catches that as a leak.
+  // entry then imports statically - the budget gate catches that as a leak.
   // Left unnamed, Rollup splits them at the React.lazy() boundary instead.
   return undefined;
 }
@@ -42,7 +42,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.svg', 'icons/*.png'],
       manifest: {
-        name: 'Haqdaar — سہارا امداد',
+        name: 'Haqdaar - سہارا امداد',
         short_name: 'Haqdaar',
         description: 'Prototype: apply for the Sahara Widow Support Grant by voice and pictures.',
         lang: 'ur',
@@ -71,7 +71,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // docs/11 §5.1 — programs list is stable: serve from cache, refresh in background.
+            // docs/11 §5.1 - programs list is stable: serve from cache, refresh in background.
             urlPattern: /\/api\/v1\/programs(\?.*)?$/,
             handler: 'StaleWhileRevalidate',
             options: {
@@ -80,7 +80,7 @@ export default defineConfig({
             },
           },
           {
-            // docs/11 §5.1 — case reads: network first, IndexedDB/Dexie is the deeper fallback.
+            // docs/11 §5.1 - case reads: network first, IndexedDB/Dexie is the deeper fallback.
             urlPattern: /\/api\/v1\/cases(\?.*)?$/,
             handler: 'NetworkFirst',
             options: {

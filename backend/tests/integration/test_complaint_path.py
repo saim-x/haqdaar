@@ -1,4 +1,4 @@
-"""F-09 — the "money not received" complaint path (docs/02 AC-09.3, docs/05 §3.2).
+"""F-09 - the "money not received" complaint path (docs/02 AC-09.3, docs/05 §3.2).
 
 A complaint is only useful if three things happen: the case is linked to the
 application it is about, the payment check is queued exactly once, and somebody

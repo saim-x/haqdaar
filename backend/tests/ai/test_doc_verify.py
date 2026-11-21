@@ -124,7 +124,7 @@ class TestSpecimenSecretContract:
 
     The generator signs with ``qr_sign.DEFAULT_QR_SECRET``, which is also what the
     live stack uses. If anyone regenerates the artifacts under a different secret,
-    every genuine card silently becomes ``TAMPER_SUSPECTED`` — the worst possible
+    every genuine card silently becomes ``TAMPER_SUSPECTED`` - the worst possible
     failure for AC-04.4. These tests make that drift loud.
     """
 
@@ -152,7 +152,7 @@ class TestSpecimenSecretContract:
     def test_a_wrong_secret_is_reported_as_tamper_not_verified(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """The signature check must actually bite — otherwise the guard above is vacuous."""
+        """The signature check must actually bite - otherwise the guard above is vacuous."""
         monkeypatch.setenv("QR_HMAC_SECRET", "a-different-secret-entirely")
         payload = (DEMO_DIR / "fatima_cnic_genuine.jpg").read_bytes()
         result = doc_verify.verify_image(payload)

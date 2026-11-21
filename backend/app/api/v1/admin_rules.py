@@ -21,7 +21,7 @@ Integration assumptions (confirm at S1, all in one place):
 
 Publishing is atomic: the version flips to ``PUBLISHED``, the previous active version
 is ``ARCHIVED``, ``programs.active_rule_version_id`` moves, and ``REINDEX_RAG`` is
-enqueued — all in one transaction, so the next evaluation uses the new rules with no
+enqueued - all in one transaction, so the next evaluation uses the new rules with no
 restart.
 """
 
@@ -190,7 +190,7 @@ def _ruleset_or_422(version: RuleVersion) -> RuleSetSchema:
     """Parse a stored ``rules_json``, reporting a bad row as 422, never a 500.
 
     A version written before a DSL change (or hand-edited in the database) must
-    surface as ``422 RULE_VALIDATION_FAILED`` with ``details.errors`` — the same
+    surface as ``422 RULE_VALIDATION_FAILED`` with ``details.errors`` - the same
     contract publish and validate honour (docs/05 §2).
     """
     report = validate_rules_json(version.rules_json)

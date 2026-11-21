@@ -52,7 +52,7 @@ export function DigitPad({
           className="num min-h-8 flex-1 font-mono text-title-lg font-medium text-ink"
           dir="ltr"
         >
-          {display || <span className="text-ink-3">—</span>}
+          {display || <span className="text-ink-3">-</span>}
         </output>
         <AudioButton audioKey={audioKey} text={audioText} />
       </div>

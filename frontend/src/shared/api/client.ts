@@ -1,5 +1,5 @@
 /**
- * Typed REST client — docs/05 §1.
+ * Typed REST client - docs/05 §1.
  *
  * Responsibilities:
  *  - `Authorization: Bearer <access_jwt>` on every authenticated call
@@ -79,7 +79,7 @@ async function parseError(res: Response): Promise<ApiError> {
       details = payload.error.details ?? {};
     }
   } catch {
-    /* non-JSON error body — keep the status-derived defaults */
+    /* non-JSON error body - keep the status-derived defaults */
   }
   if (code === 'UNKNOWN') {
     if (res.status === 401) code = 'UNAUTHORIZED';

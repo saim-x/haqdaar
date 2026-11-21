@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
- * Wizard progress — docs/11 §3.2, "no dense text, just where am I".
+ * Wizard progress - docs/11 §3.2, "no dense text, just where am I".
  *
  * A continuous hairline track with a fill, not a row of segments. At fourteen
  * steps the segments were 20 px wide with 4 px gaps: a barcode nobody can

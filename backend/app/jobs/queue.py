@@ -1,4 +1,4 @@
-"""PostgreSQL job queue — transactional enqueue + ``SKIP LOCKED`` claim (ADR-004).
+"""PostgreSQL job queue - transactional enqueue + ``SKIP LOCKED`` claim (ADR-004).
 
 No Redis, no Celery: a job is enqueued in the *same* transaction as the mutation
 that needs it, so a committed case submit can never lose its ``PROCESS_CASE`` job.

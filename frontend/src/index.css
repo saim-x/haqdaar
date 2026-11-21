@@ -7,11 +7,11 @@
  * downloads only what a page actually prints and picks the right face per
  * character inside a mixed line.
  *
- * Latin — Instrument Sans. A grotesque with a slightly condensed skeleton and
+ * Latin - Instrument Sans. A grotesque with a slightly condensed skeleton and
  * open apertures; it reads as printed matter rather than as a UI default, which
  * is the register this product wants. Variable, so 400–700 is one file.
  *
- * Urdu — Noto Sans Arabic. Its open letterforms are easier to scan in compact
+ * Urdu - Noto Sans Arabic. Its open letterforms are easier to scan in compact
  * dashboard cards than the taller, layered Nastaliq face. It includes Urdu
  * letters and is subset to the Arabic block plus supplement; Latin text belongs
  * to Instrument Sans. Keep the full script range for citizen names from APIs.
@@ -19,12 +19,12 @@
  * The subset MUST keep the Arabic joining features (`init`/`medi`/`fina`/
  * `isol`). Without them the font still loads and still draws every glyph, but
  * only in its isolated form, so each word renders letter-by-letter. That is a
- * silent failure — nothing errors, the text is just wrong. `build-fonts.py`
+ * silent failure - nothing errors, the text is just wrong. `build-fonts.py`
  * lists them explicitly for this reason.
  *
  * These self-hosted fonts are static assets outside the 150 KB JS budget, and an
  * English-only page still fetches just the Latin face. If a file is missing the
- * system stacks below render close enough that nothing breaks — the fonts are
+ * system stacks below render close enough that nothing breaks - the fonts are
  * an enhancement, never a dependency.
  *
  * Rebuild both with `python scripts/build-fonts.py`.
@@ -82,13 +82,13 @@
     --ink-3: theme('colors.ink.3');
     --rule: theme('colors.raised');
 
-    /* Height of the prototype banner — docs/11 asks for a compact 28 px bar and
+    /* Height of the prototype banner - docs/11 asks for a compact 28 px bar and
        that is what this is, at every width.
 
        docs/11 also pins the full sentence ("… Identity, payment & data services
        are simulated."), which is 96 characters and cannot fit a 390 px phone at
-       12 px in any arrangement. So the bar carries the claim — the part RULE-3
-       actually requires on screen — and the detail clause joins it from `sm` up,
+       12 px in any arrangement. So the bar carries the claim - the part RULE-3
+       actually requires on screen - and the detail clause joins it from `sm` up,
        where there is room. The claim plus the link measures 277 px against 282 px
        available at 390 px, so it holds one line.
 
@@ -168,7 +168,7 @@
   /* Figures: one format, tabular, isolated from the RTL paragraph.
      Only for content that is entirely Latin or numeric. `direction: ltr` is a
      base direction, so putting it on a span that also holds Urdu prose flips
-     the order of the words around the number — "20,000 سے کم" becomes
+     the order of the words around the number - "20,000 سے کم" becomes
      "کم سے 20,000". For a number inside an Urdu sentence use `tabular-nums`
      and let the paragraph's own direction place it. */
   .num {
@@ -180,7 +180,7 @@
 
   /* A date is not a number. `21 نومبر 2026` holds an Urdu word, so forcing a
      Latin base direction on it reorders the pieces into `21 2026 نومبر`. This
-     isolates the run — so the paragraph cannot reorder it either — and keeps
+     isolates the run - so the paragraph cannot reorder it either - and keeps
      the tabular figures, but leaves the base direction to the paragraph. */
   .date {
     unicode-bidi: isolate;
@@ -255,7 +255,7 @@
 
   /* ---- Citizen layout ------------------------------------------------- */
 
-  /* The phone column. It is a PWA, so the column is correct — but on a wide
+  /* The phone column. It is a PWA, so the column is correct - but on a wide
      screen it sits on the paper backdrop inside a hairline frame instead of
      floating in a dead band. */
   .screen {
@@ -357,7 +357,7 @@
   }
 
   /* The stamp. A rotated teal outline seal, used only on a verified or
-     approved state — the one place the product gets to be a government form. */
+     approved state - the one place the product gets to be a government form. */
   .stamp {
     @apply inline-flex items-center gap-1.5 rounded-[6px] border border-accent/45 px-2 py-0.5 text-meta font-medium text-accent-ink;
     transform: rotate(-2deg);

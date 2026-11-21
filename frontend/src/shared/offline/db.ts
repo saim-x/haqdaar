@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type { CaseView, DraftAnswers } from '../api/types';
 
 /**
- * IndexedDB schema — docs/11 §5.2. Three tables, exactly as specified.
+ * IndexedDB schema - docs/11 §5.2. Three tables, exactly as specified.
  *
  * `blobRef` on an outbox row is the row's own id; the compressed image bytes are
  * stored inline on the same row (`blob`) so a queued photo survives a reload
@@ -24,7 +24,7 @@ export interface DraftRow {
 export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
 export interface OutboxRow {
-  /** UUID — doubles as the `Idempotency-Key` header on replay. */
+  /** UUID - doubles as the `Idempotency-Key` header on replay. */
   id: string;
   createdAt: number;
   citizenId: string | null;

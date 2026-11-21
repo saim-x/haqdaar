@@ -1,4 +1,4 @@
-# 09 — Security, RBAC, Multi-Tenancy, Consent & Audit Chain
+# 09 - Security, RBAC, Multi-Tenancy, Consent & Audit Chain
 
 > **Status:** FROZEN v1.0. Source of truth for `backend/app/security/`.
 > **Owner:** A1.
@@ -51,10 +51,10 @@ Enforced via FastAPI dependencies `require_roles(...)` and `require_tenant_scope
 
 ## 3. Multi-Tenant Isolation
 
-- Every tenant-scoped query MUST include `.where(Model.tenant_id == current_user.tenant_id)` derived strictly from the verified JWT/API-key context — **never** from a client-supplied `tenant_id` query/body field.
+- Every tenant-scoped query MUST include `.where(Model.tenant_id == current_user.tenant_id)` derived strictly from the verified JWT/API-key context - **never** from a client-supplied `tenant_id` query/body field.
 - Seeded tenants:
-  1. `SPD`: *Social Protection Department (Mock)* — operates `SAHARA_WIDOW_GRANT`.
-  2. `ZWB`: *Zakat & Welfare Board (Mock)* — operates `GUZARA_ALLOWANCE`.
+  1. `SPD`: *Social Protection Department (Mock)* - operates `SAHARA_WIDOW_GRANT`.
+  2. `ZWB`: *Zakat & Welfare Board (Mock)* - operates `GUZARA_ALLOWANCE`.
 - Automated security test suite verifies that `officer_zakat` cannot view, assign, decide, or list any `SPD` case, rule, document, or analytics metric.
 
 ---
@@ -113,7 +113,7 @@ def enforce_consent(
     return grant
 ```
 
-> **Implementation Pitfall Prevented:** Notice the comment on persisting the denied access log! If an endpoint raises HTTP 403 and rolls back the request's DB session, a naive implementation would roll back the `consent_access_logs` row too! A1 MUST write the denied `consent_access_logs` + `audit_events` row in an isolated session (`SessionLocal()`) before raising `ConsentRevokedError`, guaranteeing the citizen immediately sees *"Ayesha tried to view your documents at 15:40 — Blocked"*!
+> **Implementation Pitfall Prevented:** Notice the comment on persisting the denied access log! If an endpoint raises HTTP 403 and rolls back the request's DB session, a naive implementation would roll back the `consent_access_logs` row too! A1 MUST write the denied `consent_access_logs` + `audit_events` row in an isolated session (`SessionLocal()`) before raising `ConsentRevokedError`, guaranteeing the citizen immediately sees *"Ayesha tried to view your documents at 15:40 - Blocked"*!
 
 ### 4.2 Withdrawal Side Effects
 When a citizen calls `POST /api/v1/consent/grants/{id}/withdraw`:

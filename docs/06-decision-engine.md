@@ -1,4 +1,4 @@
-# 06 — Decision Engine, Rules DSL, Confidence & Entity Resolution
+# 06 - Decision Engine, Rules DSL, Confidence & Entity Resolution
 
 > **Status:** FROZEN v1.0. Source of truth for `backend/app/engine/` and `backend/app/agent/`.
 > **Owner:** A2.
@@ -14,7 +14,7 @@ Therefore, Haqdaar splits cognition from decisioning:
 1. **Evidence & Extraction Layer (Mock APIs + AI):** Produces structured facts with provenance and measurable verification scores.
 2. **Entity Resolution & Anomaly Layer (`engine/entity_resolution.py`, `engine/anomalies.py`):** Resolves messy names/records without guessing and raises typed risk flags.
 3. **Versioned Rules Evaluator (`engine/evaluator.py`):** Evaluates eligibility with **tri-state Kleene logic** (`PASS`, `FAIL`, `UNKNOWN`).
-4. **Confidence & Cost-Aware Router (`engine/confidence.py`, `engine/router.py`):** Computes weakest-link confidence from evidence quality, applies the cost matrix, and outputs `AUTO_APPROVE`, `ASK_MORE`, `HUMAN_REVIEW`, or `WAIT_EXTERNAL` — **never `AUTO_REJECT`**.
+4. **Confidence & Cost-Aware Router (`engine/confidence.py`, `engine/router.py`):** Computes weakest-link confidence from evidence quality, applies the cost matrix, and outputs `AUTO_APPROVE`, `ASK_MORE`, `HUMAN_REVIEW`, or `WAIT_EXTERNAL` - **never `AUTO_REJECT`**.
 5. **Deterministic Explainer (`engine/explainer.py`):** Generates plain-language Urdu + English citizen reasons directly from the rule trace.
 
 ---
@@ -223,7 +223,7 @@ For Fatima Bibi (3 children, Sahara v1): `12,000 + 3 * 1,000 = PKR 15,000`.
 ## 3. Confidence Model & Cost-of-Being-Wrong Mathematics (Challenge 01)
 
 ### 3.1 Why Weakest-Link Confidence (Not Averaging)
-Averaging hides catastrophic single-point failure: if identity match is `0.99`, documents are `0.98`, consent is `1.00`, and data consistency is `0.40` (income conflict), the mean is `0.84` — dangerously high. **Weakest-link (`min`)** exposes the weakest pillar immediately.
+Averaging hides catastrophic single-point failure: if identity match is `0.99`, documents are `0.98`, consent is `1.00`, and data consistency is `0.40` (income conflict), the mean is `0.84` - dangerously high. **Weakest-link (`min`)** exposes the weakest pillar immediately.
 
 ### 3.2 Four Evidence Pillars (all in `[0.0, 1.0]`)
 1. **`identity_confidence`**:
@@ -245,7 +245,7 @@ Averaging hides catastrophic single-point failure: if identity match is `0.99`, 
    - Each `HIGH` flag (duplicate app, applicant deceased, shared payout, tamper, identity conflict) caps pillar at `0.20`.
 4. **`consent_assurance_confidence`**:
    - `SELF_OTP` or `CITIZEN_OTP` → `1.00`.
-   - `VERBAL_WITNESSED` (helper verbal consent without citizen's own phone OTP) → `0.82` (caps overall confidence below `0.90`, meaning verbal-consent cases are **always** reviewed by an officer before money moves — a high-judgment safeguard!).
+   - `VERBAL_WITNESSED` (helper verbal consent without citizen's own phone OTP) → `0.82` (caps overall confidence below `0.90`, meaning verbal-consent cases are **always** reviewed by an officer before money moves - a high-judgment safeguard!).
 
 **Overall Confidence:**
 ```python
@@ -259,8 +259,8 @@ confidence_overall = round(min(
 
 ### 3.3 The Cost Matrix & Threshold Justification
 Let:
-- $C_{\text{FP}} = 100$ — cost of a **wrong auto-approval** (direct loss of public funds + reputational harm + recovery difficulty).
-- $C_{\text{HR}} = 8$ — cost of an **unnecessary human review** (officer minutes + ~1–2 day delay for an eligible widow).
+- $C_{\text{FP}} = 100$ - cost of a **wrong auto-approval** (direct loss of public funds + reputational harm + recovery difficulty).
+- $C_{\text{HR}} = 8$ - cost of an **unnecessary human review** (officer minutes + ~1–2 day delay for an eligible widow).
 
 By Bayes decision theory, auto-approving a case with true validity probability $p$ has lower expected cost than human review if and only if:
 $$(1 - p) \cdot C_{\text{FP}} < C_{\text{HR}} \implies p > 1 - \frac{C_{\text{HR}}}{C_{\text{FP}}} = 1 - \frac{8}{100} = 0.92$$
@@ -347,7 +347,7 @@ Every `HUMAN_REVIEW` route automatically populates:
 
 ---
 
-## 5. Entity Resolution & Bad Data Engine (`engine/entity_resolution.py` — Challenge 03)
+## 5. Entity Resolution & Bad Data Engine (`engine/entity_resolution.py` - Challenge 03)
 
 Real Pakistani public records contain rampant spelling drift (`Muhammad`/`Mohammad`/`Muhammed`/`Mohd`/`M.`, `Bibi`/`Bano`, prefixes `Mst.`/`Syed`/`Haji`/`Smt.`, Urdu script `فاطمہ بی بی` vs Roman `Fatima Bibi`), missing DOBs, and duplicate entries.
 
@@ -365,12 +365,12 @@ Real Pakistani public records contain rampant spelling drift (`Muhammad`/`Mohamm
 4. **Similarity Metric:** `name_sim = max(jaro_winkler(canon_a, canon_b), token_set_ratio(canon_a, canon_b) / 100.0)` using `rapidfuzz`.
 
 ### 5.2 Record Matching Rules (Never Match on Name Alone!)
-- **Case A — CNIC provided (13 digits):** Lookup by exact `cnic_digits`.
+- **Case A - CNIC provided (13 digits):** Lookup by exact `cnic_digits`.
   - Found + `name_sim >= 0.70` → **MATCH** (`0.98` if ≥ 0.85, `0.93` if 0.70–0.84; logs spelling variant transparently).
   - Found + `0.55 <= name_sim < 0.70` → **SOFT MATCH** (`0.75`, flags `IDENTITY_NAME_VARIANT_CHECK` MEDIUM → human review).
   - Found + `name_sim < 0.55` → **CONFLICT** (`0.30`, flags `IDENTITY_CONFLICT` HIGH → human review, **never merges**).
   - Not found → **NO MATCH** (`0.25`, flags `CNIC_NOT_IN_REGISTRY` HIGH → human review).
-- **Case B — CNIC missing:** Search by normalized name + district.
+- **Case B - CNIC missing:** Search by normalized name + district.
   - 0 candidates → `UNKNOWN` (`ASK_MORE` for CNIC).
   - 1 candidate with `name_sim >= 0.88` AND DOB year within ±1 year → **PROVISIONAL MATCH** (`0.78`, never auto-approves; asks for CNIC or sends to human).
   - ≥ 2 candidates → **AMBIGUOUS** (`0.25`, flags `POSSIBLE_DUPLICATE_IDENTITY` HIGH → human review; **never picks one silently**).
@@ -415,6 +415,6 @@ Given `baseline_rules`, `candidate_rules`, and a list of historical `decisions` 
 Builds `citizen_explanation` directly from `rule_trace_json` and `route_action` (works even if LLM API is completely down):
 - **APPROVED:** Headline with PKR amount + top 3 passing rule reasons (`pass_reason_ur` / `pass_reason_en`) + payment next step.
 - **NEEDS_INFO:** Plain headline ("We need one more thing") + exact `ask_prompt_ur`/`ask_prompt_en` for the missing/failed items.
-- **HUMAN_REVIEW:** Neutral, non-accusatory headline ("An officer will review your application — usually within 2 days. You do not need to do anything.") — **NEVER accuses a citizen of forgery or fraud**, even when `TAMPER_SUSPECTED` is flagged internally for the officer!
+- **HUMAN_REVIEW:** Neutral, non-accusatory headline ("An officer will review your application - usually within 2 days. You do not need to do anything.") - **NEVER accuses a citizen of forgery or fraud**, even when `TAMPER_SUSPECTED` is flagged internally for the officer!
 - **WAITING_EXTERNAL:** "A government verification system is temporarily slow. We saved everything and will continue automatically."
 - Optional live LLM polish (`AI_PROVIDER=live`) may rephrase for natural Urdu flow, strictly bounded by a guardrail check confirming the PKR amount and outcome word were not altered; on any guardrail or API failure, falls back silently to the deterministic template.

@@ -2,7 +2,7 @@
 
 FE is the consumer, so FE's call sites define the key names. This module reads
 ``frontend/src`` and asserts that every key the UI asks for exists in the
-manifest — the failure ADR-018 was written to prevent was two agents inventing
+manifest - the failure ADR-018 was written to prevent was two agents inventing
 disjoint names, which would have made every prompt a silent no-op.
 
 The manifest is also checked for its pinned shape: a flat ``{key: text}`` map

@@ -15,7 +15,7 @@ interface CopyCodeProps {
 
 /**
  * A code is a figure, not a badge. It sits in mono with tabular figures on a
- * raised surface, and the copy affordance is the icon — so the chip stays quiet
+ * raised surface, and the copy affordance is the icon - so the chip stays quiet
  * and the code itself is the thing you read.
  */
 const TONES: Record<Tone, string> = {
@@ -26,11 +26,11 @@ const TONES: Record<Tone, string> = {
 };
 
 /**
- * Tap-to-copy code chip — docs/11 §6.5.
+ * Tap-to-copy code chip - docs/11 §6.5.
  *
  * The device simulator is how a judge drives the demo, so every code it shows
  * (OTP, HQ verification code, API key) must be one tap from the clipboard with a
- * visible confirmation. Works offline — the clipboard is local — and when the
+ * visible confirmation. Works offline - the clipboard is local - and when the
  * async Clipboard API is unavailable (insecure context, denied permission) it
  * falls back to a selection + `execCommand('copy')`, so the affordance never
  * silently does nothing.
@@ -99,7 +99,7 @@ export function CopyCode({ value, label, tone = 'teal', size = 'sm', className =
       {label && <span className="text-ink-3">{label}</span>}
       <span className="num font-mono">{value}</span>
       <span className="sr-only" aria-live="polite">
-        {copied ? 'Copied to clipboard' : manual ? 'Copy failed — select the code and press Control C' : ''}
+        {copied ? 'Copied to clipboard' : manual ? 'Copy failed - select the code and press Control C' : ''}
       </span>
     </button>
   );

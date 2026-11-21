@@ -77,7 +77,7 @@ function fieldLabel(key: string, lang: Lang): string {
 /**
  * Why a value is `UNKNOWN`, in the citizen's words. The backend states the
  * reason rather than leaving the client to guess, so "we do not know" can say
- * *which* kind of not-knowing it is — "you have not told us" is a different
+ * *which* kind of not-knowing it is - "you have not told us" is a different
  * message from "a government service was down", and only one of them is the
  * citizen's to act on.
  */
@@ -93,7 +93,7 @@ const MISSING_LABEL: Record<MissingReason, DictKey> = {
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function fieldValue(value: MyDataValue['value'], lang: Lang): string {
-  if (value === null || value === '') return '—';
+  if (value === null || value === '') return '-';
   const text = String(value);
   return ISO_DATE.test(text) ? dayMonth(text, lang) : text;
 }
@@ -106,7 +106,7 @@ interface Group {
 }
 
 /**
- * My Data — docs/11 §3.3, F-11.
+ * My Data - docs/11 §3.3, F-11.
  *
  * Every field carries its provenance so a citizen can see whether a value came
  * from her own mouth or from a government registry, and can ask for a correction
@@ -292,7 +292,7 @@ export function MyDataPage() {
                         <span className="block text-meta text-ink-3">{label}</span>
                         {/* An unknown value has no provenance to report. The
                             old row printed "Registry" for it, because a null
-                            source is not SELF_DECLARED — so a field nobody had
+                            source is not SELF_DECLARED - so a field nobody had
                             answered claimed to come from a government record.
                             Unknown is a first-class value here: say so. */}
                         {unknown ? (
@@ -421,7 +421,7 @@ export function MyDataPage() {
               />
             </div>
             <p className="num mt-0.5 font-mono text-caption text-ink-3">
-              {t('data.currentlySaved')}: {correcting.current || '—'}
+              {t('data.currentlySaved')}: {correcting.current || '-'}
             </p>
 
             <label htmlFor="correction-value" className="mt-4 block text-caption font-medium text-ink">

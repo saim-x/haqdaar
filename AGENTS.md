@@ -1,4 +1,4 @@
-# AGENTS.md — Haqdaar Engineering Charter (Coder's Cup 2026)
+# AGENTS.md - Haqdaar Engineering Charter (Coder's Cup 2026)
 
 > **STOP AND READ BEFORE WRITING A SINGLE LINE OF CODE.**
 > The complete, frozen architectural blueprint lives in [`docs/00-index.md`](docs/00-index.md). Find your assigned agent playbook (A1–A7) in [`docs/14-agent-playbooks.md`](docs/14-agent-playbooks.md).
@@ -25,7 +25,7 @@
 2. **NEVER AUTO-REJECT.** There is NO `AUTO_REJECT` route action. Transition `PROCESSING -> REJECTED` MUST raise `409 INVALID_TRANSITION`. Only an `OFFICER` can reject.
 3. **Unknown is a first-class value.** Canonical facts ([`docs/04-data-model.md §5`](docs/04-data-model.md)) are tri-state (`KNOWN` / `UNKNOWN`). Never substitute default values for missing fields.
 4. **Strict Mock HTTP Boundary.** `app/api/`, `app/engine/`, and `app/agent/` MUST NEVER import `app/mocks/models.py` or query `mock_*` tables directly. Always call `MOCK_BASE_URL` via `httpx`.
-5. **Server-Side Authority Only.** Every endpoint enforces JWT RBAC, derives `tenant_id` exclusively from the token (returns `404` for foreign tenant/citizen IDs — never `403` existence leaks), and calls `enforce_consent(...)` on every citizen-data read.
+5. **Server-Side Authority Only.** Every endpoint enforces JWT RBAC, derives `tenant_id` exclusively from the token (returns `404` for foreign tenant/citizen IDs - never `403` existence leaks), and calls `enforce_consent(...)` on every citizen-data read.
 6. **Persist Denied Consent Attempts.** `enforce_consent()` MUST commit denied `consent_access_logs` + `audit_events` rows in an isolated DB session BEFORE raising `403 CONSENT_REVOKED`, so request rollbacks never erase the blocked-access log.
 7. **Hash-Chained Audit Everything.** Every state mutation and AI/agent step calls `audit.record(db, ...)` inside the same transaction. Never log raw 13-digit CNICs, OTPs, passwords, or JWTs.
 8. **Idempotent Offline Mutations.** Citizen/Helper write endpoints honour `Idempotency-Key` (replays return cached response; payload mismatch returns `409 IDEMPOTENCY_CONFLICT`).

@@ -6,12 +6,12 @@ program_code: null
 source_type: POLICY
 language: bilingual
 effective_from: "2026-01-01"
-issuer: Social Protection Department (Sindh) — simulated
+issuer: Social Protection Department (Sindh) - simulated
 ---
 
 # Consent and Privacy Rights
 
-> **MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT.** This text is synthetic and exists
+> **MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT.** This text is synthetic and exists
 > only to demonstrate the Haqdaar prototype. It is not legal advice.
 
 ## 1. Your Data Belongs to You
@@ -31,10 +31,10 @@ purpose lasts. Every read is written into an access log that you can ask to see.
 Before an application starts, you are asked to grant consent for three separate
 things:
 
-1. **IDENTITY** — reading your civil identity record to confirm your name, CNIC,
+1. **IDENTITY**: reading your civil identity record to confirm your name, CNIC,
    date of birth, and whether the record is active.
-2. **HOUSEHOLD** — reading your household survey to see income and poverty score.
-3. **DOCUMENTS** — reading the documents you upload so they can be verified.
+2. **HOUSEHOLD**: reading your household survey to see income and poverty score.
+3. **DOCUMENTS**: reading the documents you upload so they can be verified.
 
 Each consent is granted separately and can be withdrawn separately. Agreeing to
 one does not imply agreement to the others. The consent screen is read aloud in
@@ -76,12 +76,12 @@ debt.
 
 If a system or an officer tries to read your data after you have withdrawn
 consent, the read is blocked. The blocked attempt is still written into the
-access log — including who tried, when, and which purpose they claimed — so that
+access log - including who tried, when, and which purpose they claimed - so that
 the refusal itself is auditable. You can ask to see those blocked attempts.
 
 اگر آپ اجازت واپس لینے کے بعد کوئی نظام یا افسر آپ کا ڈیٹا پڑھنے کی کوشش کرے تو وہ
-کوشش روک دی جاتی ہے۔ روکی گئی کوشش پھر بھی ریکارڈ میں لکھی جاتی ہے — کس نے کوشش کی،
-کب کی، اور کس مقصد کے لیے — تاکہ انکار خود بھی قابلِ جانچ رہے۔ آپ ان کوششوں کو دیکھنے
+کوشش روک دی جاتی ہے۔ روکی گئی کوشش پھر بھی ریکارڈ میں لکھی جاتی ہے - کس نے کوشش کی،
+کب کی، اور کس مقصد کے لیے - تاکہ انکار خود بھی قابلِ جانچ رہے۔ آپ ان کوششوں کو دیکھنے
 کی درخواست کر سکتی ہیں۔
 
 ## 6. Helpers and Their Limits

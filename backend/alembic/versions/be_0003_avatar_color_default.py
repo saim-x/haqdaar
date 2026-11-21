@@ -3,7 +3,7 @@
 The column default was ``#0F766E`` (Tailwind ``teal-700``). The UI accent moved to
 ``#0E6A60`` when the palette was retuned, so every citizen row created without an
 explicit colour would have carried a teal that no longer appears anywhere in the
-design system — a seeded avatar that is subtly the wrong green next to every
+design system - a seeded avatar that is subtly the wrong green next to every
 button on the screen.
 
 The seed always passes ``avatar_color`` explicitly, so this changes no existing

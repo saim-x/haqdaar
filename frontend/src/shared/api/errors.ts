@@ -1,4 +1,4 @@
-/** Error codes — docs/05 §2. Never invent a code outside this union. */
+/** Error codes - docs/05 §2. Never invent a code outside this union. */
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'UNAUTHORIZED'

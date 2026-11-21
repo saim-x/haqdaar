@@ -41,7 +41,7 @@ _PUNCT_MAP = {
 #: the 0.80 cross-check.
 #:
 #: Deliberately narrow: ``ئ``, ``ؤ``, ``آ`` and ``أ`` are distinct Urdu letters,
-#: not variants. Folding them corrupts real words — "اٹھائیس" (28) and "آٹھ" (8)
+#: not variants. Folding them corrupts real words - "اٹھائیس" (28) and "آٹھ" (8)
 #: both stop parsing.
 _LETTER_MAP = {
     ord("ي"): "ی",  # Arabic yeh -> Urdu yeh
@@ -375,7 +375,7 @@ ROMAN_SCALES: dict[str, int] = {
     "k": 1_000,
 }
 
-#: Words that mean "I do not know" — mapped to ``USER_UNKNOWN``, never to 0.
+#: Words that mean "I do not know" - mapped to ``USER_UNKNOWN``, never to 0.
 UNKNOWN_MARKERS: tuple[str, ...] = (
     "نہیں معلوم",
     "نہیں پتہ",

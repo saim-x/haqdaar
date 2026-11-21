@@ -1,4 +1,4 @@
-"""Cases, facts, documents, decisions, notes & payments — docs/04 §4.3."""
+"""Cases, facts, documents, decisions, notes & payments - docs/04 §4.3."""
 
 from __future__ import annotations
 

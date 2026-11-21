@@ -1,4 +1,4 @@
-"""Citizen & helper case lifecycle — docs/05 §3.2, state machine docs/04 §3.3."""
+"""Citizen & helper case lifecycle - docs/05 §3.2, state machine docs/04 §3.3."""
 
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ _STATUS_TIMELINE_LABELS: dict[str, tuple[str, str]] = {
     CaseStatus.REJECTED.value: ("Not approved", "منظور نہیں ہوئی"),
     CaseStatus.WITHDRAWN.value: ("Withdrawn", "واپس لی گئی"),
     CaseStatus.CLOSED.value: ("Completed", "مکمل"),
-    CaseStatus.ON_HOLD_CONSENT.value: ("Paused — consent withdrawn", "رضامندی واپس لی گئی"),
+    CaseStatus.ON_HOLD_CONSENT.value: ("Paused - consent withdrawn", "رضامندی واپس لی گئی"),
 }
 
 
@@ -907,11 +907,11 @@ def _notify_complaint(
             title_en="New payment complaint",
             title_ur="نئی ادائیگی شکایت",
             body_en=(
-                f"{complaint.reference_code} — money not received on "
+                f"{complaint.reference_code} - money not received on "
                 f"{parent.reference_code} ({reason}). The payment check is queued."
             ),
             body_ur=(
-                f"{complaint.reference_code} — {parent.reference_code} کی رقم موصول نہیں ہوئی۔ "
+                f"{complaint.reference_code} - {parent.reference_code} کی رقم موصول نہیں ہوئی۔ "
                 "ادائیگی کی جانچ قطار میں ہے۔"
             ),
             user_id=officer.id,

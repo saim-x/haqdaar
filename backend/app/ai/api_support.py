@@ -4,7 +4,7 @@ The backend owns authentication, the DB session dependency and the audit writer.
 Those modules land in A1's sprint, so every import here is defensive: when the
 real dependency exists it is used verbatim; when it does not, a minimal
 stand-in keeps the routers importable and the test suite green. Nothing in this
-module makes an authorisation decision on its own — it only forwards to A1's
+module makes an authorisation decision on its own - it only forwards to A1's
 implementation the moment it appears.
 """
 
@@ -156,8 +156,8 @@ def record_audit(
 ) -> None:
     """Write an audit event through A1's hash-chained writer when present.
 
-    The signature mirrors ``app.security.audit.record`` exactly — including the
-    ``payload`` keyword (not ``payload_json``, which is the column name) — so this
+    The signature mirrors ``app.security.audit.record`` exactly - including the
+    ``payload`` keyword (not ``payload_json``, which is the column name) - so this
     shim binds to the real implementation at S1 with zero rework.
     """
     if db is None:

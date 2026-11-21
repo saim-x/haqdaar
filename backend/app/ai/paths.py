@@ -30,7 +30,7 @@ __all__ = [
     "upload_dir",
 ]
 
-#: ``backend/`` — the same anchor ``app.config.BACKEND_DIR`` uses.
+#: ``backend/`` - the same anchor ``app.config.BACKEND_DIR`` uses.
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 #: ``Settings.upload_dir`` default (``app/config.py``).
@@ -49,7 +49,7 @@ def resolve_configured_path(value: str | Path) -> Path:
 
 
 def upload_dir() -> Path:
-    """The upload root — always absolute, always independent of the working directory.
+    """The upload root - always absolute, always independent of the working directory.
 
     Prefers ``settings.upload_dir`` because BE's validator has already canonicalised
     it; falls back to the same rule applied to ``UPLOAD_DIR`` so a process that cannot

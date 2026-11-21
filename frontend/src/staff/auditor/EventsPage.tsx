@@ -10,7 +10,7 @@ import { IconShield } from '../../shared/ui/Icons';
 const ACTOR_TYPES = ['', 'USER', 'AI', 'AGENT', 'SYSTEM', 'API_KEY'];
 
 /**
- * Auditor event stream — docs/11 §6.3, AC-18.x.
+ * Auditor event stream - docs/11 §6.3, AC-18.x.
  * Strictly read-only: this screen never issues a mutating request.
  *
  * The stream is a ledger with a sequence number, because the sequence number is

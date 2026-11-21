@@ -9,7 +9,7 @@ import { PrototypeBanner } from './shared/ui/PrototypeBanner';
 import { CitizenLayout } from './citizen/CitizenLayout';
 import { CitizenHome } from './citizen/Home';
 
-/* Lazy chunks — none of these may land in the citizen entry chunk (budget rule). */
+/* Lazy chunks - none of these may land in the citizen entry chunk (budget rule). */
 const CasesPage = lazy(() => import('./citizen/CasesPage').then((m) => ({ default: m.CasesPage })));
 const CaseStatusPage = lazy(() => import('./citizen/CaseStatusPage').then((m) => ({ default: m.CaseStatusPage })));
 const ConsentPage = lazy(() => import('./citizen/ConsentPage').then((m) => ({ default: m.ConsentPage })));
@@ -87,7 +87,7 @@ export default function App() {
             }
           />
 
-          {/* Public — zero login (F-14, F-31). */}
+          {/* Public - zero login (F-14, F-31). */}
           <Route path="/scam-check" element={<ScamCheckPage />} />
           <Route path="/transparency" element={<TransparencyPage />} />
 
@@ -122,7 +122,7 @@ export default function App() {
             <Route path="new" element={<AddFamilyPage />} />
           </Route>
 
-          {/* Staff consoles — lazy, never in the citizen entry chunk. */}
+          {/* Staff consoles - lazy, never in the citizen entry chunk. */}
           <Route
             path="/staff/*"
             element={

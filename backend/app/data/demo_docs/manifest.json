@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-11-20T15:59:28.246860+00:00",
-  "watermark": "MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT",
+  "watermark": "MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT",
   "generator_seed": 20261120,
   "count": 7,
   "files": [
@@ -46,7 +46,7 @@
         "sig": "cbf14f0013a35e06fe7a60602946e6904eb2b4000170b40617bccc1389a6100b"
       },
       "raw_text": null,
-      "notes": "Rotated 3°, JPEG q45, mild noise — must stay VERIFIED (0% false tamper)."
+      "notes": "Rotated 3°, JPEG q45, mild noise - must stay VERIFIED (0% false tamper)."
     },
     {
       "file": "fatima_cnic_blurry.jpg",
@@ -105,7 +105,7 @@
       },
       "qr_payload": null,
       "raw_text": null,
-      "notes": "QR obscured — UNVERIFIABLE, never TAMPER_SUSPECTED."
+      "notes": "QR obscured - UNVERIFIABLE, never TAMPER_SUSPECTED."
     },
     {
       "file": "ghulam_rasool_death_cert_genuine.jpg",

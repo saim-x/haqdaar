@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   backend:
-    name: Backend — ruff + pytest
+    name: Backend - ruff + pytest
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -71,7 +71,7 @@ jobs:
         run: python -m pytest tests/ -q
 
   frontend:
-    name: Frontend — typecheck + build + budget
+    name: Frontend - typecheck + build + budget
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

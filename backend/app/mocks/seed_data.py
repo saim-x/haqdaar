@@ -660,8 +660,8 @@ def explanation(
             f"آپ کی درخواست منظور ہو گئی ہے۔ {amount:,} روپے بھیجے جا رہے ہیں۔" if amount else "آپ کی درخواست منظور ہو گئی ہے۔",
         ),
         "HUMAN_REVIEW": (
-            "An officer will review your application — usually within 2 days. You do not need to do anything.",
-            "ایک افسر آپ کی درخواست کا جائزہ لے گا — عام طور پر 2 دن میں۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
+            "An officer will review your application - usually within 2 days. You do not need to do anything.",
+            "ایک افسر آپ کی درخواست کا جائزہ لے گا - عام طور پر 2 دن میں۔ آپ کو کچھ کرنے کی ضرورت نہیں۔",
         ),
         "NEEDS_INFO": (
             "We need one more thing to finish checking your application.",

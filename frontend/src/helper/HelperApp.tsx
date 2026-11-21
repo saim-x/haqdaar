@@ -31,7 +31,7 @@ interface FamiliesResponse {
 }
 
 /**
- * Helper Mode — docs/11 §4, F-13.
+ * Helper Mode - docs/11 §4, F-13.
  *
  * Ayesha serves 40 families from one shared phone. The safety property that
  * matters is that switching families leaves *nothing* of the previous family
@@ -41,7 +41,7 @@ interface FamiliesResponse {
  *
  * The roster is a list of people, so it is drawn as a list: one row per family,
  * hairline between them, the name carrying the weight. The consent state is a
- * dot and a word, not a coloured pill — a helper scanning forty rows needs to
+ * dot and a word, not a coloured pill - a helper scanning forty rows needs to
  * see which two are blocked, and forty pills would hide them.
  */
 export function HelperRosterPage() {
@@ -207,7 +207,7 @@ export function HelperRosterPage() {
                       buttons. The fill is a 12 % tint of the family's own hue
                       so the name stays the loudest thing in the row, and the
                       selection mark rides on the avatar instead of taking a
-                      column of its own — a separate radio column squeezed the
+                      column of its own - a separate radio column squeezed the
                       consent line until "Consent active" broke in two. */}
                   <span className="relative shrink-0">
                     <span
@@ -238,7 +238,7 @@ export function HelperRosterPage() {
                         district is ordinary Urdu and must not be dragged into
                         the same left-to-right run. */}
                     <span className="mt-0.5 flex items-center gap-1.5 text-meta text-ink-3">
-                      <bdi className="num shrink-0">{family.cnic_masked ?? '—'}</bdi>
+                      <bdi className="num shrink-0">{family.cnic_masked ?? '-'}</bdi>
                       {family.district && (
                         <>
                           <span aria-hidden className="shrink-0 text-ink-3/60">
@@ -261,7 +261,7 @@ export function HelperRosterPage() {
                         </span>
                       </span>
                       {/* A blocked family's case count is not actionable, and
-                          "Consent expired — renew" already fills the line. */}
+                          "Consent expired - renew" already fills the line. */}
                       {!locked && family.active_case_count > 0 && (
                         <span className="whitespace-nowrap text-meta tabular-nums text-ink-3">
                           · {family.active_case_count} {t('helper.openShort')}
@@ -538,8 +538,8 @@ export function AddFamilyPage() {
         </div>
 
         {/* The CNIC is optional here, so it does not get a 300px keypad by
-            default: two stacked pads pushed the consent choice — the most
-            important decision on this screen — below the fold. */}
+            default: two stacked pads pushed the consent choice - the most
+            important decision on this screen - below the fold. */}
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-caption font-medium text-ink-2">
             {t('wizard.cnic.title')}

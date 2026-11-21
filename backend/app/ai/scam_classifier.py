@@ -7,12 +7,12 @@ Four stages, in order:
    A code that resolves *and* whose body matches is ``VERIFIED_OFFICIAL``. A code
    that resolves but whose text was altered is ``RF_CODE_MISMATCH``; a code that
    does not exist is ``RF_FAKE_CODE``. Both are hard flags.
-2. **Deterministic red flags** — the ``RF_*`` table from docs/07 §3.2.
-3. **Calibrated ML** — ``TfidfVectorizer(char_wb, (1,2))`` +
+2. **Deterministic red flags** - the ``RF_*`` table from docs/07 §3.2.
+3. **Calibrated ML** - ``TfidfVectorizer(char_wb, (1,2))`` +
    ``CalibratedClassifierCV(LogisticRegression(C=2.0), cv=5, sigmoid)``, trained
    deterministically on the committed dataset. The deterministic flags are fed in
    as extra feature tokens so a hard flag can never be diluted away.
-4. **Combine and threshold** — ``p >= 0.75`` or ``>= 2`` hard flags →
+4. **Combine and threshold** - ``p >= 0.75`` or ``>= 2`` hard flags →
    ``LIKELY_SCAM``; ``0.35 <= p < 0.75`` or text shorter than 15 characters →
    ``CANNOT_TELL``; otherwise ``LIKELY_SAFE``.
 
@@ -46,7 +46,7 @@ LIKELY_SAFE = "LIKELY_SAFE"
 CANNOT_TELL = "CANNOT_TELL"
 LIKELY_SCAM = "LIKELY_SCAM"
 
-#: docs/07 §3.1 thresholds — frozen.
+#: docs/07 §3.1 thresholds - frozen.
 SCAM_THRESHOLD = 0.75
 UNSURE_THRESHOLD = 0.35
 MIN_MEANINGFUL_CHARS = 15
@@ -238,7 +238,7 @@ def detect_red_flags(text: str) -> list[RedFlag]:
 
 
 # --------------------------------------------------------------------------- #
-# stage 1 — verification codes
+# stage 1 - verification codes
 # --------------------------------------------------------------------------- #
 @dataclass
 class NotificationRecord:
@@ -346,7 +346,7 @@ def _find_record(code: str, records: Sequence[NotificationRecord]) -> Notificati
 
 
 # --------------------------------------------------------------------------- #
-# stage 3 — calibrated ML
+# stage 3 - calibrated ML
 # --------------------------------------------------------------------------- #
 @dataclass
 class TrainedModel:
@@ -652,7 +652,7 @@ def classify(
     try:
         probability = _probability(cleaned, flags)
     except Exception as exc:  # pragma: no cover - model must never break the API
-        logger.warning("scam model unavailable (%s) — falling back to flags only", exc)
+        logger.warning("scam model unavailable (%s) - falling back to flags only", exc)
         probability = 0.0
         model_available = False
 
@@ -660,7 +660,7 @@ def classify(
     if not model_available:
         # Without the model we cannot judge a clean message, so we never call it
         # safe. One hard flag is enough to warn, and anything else is "cannot
-        # tell" — the citizen is told to check, not told she is fine.
+        # tell" - the citizen is told to check, not told she is fine.
         if hard_flags:
             verdict = LIKELY_SCAM
             confidence = 0.80

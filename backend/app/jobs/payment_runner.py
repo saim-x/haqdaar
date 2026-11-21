@@ -1,4 +1,4 @@
-"""``INITIATE_PAYMENT`` job handler — simulated Raast transfer (docs/10 §1.2 E).
+"""``INITIATE_PAYMENT`` job handler - simulated Raast transfer (docs/10 §1.2 E).
 
 Idempotency is structural: ``payments.id`` is the ``Idempotency-Key`` sent to the
 mock payment service and ``payments.case_id`` is UNIQUE, so a retried job can only
@@ -217,8 +217,8 @@ def run_payment(
                 user_id=citizen.user_id,
                 case_id=case.id,
                 tenant_id=case.tenant_id,
-                title_en="Payment issue — officer notified",
-                title_ur="ادائیگی میں مسئلہ — افسر کو اطلاع دے دی گئی",
+                title_en="Payment issue - officer notified",
+                title_ur="ادائیگی میں مسئلہ - افسر کو اطلاع دے دی گئی",
                 body_en=(
                     f"We could not send the payment for case {case.reference_code}. "
                     "An officer will contact you. You do not need to do anything."

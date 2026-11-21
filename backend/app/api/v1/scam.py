@@ -1,4 +1,4 @@
-"""Scam checker API (docs/05 §3.9) — Challenge 08.
+"""Scam checker API (docs/05 §3.9) - Challenge 08.
 
 ``POST /api/v1/scam/check`` accepts JSON text, a screenshot, or a voice note and
 returns an advisory verdict. ``POST /api/v1/scam/{check_id}/feedback`` records a
@@ -280,7 +280,7 @@ async def submit_feedback(
     db: Any = Depends(_db),
     user: Any = Depends(_optional_user),
 ) -> JSONResponse:
-    """Record a citizen's disagreement — the honest false-alarm counter."""
+    """Record a citizen's disagreement - the honest false-alarm counter."""
     try:
         parsed_id = uuid.UUID(check_id)
     except ValueError:
@@ -327,7 +327,7 @@ async def submit_feedback(
             "check_id": str(parsed_id),
             "disputed": disputed,
             "note": note_text,
-            "message": "Thank you — your feedback helps us measure false alarms.",
+            "message": "Thank you - your feedback helps us measure false alarms.",
         }
     )
 

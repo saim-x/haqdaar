@@ -3,7 +3,7 @@
 ``tests/conftest.py::_normalise_version_table`` used to delete every
 ``alembic_version`` row that was not a head. On a stale-but-migrated test database
 that emptied the table, so ``upgrade heads`` replayed every migration from base
-against tables that already existed — the DuplicateTable storms.
+against tables that already existed - the DuplicateTable storms.
 
 A single recorded revision is a *position*, not a conflict. Only genuine multi-row
 states need collapsing, and then the fix is to keep the most advanced row and drop

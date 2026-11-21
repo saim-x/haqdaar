@@ -3,7 +3,7 @@
 Everything here is enforced on the server; UI visibility is cosmetic. Two rules
 are absolute:
 
-* ``tenant_id`` comes from the verified JWT / API key only — never from a request
+* ``tenant_id`` comes from the verified JWT / API key only - never from a request
   body or query parameter.
 * A resource that belongs to another tenant or citizen returns ``404 NOT_FOUND``
   (never ``403``, which would leak existence) plus an ``auth.cross_scope_denied``

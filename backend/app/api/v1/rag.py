@@ -1,8 +1,8 @@
-"""Policy Q&A API (docs/05 §3.9) — grounded answers with honest abstention.
+"""Policy Q&A API (docs/05 §3.9) - grounded answers with honest abstention.
 
 ``POST /api/v1/rag/ask`` answers only from the indexed policy corpus. When the
 best retrieved chunk scores below the abstention threshold the endpoint returns
-``status: "NOT_SURE"`` and **never calls the model** — a wrong answer about a
+``status: "NOT_SURE"`` and **never calls the model** - a wrong answer about a
 benefit is worse than admitting uncertainty.
 
 The endpoint is read-only: it cannot change a case, a payment, or a consent.

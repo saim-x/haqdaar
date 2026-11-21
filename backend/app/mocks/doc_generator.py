@@ -9,7 +9,7 @@ Outputs
 ``backend/app/data/demo_docs/``      7 ready-to-upload demo files + manifest
 ``backend/app/data/doc_eval_set/``   30 labelled benchmark images + manifest
 
-Every image carries the visible watermark ``MOCK SPECIMEN — NOT AN OFFICIAL
+Every image carries the visible watermark ``MOCK SPECIMEN - NOT AN OFFICIAL
 DOCUMENT``. Every CNIC starts with the reserved fictional prefix ``99900``.
 No real agency name or logo is used anywhere ("NADRA-like, simulated").
 
@@ -45,8 +45,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DEMO_DOCS_DIR = DATA_DIR / "demo_docs"
 DOC_EVAL_DIR = DATA_DIR / "doc_eval_set"
 
-WATERMARK_TEXT = "MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT"
-WATERMARK_TEXT_UR = "نقلی نمونہ — یہ سرکاری دستاویز نہیں ہے"
+WATERMARK_TEXT = "MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT"
+WATERMARK_TEXT_UR = "نقلی نمونہ - یہ سرکاری دستاویز نہیں ہے"
 
 #: Fixed RNG seed so the benchmark is byte-stable across machines.
 GENERATOR_SEED = 20261120
@@ -186,7 +186,7 @@ def render_cnic_card(
     _banner(draw, width)
     draw.rectangle([0, 54, width, 132], fill=(27, 94, 32))
     draw.text((28, 66), "ISLAMIC REPUBLIC OF PAKISTAN (SIMULATED)", font=_font(30, bold=True), fill="white")
-    draw.text((28, 102), "Mock Identity Registry — specimen card, not an official document", font=_font(18), fill=(200, 230, 201))
+    draw.text((28, 102), "Mock Identity Registry - specimen card, not an official document", font=_font(18), fill=(200, 230, 201))
     draw.text((width - 330, 70), "اسلامی جمہوریہ پاکستان (نقلی)", font=_font(26, urdu=True), fill="white")
 
     # photo placeholder
@@ -241,7 +241,7 @@ def render_death_certificate(
     _banner(draw, width)
 
     draw.text((60, 96), "GOVERNMENT OF SINDH (SIMULATED)", font=_font(28, bold=True), fill=(27, 94, 32))
-    draw.text((60, 132), "Union Council Thatta — Mock Civil Registration Office", font=_font(18), fill=(69, 90, 100))
+    draw.text((60, 132), "Union Council Thatta - Mock Civil Registration Office", font=_font(18), fill=(69, 90, 100))
     draw.text((60, 176), "CERTIFICATE OF DEATH", font=_font(38, bold=True), fill=(20, 40, 30))
     draw.text((60, 226), "وفات کا سرٹیفکیٹ (نقلی)", font=_font(30, urdu=True), fill=(20, 40, 30))
     draw.line([(60, 276), (width - 60, 276)], fill=(27, 94, 32), width=2)
@@ -249,17 +249,17 @@ def render_death_certificate(
     rows = [
         ("Certificate No.", fields.certificate_no),
         ("Name of Deceased", fields.full_name),
-        ("CNIC of Deceased", _format_cnic(fields.cnic) if fields.cnic else "—"),
+        ("CNIC of Deceased", _format_cnic(fields.cnic) if fields.cnic else "-"),
         ("Date of Death", fields.death_date),
         ("Name of Spouse", fields.spouse_name),
-        ("CNIC of Spouse", _format_cnic(fields.spouse_cnic) if fields.spouse_cnic else "—"),
+        ("CNIC of Spouse", _format_cnic(fields.spouse_cnic) if fields.spouse_cnic else "-"),
         ("District", fields.district),
         ("Registered On", fields.dob),
     ]
     y = 306
     for label, value in rows:
         draw.text((60, y), label, font=_font(19), fill=(69, 90, 100))
-        draw.text((60, y + 26), str(value or "—"), font=_font(26, bold=True), fill=(20, 40, 30))
+        draw.text((60, y + 26), str(value or "-"), font=_font(26, bold=True), fill=(20, 40, 30))
         y += 78
 
     if include_qr and qr_payload is not None:
@@ -268,7 +268,7 @@ def render_death_certificate(
         draw.rectangle([width - 334, height - 404, width - 46, height - 116], outline=(27, 94, 32), width=3)
         draw.text((width - 330, height - 110), "Scan to verify (mock signature)", font=_font(15), fill=(69, 90, 100))
 
-    draw.text((60, height - 96), "Registrar (Mock) — specimen only", font=_font(18), fill=(69, 90, 100))
+    draw.text((60, height - 96), "Registrar (Mock) - specimen only", font=_font(18), fill=(69, 90, 100))
     draw.text((60, height - 60), WATERMARK_TEXT_UR, font=_font(20, urdu=True), fill=(153, 27, 27))
     _draw_watermark(img)
     return img.convert("RGB")
@@ -280,7 +280,7 @@ def render_scam_screenshot(*, size: tuple[int, int] = (720, 1180)) -> Image.Imag
     img = Image.new("RGB", size, (236, 229, 221))
     draw = ImageDraw.Draw(img)
     draw.rectangle([0, 0, width, 96], fill=(7, 94, 84))
-    draw.text((24, 26), "SMS — 0300 9999999", font=_font(26, bold=True), fill="white")
+    draw.text((24, 26), "SMS - 0300 9999999", font=_font(26, bold=True), fill="white")
     draw.text((24, 62), "SIMULATED MESSAGE (MOCK SPECIMEN)", font=_font(16), fill=(209, 250, 229))
 
     bubble = [
@@ -302,7 +302,7 @@ def render_scam_screenshot(*, size: tuple[int, int] = (720, 1180)) -> Image.Imag
     for line in bubble:
         draw.text((44, y), line, font=_font(22), fill=(30, 30, 30))
         y += 34
-    draw.text((24, height - 120), "MOCK SPECIMEN — NOT AN OFFICIAL DOCUMENT", font=_font(18, bold=True), fill=(153, 27, 27))
+    draw.text((24, height - 120), "MOCK SPECIMEN - NOT AN OFFICIAL DOCUMENT", font=_font(18, bold=True), fill=(153, 27, 27))
     draw.text((24, height - 88), "Synthetic scam sample for the Haqdaar prototype", font=_font(16), fill=(90, 90, 90))
     _draw_watermark(img)
     return img
@@ -466,7 +466,7 @@ def generate_demo_docs(*, force: bool = False) -> dict[str, Any]:
         doc_type="CNIC_FRONT",
         printed=_printed_fields(FATIMA),
         qr_payload=_fatima_qr(),
-        notes="Rotated 3°, JPEG q45, mild noise — must stay VERIFIED (0% false tamper).",
+        notes="Rotated 3°, JPEG q45, mild noise - must stay VERIFIED (0% false tamper).",
     )
 
     blurry = degrade_blur(genuine)
@@ -502,7 +502,7 @@ def generate_demo_docs(*, force: bool = False) -> dict[str, Any]:
         doc_type="CNIC_FRONT",
         printed=_printed_fields(FATIMA),
         qr_payload=None,
-        notes="QR obscured — UNVERIFIABLE, never TAMPER_SUSPECTED.",
+        notes="QR obscured - UNVERIFIABLE, never TAMPER_SUSPECTED.",
     )
 
     death = render_death_certificate(GHULAM_RASOOL, qr_payload=_death_qr())
@@ -661,7 +661,7 @@ def generate_doc_eval_set(*, force: bool = False) -> dict[str, Any]:
             fields=fields,
             printed_name=None,
             qr_payload=payload,
-            notes="Rotated 3°, JPEG q45, noise — genuine photo of a genuine card.",
+            notes="Rotated 3°, JPEG q45, noise - genuine photo of a genuine card.",
             quality=45,
         )
 
@@ -677,7 +677,7 @@ def generate_doc_eval_set(*, force: bool = False) -> dict[str, Any]:
             fields=fields,
             printed_name=None,
             qr_payload=payload,
-            notes="Out-of-focus capture — retake guidance, never a tamper verdict.",
+            notes="Out-of-focus capture - retake guidance, never a tamper verdict.",
         )
 
     # 5 FORGED: 3 name-forged with a valid signature, 2 with a broken signature

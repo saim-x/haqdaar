@@ -3,7 +3,7 @@ import { useI18n } from '../i18n/I18nProvider';
 import { IconLock } from './Icons';
 
 /**
- * AC-13.2 / AC-11.2 — what a helper sees the moment a citizen withdraws consent.
+ * AC-13.2 / AC-11.2 - what a helper sees the moment a citizen withdraws consent.
  *
  * The server has already refused the read with `403 CONSENT_REVOKED` and has
  * persisted the denied attempt in the access log. This screen therefore shows

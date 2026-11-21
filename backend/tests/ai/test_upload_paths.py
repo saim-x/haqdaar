@@ -11,7 +11,7 @@ API and the worker do not share a CWD, so the verifier reported ``file_present: 
 for a file the writer had just written.
 
 ``TestLiveConfigEndToEnd`` runs the real API in a subprocess with ``cwd=backend/`` and a
-relative ``UPLOAD_DIR`` — the live layout, not the in-suite habit — and then re-verifies
+relative ``UPLOAD_DIR`` - the live layout, not the in-suite habit - and then re-verifies
 the same document from a *different* working directory, which is the worker's view.
 """
 

@@ -1,4 +1,4 @@
-"""Hash-chained audit log — docs/04 §4.4 / docs/09 §5.
+"""Hash-chained audit log - docs/04 §4.4 / docs/09 §5.
 
 ``seq`` is a real PostgreSQL sequence (BIGSERIAL semantics) so chain order is
 global and monotonic even with concurrent writers serialized by the advisory lock.

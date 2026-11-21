@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
  *
  * Quiet chrome: one accent, used only on the primary action. Secondary is a
  * raised surface with a hairline, not a 2px frame. Press feedback is a 0.97
- * scale at 120ms — 0.99 is invisible, so it reads as no feedback at all.
+ * scale at 120ms - 0.99 is invisible, so it reads as no feedback at all.
  *
  * Sizes keep the docs/11 §2.4 accessibility floors: `primary` is 56px tall,
  * `tap` is 48px. `sm` is for staff consoles only, where the pointer is a mouse.
@@ -25,7 +25,7 @@ const VARIANTS: Record<Variant, string> = {
 /**
  * A disabled control is inert, so it looks inert whatever it would have been.
  * Fading the accent to 45 % left a pale mint block that still read as "the
- * button" — the one thing a disabled button must not do. It becomes a raised
+ * button" - the one thing a disabled button must not do. It becomes a raised
  * surface with muted text instead, and the accent stays reserved for the action
  * that is actually available.
  */

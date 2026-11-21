@@ -6,7 +6,7 @@ behind it. These tests pin the properties the dashboard depends on:
 
 * every case carries the four-pillar evidence of docs/06 §3.2, so EN's adapter never
   has to invent a number (a missing ``identity_confidence`` floors a case at 0.25 and
-  a missing ``documents`` list floors it at 0.55 — either one makes the whole curve
+  a missing ``documents`` list floors it at 0.55 - either one makes the whole curve
   flat);
 * the evidence is consistent with the story (name bands, document statuses, consent
   method);
@@ -162,7 +162,7 @@ def test_clean_looking_ineligible_population_exists(rows) -> None:
 
     Without them every ``truly_eligible: false`` case fails a hard rule, the router
     sends it to a human at *every* threshold, and ``false_approval_rate`` is
-    structurally zero — the cost curve cannot show a knee.
+    structurally zero - the cost curve cannot show a knee.
     """
     hidden = [
         row
@@ -189,7 +189,7 @@ def test_hidden_cases_are_caught_by_the_active_threshold(cases, sahara) -> None:
     """At tau = 0.90 every rule-passing ineligible case must fall below the line.
 
     Cases that fail a rule are caught by the rule, not by the threshold, so they are
-    out of scope here — their confidence is legitimately high.
+    out of scope here - their confidence is legitimately high.
     """
     checked = 0
     for case in cases:

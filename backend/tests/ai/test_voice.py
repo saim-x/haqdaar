@@ -1,8 +1,8 @@
 """Voice wizard acceptance tests (docs/07 §6, docs/11 §3.2).
 
 The wizard is used by women who may not read Urdu script. Every spoken answer
-must be parsed into exactly one field, read back in both languages, and — when
-the machine is not sure — handed back to the citizen instead of guessed.
+must be parsed into exactly one field, read back in both languages, and - when
+the machine is not sure - handed back to the citizen instead of guessed.
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ def test_deepgram_wizard_parses_locally(
 
 
 # --------------------------------------------------------------------------- #
-# Urdu numerals — the core of the wizard
+# Urdu numerals - the core of the wizard
 # --------------------------------------------------------------------------- #
 class TestUrduNumerals:
     @pytest.mark.parametrize(
@@ -196,7 +196,7 @@ class TestUnknownBeatsGuess:
 
 
 # --------------------------------------------------------------------------- #
-# readback — the citizen must hear her own answer
+# readback - the citizen must hear her own answer
 # --------------------------------------------------------------------------- #
 class TestReadback:
     def test_income_readback_speaks_the_number_in_words(self) -> None:

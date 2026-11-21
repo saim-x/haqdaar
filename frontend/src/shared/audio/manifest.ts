@@ -1,5 +1,5 @@
 /**
- * Urdu audio manifest — `frontend/public/audio/ur/manifest.json` is owned by DPI (A4).
+ * Urdu audio manifest - `frontend/public/audio/ur/manifest.json` is owned by DPI (A4).
  * We only ever read it.
  *
  * Two shapes are accepted, because ADR-018 pins a flat `{ "<key>": "<urdu text>" }`
@@ -9,7 +9,7 @@
  *
  * A missing manifest or a missing key is a normal condition, not an error:
  * every caller degrades to silence and the tap/keypad path still works
- * (docs/11 §2.5 — voice is an accelerator, never a single point of failure).
+ * (docs/11 §2.5 - voice is an accelerator, never a single point of failure).
  */
 
 export type AudioManifest = Record<string, string>;
@@ -64,7 +64,7 @@ function normalise(json: unknown): AudioManifest {
     }
   }
 
-  // Flat shape: { "<key>": "<text>" } — skip metadata fields.
+  // Flat shape: { "<key>": "<text>" } - skip metadata fields.
   for (const [key, value] of Object.entries(record)) {
     if (key === 'keys' || key === 'files' || key === '_meta') continue;
     if (typeof value === 'string' && key !== 'voice' && key !== 'voice_alt' && key !== 'language') {

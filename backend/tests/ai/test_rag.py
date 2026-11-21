@@ -2,11 +2,11 @@
 
 Three layers, each honest about what it proves:
 
-* **Chunking** — the real policy corpus, no retrieval involved.
-* **Gate logic** — a small synthetic corpus whose scores are fully controlled, so
+* **Chunking** - the real policy corpus, no retrieval involved.
+* **Gate logic** - a small synthetic corpus whose scores are fully controlled, so
   the abstention gate, citation shape, claim filter and injection handling are
   tested exactly rather than hopefully.
-* **Ranking quality** — the real corpus indexed into the real Postgres on
+* **Ranking quality** - the real corpus indexed into the real Postgres on
   ``HOST_DB_PORT``. This is the only layer that measures whether retrieval
   actually separates in-domain from off-topic questions. Skipped when the
   database is absent.
@@ -237,7 +237,7 @@ def _ask(db: RagSession, question: str, **kwargs: Any) -> rag.RagAnswer:
 
 
 # --------------------------------------------------------------------------- #
-# chunking — the real corpus
+# chunking - the real corpus
 # --------------------------------------------------------------------------- #
 class TestChunking:
     def test_corpus_loads_four_bilingual_docs(self) -> None:
@@ -272,7 +272,7 @@ class TestChunking:
 
 
 # --------------------------------------------------------------------------- #
-# the abstention gate — the whole point
+# the abstention gate - the whole point
 # --------------------------------------------------------------------------- #
 class TestAbstention:
     @pytest.mark.parametrize(
@@ -451,7 +451,7 @@ class TestAnswerGuardrails:
 
 
 # --------------------------------------------------------------------------- #
-# rule summaries — RAG must never quote a stale threshold
+# rule summaries - RAG must never quote a stale threshold
 # --------------------------------------------------------------------------- #
 class TestRuleSummary:
     def test_summary_renders_every_rule(self) -> None:
@@ -482,7 +482,7 @@ class TestRuleSummary:
 
 
 # --------------------------------------------------------------------------- #
-# real Postgres — where ranking quality is actually measured
+# real Postgres - where ranking quality is actually measured
 # --------------------------------------------------------------------------- #
 def _postgres_dsn() -> str:
     dsn = os.environ.get("DATABASE_URL") or os.environ.get("HOST_DATABASE_URL")

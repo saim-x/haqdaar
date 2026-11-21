@@ -1,4 +1,4 @@
-"""Job handler registry — lazy ``importlib`` so missing teammate modules never crash.
+"""Job handler registry - lazy ``importlib`` so missing teammate modules never crash.
 
 A handler that cannot be imported (module not merged yet) raises
 :class:`HandlerUnavailable`, which the worker turns into ``FAILED_RETRY`` with a
@@ -31,7 +31,7 @@ HANDLER_REGISTRY: dict[str, tuple[str, str]] = {
 #: ``tenant_id`` is derivable from the case row, ``parent_case_id`` from the
 #: complaint row, ``rule_version_id`` from the program. Passing them straight
 #: through raised ``TypeError: run_case_agent() got an unexpected keyword argument
-#: 'tenant_id'``, which the worker turned into ``FAILED_RETRY`` — so every case sat
+#: 'tenant_id'``, which the worker turned into ``FAILED_RETRY`` - so every case sat
 #: in ``SUBMITTED`` forever. The dispatcher filters to these keys instead of
 #: widening the handlers' signatures, which would leak queue concerns into the
 #: agent layer and break the pinned contract in docs/14.

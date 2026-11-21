@@ -15,7 +15,7 @@ const SERIES = [
 ] as const;
 
 /**
- * Interactive Cost-of-Being-Wrong explorer — plots both the 3 routing rates
+ * Interactive Cost-of-Being-Wrong explorer - plots both the 3 routing rates
  * and the asymmetric Expected Cost U-curve (wrong approval = 100, review = 8,
  * ask more = 5), letting judges click any threshold τ to inspect the exact knee.
  */
@@ -207,7 +207,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Evaluation dashboard — docs/11 §6.4, AC-22.x. */
+/** Evaluation dashboard - docs/11 §6.4, AC-22.x. */
 export default function EvalPage() {
   const query = useQuery({
     queryKey: ['eval-dashboard'],
@@ -232,7 +232,7 @@ export default function EvalPage() {
     <div className="space-y-4">
       <PageHeader
         title="Evaluation"
-        subtitle="The cost of being wrong, measured — not asserted."
+        subtitle="The cost of being wrong, measured - not asserted."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

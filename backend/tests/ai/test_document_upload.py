@@ -2,7 +2,7 @@
 
 FE reported that ``POST /api/v1/documents`` returned 201 while the stored file did
 not exist, so ``file_present`` always failed and ``cnic_doc_verified`` could never
-become true — making auto-approve unreachable for any citizen-submitted case.
+become true - making auto-approve unreachable for any citizen-submitted case.
 
 These tests pin the whole path: the bytes land on disk, a genuine specimen reaches
 ``VERIFIED``, and ``verify_checks`` never leaks a server filesystem path.

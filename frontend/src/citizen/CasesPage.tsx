@@ -13,7 +13,7 @@ import { IconChevron, IconDocument } from '../shared/ui/Icons';
 import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 
 /**
- * My Applications — docs/11 §3.1 tile 2, F-10.
+ * My Applications - docs/11 §3.1 tile 2, F-10.
  *
  * A list, so it is a list: one row height, one gap, the reference in mono and
  * the status as a dot plus a label. The chevron is the only thing on the end
