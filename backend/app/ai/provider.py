@@ -1374,6 +1374,65 @@ class LiveOpenAIProvider:
             available=bool(answer),
         )
 
+    # -- spoken reframing (ADR-025) ---------------------------------------- #
+    def spoken_summary(self, answer: str, excerpt: str, lang: str = "ur") -> str:
+        """Warm spoken sentence, constrained to one retrieved excerpt.
+
+        The prompt is the guardrail: the model is told it may only rephrase what
+        the excerpt says, may not add a number, a date, an amount or a condition,
+        and must answer in one or two short sentences. The output is then trimmed
+        to ``SPOKEN_SUMMARY_MAX_CHARS`` so a runaway generation cannot become a
+        monologue on a 2G connection.
+        """
+        started = time.perf_counter()
+        safe_excerpt = guardrails.prepare_for_llm(None, excerpt)
+        system = (
+            "You are Saima, a warm Pakistani Urdu-speaking guide for a simulated "
+            "government benefits prototype. Rewrite the policy excerpt as ONE or "
+            "TWO short spoken sentences in the citizen's language, addressed "
+            "respectfully (use 'بہن' in Urdu). "
+            "HARD RULES: use only facts stated in the excerpt; never add an "
+            "amount, date, deadline, document name or condition that is not "
+            "written there; never say the citizen is approved, eligible or "
+            "rejected; never give legal advice. If the excerpt does not answer "
+            "the question, say you are not sure. "
+            f"Maximum {SPOKEN_SUMMARY_MAX_CHARS} characters. Output the sentence "
+            "only - no preamble, no quotes, no markdown."
+        )
+        user = guardrails.wrap_untrusted(
+            f"language={lang}\nexcerpt:\n{safe_excerpt}\n\ngrounded_answer:\n{answer}"
+        )
+        try:
+            spoken = self._chat_text(system, user, temperature=0.2)
+        except Exception as exc:
+            _emit(
+                task_type="RAG_SPOKEN",
+                provider="live",
+                model_name=self.chat_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                succeeded=False,
+                error_code=getattr(exc, "code", "PROVIDER_ERROR"),
+            )
+            raise
+
+        spoken = re.sub(r"\s+", " ", spoken).strip().strip('"').strip()
+        if len(spoken) > SPOKEN_SUMMARY_MAX_CHARS:
+            cut = spoken[:SPOKEN_SUMMARY_MAX_CHARS]
+            if " " in cut:
+                cut = cut[: cut.rfind(" ")]
+            spoken = cut.rstrip("،,;:") + "…"
+
+        _emit(
+            task_type="RAG_SPOKEN",
+            provider="live",
+            model_name=self.chat_model,
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            input_tokens=len(safe_excerpt.split()) + 120,
+            output_tokens=len(spoken.split()),
+            succeeded=bool(spoken),
+        )
+        return spoken
+
     # -- TTS --------------------------------------------------------------- #
     def synthesize_urdu_tts(self, text: str) -> bytes:
         started = time.perf_counter()
@@ -1535,6 +1594,9 @@ class ResilientProvider:
         self, question: str, chunks: Sequence[Any], lang: str = "ur"
     ) -> RAGSynthesisResult:
         return self._call("rag_synthesize", question, chunks, lang)
+
+    def spoken_summary(self, answer: str, excerpt: str, lang: str = "ur") -> str:
+        return self._call("spoken_summary", answer, excerpt, lang)
 
     def synthesize_urdu_tts(self, text: str) -> bytes:
         return self._call("synthesize_urdu_tts", text)
