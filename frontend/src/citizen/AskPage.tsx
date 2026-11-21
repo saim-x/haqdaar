@@ -283,12 +283,34 @@ export function AskPage() {
                           </li>
                         ))}
                       </ul>
-                    </div>
+                    </details>
                   )}
                 </div>
               )}
+
+              {/* Voice-to-action: the guide suggests, the citizen taps. Nothing
+                  here navigates on its own. */}
+              {action && ActionIcon && (
+                <Link
+                  to={action.route}
+                  data-testid="avatar-guided-action"
+                  className="press flex min-h-primary items-center gap-3 rounded-control border border-accent/30 bg-accent-wash px-3.5 py-3 hover:bg-accent/15"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-white">
+                    <ActionIcon size={18} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-meta text-accent-ink/80">{t('avatar.guidedAction')}</span>
+                    <span className="block text-body font-medium leading-[1.6] text-accent-ink">
+                      {actionLabel}
+                    </span>
+                  </span>
+                  <IconArrowRight size={18} className="shrink-0 text-accent-ink" />
+                </Link>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
