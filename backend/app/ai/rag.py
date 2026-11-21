@@ -83,6 +83,21 @@ DISCLAIMER_EN = (
     "This is general guidance only. Submit an application to find out whether you qualify."
 )
 
+#: The guide's honest abstention (ADR-025). Fixed text, never generated: an
+#: abstention that a model paraphrases is no longer a guaranteed abstention.
+SPOKEN_ABSTENTION_UR = (
+    "بہن، مجھے اس بارے میں صحیح معلومات نہیں ہیں اور میں غلط بات نہیں بتانا چاہتی۔ "
+    "آپ مدد کے لیے افسر یا ہیلپر سے پوچھ سکتی ہیں۔"
+)
+SPOKEN_ABSTENTION_EN = (
+    "Sister, I do not have reliable information about that and I will not guess. "
+    "Please ask an officer or a community helper for help."
+)
+
+#: One breath of speech. Matches ``provider.SPOKEN_SUMMARY_MAX_CHARS`` so the
+#: client can size its caption bar against a known ceiling.
+SPOKEN_SUMMARY_MAX_CHARS = 280
+
 # --------------------------------------------------------------------------- #
 # data types
 # --------------------------------------------------------------------------- #
@@ -120,9 +135,12 @@ class RagAnswer:
     guardrail_triggered: bool = False
     retrieved: int = 0
     coverage: float = 0.0
+    #: Only present when the caller asked for ``conversational: true`` (ADR-025).
+    #: ``answer`` and ``citations`` are never altered by it.
+    spoken_summary: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        body: dict[str, Any] = {
             "status": self.status,
             "answer": self.answer,
             "citations": self.citations,
