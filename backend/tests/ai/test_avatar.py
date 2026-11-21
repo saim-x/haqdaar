@@ -620,3 +620,177 @@ class TestApi:
         assert settings.anam_api_key not in response.text
 
 
+# --------------------------------------------------------------------------- #
+# conversational mode - true two-way Urdu, grounded by the live rule version
+# --------------------------------------------------------------------------- #
+class TestConversationalMode:
+    """The mode that gives a low-literacy citizen a real conversation.
+
+    Two things must hold at once: the vendor must receive enough to hold a
+    conversation (a model, a voice, a prompt), and it must receive nothing that
+    could let it invent a decision or leak a citizen. The prompt is the whole
+    contract, so most of these tests are about the prompt.
+    """
+
+    def test_persona_carries_llm_voice_and_prompt(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "conversational")
+        monkeypatch.setattr(settings, "anam_voice_id", "voice-test-1")
+        monkeypatch.setattr(settings, "anam_llm_id", "llm-test-1")
+        recorder.post_response = _Response(200, {"sessionToken": "conv-token"})
+
+        session = avatar.create_avatar_session(None, _Actor(), surface="ask")
+
+        assert session["available"] is True
+        assert session["mode"] == "conversational"
+        assert session["conversational"] is True
+
+        _method, _url, _headers, body = recorder.calls[-1]
+        persona = body["personaConfig"]
+        assert persona["avatarId"] == "avatar-test-123"
+        assert persona["llmId"] == "llm-test-1"
+        assert persona["voiceId"] == "voice-test-1"
+        assert persona["languageCode"] == "ur"
+        assert persona["name"] == "Saima — Haqdaar Guide"
+        assert persona["maxSessionLengthSeconds"] == settings.anam_max_session_seconds
+        assert persona["skipGreeting"] is True
+        assert "systemPrompt" in persona
+        # Conversational mode is the one place the vendor gets text, so it must
+        # never also be handed the passthrough switch.
+        assert "enableAudioPassthrough" not in persona
+
+    def test_persona_never_uses_the_disable_llm_sentinel(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "conversational")
+        monkeypatch.setattr(settings, "anam_llm_id", "llm-test-1")
+        recorder.post_response = _Response(200, {"sessionToken": "conv-token"})
+        avatar.create_avatar_session(None, _Actor(), surface="ask")
+        _method, _url, _headers, body = recorder.calls[-1]
+        assert body["personaConfig"]["llmId"] == "llm-test-1"
+        assert body["personaConfig"]["llmId"] != avatar.DISABLED_LLM_ID
+
+    def test_blank_ids_are_omitted_so_the_vendor_uses_its_defaults(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "conversational")
+        recorder.post_response = _Response(200, {"sessionToken": "conv-token"})
+        avatar.create_avatar_session(None, _Actor(), surface="ask")
+        _method, _url, _headers, body = recorder.calls[-1]
+        persona = body["personaConfig"]
+        assert "llmId" not in persona
+        assert "voiceId" not in persona
+        assert persona["avatarId"] == "avatar-test-123"
+
+    def test_english_surface_switches_the_language_code(
+        self, live: None, recorder: _Recorder, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "anam_mode", "conversational")
+        recorder.post_response = _Response(200, {"sessionToken": "conv-token"})
+        avatar.create_avatar_session(None, _Actor(), surface="ask", lang="en")
+        _method, _url, _headers, body = recorder.calls[-1]
+        assert body["personaConfig"]["languageCode"] == "en"
+        assert "English" in body["personaConfig"]["systemPrompt"]
+
+    def test_prompt_quotes_the_live_rule_version(self, real_db: Any) -> None:
+        prompt = avatar.build_saima_system_prompt(real_db, "ask", "ur")
+        # The seeded Sahara grant: 40,000 income cap, 12,000 base, 1,000/child.
+        assert "40,000" in prompt
+        assert "12,000" in prompt
+        assert "1,000" in prompt
+        assert "20,000" in prompt
+        assert "Thatta" in prompt
+
+    def test_prompt_follows_a_published_rule_change(self, real_db: Any) -> None:
+        """A published v2 must reach Saima's very next sentence."""
+        from sqlalchemy import select
+
+        from app.models.programs import Program, RuleVersion
+
+        program = real_db.execute(
+            select(Program).where(Program.code == avatar.PROGRAM_CODE)
+        ).scalar_one()
+        original_id = program.active_rule_version_id
+        original = real_db.execute(
+            select(RuleVersion).where(RuleVersion.id == original_id)
+        ).scalar_one()
+        original_rules = original.rules_json
+
+        changed = json.loads(json.dumps(original_rules))
+        for rule in changed["eligibility_rules"]:
+            if rule.get("fact") == "monthly_income_pkr":
+                rule["value"] = 35000
+        changed["benefit_formula"]["per_child_bonus_pkr"] = 1500
+
+        candidate = RuleVersion(
+            tenant_id=program.tenant_id,
+            program_id=program.id,
+            version_number=9999,
+            status="PUBLISHED",
+            rules_json=changed,
+            content_hash="0" * 64,
+            change_note="test-only candidate",
+            created_by_user_id=original.created_by_user_id,
+        )
+        real_db.add(candidate)
+        real_db.flush()
+        program.active_rule_version_id = candidate.id
+        real_db.flush()
+        try:
+            prompt = avatar.build_saima_system_prompt(real_db, "ask", "ur")
+            assert "35,000" in prompt
+            assert "1,500" in prompt
+            assert "40,000" not in prompt
+        finally:
+            real_db.rollback()
+
+    def test_prompt_carries_no_citizen_data(self, real_db: Any) -> None:
+        import re
+
+        prompt = avatar.build_saima_system_prompt(real_db, "case_status", "ur")
+        assert not re.search(r"\d{5}-\d{7}-\d", prompt)
+        assert "99900" not in prompt
+        assert not re.search(r"03\d{2}[- ]?\d{7}", prompt)
+        # No case, decision or amount belonging to a person.
+        assert "APPROVED" not in prompt
+        assert "REJECTED" not in prompt
+
+    def test_prompt_states_the_three_hard_rules(self, real_db: Any) -> None:
+        prompt = avatar.build_saima_system_prompt(real_db, "ask", "ur")
+        assert "NEVER tell a user she is approved" in prompt
+        assert "NEVER ask for CNIC digits" in prompt
+        assert avatar.ABSTENTION_UR in prompt
+        assert "NEVER auto-rejects" in prompt
+
+    def test_prompt_names_the_surface(self, real_db: Any) -> None:
+        for surface, hint in (
+            ("ask", "policy question screen"),
+            ("case_status", "case status screen"),
+            ("wizard", "application wizard"),
+            ("scam_check", "scam-check screen"),
+        ):
+            prompt = avatar.build_saima_system_prompt(real_db, surface, "ur")
+            assert hint in prompt
+
+    def test_prompt_omits_every_number_when_rules_are_unreadable(self) -> None:
+        """Unknown is a first-class value: no rules means no quoted amounts."""
+        prompt = avatar.build_saima_system_prompt(None, "ask", "ur")
+        assert "could not be read" in prompt
+        assert "Do NOT quote any amount" in prompt
+        assert "40,000" not in prompt
+        assert "12,000" not in prompt
+
+    def test_prompt_stays_inside_the_spoken_budget(self, real_db: Any) -> None:
+        prompt = avatar.build_saima_system_prompt(real_db, "ask", "ur")
+        assert 1200 <= len(prompt) <= 2600
+
+    def test_prompt_survives_a_broken_session(self) -> None:
+        class _Broken:
+            def execute(self, *_args: Any, **_kwargs: Any) -> Any:
+                raise RuntimeError("database is on fire")
+
+        prompt = avatar.build_saima_system_prompt(_Broken(), "ask", "ur")
+        assert "could not be read" in prompt
+
+
