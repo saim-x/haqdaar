@@ -73,3 +73,78 @@ test('fake mode: grounded answer, honest abstention, guided action, clean stop',
 
   // 3 - a navigation intent surfaces one tap, and only one tap.
   await ask(page, 'مجھے درخواست دینی ہے');
+  const guided = page.locator('[data-testid="avatar-guided-action"]');
+  await expect(guided).toBeVisible({ timeout: 30_000 });
+  await expect(guided).toHaveAttribute('href', '/c/apply/new');
+  // It suggests; it does not navigate.
+  await expect(page).toHaveURL(/\/c\/ask/);
+
+  // 4 - ending the session returns the invitation and drops the stage.
+  await page.locator('[data-testid="avatar-end"]').click();
+  await expect(page.locator('[data-testid="avatar-stage"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="avatar-cta"]')).toBeVisible();
+});
+
+test('Lite Mode steps the video down to the audio-only companion, with no error', async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+
+  await demoLogin(page, 'widow_fatima');
+  await useEnglish(page);
+  await page.goto('/c/ask');
+  await startGuide(page);
+
+  // Turn Lite Mode on from the header - the same control a 2G phone trips
+  // automatically.
+  await page.locator('[data-testid="lite-toggle"]').click();
+
+  await expect(page.locator('[data-testid="avatar-audio-only-notice"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-testid="avatar-stage"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="avatar-audio-only-notice"]')).toContainText(
+    /audio-only|آڈیو گائیڈ/i,
+  );
+
+  // The step-down is a state change, not a crash. Browser resource logs are
+  // excluded on purpose: a 429 from the session limiter is a legitimate answer
+  // that the guide already degrades on, and Chromium reports it as a console
+  // error even though no application code threw.
+  const appErrors = consoleErrors.filter(
+    (line) => !/favicon|manifest|Failed to load resource/i.test(line),
+  );
+  expect(appErrors).toEqual([]);
+});
+
+test('a case briefing is deterministic and launches from the explanation section', async ({ page }) => {
+  await demoLogin(page, 'widow_fatima');
+  await useEnglish(page);
+  await page.goto('/c/cases');
+
+  const rows = page.locator('[data-tour="case-entry"]');
+  await expect(rows.first()).toBeVisible({ timeout: 30_000 });
+
+  // A DRAFT has no explanation yet, so only rows past draft are candidates. The
+  // list is newest-first, and earlier specs create drafts, so filtering by the
+  // rendered status label is what keeps this independent of run order.
+  const hrefs: string[] = [];
+  for (let index = 0; index < (await rows.count()); index += 1) {
+    const row = rows.nth(index);
+    const label = (await row.textContent()) ?? '';
+    if (/draft|درخواست محفوظ/i.test(label)) continue;
+    const href = await row.getAttribute('href');
+    if (href) hrefs.push(href);
+    if (hrefs.length >= 3) break;
+  }
+  expect(hrefs.length, 'no submitted case in the seeded list').toBeGreaterThan(0);
+
+  let opened = false;
+  for (const href of hrefs) {
+    await page.goto(href);
+    const button = page.locator('[data-testid="avatar-watch-explain"]');
+    // `isVisible()` answers immediately and ignores its timeout, so it would race
+    // the SPA's first render. `waitFor` is the one that actually waits.
+    const visible = await button
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
