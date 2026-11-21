@@ -775,7 +775,8 @@ def ask(
         low_coverage = False
 
     if not chunks or top_score < threshold or low_coverage:
-        # Zero LLM calls on abstention - the whole point of the gate.
+        # Zero LLM calls on abstention - the whole point of the gate. The spoken
+        # abstention is a fixed sentence for the same reason.
         return RagAnswer(
             status="NOT_SURE",
             answer=NOT_SURE_UR if language == "ur" else NOT_SURE_EN,
@@ -783,6 +784,11 @@ def ask(
             lang=language,
             retrieved=len(chunks),
             coverage=coverage,
+            spoken_summary=(
+                SPOKEN_ABSTENTION_UR if language == "ur" else SPOKEN_ABSTENTION_EN
+            )
+            if conversational
+            else None,
         )
 
     answer, provider_name, model = _synthesize(
