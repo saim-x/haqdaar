@@ -200,3 +200,81 @@ def get_avatar_config() -> dict[str, Any]:
     }
 
 
+# --------------------------------------------------------------------------- #
+# avatar discovery
+# --------------------------------------------------------------------------- #
+def _avatar_list(payload: Any) -> list[dict[str, Any]]:
+    """The catalogue entries from ``GET /v1/avatars``.
+
+    The live API wraps them in ``{"data": [...]}``; older docs and the mock use a
+    bare list or ``{"avatars": [...]}``. Accepting all three keeps the resolver
+    working against the real service and against a fixture.
+    """
+    if isinstance(payload, list):
+        return [entry for entry in payload if isinstance(entry, dict)]
+    if isinstance(payload, dict):
+        for key in ("data", "avatars", "items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [entry for entry in value if isinstance(entry, dict)]
+    return []
+
+
+def _avatar_name(entry: dict[str, Any]) -> str:
+    """``displayName`` on the live API, ``name`` on fixtures."""
+    return str(entry.get("displayName") or entry.get("name") or "").strip()
+
+
+def _pick_avatar(avatars: list[dict[str, Any]]) -> str:
+    """Prefer a warm female stock avatar, else the first id the account has."""
+    by_name = {
+        _avatar_name(avatar).lower(): str(avatar.get("id") or "")
+        for avatar in avatars
+        if avatar.get("id")
+    }
+    for preferred in PREFERRED_AVATAR_NAMES:
+        found = by_name.get(preferred.lower())
+        if found:
+            return found
+    for avatar in avatars:
+        if avatar.get("id"):
+            return str(avatar["id"])
+    return ""
+
+
+def resolve_avatar_id() -> str:
+    """The configured avatar id, or a stock one discovered once and cached.
+
+    A blank ``ANAM_AVATAR_ID`` is the documented default, so this is the normal
+    path rather than an error path. Discovery failure returns ``""`` and the
+    caller degrades to the audio-only guide.
+    """
+    global _RESOLVED_AVATAR_ID
+
+    configured = settings.anam_avatar_id.strip()
+    if configured:
+        return configured
+    if _RESOLVED_AVATAR_ID:
+        return _RESOLVED_AVATAR_ID
+    if _is_fake_mode() or not _live_ready():
+        return FAKE_AVATAR_ID
+
+    url = f"{settings.anam_base_url.rstrip('/')}/v1/avatars"
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            response = client.get(
+                url, headers={"Authorization": f"Bearer {settings.anam_api_key.strip()}"}
+            )
+        if response.status_code != 200:
+            logger.warning("avatar discovery failed: status=%s", response.status_code)
+            return ""
+        avatars = _avatar_list(response.json())
+        if not avatars:
+            return ""
+        _RESOLVED_AVATAR_ID = _pick_avatar(avatars)
+        return _RESOLVED_AVATAR_ID
+    except Exception as exc:  # noqa: BLE001 - discovery is best effort
+        logger.warning("avatar discovery failed: %s", type(exc).__name__)
+        return ""
+
+
