@@ -810,6 +810,14 @@ def ask(
     if disclaimer not in answer_text:
         answer_text = f"{answer_text}\n\n{disclaimer}"
 
+    spoken = (
+        _spoken_summary(
+            db, answer=answer_text, chunks=chunks, lang=language, tenant_id=tenant_id
+        )
+        if conversational
+        else None
+    )
+
     return RagAnswer(
         status="ANSWERED",
         answer=answer_text,
@@ -821,6 +829,7 @@ def ask(
         guardrail_triggered=filtered.triggered,
         retrieved=len(chunks),
         coverage=coverage,
+        spoken_summary=spoken,
     )
 
 
