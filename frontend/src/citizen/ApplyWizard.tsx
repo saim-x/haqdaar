@@ -1011,6 +1011,7 @@ export function ApplyWizard() {
             format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="payout_phone"
             onConfirm={(value) => {
               if (value) setAnswer('payout_phone', toE164Pk(String(value)));
