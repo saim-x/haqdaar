@@ -72,6 +72,9 @@ async def ask(
 
     lang = "en" if str(payload.get("lang") or "ur").lower().startswith("en") else "ur"
     program_id = _parse_uuid(payload.get("program_id"))
+    # Additive and off by default (ADR-025): only the video guide asks for a
+    # spoken reframing, and it must never change the grounded answer.
+    conversational = payload.get("conversational") is True
 
     try:
         answer = await run_in_threadpool(
