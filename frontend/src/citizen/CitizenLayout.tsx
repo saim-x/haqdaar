@@ -66,6 +66,7 @@ export function CitizenLayout() {
             <button
               type="button"
               onClick={toggleLite}
+              data-testid="lite-toggle"
               aria-pressed={lite}
               className={`press min-h-tap rounded-control px-2.5 text-meta font-medium transition-colors ${
                 lite ? 'bg-accent text-white shadow-sm' : 'bg-card border border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
