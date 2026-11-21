@@ -279,7 +279,7 @@ export function ApplyWizard() {
             body,
             citizenId,
             actForCitizenId,
-            label: lang === 'ur' ? 'درخواست کا مسودہ' : 'Application draft',
+            label: t('wizard.audio.draft'),
           });
         }
       }
@@ -486,7 +486,7 @@ export function ApplyWizard() {
           body: { wizard_step: 'review', answers: declarableAnswers(answers) },
           citizenId,
           actForCitizenId,
-          label: lang === 'ur' ? 'درخواست کا مسودہ' : 'Application draft',
+          label: t('wizard.audio.draft'),
         });
         await enqueue({
           method: 'POST',
@@ -494,7 +494,7 @@ export function ApplyWizard() {
           body: {},
           citizenId,
           actForCitizenId,
-          label: lang === 'ur' ? 'درخواست جمع کرانا' : 'Submit application',
+          label: t('wizard.audio.submit'),
         });
         setQueued(true);
         setSubmitted(true);
@@ -684,7 +684,7 @@ export function ApplyWizard() {
             {busy ? t('common.loading') : t('wizard.consent.grant')}
           </TapButton>
           <p className="mt-2 text-center text-meta text-ink-3">
-            {lang === 'ur' ? 'آپ کسی بھی وقت اجازت واپس لے سکتی ہیں' : 'You can take this back at any time'}
+            {t('wizard.consent.withdrawAnytime')}
           </p>
         </section>
       )}
@@ -700,7 +700,7 @@ export function ApplyWizard() {
             value={textOf(answers, 'applicant_full_name')}
             onChange={(e) => setAnswer('applicant_full_name', e.target.value)}
             autoComplete="name"
-            placeholder={lang === 'ur' ? 'پورا نام' : 'Full name'}
+            placeholder={t('wizard.name.placeholder')}
           />
           <VoiceField
             fieldKey="applicant_full_name"
@@ -741,7 +741,7 @@ export function ApplyWizard() {
             onChange={(year) => setAnswer('applicant_dob', `${year}-01-01`)}
           />
           <p className="mt-2 text-meta text-ink-3">
-            {lang === 'ur' ? 'صرف سال کافی ہے' : 'The year is enough'}
+            {t('wizard.dob.yearEnough')}
           </p>
           <VoiceField
             fieldKey="applicant_dob"
@@ -761,7 +761,7 @@ export function ApplyWizard() {
             id="spouse-name"
             value={textOf(answers, 'spouse_full_name')}
             onChange={(e) => setAnswer('spouse_full_name', e.target.value)}
-            placeholder={lang === 'ur' ? 'شوہر کا نام' : "Husband's name"}
+            placeholder={t('wizard.spouseName.placeholder')}
           />
           <VoiceField
             fieldKey="spouse_full_name"
@@ -1051,7 +1051,7 @@ export function ApplyWizard() {
                     }}
                     className="press min-h-tap shrink-0 rounded-control px-1.5 text-meta font-medium text-ink-2 underline decoration-ink/25 underline-offset-4 hover:bg-raised hover:text-accent-ink"
                   >
-                    {lang === 'ur' ? 'بدلیں' : 'Edit'}
+                    {t('wizard.review.edit')}
                   </button>
                 </li>
               );
@@ -1061,9 +1061,7 @@ export function ApplyWizard() {
           <div className="mt-4 flex items-start gap-2 rounded-control bg-raised px-3 py-2.5">
             <IconLock size={16} className="mt-0.5 shrink-0 text-ink-3" />
             <p className="text-meta leading-[1.7] text-ink-2">
-              {lang === 'ur'
-                ? 'آپ کی معلومات صرف محکمہ سماجی بہبود دیکھ سکتا ہے، اور صرف آپ کی اجازت سے۔'
-                : 'Only the Social Welfare Department can see your data, and only with your permission.'}
+              {t('wizard.review.privacy')}
             </p>
           </div>
         </section>

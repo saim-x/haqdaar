@@ -13,7 +13,7 @@ import { IconLock } from './Icons';
  * over the whole card.
  */
 export function ConsentRevokedNotice({ backTo = '/h', backLabel }: { backTo?: string; backLabel?: string }) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   return (
     <div className="screen" data-testid="consent-revoked">
       <div className="card enter mt-6 p-6">
@@ -23,17 +23,13 @@ export function ConsentRevokedNotice({ backTo = '/h', backLabel }: { backTo?: st
           </span>
           <div className="min-w-0">
             <h1 className="text-title font-medium leading-[1.35] text-ink">
-              {lang === 'ur' ? 'اجازت واپس لے لی گئی ہے' : 'Consent was withdrawn'}
+              {t('consent.revokedTitle')}
             </h1>
             <p className="mt-2 text-body leading-[1.7] text-ink-2">
-              {lang === 'ur'
-                ? 'اس شخص نے اپنی معلومات دیکھنے کی اجازت واپس لے لی ہے۔ آپ کوئی معلومات نہیں دیکھ سکتے۔ کوشش ریکارڈ کر لی گئی ہے۔'
-                : 'This person has taken back permission to see their information. You cannot see any of it. The attempt has been recorded.'}
+              {t('consent.revokedBody')}
             </p>
             <p className="mt-3 text-caption text-ink-3">
-              {lang === 'ur'
-                ? 'اگر وہ دوبارہ اجازت دیں تو آپ پھر مدد کر سکتے ہیں۔'
-                : 'If they grant permission again, you can help them again.'}
+              {t('consent.revokedAgain')}
             </p>
           </div>
         </div>

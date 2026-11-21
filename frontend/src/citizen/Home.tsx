@@ -77,7 +77,7 @@ export function CitizenHome() {
     setError(null);
     try {
       if (!program) {
-        setError(lang === 'ur' ? 'پروگرام دستیاب نہیں' : 'No program available');
+        setError(t('home.noProgram'));
         return;
       }
       const created = await api.post<CaseView>('/cases', {
@@ -96,7 +96,7 @@ export function CitizenHome() {
           body: { program_id: program?.id, case_type: 'BENEFIT_APPLICATION' },
           citizenId: actFor?.citizenId ?? session?.citizen?.id ?? null,
           actForCitizenId: actFor?.citizenId ?? null,
-          label: lang === 'ur' ? 'نئی درخواست' : 'New application',
+          label: t('home.newApplication'),
         });
         navigate(`/c/apply/${localId}?offline=1`);
       } catch {

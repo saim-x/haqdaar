@@ -268,7 +268,7 @@ export function MyDataPage() {
 
         {documents.length > 0 && (
           <section className="enter enter-3">
-            <h2 className="section-label mb-3">{lang === 'ur' ? 'دستاویزات' : 'Documents'}</h2>
+            <h2 className="section-label mb-3">{t('data.documents')}</h2>
             <ul className="border-y border-ink/[0.08]">
               {documents.map((doc) => {
                 const status = DOC_STATUS_LABELS[doc.verify_status] ?? { ur: doc.verify_status, en: doc.verify_status };
@@ -305,7 +305,7 @@ export function MyDataPage() {
         {corrections.length > 0 && (
           <section className="enter enter-4">
             <h2 className="section-label mb-3">
-              {lang === 'ur' ? 'درستگی کی درخواستیں' : 'Correction requests'}
+              {t('data.corrections')}
             </h2>
             <ul className="border-y border-ink/[0.08]">
               {corrections.map((c) => (
@@ -334,11 +334,11 @@ export function MyDataPage() {
             </h2>
             <p className="mt-1 text-caption text-ink-2">{correcting.label}</p>
             <p className="num mt-0.5 font-mono text-caption text-ink-3">
-              {lang === 'ur' ? 'ابھی محفوظ' : 'Currently saved'}: {correcting.current || '—'}
+              {t('data.currentlySaved')}: {correcting.current || '—'}
             </p>
 
             <label htmlFor="correction-value" className="mt-4 block text-caption font-medium text-ink">
-              {lang === 'ur' ? 'صحیح معلومات لکھیں' : 'Write the correct value'}
+              {t('data.correctValue')}
             </label>
             <input
               id="correction-value"
@@ -348,7 +348,7 @@ export function MyDataPage() {
             />
 
             <label htmlFor="correction-reason" className="mt-3 block text-caption font-medium text-ink">
-              {lang === 'ur' ? 'وجہ (اختیاری)' : 'Reason (optional)'}
+              {t('data.reasonOptional')}
             </label>
             <textarea
               id="correction-reason"

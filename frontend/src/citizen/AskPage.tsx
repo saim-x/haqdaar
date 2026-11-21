@@ -62,7 +62,7 @@ export function AskPage() {
     <div className="screen flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
       <ScreenHeader
         title={t('ask.title')}
-        hint={lang === 'ur' ? 'اپنا سوال لکھیں یا بولیں' : 'Type or speak your question'}
+        hint={t('ask.hint')}
         audioKey="ask_intro"
         audioText={t('ask.title')}
       />
@@ -70,7 +70,7 @@ export function AskPage() {
       <div className="flex-1">
         {turns.length === 0 && (
           <section className="enter enter-2">
-            <h2 className="section-label mb-3">{lang === 'ur' ? 'کوئی سوال منتخب کریں' : 'Pick a question'}</h2>
+            <h2 className="section-label mb-3">{t('ask.pick')}</h2>
             <ul className="border-y border-ink/[0.08]">
               {suggestions.map((s) => (
                 <li key={s} className="border-b border-ink/[0.08] last:border-b-0">

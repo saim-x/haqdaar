@@ -87,7 +87,7 @@ export function HelperRosterPage() {
       setSwitching(false);
       void play(
         'helper_switch',
-        lang === 'ur' ? 'آپ اب اس گھرانے کی مدد کر رہی ہیں' : 'You are now helping this family',
+        t('helper.switchSpoken'),
       );
     },
     [actFor?.citizenId, lang, play, queryClient, setActFor],
@@ -97,11 +97,7 @@ export function HelperRosterPage() {
     <div className="screen">
       <ScreenHeader
         title={t('helper.title')}
-        hint={
-          lang === 'ur'
-            ? 'ایک فون، کئی گھرانے۔ ہر گھرانہ الگ رکھا جاتا ہے۔'
-            : 'One phone, many families. Each family stays separate.'
-        }
+        hint={t('helper.titleHint')}
         audioKey="helper_intro"
       />
 
@@ -241,7 +237,7 @@ export function HelperRosterPage() {
         <div className="card enter enter-3 px-5 py-10 text-center">
           <IconUsers size={28} className="mx-auto text-ink-3" />
           <p className="mt-3 text-body text-ink-2">
-            {lang === 'ur' ? 'ابھی کوئی گھرانہ شامل نہیں۔' : 'No families yet.'}
+            {t('helper.empty')}
           </p>
         </div>
       )}
@@ -375,9 +371,7 @@ export function AddFamilyPage() {
           <p className="mt-2 text-body leading-[1.7] text-ink-2">
             {mode === 'VERBAL_WITNESSED'
               ? t('helper.consentVerbalWarning')
-              : lang === 'ur'
-                ? 'اجازت مل گئی۔ اب آپ اس گھرانے کی مدد کر سکتی ہیں۔'
-                : 'Consent granted. You can help this family now.'}
+              : t('helper.consentGranted')}
           </p>
           <TapButton block className="mt-6" onClick={() => navigate('/h', { replace: true })}>
             {t('helper.title')}
@@ -391,11 +385,7 @@ export function AddFamilyPage() {
     <div className="screen pb-10">
       <ScreenHeader
         title={t('helper.addFamily')}
-        hint={
-          lang === 'ur'
-            ? 'صرف وہی گھرانہ شامل کریں جو آپ کو جانتا ہو۔'
-            : 'Only add a family that knows you.'
-        }
+        hint={t('helper.addHint')}
         audioKey="helper_add_family"
         backTo="/h"
       />
@@ -418,7 +408,7 @@ export function AddFamilyPage() {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           className="mt-1.5"
-          placeholder={lang === 'ur' ? 'پورا نام' : 'Full name'}
+          placeholder={t('helper.namePlaceholder')}
         />
 
         <p className="mt-5 text-caption font-medium text-ink-2">{t('wizard.payout.title')}</p>
@@ -596,16 +586,12 @@ export function AddFamilyPage() {
 
       {created && mode === 'OTP' && (
         <section className="card enter mt-4 p-5">
-          <p className="text-body text-ink">
-            {lang === 'ur'
-              ? 'شہری کے فون پر آیا کوڈ لکھیں'
-              : "Enter the code sent to the citizen's phone"}
-          </p>
+          <p className="text-body text-ink">{t('helper.otpPrompt')}</p>
           <input
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D+/g, '').slice(0, 6))}
             inputMode="numeric"
-            aria-label={lang === 'ur' ? 'کوڈ' : 'Code'}
+            aria-label={t('helper.code')}
             className="num mt-3 text-center font-mono text-title-lg tracking-[0.2em]"
             dir="ltr"
           />

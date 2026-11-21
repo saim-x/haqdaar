@@ -125,9 +125,9 @@ interface CounterProps {
 
 /** Giant − [ n ] + counter (docs/11 §3.2 steps 8–9). */
 export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioText }: CounterProps) {
-  const { lang } = useI18n();
-  const lessLabel = lang === 'ur' ? 'ایک کم کریں' : 'One less';
-  const moreLabel = lang === 'ur' ? 'ایک زیادہ کریں' : 'One more';
+  const { t } = useI18n();
+  const lessLabel = t('wizard.counter.less');
+  const moreLabel = t('wizard.counter.more');
   return (
     <div className="flex items-center justify-center gap-3">
       <button
