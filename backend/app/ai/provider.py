@@ -283,6 +283,8 @@ class AIProvider(Protocol):
         self, question: str, chunks: Sequence[Any], lang: str
     ) -> RAGSynthesisResult: ...
 
+    def spoken_summary(self, answer: str, excerpt: str, lang: str) -> str: ...
+
     def synthesize_urdu_tts(self, text: str) -> bytes: ...
 
 
@@ -326,6 +328,47 @@ def fixture_index() -> dict[str, dict[str, Any]]:
 def reset_fixtures() -> None:
     global _FIXTURES
     _FIXTURES = None
+
+
+#: A spoken reframing is one breath, not a paragraph. 280 characters is roughly
+#: 18 seconds of Urdu speech - long enough to be warm, short enough that a
+#: citizen on a 2G connection is not waiting for a monologue.
+SPOKEN_SUMMARY_MAX_CHARS = 280
+
+_SPOKEN_GREETING_UR = "بہن، "
+_SPOKEN_GREETING_EN = "Sister, "
+
+#: Sentence terminators in both scripts. Urdu uses its own full stop (۔) and
+#: question mark (؟); a Latin "." inside an Urdu sentence is usually a decimal.
+_SENTENCE_END = re.compile(r"(?<=[۔؟!?])\s+|(?<=\.)\s+")
+
+
+def _first_sentence(text: str) -> str:
+    flat = re.sub(r"\s+", " ", (text or "").strip())
+    if not flat:
+        return ""
+    parts = [part for part in _SENTENCE_END.split(flat) if part.strip()]
+    return parts[0].strip() if parts else flat
+
+
+def _spoken_wrapper(answer: str, lang: str) -> str:
+    """Greeting + the answer's own first sentence, trimmed to one breath.
+
+    Deliberately additive-only: it never paraphrases, never adds a number, and
+    never drops the disclaimer's meaning. If the first sentence is already longer
+    than the budget, it is cut at a word boundary rather than mid-word.
+    """
+    sentence = _first_sentence(answer)
+    if not sentence:
+        return ""
+    greeting = _SPOKEN_GREETING_UR if lang.startswith("ur") else _SPOKEN_GREETING_EN
+    spoken = f"{greeting}{sentence}"
+    if len(spoken) <= SPOKEN_SUMMARY_MAX_CHARS:
+        return spoken
+    cut = spoken[:SPOKEN_SUMMARY_MAX_CHARS]
+    if " " in cut:
+        cut = cut[: cut.rfind(" ")]
+    return cut.rstrip("،,;:") + "…"
 
 
 class FakeDeterministicProvider:
