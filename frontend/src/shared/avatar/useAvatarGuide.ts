@@ -67,3 +67,149 @@ async function loadConfig(): Promise<AvatarConfig | null> {
   return configInflight;
 }
 
+export function useAvatarGuide(surface: AvatarSurface): AvatarGuide {
+  const { lite } = useLiteMode();
+  const { online } = useOffline();
+  const [config, setConfig] = useState<AvatarConfig | null>(configCache?.value ?? null);
+  const [active, setActive] = useState(false);
+  const handlerRef = useRef<((request: SpeakRequest) => void) | null>(null);
+  const sendRef = useRef<((text: string) => void) | null>(null);
+  const evidenceRef = useRef<
+    ((evidence: { citation?: string | null; notSure?: boolean }) => void) | null
+  >(null);
+  const turnRef = useRef<((turn: AvatarTurn) => void) | null>(null);
+  // The stage is a lazy chunk, so a page can ask the guide to speak before the
+  // stage has mounted. Queue that one request instead of dropping it - the
+  // greeting is the first thing a citizen hears and it must not be lost to a
+  // chunk download.
+  const pendingRef = useRef<SpeakRequest | null>(null);
+  const pendingSendRef = useRef<string | null>(null);
+  const pendingEvidenceRef = useRef<{ citation?: string | null; notSure?: boolean } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadConfig().then((value) => {
+      if (!cancelled && value) setConfig(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const steppedDown = lite || !online;
+  const available = config?.enabled === true;
+  const conversational = config?.conversational === true;
+
+  // A device that just lost its budget must not keep a video session open. The
+  // stage unmounts, its cleanup calls `stopStreaming()`, and the card below
+  // swaps to the audio-only notice - no error, no orphaned WebRTC peer.
+  useEffect(() => {
+    if (steppedDown && active) setActive(false);
+  }, [steppedDown, active]);
+
+  const start = useCallback(() => {
+    if (!available || steppedDown) return;
+    setActive(true);
+  }, [available, steppedDown]);
+
+  const stop = useCallback(() => {
+    pendingRef.current = null;
+    pendingSendRef.current = null;
+    pendingEvidenceRef.current = null;
+    setActive(false);
+  }, []);
+
+  const speak = useCallback((request: SpeakRequest) => {
+    if (handlerRef.current) handlerRef.current(request);
+    else pendingRef.current = request;
+  }, []);
+
+  const sendUserMessage = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    if (sendRef.current) sendRef.current(trimmed);
+    else pendingSendRef.current = trimmed;
+  }, []);
+
+  const setEvidence = useCallback(
+    (evidence: { citation?: string | null; notSure?: boolean }) => {
+      if (evidenceRef.current) evidenceRef.current(evidence);
+      else pendingEvidenceRef.current = { ...pendingEvidenceRef.current, ...evidence };
+    },
+    [],
+  );
+
+  const register = useCallback((handler: ((request: SpeakRequest) => void) | null) => {
+    handlerRef.current = handler;
+    if (!handler) return;
+    const queued = pendingRef.current;
+    pendingRef.current = null;
+    if (queued) handler(queued);
+  }, []);
+
+  const registerSend = useCallback((handler: ((text: string) => void) | null) => {
+    sendRef.current = handler;
+    if (!handler) return;
+    const queued = pendingSendRef.current;
+    pendingSendRef.current = null;
+    if (queued) handler(queued);
+  }, []);
+
+  const registerEvidence = useCallback(
+    (handler: ((evidence: { citation?: string | null; notSure?: boolean }) => void) | null) => {
+      evidenceRef.current = handler;
+      if (!handler) return;
+      const queued = pendingEvidenceRef.current;
+      pendingEvidenceRef.current = null;
+      if (queued) handler(queued);
+    },
+    [],
+  );
+
+  const registerTurn = useCallback((listener: ((turn: AvatarTurn) => void) | null) => {
+    turnRef.current = listener;
+  }, []);
+
+  const emitTurn = useCallback((turn: AvatarTurn) => {
+    turnRef.current?.(turn);
+  }, []);
+
+  return useMemo<AvatarGuide>(
+    () => ({
+      config,
+      surface,
+      active,
+      steppedDown,
+      available,
+      conversational,
+      start,
+      stop,
+      speak,
+      sendUserMessage,
+      setEvidence,
+      _register: register,
+      _registerSend: registerSend,
+      _registerEvidence: registerEvidence,
+      _registerTurn: registerTurn,
+      _emitTurn: emitTurn,
+    }),
+    [
+      config,
+      surface,
+      active,
+      steppedDown,
+      available,
+      conversational,
+      start,
+      stop,
+      speak,
+      sendUserMessage,
+      setEvidence,
+      register,
+      registerSend,
+      registerEvidence,
+      registerTurn,
+      emitTurn,
+    ],
+  );
+}
