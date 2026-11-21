@@ -738,8 +738,14 @@ def ask(
     lang: str = "ur",
     tenant_id: Any = None,
     top_k: int = TOP_K,
+    conversational: bool = False,
 ) -> RagAnswer:
-    """Answer a policy question, or abstain honestly."""
+    """Answer a policy question, or abstain honestly.
+
+    ``conversational`` is additive and off by default: it only adds a
+    ``spoken_summary`` for the video guide, and never changes ``answer`` or
+    ``citations``.
+    """
     language = "en" if str(lang).lower().startswith("en") else "ur"
     cleaned = guardrails.sanitize(
         db, question or "", resource_type="rag_question", resource_id=None
@@ -750,6 +756,11 @@ def ask(
             status="NOT_SURE",
             answer=NOT_SURE_UR if language == "ur" else NOT_SURE_EN,
             lang=language,
+            spoken_summary=(
+                SPOKEN_ABSTENTION_UR if language == "ur" else SPOKEN_ABSTENTION_EN
+            )
+            if conversational
+            else None,
         )
 
     chunks = retrieve(db, cleaned, program_id=program_id, top_k=top_k)
