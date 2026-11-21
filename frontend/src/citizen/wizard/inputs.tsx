@@ -71,7 +71,7 @@ export function DigitPad({
         <button
           type="button"
           onClick={() => onChange(value.slice(0, -1))}
-          aria-label={t('common.back')}
+          aria-label={t('common.delete')}
           className="press grid min-h-primary place-items-center rounded-control border border-ink/[0.10] bg-raised text-ink-2 hover:text-ink"
         >
           <IconArrowLeft size={22} />

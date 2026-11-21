@@ -89,10 +89,10 @@ export function CaseStatusPage() {
       <header className="enter enter-1 mb-4 flex items-center gap-2">
         <Link
           to="/c/cases"
-          className="press -ms-2 grid h-tap w-tap place-items-center rounded-control text-ink-2 hover:bg-raised hover:text-ink"
-          aria-label={t('cases.title')}
+          className="press -ms-2 inline-flex min-h-tap items-center gap-1.5 rounded-control px-2 text-caption font-medium text-ink-2 hover:bg-raised hover:text-ink"
         >
-          <IconArrowLeft size={20} />
+          <IconArrowLeft size={16} />
+          {t('common.back')}
         </Link>
         <span className="num font-mono text-meta text-ink-3">{data.reference_code}</span>
         {fromCache && <span className="ms-auto text-meta font-medium text-warn">{t('common.offline')}</span>}
