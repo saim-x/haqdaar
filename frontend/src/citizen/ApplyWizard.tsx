@@ -1018,6 +1018,11 @@ export function ApplyWizard() {
                         : key === 'monthly_income_pkr'
                           ? `PKR ${pkr(raw as number)}`
                           : String(raw);
+              // Mono is the app's mark for a code. A name, a district and a
+              // date are not codes, and setting them in mono made the review
+              // list look like a printout of the database.
+              const isCode =
+                key === 'applicant_cnic' || key === 'spouse_cnic' || key === 'payout_phone';
               return (
                 <li
                   key={key}
@@ -1026,9 +1031,9 @@ export function ApplyWizard() {
                   <div className="min-w-0 flex-1">
                     <p className="text-meta text-ink-3">{t(labelKey)}</p>
                     <p
-                      className={`mt-0.5 truncate font-mono text-body tabular-nums ${
-                        unknown ? 'text-ink-3' : 'text-ink'
-                      }`}
+                      className={`mt-0.5 truncate text-body tabular-nums ${
+                        isCode ? 'font-mono' : ''
+                      } ${unknown ? 'text-ink-3' : 'text-ink'}`}
                     >
                       <bdi>{display}</bdi>
                     </p>
@@ -1061,17 +1066,6 @@ export function ApplyWizard() {
                 : 'Only the Social Welfare Department can see your data, and only with your permission.'}
             </p>
           </div>
-
-          <TapButton
-            block
-            className="mt-5"
-            disabled={busy}
-            icon={<IconCheck size={20} />}
-            onClick={() => void submit()}
-            data-testid="wizard-submit"
-          >
-            {busy ? t('common.loading') : t('wizard.review.submit')}
-          </TapButton>
         </section>
       )}
 
@@ -1088,7 +1082,21 @@ export function ApplyWizard() {
           >
             {t('common.back')}
           </TapButton>
-          {step !== 'review' && (
+          {/* The primary action lives in the same place on every step. On the
+              review step it used to sit at the end of the card, which left the
+              bar holding a lone Back button and put Submit below ten rows of
+              scrolling. */}
+          {step === 'review' ? (
+            <TapButton
+              block
+              disabled={busy}
+              icon={<IconCheck size={20} />}
+              onClick={() => void submit()}
+              data-testid="wizard-submit"
+            >
+              {busy ? t('common.loading') : t('wizard.review.submit')}
+            </TapButton>
+          ) : (
             <TapButton
               block
               disabled={!canAdvance}
