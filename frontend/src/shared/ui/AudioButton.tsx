@@ -9,6 +9,8 @@ interface AudioButtonProps {
   text?: string | null;
   label?: string;
   size?: 'md' | 'lg';
+  /** `onDark` for use inside a filled semantic band. */
+  tone?: 'default' | 'onDark';
   className?: string;
 }
 
@@ -21,11 +23,27 @@ interface AudioButtonProps {
  * it must not compete with the one primary action. While speaking it swaps to a
  * pause glyph and a filled surface — a state change, not a looping pulse.
  */
-export function AudioButton({ audioKey, text, label, size = 'md', className = '' }: AudioButtonProps) {
+export function AudioButton({
+  audioKey,
+  text,
+  label,
+  size = 'md',
+  tone = 'default',
+  className = '',
+}: AudioButtonProps) {
   const { play, speaking, stop } = useAudio();
   const { t } = useI18n();
   const accessibleLabel = label ?? t('common.listen');
   const dimension = size === 'lg' ? 'h-14 w-14' : 'h-12 w-12';
+
+  const skin =
+    tone === 'onDark'
+      ? speaking
+        ? 'border-white bg-white text-ink'
+        : 'border-white/40 bg-white/15 text-white hover:bg-white/25'
+      : speaking
+        ? 'border-accent bg-accent text-white'
+        : 'border-ink/[0.14] bg-card text-accent-ink hover:bg-accent-wash';
 
   return (
     <button
@@ -34,11 +52,7 @@ export function AudioButton({ audioKey, text, label, size = 'md', className = ''
       aria-pressed={speaking}
       title={accessibleLabel}
       onClick={() => (speaking ? stop() : void play(audioKey, text))}
-      className={`${dimension} press inline-flex shrink-0 items-center justify-center rounded-full border ${
-        speaking
-          ? 'border-accent bg-accent text-white'
-          : 'border-ink/[0.14] bg-card text-accent-ink hover:bg-accent-wash'
-      } ${className}`}
+      className={`${dimension} press inline-flex shrink-0 items-center justify-center rounded-full border ${skin} ${className}`}
     >
       {speaking ? <IconPause size={size === 'lg' ? 22 : 18} /> : <IconSpeaker size={size === 'lg' ? 24 : 20} />}
     </button>

@@ -25,6 +25,9 @@ export function CitizenLayout() {
   // The wizard owns the bottom of the screen: its own action bar would sit
   // underneath the tab bar, so the tab bar steps aside for the whole flow.
   const focused = pathname.startsWith('/c/apply/');
+  // The Ask screen owns its own composer at the bottom, so the Ask pill would
+  // sit on top of it.
+  const showAsk = !focused && pathname !== '/c/ask';
 
   const navItems = [
     { to: '/c', label: t('home.apply'), Icon: IconHome, end: true },
@@ -133,7 +136,7 @@ export function CitizenLayout() {
         </nav>
       )}
 
-      {!focused && (
+      {showAsk && (
         <NavLink
           to="/c/ask"
           className="press fixed bottom-[76px] end-4 z-40 inline-flex min-h-tap items-center gap-2 rounded-full border border-ink/[0.08] bg-card px-4 text-caption font-medium text-ink shadow-lift hover:bg-raised"
