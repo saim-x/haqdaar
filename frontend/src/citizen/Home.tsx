@@ -233,16 +233,16 @@ export function CitizenHome() {
           <li key={key} className="flex items-center gap-1 border-b border-ink/[0.08] last:border-b-0">
             <Link
               to={to}
-              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-3 py-3 text-start hover:bg-raised/50"
+              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-3 py-3.5 text-start hover:bg-raised/60 transition-colors"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-raised text-ink-2">
-                <Icon size={18} />
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-accent-wash text-accent-ink shadow-hair">
+                <Icon size={20} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-body font-medium leading-[1.4] text-ink">{label}</span>
+                <span className="block text-body-lg font-medium leading-[1.4] text-ink">{label}</span>
                 <span className="mt-0.5 block text-caption leading-[1.5] text-ink-3">{hint}</span>
               </span>
-              <IconChevron size={16} className="shrink-0 text-ink-3" />
+              <IconChevron size={18} className="shrink-0 text-accent-ink" />
             </Link>
             <AudioButton
               audioKey={key === 'ask' ? 'ask_intro' : isHelper && key === 'data' ? undefined : `home_${key}`}

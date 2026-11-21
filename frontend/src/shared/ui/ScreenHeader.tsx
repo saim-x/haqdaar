@@ -38,10 +38,10 @@ export function ScreenHeader({
           {meta}
         </div>
       )}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-title font-medium leading-[1.35] text-ink">{title}</h1>
-          {hint && <p className="mt-1 text-body leading-[1.7] text-ink-2">{hint}</p>}
+      <div className="flex items-start justify-between gap-3 overflow-hidden">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-title font-medium leading-[1.35] text-ink break-words">{title}</h1>
+          {hint && <p className="mt-1 text-body leading-[1.7] text-ink-2 break-words">{hint}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {actions}

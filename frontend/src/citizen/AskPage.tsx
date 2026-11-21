@@ -153,15 +153,12 @@ export function AskPage() {
                       <p className="mb-2 text-meta text-ink-3">{t('ask.citations')}</p>
                       <ul className="space-y-2">
                         {turn.answer.citations.map((citation, index) => (
-                          <li key={`${citation.doc_title}-${index}`}>
+                          <li key={`${citation.doc_title}-${index}`} className="rounded-control bg-raised/40 p-2.5">
                             <p className="flex items-center gap-1.5 text-meta font-medium text-ink">
-                              <IconDocument size={13} className="shrink-0 text-ink-3" />
+                              <IconDocument size={14} className="shrink-0 text-accent-ink" />
                               {citation.doc_title} · {citation.section}
                             </p>
-                            <p className="mt-0.5 text-meta leading-[1.7] text-ink-3">{citation.excerpt}</p>
-                            <p className="num mt-0.5 font-mono text-meta text-ink-3">
-                              v{citation.version} · {Math.round(citation.score * 100)}%
-                            </p>
+                            <p className="mt-1 text-caption leading-[1.7] text-ink-2">{citation.excerpt}</p>
                           </li>
                         ))}
                       </ul>

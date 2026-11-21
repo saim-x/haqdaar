@@ -59,9 +59,16 @@ export function CaseStatusPage() {
   if (error && (!data || [401, 403, 404].includes(error.status))) {
     return (
       <div className="screen">
-        <div role="alert" className="card border-negative/25 p-4">
-          <p className="font-mono text-meta text-negative">{error.code}</p>
-          <p className="mt-1 text-body text-ink">{lang === 'ur' ? error.messageUr : error.messageEn}</p>
+        <div role="alert" className="card border-negative/25 p-5">
+          <div className="flex items-center gap-2 text-negative">
+            <IconWarning size={20} />
+            <p className="text-body-lg font-medium text-ink">
+              {lang === 'ur' ? 'معلومات دستیاب نہیں ہیں' : 'Information Unavailable'}
+            </p>
+          </div>
+          <p className="mt-2 text-body leading-[1.7] text-ink-2">
+            {lang === 'ur' ? error.messageUr : error.messageEn}
+          </p>
         </div>
         <Link to="/c/cases" className="mt-4 inline-flex items-center gap-1 text-caption font-medium text-accent-ink">
           {t('cases.title')}

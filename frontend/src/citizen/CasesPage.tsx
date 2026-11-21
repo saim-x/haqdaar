@@ -72,22 +72,22 @@ export function CasesPage() {
               <Link
                 to={`/c/cases/${item.id}`}
                 data-tour="case-entry"
-                className="press flex min-h-primary items-center gap-3 px-1 py-3 hover:bg-raised/50"
+                className="press flex min-h-primary items-center gap-3 px-2 py-3.5 hover:bg-raised/60 rounded-control transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-body font-medium text-ink">
+                  <p className="truncate text-body-lg font-medium text-ink">
                     {pick(item.program.name_ur, item.program.name)}
                   </p>
                   {/* Reference and status share one line: the reference is the
                       row's identity, the status is its state, and stacking them
                       made a two-line row three lines tall. */}
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="num font-mono text-meta text-ink-3">{item.reference_code}</span>
                     <span aria-hidden className="h-3 w-px bg-ink/[0.14]" />
                     <StatusBadge status={item.status} size="sm" />
                   </div>
                 </div>
-                <IconChevron size={16} className="shrink-0 text-ink-3" />
+                <IconChevron size={18} className="shrink-0 text-accent-ink" />
               </Link>
             </li>
           ))}

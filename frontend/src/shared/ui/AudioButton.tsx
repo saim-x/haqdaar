@@ -56,11 +56,11 @@ export function AudioButton({
         : 'border-white/40 bg-white/15 text-white hover:bg-white/25'
       : variant === 'quiet'
         ? speaking
-          ? 'border-transparent bg-accent text-white'
-          : 'border-transparent bg-transparent text-ink-3 hover:bg-raised hover:text-accent-ink'
+          ? 'border-transparent bg-accent text-white shadow-sm'
+          : 'border-transparent bg-accent-wash/60 text-accent-ink hover:bg-accent-wash'
         : speaking
-          ? 'border-accent bg-accent text-white'
-          : 'border-ink/[0.14] bg-card text-accent-ink hover:bg-accent-wash';
+          ? 'border-accent bg-accent text-white shadow-sm'
+          : 'border-accent/40 bg-accent-wash/50 text-accent-ink hover:bg-accent-wash shadow-hair';
 
   return (
     <button

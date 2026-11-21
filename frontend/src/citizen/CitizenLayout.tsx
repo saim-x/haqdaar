@@ -46,29 +46,29 @@ export function CitizenLayout() {
   return (
     <div className="flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
       <header className="sticky top-[var(--banner-h)] z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-[560px] items-center gap-1.5 px-4 py-2">
-          <BrandMark size={22} />
-          <span className="text-body-lg font-medium tracking-tight text-ink">{t('app.name')}</span>
+        <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2">
+          <BrandMark size={24} />
+          <span className="text-body-lg font-semibold tracking-tight text-ink">{t('app.name')}</span>
           <OfflinePill compact />
-          <div className="ms-auto flex items-center gap-0.5">
+          <div className="ms-auto flex items-center gap-1">
             <button
               type="button"
               onClick={() => setAutoRead(!autoRead)}
               aria-pressed={autoRead}
               aria-label={t('common.autoRead')}
               title={t('common.autoRead')}
-              className={`press grid h-tap w-tap place-items-center rounded-control ${
-                autoRead ? 'bg-accent-wash text-accent-ink' : 'text-ink-3 hover:text-ink'
+              className={`press grid h-tap w-tap place-items-center rounded-control transition-colors ${
+                autoRead ? 'bg-accent text-white shadow-sm' : 'bg-card border border-ink/[0.12] text-accent-ink hover:bg-accent-wash'
               }`}
             >
-              <IconSpeaker size={16} />
+              <IconSpeaker size={18} />
             </button>
             <button
               type="button"
               onClick={toggleLite}
               aria-pressed={lite}
-              className={`press min-h-tap rounded-control px-2 text-meta font-medium ${
-                lite ? 'bg-accent-wash text-accent-ink' : 'text-ink-3 hover:text-ink'
+              className={`press min-h-tap rounded-control px-2.5 text-meta font-medium transition-colors ${
+                lite ? 'bg-accent text-white shadow-sm' : 'bg-card border border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
               }`}
               title={t('common.liteMode')}
             >
@@ -77,7 +77,7 @@ export function CitizenLayout() {
             <button
               type="button"
               onClick={toggleLang}
-              className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:text-ink"
+              className="press inline-flex min-h-tap items-center gap-1 rounded-control bg-card border border-ink/[0.12] px-2.5 text-meta font-medium text-ink-2 hover:bg-raised hover:text-ink"
               aria-label={t('common.switchLanguage')}
             >
               <IconGlobe size={14} />

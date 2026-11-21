@@ -12,7 +12,7 @@ import { useI18n } from '../i18n/I18nProvider';
  * either direction without a direction-specific rule.
  */
 export function ProgressDots({ total, current }: { total: number; current: number }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const percent = total > 0 ? Math.min(100, Math.round(((current + 1) / total) * 100)) : 0;
 
   return (
@@ -24,14 +24,14 @@ export function ProgressDots({ total, current }: { total: number; current: numbe
       aria-valuenow={current + 1}
       aria-valuetext={`${t('common.step')} ${current + 1} ${t('common.of')} ${total}`}
     >
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-ink/[0.10]" aria-hidden>
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/[0.10]" aria-hidden>
         <div
           className="h-full rounded-full bg-accent transition-[width] duration-enter ease-out"
           style={{ width: `${percent}%` }}
         />
       </div>
-      <span className="num shrink-0 text-meta font-medium text-ink-3">
-        {current + 1}/{total}
+      <span className="shrink-0 text-caption font-medium text-accent-ink">
+        {lang === 'ur' ? `مرحلہ ${current + 1} از ${total}` : `Step ${current + 1} of ${total}`}
       </span>
     </div>
   );

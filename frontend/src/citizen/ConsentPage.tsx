@@ -185,24 +185,32 @@ export function ConsentPage() {
               </span>
             </div>
 
-            <dl className="mt-4 space-y-2.5 border-t border-ink/[0.08] pt-4 text-caption">
+            <dl className="mt-4 space-y-3 border-t border-ink/[0.08] pt-4 text-caption">
               <div>
-                <dt className="text-meta text-ink-3">{t('consent.categories')}</dt>
-                <dd className="mt-0.5 text-ink">
+                <dt className="text-meta font-medium text-ink-3">{t('consent.categories')}</dt>
+                <dd className="mt-1 flex flex-wrap gap-1.5 text-ink">
                   {grant.categories
                     .map((cat) => (lang === 'ur' ? CATEGORY_LABELS[cat]?.ur : CATEGORY_LABELS[cat]?.en) ?? cat)
-                    .join(' · ')}
+                    .map((label, idx) => (
+                      <span key={idx} className="rounded-control bg-raised px-2.5 py-1 text-caption text-ink font-medium">
+                        {label}
+                      </span>
+                    ))}
                 </dd>
               </div>
               <div>
-                <dt className="text-meta text-ink-3">{t('consent.purpose')}</dt>
-                <dd className="mt-0.5 text-ink">
+                <dt className="text-meta font-medium text-ink-3">{t('consent.purpose')}</dt>
+                <dd className="mt-1 flex flex-wrap gap-1.5 text-ink">
                   {grant.purposes
                     .map((p) => (lang === 'ur' ? PURPOSE_LABELS[p]?.ur : PURPOSE_LABELS[p]?.en) ?? p)
-                    .join(' · ')}
+                    .map((label, idx) => (
+                      <span key={idx} className="rounded-control bg-accent-wash px-2.5 py-1 text-caption text-accent-ink font-medium">
+                        {label}
+                      </span>
+                    ))}
                 </dd>
               </div>
-              <div className="flex flex-wrap gap-x-8 gap-y-2.5">
+              <div className="flex flex-wrap gap-x-8 gap-y-2.5 pt-1">
                 <div>
                   <dt className="text-meta text-ink-3">{t('consent.grantedOn')}</dt>
                   <dd className="num mt-0.5 text-ink">

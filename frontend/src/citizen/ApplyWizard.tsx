@@ -640,7 +640,7 @@ export function ApplyWizard() {
       <div className="mb-2 mt-1">
         <DashboardBackLink onClick={saveBeforeLeaving} />
       </div>
-      <div className="mb-4">
+      <div className="mb-4 rounded-control bg-paper-2/70 p-2 border border-ink/[0.06]">
         <ProgressDots total={total} current={stepIndex} />
       </div>
 

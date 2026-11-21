@@ -112,7 +112,7 @@ export function ScamCheckPage() {
   return (
     <>
       <PublicHeader />
-      <div className="screen">
+      <div className="screen px-4 sm:px-6">
         <ScreenHeader
           title={t('scam.title')}
           hint={t('scam.subtitle')}
