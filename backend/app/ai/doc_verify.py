@@ -290,10 +290,12 @@ def check_qr(image: Any) -> tuple[CheckResult, dict[str, Any] | None]:
 # --------------------------------------------------------------------------- #
 # check 3 — OCR
 # --------------------------------------------------------------------------- #
-def check_ocr(image_bytes: bytes, doc_type: str) -> tuple[CheckResult, OCRResult]:
-    provider = get_provider()
+def check_ocr(
+    image_bytes: bytes, doc_type: str, *, provider: Any = None
+) -> tuple[CheckResult, OCRResult]:
+    active_provider = provider if provider is not None else get_provider()
     try:
-        result = provider.ocr_document(image_bytes, doc_type)
+        result = active_provider.ocr_document(image_bytes, doc_type)
     except Exception as exc:  # pragma: no cover - provider already falls back
         logger.warning("OCR provider failed: %s", exc)
         result = OCRResult(fields={}, confidence=0.0, available=False)
@@ -455,7 +457,9 @@ def check_cross_reference(
 # --------------------------------------------------------------------------- #
 # the pipeline
 # --------------------------------------------------------------------------- #
-def verify_image(image_bytes: bytes, doc_type: str = "CNIC_FRONT") -> DocVerification:
+def verify_image(
+    image_bytes: bytes, doc_type: str = "CNIC_FRONT", *, provider: Any = None
+) -> DocVerification:
     """Run all four checks on raw bytes. Pure: no DB, no side effects."""
     checks: list[CheckResult] = []
 
@@ -492,7 +496,7 @@ def verify_image(image_bytes: bytes, doc_type: str = "CNIC_FRONT") -> DocVerific
             doc_type=doc_type,
         )
 
-    ocr_check, ocr = check_ocr(image_bytes, doc_type)
+    ocr_check, ocr = check_ocr(image_bytes, doc_type, provider=provider)
     checks.append(ocr_check)
     if not ocr_check.passed:
         return DocVerification(

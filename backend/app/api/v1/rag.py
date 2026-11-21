@@ -13,11 +13,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
-from app.ai import api_support, rag
+from app.ai import api_support, guardrails, rag
+from app.ai.provider import get_provider, telemetry
 from app.security.rbac import require_any_authenticated
 
 logger = logging.getLogger("haqdaar.api.rag")
@@ -99,6 +100,42 @@ async def ask(
         )
 
     return JSONResponse(status_code=200, content=answer.as_dict())
+
+
+@router.post("/transcribe")
+async def transcribe_question(
+    audio: UploadFile = File(...),
+    db: Any = Depends(_db),
+    user: Any = Depends(require_any_authenticated),
+) -> JSONResponse:
+    """Transcribe a spoken policy question so low-literacy citizens can speak on /c/ask."""
+    payload = await audio.read()
+    if not payload:
+        raise HTTPException(status_code=422, detail={"error": "EMPTY_AUDIO"})
+    if len(payload) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail={"error": "AUDIO_TOO_LARGE"})
+
+    mime_type = (audio.content_type or "audio/webm").split(";")[0].strip().lower()
+
+    def _run() -> dict[str, Any]:
+        provider = get_provider()
+        with telemetry(db, tenant_id=api_support.user_tenant(user), resource_type="rag_voice"):
+            stt = provider.transcribe_urdu(payload, mime_type)
+        transcript = guardrails.sanitize(db, stt.transcript or "", resource_type="rag_voice").strip()
+        return {
+            "transcript": transcript,
+            "confidence": round(float(stt.confidence or 0.0), 3),
+            "available": bool(transcript),
+            "provider": stt.provider,
+            "model": stt.model,
+        }
+
+    try:
+        body = await run_in_threadpool(_run)
+    except Exception as exc:  # pragma: no cover
+        logger.warning("rag transcribe failed: %s", exc)
+        body = {"transcript": "", "confidence": 0.0, "available": False, "provider": "unavailable", "model": "unavailable"}
+    return JSONResponse(status_code=200, content=body)
 
 
 __all__ = ["router"]

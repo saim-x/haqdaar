@@ -165,10 +165,22 @@ _PASSWORD_LIKE = re.compile(
 
 
 def redact_secrets(text: str) -> str:
-    """Mask OTP/PIN values and passwords that appear next to their label."""
+    """Mask OTP/PIN values and passwords that appear next to their label.
+
+    Official Haqdaar verification codes (``HQ-XXXXX``) are public verification
+    identifiers, not secrets — preserve them so Stage 1 anti-scam code lookup
+    never loses an all-digit ``HQ-`` code.
+    """
     if not text:
         return ""
-    out = _OTP_LIKE.sub(lambda m: m.group(0).replace(m.group(1), "[SECRET_REDACTED]"), text)
+
+    def _replace_otp(match: re.Match[str]) -> str:
+        full = match.group(0)
+        if re.search(r"\bHQ-[A-Z0-9]{4,8}\b", full, re.IGNORECASE):
+            return full
+        return full.replace(match.group(1), "[SECRET_REDACTED]")
+
+    out = _OTP_LIKE.sub(_replace_otp, text)
     return _PASSWORD_LIKE.sub(
         lambda m: m.group(0).replace(m.group(1), "[SECRET_REDACTED]"), out
     )

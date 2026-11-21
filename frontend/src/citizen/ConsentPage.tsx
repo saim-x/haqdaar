@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
@@ -8,10 +8,11 @@ import { useAuth } from '../shared/auth/AuthProvider';
 import { grantRecipientLabel } from '../shared/lib/consent';
 import { dayMonth, stamp } from '../shared/lib/dates';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconCross, IconLock, IconUsers } from '../shared/ui/Icons';
+import { IconCheck, IconCross, IconLock, IconUsers } from '../shared/ui/Icons';
 
 const CATEGORY_LABELS: Record<string, { ur: string; en: string }> = {
   IDENTITY: { ur: 'شناخت', en: 'Identity' },
@@ -47,12 +48,23 @@ const INACTIVE_LABELS: Record<string, { ur: string; en: string }> = {
  * verdict is a dot and a word — not two competing coloured pills per row.
  */
 export function ConsentPage() {
-  const { t, lang } = useI18n();
+  const { t, lang, isRtl } = useI18n();
+  const { lite } = useLiteMode();
   const { session } = useAuth();
   const isCitizen = session?.user.role === 'CITIZEN';
   const queryClient = useQueryClient();
   const [pendingWithdraw, setPendingWithdraw] = useState<ConsentGrant | null>(null);
+  const [resumedBanner, setResumedBanner] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingWithdraw) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPendingWithdraw(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pendingWithdraw]);
 
   const grants = useQuery({
     queryKey: ['consent-grants'],
@@ -62,7 +74,7 @@ export function ConsentPage() {
   const logs = useQuery({
     queryKey: ['consent-access-logs'],
     queryFn: () => api.get<{ items: ConsentAccessLog[] }>('/consent/access-logs'),
-    refetchInterval: 30_000,
+    refetchInterval: lite ? false : 30_000,
     enabled: isCitizen,
   });
 
@@ -71,8 +83,38 @@ export function ConsentPage() {
       api.post(`/consent/grants/${grant.id}/withdraw`, confirmCaseHold ? { confirm_case_hold: true } : {}),
     onSuccess: () => {
       setPendingWithdraw(null);
+      setResumedBanner(null);
       void queryClient.invalidateQueries({ queryKey: ['consent-grants'] });
       void queryClient.invalidateQueries({ queryKey: ['consent-access-logs'] });
+    },
+    onError: (err) => setError(errorMessage(err, lang)),
+  });
+
+  const regrant = useMutation({
+    mutationFn: (grant: ConsentGrant) =>
+      api.post<{ resumed_case_ids?: string[] }>('/consent/grants', {
+        recipient_type: grant.recipient_type,
+        recipient_tenant_id: grant.recipient_tenant_id,
+        recipient_user_id: grant.recipient_user_id,
+        categories: grant.categories,
+        purposes: grant.purposes,
+        assurance_level: 'SELF_OTP',
+      }),
+    onSuccess: (res) => {
+      setError(null);
+      const count = res.resumed_case_ids?.length ?? 0;
+      setResumedBanner(
+        count > 0
+          ? isRtl
+            ? `اجازت دوبارہ فعال ہو گئی — ${count} روکی ہوئی درخواست دوبارہ شروع ہو گئی۔`
+            : `Access restored — ${count} held application(s) resumed automatically.`
+          : isRtl
+            ? 'اجازت دوبارہ فعال ہو گئی۔'
+            : 'Access restored.',
+      );
+      void queryClient.invalidateQueries({ queryKey: ['consent-grants'] });
+      void queryClient.invalidateQueries({ queryKey: ['consent-access-logs'] });
+      void queryClient.invalidateQueries({ queryKey: ['cases'] });
     },
     onError: (err) => setError(errorMessage(err, lang)),
   });
@@ -88,6 +130,16 @@ export function ConsentPage() {
         audioKey={isCitizen ? 'consent_intro' : undefined}
         audioText={isCitizen ? t('consent.whoHasData') : t('helper.permissionsHint')}
       />
+
+      {resumedBanner && (
+        <div
+          role="status"
+          className="mb-4 flex items-center gap-2 rounded-control border border-positive/25 bg-positive-wash px-4 py-3 text-caption font-medium text-positive"
+        >
+          <IconCheck size={16} className="shrink-0" />
+          <span>{resumedBanner}</span>
+        </div>
+      )}
 
       {(error || grants.error) && (
         <div
@@ -182,21 +234,39 @@ export function ConsentPage() {
         <section className="enter enter-3 mt-6">
           <h2 className="section-label mb-3">{t('consent.statusWithdrawn')}</h2>
           <ul className="border-y border-ink/[0.08]">
-            {inactive.map((grant) => (
-              <li
-                key={grant.id}
-                className="flex items-center gap-2.5 border-b border-ink/[0.08] py-2.5 last:border-b-0"
-              >
-                <IconCross size={14} className="shrink-0 text-ink-3" />
-                <span className="min-w-0 flex-1 truncate text-caption text-ink-2">
-                  {grantRecipientLabel(grant, lang)}
-                </span>
-                <span className="shrink-0 text-meta text-ink-3">
-                  {(lang === 'ur' ? INACTIVE_LABELS[grant.status]?.ur : INACTIVE_LABELS[grant.status]?.en) ??
-                    grant.status}
-                </span>
-              </li>
-            ))}
+            {inactive.map((grant) => {
+              const hasActiveReplacement = active.some(
+                (a) =>
+                  a.recipient_type === grant.recipient_type &&
+                  a.recipient_tenant_id === grant.recipient_tenant_id &&
+                  a.recipient_user_id === grant.recipient_user_id,
+              );
+              return (
+                <li
+                  key={grant.id}
+                  className="flex flex-wrap items-center gap-2.5 border-b border-ink/[0.08] py-2.5 last:border-b-0"
+                >
+                  <IconCross size={14} className="shrink-0 text-ink-3" />
+                  <span className="min-w-0 flex-1 truncate text-caption text-ink-2">
+                    {grantRecipientLabel(grant, lang)}
+                  </span>
+                  <span className="shrink-0 text-meta text-ink-3">
+                    {(isRtl ? INACTIVE_LABELS[grant.status]?.ur : INACTIVE_LABELS[grant.status]?.en) ??
+                      grant.status}
+                  </span>
+                  {!hasActiveReplacement && grant.recipient_type === 'DEPARTMENT' && (
+                    <button
+                      type="button"
+                      disabled={regrant.isPending}
+                      onClick={() => regrant.mutate(grant)}
+                      className="press inline-flex min-h-tap shrink-0 items-center rounded-control border border-accent/40 bg-accent-wash px-3 text-meta font-medium text-accent-ink hover:bg-accent hover:text-white disabled:opacity-60"
+                    >
+                      {t('wizard.consent.grant')}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -240,7 +310,7 @@ export function ConsentPage() {
       <Link
         to="/c/my-data"
         data-tour="my-data"
-        className="mt-8 block text-center text-caption font-medium text-accent-ink underline decoration-1 underline-offset-4"
+        className="mt-6 flex min-h-tap items-center justify-center text-center text-caption font-medium text-accent-ink underline decoration-1 underline-offset-4"
       >
         {isCitizen ? t('consent.myData') : t('helper.familyData')}
       </Link>

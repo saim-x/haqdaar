@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../shared/api/client';
+import { api, request } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { JobListResponse, JobStatus } from '../../shared/api/types';
-import { Card, ErrorState, humanize, jobWord, Loading, PageHeader } from '../ui';
+import { Card, ErrorState, humanize, jobWord, Kpi, Loading, PageHeader } from '../ui';
+
+interface HealthPayload {
+  status: string;
+  database: string;
+  worker: string;
+  uploads: string;
+  detail?: {
+    worker_heartbeat_stale?: boolean;
+    ai_provider?: string;
+    demo_mode?: boolean;
+    embedded_worker?: boolean;
+  };
+}
 
 const STATUSES: (JobStatus | '')[] = [
   '',
@@ -34,6 +47,12 @@ export default function JobsPage() {
     queryKey: ['admin-jobs', status],
     queryFn: () => api.get<JobListResponse>(`/admin/jobs${status ? `?status=${status}` : ''}`),
     refetchInterval: 10_000,
+  });
+
+  const health = useQuery({
+    queryKey: ['system-health'],
+    queryFn: () => request<HealthPayload>('/health', { base: '', anonymous: true }).then((r) => r.data),
+    refetchInterval: 15_000,
   });
 
   const retry = useMutation({
@@ -72,6 +91,32 @@ export default function JobsPage() {
       {message && (
         <div className="rounded-control border border-ink/[0.12] bg-card px-4 py-2.5 text-caption text-ink">
           {message}
+        </div>
+      )}
+
+      {health.data && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <Kpi
+            label="System status"
+            value={health.data.status}
+            hint={`AI: ${health.data.detail?.ai_provider ?? 'fake'}`}
+          />
+          <Kpi label="Database" value={health.data.database} />
+          <Kpi
+            label="Worker heartbeat"
+            value={health.data.detail?.worker_heartbeat_stale ? 'Stale' : 'Fresh'}
+            hint={health.data.worker}
+          />
+          <Kpi
+            label="Pending / Running"
+            value={`${query.data?.queue_depth?.PENDING ?? 0} / ${query.data?.queue_depth?.RUNNING ?? 0}`}
+            hint="Postgres SKIP LOCKED"
+          />
+          <Kpi
+            label="Completed / Dead"
+            value={`${query.data?.queue_depth?.COMPLETED ?? 0} / ${query.data?.queue_depth?.DEAD ?? 0}`}
+            hint={`Retry: ${query.data?.queue_depth?.FAILED_RETRY ?? 0}`}
+          />
         </div>
       )}
 

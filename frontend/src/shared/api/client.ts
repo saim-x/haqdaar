@@ -98,7 +98,9 @@ async function execute<T>(path: string, opts: RequestOptions, token: string | nu
   if (token && !opts.anonymous) headers.Authorization = `Bearer ${token}`;
 
   const actFor = bridge?.getActForCitizen() ?? null;
-  if (actFor && !opts.anonymous) headers['X-Act-For-Citizen'] = actFor;
+  if (actFor && !opts.anonymous && !('X-Act-For-Citizen' in headers)) {
+    headers['X-Act-For-Citizen'] = actFor;
+  }
 
   if (MUTATING.has(method) && !opts.anonymous) {
     headers['Idempotency-Key'] = opts.idempotencyKey ?? uuid();

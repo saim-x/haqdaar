@@ -18,7 +18,7 @@ import {
 } from '../ui';
 import { stamp } from '../../shared/lib/dates';
 import { pkr } from '../../shared/lib/money';
-import { formatFactValue } from '../pages/CaseEvidence';
+import { formatFactValue, RuleTraceTable } from '../pages/CaseEvidence';
 
 /**
  * One confidence pillar. The number is the fact and the track is the glance;
@@ -182,6 +182,10 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
               </dl>
             </Card>
           </div>
+
+          {decision.rule_trace && decision.rule_trace.length > 0 && (
+            <RuleTraceTable trace={decision.rule_trace} />
+          )}
 
           {decision.citizen_explanation && (
             <Card>

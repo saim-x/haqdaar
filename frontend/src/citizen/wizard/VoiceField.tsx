@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { VoiceParseResult } from '../../shared/api/types';
+import { useAudio } from '../../shared/audio/AudioProvider';
 import { useVoiceCapture } from '../../shared/audio/useVoiceCapture';
 import { useI18n } from '../../shared/i18n/I18nProvider';
 import { AudioButton } from '../../shared/ui/AudioButton';
@@ -10,26 +11,14 @@ import { IconCheck, IconCross, IconMic } from '../../shared/ui/Icons';
 interface VoiceFieldProps {
   fieldKey: string;
   /** Called only after the citizen confirms the read-back. */
-  onConfirm(value: string | number | boolean | null): void;
+  onConfirm(value: string | number | boolean | null, missingReason?: string | null): void;
   audioKey?: string;
   audioText?: string;
 }
 
-/**
- * Voice input with mandatory read-back — docs/11 §2.3, docs/07 §2.
- *
- * The value is never stored on the strength of the transcript alone: the parsed
- * value is shown, spoken back in Urdu, and only written when the citizen
- * confirms it.
- * When the microphone is unavailable this component renders nothing at all —
- * voice is an accelerator, never a single point of failure.
- *
- * The read-back is the one place this screen raises its voice: a hairline card
- * with the parsed value at 24px mono, and two giant buttons. Nothing else on the
- * step competes with it.
- */
 export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFieldProps) {
-  const { t, lang } = useI18n();
+  const { t, lang, isRtl } = useI18n();
+  const { play } = useAudio();
   const capture = useVoiceCapture(12);
   const [parsed, setParsed] = useState<VoiceParseResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -46,11 +35,15 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
     const form = new FormData();
     form.append('audio', readyBlob, 'answer.webm');
     form.append('field_key', fieldKey);
-    form.append('lang', 'ur');
+    form.append('lang', isRtl ? 'ur' : 'en');
     api
       .upload<VoiceParseResult>('/voice/transcribe-parse', form)
       .then((result) => {
-        if (!cancelled) setParsed(result);
+        if (cancelled) return;
+        setParsed(result);
+        // Mandatory voice readback (docs/11 §2.6): speak the confirmation immediately.
+        const spoken = isRtl ? result.readback_ur : result.readback_en;
+        if (spoken) void play(null, spoken);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(errorMessage(err, lang));
@@ -61,11 +54,22 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
     return () => {
       cancelled = true;
     };
-  }, [readyBlob, fieldKey, lang]);
+  }, [readyBlob, fieldKey, isRtl, lang, play]);
 
-  if (capture.state === 'unsupported' || capture.state === 'denied') return null;
+  if (capture.state === 'unsupported') return null;
+  if (capture.state === 'denied') {
+    return (
+      <p className="mt-3 rounded-control bg-raised px-3 py-2 text-meta leading-[1.6] text-ink-2">
+        {t('scam.voiceUnavailable')}
+      </p>
+    );
+  }
 
   const recording = capture.state === 'recording';
+  const isUserUnknown = parsed?.missing_reason === 'USER_UNKNOWN';
+  const canConfirm = Boolean(
+    parsed && !parsed.needs_retry && (parsed.parsed_value !== null || isUserUnknown),
+  );
 
   return (
     <div className="mt-3">
@@ -102,15 +106,14 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
         <div className="card enter p-4">
           <p className="text-meta text-ink-3">{t('wizard.readback.question')}</p>
           <div className="mt-1.5 flex items-center gap-2">
-            {/* `dir="auto"` picks the base direction from the value itself: a
-                parsed number reads LTR, "not understood" reads RTL. `.num`
-                would pin it to LTR and drag the Urdu fallback with it. */}
             <p className="flex-1 text-title-lg font-medium tabular-nums text-ink" dir="auto">
-              {parsed.parsed_value === null || parsed.parsed_value === ''
-                ? t('wizard.voice.notUnderstood')
-                : String(parsed.parsed_value)}
+              {isUserUnknown
+                ? t('common.dontKnow')
+                : parsed.parsed_value === null || parsed.parsed_value === ''
+                  ? t('wizard.voice.notUnderstood')
+                  : String(parsed.parsed_value)}
             </p>
-            <AudioButton audioKey={null} text={parsed.readback_ur} />
+            <AudioButton audioKey={null} text={isRtl ? parsed.readback_ur : parsed.readback_en} />
           </div>
           <p className="mt-1 text-meta leading-[1.7] text-ink-3">{parsed.transcript}</p>
 
@@ -128,9 +131,9 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
             </button>
             <button
               type="button"
-              disabled={parsed.needs_retry || parsed.parsed_value === null}
+              disabled={!canConfirm}
               onClick={() => {
-                onConfirm(parsed.parsed_value);
+                onConfirm(parsed.parsed_value, parsed.missing_reason);
                 setParsed(null);
                 capture.reset();
               }}

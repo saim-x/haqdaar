@@ -5,6 +5,7 @@ import { ApiError } from '../shared/api/errors';
 import type { CaseListResponse } from '../shared/api/types';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { StatusBadge } from '../shared/ui/StatusBadge';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapLink } from '../shared/ui/TapButton';
@@ -21,11 +22,12 @@ import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 export function CasesPage() {
   const { t, pick } = useI18n();
   const { actFor, session } = useAuth();
+  const { lite } = useLiteMode();
 
   const query = useQuery({
     queryKey: ['cases', actFor?.citizenId ?? session?.citizen?.id ?? 'self'],
     queryFn: () => api.get<CaseListResponse>('/cases'),
-    refetchInterval: 30_000,
+    refetchInterval: lite ? false : 30_000,
   });
 
   // A helper whose citizen withdrew consent gets a zero-PII lock screen, not a

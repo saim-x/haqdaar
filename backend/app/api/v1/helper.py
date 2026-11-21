@@ -127,11 +127,14 @@ def _helper_grant(
 
 
 def _require_family(db: Session, citizen_id: uuid.UUID, helper_user_id: uuid.UUID) -> Citizen:
-    """A helper may only touch citizens they already hold a grant for (else 404)."""
+    """A helper may only touch citizens they serve or just onboarded (else 404)."""
     citizen = db.get(Citizen, citizen_id)
     if citizen is None:
         raise NotFoundError()
-    if _helper_grant(db, citizen_id=citizen_id, helper_user_id=helper_user_id) is None:
+    if (
+        _helper_grant(db, citizen_id=citizen_id, helper_user_id=helper_user_id) is None
+        and citizen.created_by_user_id != helper_user_id
+    ):
         raise NotFoundError()
     return citizen
 
@@ -458,7 +461,13 @@ def verify_consent(
             raise ValidationError(
                 details={"fields": [{"field": "challenge_id", "reason": "INVALID_UUID"}]}
             ) from exc
-        verify_challenge(db, challenge_id=challenge_uuid, code=str(code))
+        verify_challenge(
+            db,
+            challenge_id=challenge_uuid,
+            code=str(code),
+            expected_phone=citizen.phone,
+            expected_purpose=OtpPurpose.HELPER_CONSENT,
+        )
         grant = _create_helper_grant(
             db, citizen=citizen, actor=actor, assurance_level="CITIZEN_OTP"
         )

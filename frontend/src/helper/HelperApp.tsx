@@ -52,8 +52,51 @@ export function HelperRosterPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [pending, setPending] = useState<HelperFamily | null>(null);
+  const [renewing, setRenewing] = useState<{
+    family: HelperFamily;
+    challengeId: string;
+  } | null>(null);
+  const [renewOtp, setRenewOtp] = useState('');
+  const [renewBusy, setRenewBusy] = useState(false);
+  const [renewError, setRenewError] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
+
+  async function startRenew(family: HelperFamily) {
+    setRenewBusy(true);
+    setRenewError(null);
+    setRenewOtp('');
+    try {
+      const res = await api.post<{ challenge_id: string }>(
+        `/helper/families/${family.citizen_id}/consent-otp`,
+        {},
+      );
+      setRenewing({ family, challengeId: res.challenge_id });
+    } catch (err) {
+      setRenewError(errorMessage(err, lang));
+    } finally {
+      setRenewBusy(false);
+    }
+  }
+
+  async function confirmRenew() {
+    if (!renewing) return;
+    setRenewBusy(true);
+    setRenewError(null);
+    try {
+      await api.post(`/helper/families/${renewing.family.citizen_id}/consent-verify`, {
+        challenge_id: renewing.challengeId,
+        code: renewOtp,
+      });
+      setRenewing(null);
+      setRenewOtp('');
+      void families.refetch();
+    } catch (err) {
+      setRenewError(errorMessage(err, lang));
+    } finally {
+      setRenewBusy(false);
+    }
+  }
 
   const families = useQuery({
     queryKey: ['helper', 'families'],
@@ -228,6 +271,17 @@ export function HelperRosterPage() {
                   </span>
                 </button>
 
+                {locked && (
+                  <button
+                    type="button"
+                    disabled={renewBusy}
+                    onClick={() => void startRenew(family)}
+                    className="press me-1 inline-flex min-h-tap shrink-0 items-center rounded-control border border-accent/40 bg-accent-wash px-2.5 text-meta font-medium text-accent-ink hover:bg-accent hover:text-white disabled:opacity-60"
+                  >
+                    {t('common.confirm')}
+                  </button>
+                )}
+
                 <AudioButton
                   className="me-3 shrink-0"
                   variant="quiet"
@@ -256,8 +310,52 @@ export function HelperRosterPage() {
         </TapLink>
       </div>
 
+      {renewing && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-end bg-ink/40 sm:place-items-center sm:p-4"
+        >
+          <div className="enter w-full max-w-[460px] rounded-t-panel border border-ink/[0.08] bg-card p-5 sm:rounded-panel">
+            <h2 className="text-lead font-medium text-ink">{renewing.family.full_name}</h2>
+            <p className="mt-1 text-caption text-ink-2">{t('helper.otpPrompt')}</p>
+            {renewError && (
+              <p role="alert" className="mt-2 text-meta font-medium text-negative">
+                {renewError}
+              </p>
+            )}
+            <input
+              value={renewOtp}
+              onChange={(e) => setRenewOtp(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+              inputMode="numeric"
+              aria-label={t('helper.code')}
+              className="num mt-3 text-center font-mono text-title-lg tracking-[0.2em]"
+              dir="ltr"
+            />
+            <div className="mt-4 flex gap-2">
+              <TapButton variant="secondary" size="tap" block onClick={() => setRenewing(null)}>
+                {t('common.cancel')}
+              </TapButton>
+              <TapButton
+                size="tap"
+                block
+                disabled={renewBusy || renewOtp.length !== 6}
+                onClick={() => void confirmRenew()}
+              >
+                {renewBusy ? t('common.loading') : t('common.confirm')}
+              </TapButton>
+            </div>
+          </div>
+        </div>
+      )}
+
       {pending && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper px-6 text-center" role="dialog" aria-modal="true" aria-labelledby="family-confirm-name">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="family-confirm-name"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper px-6 text-center"
+        >
           <span
             aria-hidden
             className="grid h-24 w-24 place-items-center rounded-full text-display font-medium text-white"
@@ -331,21 +429,24 @@ export function AddFamilyPage() {
     setBusy(true);
     setError(null);
     try {
-      const payload = new FormData();
-      payload.append('full_name', fullName.trim());
-      payload.append('phone', toE164Pk(phoneDigits));
-      if (district) payload.append('district', district);
-      if (isCompleteCnic(cnicDigits)) payload.append('cnic_digits', digitsOnly(cnicDigits));
-      payload.append('consent_mode', mode);
+      const body: Record<string, unknown> = {
+        full_name: fullName.trim(),
+        phone: toE164Pk(phoneDigits),
+        consent_method: mode,
+      };
+      if (district) body.district = district;
+      if (isCompleteCnic(cnicDigits)) body.cnic_digits = digitsOnly(cnicDigits);
       if (mode === 'VERBAL_WITNESSED' && capture.blob) {
-        payload.append('verbal_audio', capture.blob, 'consent.webm');
-        payload.append('attested', 'true');
+        body.verbal_audio_id = `verbal-${Date.now()}.webm`;
       }
-      const res = await api.upload<{ citizen_id: string; challenge_id?: string | null }>(
-        '/helper/families',
-        payload,
-      );
-      setCreated({ citizenId: res.citizen_id, challengeId: res.challenge_id ?? null });
+      const res = await api.post<{
+        citizen: { id: string };
+        consent_challenge?: { challenge_id: string } | null;
+      }>('/helper/families', body);
+      setCreated({
+        citizenId: res.citizen.id,
+        challengeId: res.consent_challenge?.challenge_id ?? null,
+      });
       void queryClient.invalidateQueries({ queryKey: ['helper', 'families'] });
       if (mode === 'VERBAL_WITNESSED') setDone(true);
     } catch (err) {
@@ -360,7 +461,10 @@ export function AddFamilyPage() {
     setBusy(true);
     setError(null);
     try {
-      await api.post(`/helper/families/${created.citizenId}/consent-verify`, { code: otp });
+      await api.post(`/helper/families/${created.citizenId}/consent-verify`, {
+        challenge_id: created.challengeId,
+        code: otp,
+      });
       void queryClient.invalidateQueries({ queryKey: ['helper', 'families'] });
       setDone(true);
     } catch (err) {

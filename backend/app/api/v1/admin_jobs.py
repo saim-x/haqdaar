@@ -56,10 +56,11 @@ def list_jobs(
     if job_type:
         query = query.where(Job.job_type == job_type)
         count_query = count_query.where(Job.job_type == job_type)
+    scope_criterion = None
     if not actor.is_platform_admin and actor.tenant_id is not None:
-        criterion = _tenant_job_ids(db, actor.tenant_id)
-        query = query.where(criterion)
-        count_query = count_query.where(criterion)
+        scope_criterion = _tenant_job_ids(db, actor.tenant_id)
+        query = query.where(scope_criterion)
+        count_query = count_query.where(scope_criterion)
 
     total = db.execute(count_query).scalar_one()
     rows = (
@@ -72,12 +73,15 @@ def list_jobs(
         "total": total,
         "limit": limit,
         "offset": offset,
-        "queue_depth": _queue_depth(db),
+        "queue_depth": _queue_depth(db, scope_criterion),
     }
 
 
-def _queue_depth(db: Session) -> dict[str, int]:
-    rows = db.execute(select(Job.status, func.count()).group_by(Job.status)).all()
+def _queue_depth(db: Session, scope_criterion: Any = None) -> dict[str, int]:
+    stmt = select(Job.status, func.count()).group_by(Job.status)
+    if scope_criterion is not None:
+        stmt = stmt.where(scope_criterion)
+    rows = db.execute(stmt).all()
     depth = {status.value: 0 for status in JobStatus}
     for status_value, count in rows:
         depth[str(status_value)] = int(count)
@@ -91,10 +95,27 @@ def retry_job(job_id: uuid.UUID, actor: AdminActor, db: DbSession) -> dict[str, 
         raise NotFoundError()
     if not actor.is_platform_admin and actor.tenant_id is not None:
         case_id = (job.payload_json or {}).get("case_id")
+        program_id = (job.payload_json or {}).get("program_id")
         if case_id:
             case = db.get(Case, uuid.UUID(str(case_id)))
             if case is None or case.tenant_id != actor.tenant_id:
                 raise NotFoundError()
+        elif program_id:
+            program = db.get(Program, uuid.UUID(str(program_id)))
+            if program is None or program.tenant_id != actor.tenant_id:
+                raise NotFoundError()
+        else:
+            raise NotFoundError()
+
+    previous_status = job.status
+    if previous_status in {JobStatus.COMPLETED.value, JobStatus.RUNNING.value}:
+        from app.security.errors import InvalidTransitionError
+
+        raise InvalidTransitionError(
+            message_en=f"Cannot retry a job in {previous_status} state.",
+            message_ur="یہ کام اس حالت میں دوبارہ نہیں چلایا جا سکتا۔",
+            details={"status": previous_status},
+        )
 
     requeued = retry_dead_job(db, job_id)
     if requeued is None:
@@ -109,7 +130,7 @@ def retry_job(job_id: uuid.UUID, actor: AdminActor, db: DbSession) -> dict[str, 
         actor_id=actor.actor_id_str,
         actor_role=actor.role_value,
         tenant_id=actor.tenant_id,
-        payload={"job_type": requeued.job_type, "previous_status": job.status},
+        payload={"job_type": requeued.job_type, "previous_status": previous_status},
     )
     db.commit()
     return job_to_dict(requeued)

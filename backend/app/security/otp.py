@@ -59,15 +59,54 @@ def create_challenge(
     return challenge, code
 
 
-def verify_challenge(db: Session, *, challenge_id: uuid.UUID, code: str) -> OtpChallenge:
+def _persist_failed_attempt(challenge_id: uuid.UUID) -> int:
+    """Commit the failed OTP attempt in an isolated session so request rollback cannot erase it."""
+    from app.db import SessionLocal
+
+    isolated = SessionLocal()
+    try:
+        row = isolated.get(OtpChallenge, challenge_id)
+        if row is None:
+            return settings.otp_max_attempts
+        row.attempts = int(row.attempts or 0) + 1
+        attempts = row.attempts
+        isolated.commit()
+        return attempts
+    except Exception:  # noqa: BLE001
+        isolated.rollback()
+        return settings.otp_max_attempts
+    finally:
+        isolated.close()
+
+
+def verify_challenge(
+    db: Session,
+    *,
+    challenge_id: uuid.UUID,
+    code: str,
+    expected_phone: str | None = None,
+    expected_purpose: OtpPurpose | str | None = None,
+) -> OtpChallenge:
     """Validate a code, consuming the challenge on success.
 
     Raises ``401 INVALID_OTP`` for wrong code, expired challenge, exhausted
-    attempts or an already-consumed challenge.
+    attempts, phone/purpose mismatch, or an already-consumed challenge.
     """
     challenge = db.get(OtpChallenge, challenge_id)
     if challenge is None:
         raise InvalidOtpError()
+
+    if expected_phone is not None and challenge.phone != expected_phone:
+        raise InvalidOtpError(
+            message_en="This code does not belong to this citizen's phone number.",
+            message_ur="یہ کوڈ اس شہری کے فون نمبر سے مطابقت نہیں رکھتا۔",
+        )
+
+    if expected_purpose is not None and challenge.purpose != str(expected_purpose):
+        raise InvalidOtpError(
+            message_en="This code cannot be used for this action.",
+            message_ur="یہ کوڈ اس عمل کے لیے استعمال نہیں ہو سکتا۔",
+        )
 
     if challenge.consumed_at is not None:
         raise InvalidOtpError(
@@ -88,10 +127,10 @@ def verify_challenge(db: Session, *, challenge_id: uuid.UUID, code: str) -> OtpC
         )
 
     if not verify_otp_hash(code, challenge.code_hash):
-        challenge.attempts += 1
-        db.flush()
+        attempts = _persist_failed_attempt(challenge.id)
+        challenge.attempts = attempts
         raise InvalidOtpError(
-            details={"attempts_remaining": max(0, settings.otp_max_attempts - challenge.attempts)}
+            details={"attempts_remaining": max(0, settings.otp_max_attempts - attempts)}
         )
 
     challenge.consumed_at = _now()

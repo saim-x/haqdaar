@@ -5,7 +5,7 @@ import { errorMessage } from '../../shared/api/errors';
 import type { Role, User } from '../../shared/api/types';
 import { Card, CardTitle, ErrorState, Loading, PageHeader, roleWord } from '../ui';
 
-const ROLES: Role[] = ['CITIZEN', 'HELPER', 'OFFICER', 'ADMIN', 'AUDITOR'];
+const ROLES: Role[] = ['HELPER', 'OFFICER', 'ADMIN', 'AUDITOR'];
 
 /**
  * Admin users — docs/11 §6.2.3. Tenant-scoped server-side.
@@ -30,7 +30,15 @@ export default function UsersPage() {
   });
 
   const create = useMutation({
-    mutationFn: () => api.post<User>('/admin/users', form),
+    mutationFn: () => {
+      const payload: Record<string, unknown> = {
+        full_name: form.full_name.trim(),
+        email: form.email.trim(),
+        role: form.role,
+      };
+      if (form.password.trim()) payload.password = form.password;
+      return api.post<User>('/admin/users', payload);
+    },
     onSuccess: () => {
       setMessage(`Created ${form.full_name}.`);
       setForm({ full_name: '', email: '', role: 'OFFICER', password: '' });
@@ -135,7 +143,9 @@ export default function UsersPage() {
             {query.data?.items.map((user) => (
               <tr key={user.id}>
                 <td className="font-medium text-ink">{user.full_name}</td>
-                <td className="text-meta text-ink-2">{user.email ?? user.phone ?? '—'}</td>
+                <td className="text-meta text-ink-2">
+                  {user.email ?? (user as User & { phone_masked?: string | null }).phone_masked ?? user.phone ?? '—'}
+                </td>
                 <td>
                   <select
                     value={user.role}

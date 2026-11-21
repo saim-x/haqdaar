@@ -14,14 +14,18 @@ import { Card, ErrorState, humanize, Loading, PageHeader } from '../ui';
  * weight as an allowed one — a dot and a word, never a red block that reads as
  * an error in the console itself.
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function ConsentsPage() {
   const [citizenId, setCitizenId] = useState('');
+  const trimmedCitizenId = citizenId.trim();
+  const validUuid = !trimmedCitizenId || UUID_RE.test(trimmedCitizenId);
 
   const query = useQuery({
-    queryKey: ['auditor-consents', citizenId],
+    queryKey: ['auditor-consents', validUuid ? trimmedCitizenId : ''],
     queryFn: () =>
       api.get<{ grants: ConsentGrant[]; access_logs: ConsentAccessLog[]; events: unknown[] }>(
-        `/auditor/consents${citizenId ? `?citizen_id=${encodeURIComponent(citizenId)}` : ''}`,
+        `/auditor/consents${trimmedCitizenId && validUuid ? `?citizen_id=${encodeURIComponent(trimmedCitizenId)}` : ''}`,
       ),
   });
 

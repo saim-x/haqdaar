@@ -111,12 +111,22 @@ def doc_metrics() -> dict[str, Any]:
     false_tamper = 0
     blurry_total = blurry_retake = 0
 
+    from app.ai.provider import FakeDeterministicProvider
+
+    # Always run offline specimen eval with the deterministic FakeDeterministicProvider so
+    # opening /staff/eval in AI_PROVIDER=live mode never fires 24+ Vision API calls.
+    eval_provider = FakeDeterministicProvider()
+
     for entry in images:
         path = DOC_EVAL_DIR / entry["file"]
         if not path.exists():  # pragma: no cover
             continue
         try:
-            verification = doc_verify.verify_image(path.read_bytes(), entry.get("doc_type", "CNIC_FRONT"))
+            verification = doc_verify.verify_image(
+                path.read_bytes(),
+                entry.get("doc_type", "CNIC_FRONT"),
+                provider=eval_provider,
+            )
         except Exception as exc:  # pragma: no cover
             logger.warning("doc eval failed for %s: %s", entry["file"], exc)
             continue

@@ -4,14 +4,14 @@ import type { ConsentGrant } from '../api/types';
  * Human label for a grant's recipient. The server embeds `recipient_tenant` /
  * `recipient_user` on `GET /consent/grants`, so the UI never resolves ids itself.
  */
-export function grantRecipientLabel(grant: ConsentGrant, lang: 'ur' | 'en'): string {
+export function grantRecipientLabel(grant: ConsentGrant, lang: 'ur' | 'sd' | 'en'): string {
   if (grant.recipient_type === 'DEPARTMENT') {
     const tenant = grant.recipient_tenant;
-    if (!tenant) return lang === 'ur' ? 'محکمہ' : 'Department';
-    return lang === 'ur' ? tenant.name_ur : tenant.name;
+    if (!tenant) return lang === 'en' ? 'Department' : lang === 'sd' ? 'کاتو' : 'محکمہ';
+    return lang === 'en' ? tenant.name : tenant.name_ur;
   }
   const user = grant.recipient_user;
-  if (!user) return lang === 'ur' ? 'مددگار' : 'Helper';
+  if (!user) return lang === 'en' ? 'Helper' : 'مددگار';
   return user.full_name;
 }
 

@@ -16,7 +16,8 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -30,7 +31,7 @@ from app.security.context import (
     request_id_var,
 )
 from app.security.errors import ApiError
-from app.security.ratelimit import check_ai_limit, check_scam_limit
+from app.security.ratelimit import check_ai_limit, check_otp_verify_limit, check_scam_limit
 
 logger = logging.getLogger("app.main")
 
@@ -68,6 +69,12 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             status_code = response.status_code
             response.headers[REQUEST_ID_HEADER] = request_id
             response.headers["X-Prototype"] = "true"
+            response.headers.setdefault("X-Content-Type-Options", "nosniff")
+            response.headers.setdefault("X-Frame-Options", "DENY")
+            response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+            response.headers.setdefault(
+                "Permissions-Policy", "camera=(self), microphone=(self), geolocation=()"
+            )
             return response
         finally:
             duration_ms = round((time.perf_counter() - started) * 1000, 2)
@@ -83,20 +90,32 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             request_id_var.reset(token)
 
 
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        first = forwarded.split(",")[0].strip()
+        if first:
+            return first
+    return request.client.host if request.client else "unknown"
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Anonymous per-IP limits for the public AI endpoints (docs/03 §6.3)."""
+    """Anonymous per-IP limits for the public AI and OTP endpoints (docs/03 §6.3)."""
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         if settings.rate_limit_enabled:
             path = request.url.path
-            ip = request.client.host if request.client else "unknown"
+            ip = _client_ip(request)
             try:
                 if request.method == "POST" and path == "/api/v1/scam/check":
                     check_scam_limit(ip)
+                elif request.method == "POST" and path == "/api/v1/auth/otp/verify":
+                    check_otp_verify_limit(ip)
                 elif request.method == "POST" and (
-                    path.startswith("/api/v1/voice/") or path == "/api/v1/rag/ask"
+                    path.startswith("/api/v1/voice/")
+                    or path.startswith("/api/v1/rag/")
                 ):
                     check_ai_limit(ip)
             except ApiError as exc:
@@ -387,6 +406,14 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=[REQUEST_ID_HEADER, "ETag", "X-Prototype"],
+    )
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
@@ -545,22 +572,43 @@ def create_app() -> FastAPI:
             media_type="text/plain; version=0.0.4; charset=utf-8",
         )
 
-    @app.get("/", include_in_schema=False)
-    def root() -> dict[str, Any]:
-        return {
-            "name": "Haqdaar API",
-            "prototype": True,
-            "docs": "/api/docs",
-            "openapi": "/api/openapi.json",
-            "health": "/health",
-            "metrics": "/metrics",
-        }
-
-    # Serve the built PWA when the multi-stage image copied it in.
-    if settings.static_dir.exists() and (settings.static_dir / "index.html").exists():
+    # Serve the built PWA when the multi-stage image copied it in, with SPA history fallback.
+    index_file = settings.static_dir / "index.html"
+    if settings.static_dir.exists() and index_file.exists():
         from fastapi.staticfiles import StaticFiles
 
-        app.mount("/", StaticFiles(directory=str(settings.static_dir), html=True), name="static")
+        assets_dir = settings.static_dir / "assets"
+        if assets_dir.exists():
+            app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+        @app.get("/", include_in_schema=False)
+        def spa_root() -> Response:
+            return FileResponse(index_file)
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def spa_fallback(full_path: str) -> Response:
+            if full_path.startswith(("api/", "mock/", "health", "metrics")):
+                raise StarletteHTTPException(status_code=404, detail="Not found")
+            candidate = (settings.static_dir / full_path).resolve()
+            static_root = settings.static_dir.resolve()
+            if (
+                candidate.is_file()
+                and static_root in candidate.parents
+            ):
+                return FileResponse(candidate)
+            return FileResponse(index_file)
+    else:
+
+        @app.get("/", include_in_schema=False)
+        def root() -> dict[str, Any]:
+            return {
+                "name": "Haqdaar API",
+                "prototype": True,
+                "docs": "/api/docs",
+                "openapi": "/api/openapi.json",
+                "health": "/health",
+                "metrics": "/metrics",
+            }
 
     return app
 

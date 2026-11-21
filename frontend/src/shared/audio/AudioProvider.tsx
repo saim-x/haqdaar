@@ -223,10 +223,10 @@ export function useAudio(): AudioContextValue {
  */
 export function useAutoReadPrompt(key: string | null | undefined, text?: string | null): void {
   const { autoRead, play } = useAudio();
-  const played = useRef(false);
+  const lastPlayedKey = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoRead || played.current || !key) return;
-    played.current = true;
+    if (!autoRead || !key || lastPlayedKey.current === key) return;
+    lastPlayedKey.current = key;
     void play(key, text ?? null);
   }, [autoRead, key, text, play]);
 }

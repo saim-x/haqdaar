@@ -268,13 +268,26 @@ def _similarity(a: str, b: str) -> float:
         return difflib.SequenceMatcher(None, a, b).ratio()
 
 
+def _numeric_tokens(text: str) -> list[str]:
+    return re.findall(r"\d[\d,]*", text or "")
+
+
 def _body_matches(text: str, record: NotificationRecord) -> bool:
     canonical = (text or "").strip()
     if record.body_sha256 and hashlib.sha256(canonical.encode("utf-8")).hexdigest() == record.body_sha256:
         return True
+    text_nums = _numeric_tokens(canonical)
     for body in (record.body_en, record.body_ur):
-        if body and _similarity(canonical, body.strip()) >= BODY_SIMILARITY_THRESHOLD:
+        cleaned_body = (body or "").strip()
+        if not cleaned_body:
+            continue
+        if canonical == cleaned_body:
             return True
+        if _similarity(canonical, cleaned_body) >= BODY_SIMILARITY_THRESHOLD:
+            # Never let an edited phone number or grant amount slip through fuzzy similarity.
+            body_nums = _numeric_tokens(cleaned_body)
+            if not body_nums or text_nums == body_nums:
+                return True
     return False
 
 
@@ -372,7 +385,7 @@ def _train(rows: Sequence[dict[str, Any]]) -> TrainedModel:
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
-    from sklearn.pipeline import Pipeline
+    from sklearn.pipeline import FeatureUnion, Pipeline
 
     labelled = [row for row in rows if row["label"] in {"SCAM", "LEGIT"}]
     train = [row for row in labelled if row["split"] == "train"]
@@ -390,7 +403,28 @@ def _train(rows: Sequence[dict[str, Any]]) -> TrainedModel:
         [
             (
                 "tfidf",
-                TfidfVectorizer(analyzer="char_wb", ngram_range=(1, 2), min_df=2, sublinear_tf=True),
+                FeatureUnion(
+                    [
+                        (
+                            "word",
+                            TfidfVectorizer(
+                                analyzer="word",
+                                ngram_range=(1, 2),
+                                min_df=2,
+                                sublinear_tf=True,
+                            ),
+                        ),
+                        (
+                            "char",
+                            TfidfVectorizer(
+                                analyzer="char_wb",
+                                ngram_range=(3, 5),
+                                min_df=2,
+                                sublinear_tf=True,
+                            ),
+                        ),
+                    ]
+                ),
             ),
             (
                 "clf",

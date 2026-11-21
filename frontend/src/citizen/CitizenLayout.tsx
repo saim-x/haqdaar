@@ -1,31 +1,31 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAudio } from '../shared/audio/AudioProvider';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
+import { useOffline } from '../shared/offline/OfflineProvider';
 import { BrandMark } from '../shared/ui/Brand';
 import { OfflinePill } from '../shared/ui/OfflinePill';
-import { IconGlobe, IconHome, IconList, IconLogout, IconShield, IconUsers } from '../shared/ui/Icons';
+import {
+  IconGlobe,
+  IconHome,
+  IconList,
+  IconLogout,
+  IconShield,
+  IconSpeaker,
+  IconUsers,
+} from '../shared/ui/Icons';
 
-/**
- * Citizen shell — docs/11 §3.1.
- *
- * The column is 560px because this is a phone app, not a website. On a wide
- * screen it sits inside a hairline frame on the paper backdrop, so it reads as a
- * device rather than a narrow page floating in a dead band.
- *
- * The bottom bar is icon + label (never icon-only), 56px tall, and the active
- * item is marked by the signature hairline rule at its top edge — the same 1px
- * line used for every divider in the app — not by colour alone.
- */
 export function CitizenLayout() {
   const { t, toggleLang, lang } = useI18n();
   const { session, actFor, logout } = useAuth();
   const { lite, toggle: toggleLite } = useLiteMode();
+  const { autoRead, setAutoRead } = useAudio();
+  const { needsAttention, retryOne, discardOne } = useOffline();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  // The wizard owns the bottom of the screen: its own action bar would sit
-  // underneath the tab bar, so the tab bar steps aside for the whole flow.
   const focused = pathname.startsWith('/c/apply/');
+  const nextLangLabel = lang === 'ur' ? 'سنڌي' : lang === 'sd' ? 'EN' : 'اردو';
   const isHelper = session?.user.role === 'HELPER';
   const hasWorkspace = !isHelper || Boolean(actFor);
 
@@ -46,11 +46,23 @@ export function CitizenLayout() {
   return (
     <div className="flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
       <header className="sticky top-[var(--banner-h)] z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2">
+        <div className="mx-auto flex w-full max-w-[560px] items-center gap-1.5 px-4 py-2">
           <BrandMark size={22} />
           <span className="text-body-lg font-medium tracking-tight text-ink">{t('app.name')}</span>
           <OfflinePill compact />
           <div className="ms-auto flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => setAutoRead(!autoRead)}
+              aria-pressed={autoRead}
+              aria-label={t('common.autoRead')}
+              title={t('common.autoRead')}
+              className={`press grid h-tap w-tap place-items-center rounded-control ${
+                autoRead ? 'bg-accent-wash text-accent-ink' : 'text-ink-3 hover:text-ink'
+              }`}
+            >
+              <IconSpeaker size={16} />
+            </button>
             <button
               type="button"
               onClick={toggleLite}
@@ -65,11 +77,11 @@ export function CitizenLayout() {
             <button
               type="button"
               onClick={toggleLang}
-              className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-3 hover:text-ink"
+              className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:text-ink"
               aria-label={t('common.switchLanguage')}
             >
               <IconGlobe size={14} />
-              {lang === 'ur' ? 'EN' : 'اردو'}
+              {nextLangLabel}
             </button>
             <button
               type="button"
@@ -87,7 +99,7 @@ export function CitizenLayout() {
 
         {actFor && (
           <div className="bg-paused text-white">
-            <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-1.5">
+            <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-1">
               <span
                 aria-hidden
                 className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-meta font-medium"
@@ -100,10 +112,41 @@ export function CitizenLayout() {
               </span>
               <NavLink
                 to="/h"
-                className="press shrink-0 rounded-[6px] bg-white/15 px-2 py-1 text-meta font-medium hover:bg-white/25"
+                className="press inline-flex min-h-tap shrink-0 items-center rounded-[6px] bg-white/15 px-3 text-meta font-medium hover:bg-white/25"
               >
                 {t('home.switchFamily')}
               </NavLink>
+            </div>
+          </div>
+        )}
+
+        {needsAttention.length > 0 && (
+          <div role="alert" className="border-t border-negative/20 bg-negative-wash">
+            <div className="mx-auto flex w-full max-w-[560px] flex-col gap-1.5 px-4 py-2 text-caption text-negative">
+              <p className="font-medium">
+                {t('common.error')} ({needsAttention.length})
+              </p>
+              {needsAttention.slice(0, 2).map((row) => (
+                <div key={row.id} className="flex items-center justify-between gap-2 text-meta">
+                  <span className="truncate">{row.lastError || row.label}</span>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => row.id !== undefined && void retryOne(row.id)}
+                      className="rounded border border-negative/30 bg-card px-2 py-1 text-meta font-medium text-ink"
+                    >
+                      {t('common.retry')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => row.id !== undefined && void discardOne(row.id)}
+                      className="rounded px-2 py-1 text-meta text-negative hover:bg-negative/10"
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

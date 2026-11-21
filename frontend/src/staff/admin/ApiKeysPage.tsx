@@ -19,6 +19,7 @@ export default function ApiKeysPage() {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [scopes, setScopes] = useState<string[]>(['cases:read']);
+  const [rateLimit, setRateLimit] = useState(60);
   const [created, setCreated] = useState<ApiKeyCreated | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +29,12 @@ export default function ApiKeysPage() {
   });
 
   const create = useMutation({
-    mutationFn: () => api.post<ApiKeyCreated>('/admin/api-keys', { name, scopes }),
+    mutationFn: () =>
+      api.post<ApiKeyCreated>('/admin/api-keys', {
+        name,
+        scopes,
+        rate_limit_per_min: rateLimit,
+      }),
     onSuccess: (res) => {
       setCreated(res);
       setName('');
@@ -117,6 +123,16 @@ export default function ApiKeysPage() {
               </button>
             );
           })}
+          <input
+            type="number"
+            min={5}
+            max={600}
+            value={rateLimit}
+            onChange={(e) => setRateLimit(Math.max(5, Number(e.target.value) || 60))}
+            aria-label="Rate limit per minute"
+            title="Requests per minute"
+            className="field num w-24 font-mono"
+          />
           <button
             type="button"
             onClick={() => create.mutate()}
@@ -136,6 +152,7 @@ export default function ApiKeysPage() {
               <th>Prefix</th>
               <th>Scopes</th>
               <th className="text-end">Rate</th>
+              <th>Last used</th>
               <th>Status</th>
               <th />
             </tr>
@@ -154,6 +171,16 @@ export default function ApiKeysPage() {
                 </td>
                 <td className="num text-end font-mono text-meta text-ink-2">
                   {key.rate_limit_per_min}/min
+                </td>
+                <td className="num text-meta text-ink-3">
+                  {key.last_used_at
+                    ? new Date(key.last_used_at).toLocaleString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'Never'}
                 </td>
                 <td>
                   <span className="inline-flex items-center gap-1.5">

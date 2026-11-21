@@ -49,18 +49,21 @@ def _extract_text_from_image(image_bytes: bytes) -> tuple[str, str]:
     """OCR a screenshot. Returns ``(text, source)``."""
     provider = get_provider()
     try:
-        result = provider.ocr_document(image_bytes, "OTHER")
+        result = provider.ocr_document(image_bytes, "SCREENSHOT")
     except Exception as exc:  # pragma: no cover - provider already falls back
         logger.warning("scam image OCR failed: %s", exc)
         return "", "IMAGE_UNREADABLE"
 
-    if not result.available or not result.fields:
+    if not result.available or (not result.fields and not result.raw_text):
         return "", "IMAGE_UNREADABLE"
 
-    parts = [str(value) for value in result.fields.values() if value]
+    parts = [str(value) for value in (result.fields or {}).values() if value]
     if result.raw_text:
         parts.append(result.raw_text)
-    return " ".join(parts).strip(), "IMAGE"
+    extracted = " ".join(parts).strip()
+    if not extracted:
+        return "", "IMAGE_UNREADABLE"
+    return extracted, "IMAGE"
 
 
 def _extract_text_from_audio(audio_bytes: bytes, mime_type: str) -> tuple[str, str]:

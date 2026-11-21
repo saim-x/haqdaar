@@ -99,16 +99,21 @@ class MockClient:
                 detail = f"{type(exc).__name__}: {exc}"
             else:
                 if response.status_code < 400:
-                    payload = response.json()
-                    return payload if isinstance(payload, dict) else {"data": payload}
-                if response.status_code < 500:
+                    try:
+                        payload = response.json()
+                    except ValueError as exc:
+                        detail = f"Invalid JSON response: {exc}"
+                    else:
+                        return payload if isinstance(payload, dict) else {"data": payload}
+                elif response.status_code < 500:
                     # A 4xx is our bug, not an outage: retrying cannot help.
                     raise ExternalServiceUnavailable(
                         service,
                         attempts=attempt,
                         detail=f"HTTP {response.status_code}: {response.text[:200]}",
                     )
-                detail = f"HTTP {response.status_code}"
+                else:
+                    detail = f"HTTP {response.status_code}"
             if attempt < attempts:
                 self._sleep(RETRY_DELAYS_SECONDS[attempt - 1])
         raise ExternalServiceUnavailable(service, attempts=attempts, detail=detail)

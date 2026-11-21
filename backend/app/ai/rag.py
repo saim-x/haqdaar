@@ -272,7 +272,14 @@ def index_document(
     )
 
     chunks = chunk_markdown(body)
-    for chunk in chunks:
+    provider = get_provider()
+    embeddings: list[list[float]] = []
+    if chunks:
+        try:
+            embeddings = provider.embed_texts([chunk.content for chunk in chunks])
+        except Exception:  # pragma: no cover - fallback per chunk
+            embeddings = [_embed(chunk.content) for chunk in chunks]
+    for chunk, vector in zip(chunks, embeddings, strict=False):
         _insert(
             db,
             "rag_chunks",
@@ -282,7 +289,7 @@ def index_document(
                 "section_heading": chunk.section_heading,
                 "chunk_index": chunk.chunk_index,
                 "content": chunk.content,
-                "embedding": _embed(chunk.content),
+                "embedding": vector,
             },
         )
 
@@ -408,13 +415,20 @@ def reindex_program_rules(db: Any, program_id: Any) -> dict[str, Any]:
     version_number = 1
 
     versions = _table("rule_versions")
-    stmt = (
-        versions.select()
-        .where(versions.c.program_id == program_id)
-        .order_by(versions.c.version_number.desc())
-        .limit(1)
-    )
-    version_row = db.execute(stmt).mappings().first()
+    active_version_id = row.get("active_rule_version_id")
+    version_row = None
+    if active_version_id is not None:
+        version_row = db.execute(
+            versions.select().where(versions.c.id == active_version_id).limit(1)
+        ).mappings().first()
+    if version_row is None:
+        stmt = (
+            versions.select()
+            .where(versions.c.program_id == program_id)
+            .order_by(versions.c.version_number.desc())
+            .limit(1)
+        )
+        version_row = db.execute(stmt).mappings().first()
     if version_row is not None:
         version_number = int(version_row.get("version_number") or 1)
         raw = version_row.get("rules_json")
@@ -429,6 +443,17 @@ def reindex_program_rules(db: Any, program_id: Any) -> dict[str, Any]:
     if ruleset is None:
         logger.warning("no rule version found for program %s; skipping summary", program_id)
         return {"skipped": True, "reason": "NO_RULE_VERSION", "program_id": str(program_id)}
+
+    # Deactivate prior AUTO_RULE_SUMMARY versions for this program so stale rules are never retrieved.
+    documents = _table("rag_documents")
+    db.execute(
+        documents.update()
+        .where(
+            documents.c.program_id == program_id,
+            documents.c.source_type == "AUTO_RULE_SUMMARY",
+        )
+        .values(is_active=False)
+    )
 
     body = render_rule_summary(ruleset, program_name=program_name, version=version_number)
     result = index_document(
@@ -562,6 +587,7 @@ def retrieve(
         return []
 
     query_vector = _embed(question)
+    fallback_vector: list[float] | None = None
     lexical = _lexical_scores(db, question, [row["id"] for row in rows])
 
     scored: list[RetrievedChunk] = []
@@ -570,7 +596,15 @@ def retrieve(
         if embedding is None:
             continue
         vector = [float(value) for value in embedding]
-        dense = cosine(query_vector, vector)
+        if len(vector) != len(query_vector):
+            # DB was seeded in fake mode (64-dim) while running live (1536-dim) or vice versa.
+            if fallback_vector is None or len(fallback_vector) != len(vector):
+                from app.ai.provider import FakeDeterministicProvider
+
+                fallback_vector = FakeDeterministicProvider().embed_texts([question])[0]
+            dense = cosine(fallback_vector, vector) if len(fallback_vector) == len(vector) else 0.0
+        else:
+            dense = cosine(query_vector, vector)
         dense = max(0.0, min(1.0, dense))
         lex = lexical.get(str(row["id"]), 0.0)
         hybrid = DENSE_WEIGHT * dense + LEXICAL_WEIGHT * lex
@@ -663,7 +697,13 @@ def ask(
     threshold = abstain_threshold()
     coverage = _corpus_coverage(cleaned)
 
-    if not chunks or top_score < threshold or coverage < MIN_CORPUS_COVERAGE:
+    low_coverage = coverage < MIN_CORPUS_COVERAGE
+    if not _is_fake_mode() and top_score >= threshold + 0.12:
+        # Live dense embeddings handle Roman-Urdu/Sindhi/paraphrased queries whose surface tokens
+        # may not appear verbatim in static markdown files.
+        low_coverage = False
+
+    if not chunks or top_score < threshold or low_coverage:
         # Zero LLM calls on abstention — the whole point of the gate.
         return RagAnswer(
             status="NOT_SURE",
@@ -703,6 +743,7 @@ def ask(
         model=model,
         guardrail_triggered=filtered.triggered,
         retrieved=len(chunks),
+        coverage=coverage,
     )
 
 

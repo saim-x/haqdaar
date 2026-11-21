@@ -71,7 +71,7 @@ const NAV: NavGroup[] = [
       { to: '/admin/rules', detail: '/admin/rules/:id/twin', label: 'Rules & Digital Twin', Icon: IconGavel, roles: ['ADMIN'], tenantOnly: true },
       { to: '/admin/users', label: 'Users', Icon: IconUsers, roles: ['ADMIN'] },
       { to: '/admin/api-keys', label: 'API keys', Icon: IconKey, roles: ['ADMIN'], tenantOnly: true },
-      { to: '/admin/jobs', label: 'Jobs', Icon: IconServer, roles: ['ADMIN'] },
+      { to: '/admin/jobs', label: 'Jobs & Health', Icon: IconServer, roles: ['ADMIN'] },
     ],
   },
   {
@@ -194,6 +194,12 @@ function StaffApp({ children, session, groups, current }: {
               <p className="truncate text-caption font-semibold text-ink">{current.label}</p>
               <p className="truncate text-meta text-ink-3">{session.tenant?.name ?? 'Platform scope'}</p>
             </div>
+            <Link
+              to="/transparency"
+              className="press hidden rounded-control px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink sm:inline-block"
+            >
+              Real vs Simulated
+            </Link>
             <button
               type="button"
               onClick={() => {

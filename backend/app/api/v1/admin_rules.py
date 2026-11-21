@@ -108,6 +108,13 @@ def _validation_failed(errors: tuple[dict[str, str], ...]) -> HTTPException:
 
 
 # -- helpers -------------------------------------------------------------
+def _is_platform_or_auditor(user: Any) -> bool:
+    return getattr(user, "tenant_id", None) is None and getattr(user, "role", None) in {
+        "ADMIN",
+        "AUDITOR",
+    }
+
+
 def _tenant_id(user: Any) -> Any:
     tenant_id = getattr(user, "tenant_id", None)
     if tenant_id is None:
@@ -122,14 +129,22 @@ def _tenant_id(user: Any) -> Any:
 
 def _get_program(db: Session, program_id: Any, user: Any) -> Program:
     program = db.get(Program, program_id)
-    if program is None or program.tenant_id != _tenant_id(user):
+    if program is None:
+        raise _not_found()
+    if _is_platform_or_auditor(user):
+        return program
+    if program.tenant_id != _tenant_id(user):
         raise _not_found()
     return program
 
 
 def _get_version(db: Session, rule_version_id: Any, user: Any) -> RuleVersion:
     version = db.get(RuleVersion, rule_version_id)
-    if version is None or version.tenant_id != _tenant_id(user):
+    if version is None:
+        raise _not_found()
+    if _is_platform_or_auditor(user):
+        return version
+    if version.tenant_id != _tenant_id(user):
         raise _not_found()
     return version
 

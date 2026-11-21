@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
@@ -8,7 +8,7 @@ import type {
   MyDataResponse,
   MyDataValue,
 } from '../shared/api/types';
-import { useI18n } from '../shared/i18n/I18nProvider';
+import { useI18n, type Lang } from '../shared/i18n/I18nProvider';
 import { useAuth } from '../shared/auth/AuthProvider';
 import type { DictKey } from '../shared/i18n/dictionary';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
@@ -68,9 +68,9 @@ function prettyKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function fieldLabel(key: string, lang: 'ur' | 'en'): string {
+function fieldLabel(key: string, lang: Lang): string {
   const known = FIELD_LABELS[key];
-  if (known) return lang === 'ur' ? known.ur : known.en;
+  if (known) return lang !== 'en' ? known.ur : known.en;
   return prettyKey(key);
 }
 
@@ -92,7 +92,7 @@ const MISSING_LABEL: Record<MissingReason, DictKey> = {
 /** A value that is a bare ISO date is a date, not a string of digits. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function fieldValue(value: MyDataValue['value'], lang: 'ur' | 'en'): string {
+function fieldValue(value: MyDataValue['value'], lang: Lang): string {
   if (value === null || value === '') return '—';
   const text = String(value);
   return ISO_DATE.test(text) ? dayMonth(text, lang) : text;
@@ -117,7 +117,7 @@ interface Group {
  * words "Self-declared" and "Registry".
  */
 export function MyDataPage() {
-  const { t, lang } = useI18n();
+  const { t, lang, isRtl } = useI18n();
   const { session } = useAuth();
   const isHelper = session?.user.role === 'HELPER';
   const [correcting, setCorrecting] = useState<{ fieldKey: string; label: string; current: string } | null>(null);
@@ -127,11 +127,31 @@ export function MyDataPage() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<CorrectionRequest | null>(null);
 
+  useEffect(() => {
+    if (!correcting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCorrecting(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [correcting]);
+
   const data = useQuery({
     queryKey: ['me', 'data'],
     queryFn: () => api.get<MyDataResponse>('/me/data'),
     staleTime: 60_000,
   });
+
+  function downloadExport() {
+    if (!data.data) return;
+    const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `haqdaar-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 
   async function submitCorrection() {
     if (!correcting) return;
@@ -371,6 +391,13 @@ export function MyDataPage() {
             </ul>
           </section>
         )}
+        {data.data && (
+          <div className="pt-2">
+            <TapButton variant="secondary" size="tap" block onClick={downloadExport}>
+              {isRtl ? 'اپنا تمام ڈیٹا ڈاؤن لوڈ کریں (JSON)' : 'Download my data (JSON)'}
+            </TapButton>
+          </div>
+        )}
       </div>
 
       {correcting && (
@@ -381,10 +408,18 @@ export function MyDataPage() {
           aria-labelledby="correction-title"
         >
           <div className="enter w-full max-w-[520px] rounded-t-panel border border-ink/[0.08] bg-card p-5 sm:rounded-panel">
-            <h2 id="correction-title" className="text-lead font-medium leading-[1.4] text-ink">
-              {t('consent.requestCorrection')}
-            </h2>
-            <p className="mt-1 text-caption text-ink-2">{correcting.label}</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="correction-title" className="text-lead font-medium leading-[1.4] text-ink">
+                  {t('consent.requestCorrection')}
+                </h2>
+                <p className="mt-1 text-caption text-ink-2">{correcting.label}</p>
+              </div>
+              <AudioButton
+                audioKey={null}
+                text={`${t('consent.requestCorrection')}: ${correcting.label}`}
+              />
+            </div>
             <p className="num mt-0.5 font-mono text-caption text-ink-3">
               {t('data.currentlySaved')}: {correcting.current || '—'}
             </p>

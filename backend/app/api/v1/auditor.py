@@ -20,13 +20,35 @@ from app.schemas.serializers import decision_to_dict, grant_to_dict, note_to_dic
 from app.security import audit
 from app.security.consent import enforce_consent
 from app.security.errors import NotFoundError
-from app.security.masking import mask_cnic
+from app.security.masking import mask_cnic, mask_phone
 from app.security.rbac import ActorContext, require_roles
 
 router = APIRouter(prefix="/auditor", tags=["auditor"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 AuditorActor = Annotated[ActorContext, Depends(require_roles(UserRole.AUDITOR))]
+
+
+def _mask_facts_dict(raw: dict[str, Any] | None) -> dict[str, Any]:
+    """Never expose raw 13-digit CNICs or full phone numbers in auditor trace payloads."""
+    if not raw:
+        return {}
+    out: dict[str, Any] = {}
+    for key, val in raw.items():
+        if key in {"applicant_cnic", "spouse_cnic"} and val:
+            out[key] = mask_cnic(str(val))
+        elif key in {"payout_phone", "phone"} and val:
+            out[key] = mask_phone(str(val))
+        elif isinstance(val, dict) and "value" in val:
+            copied = dict(val)
+            if key in {"applicant_cnic", "spouse_cnic"} and copied.get("value"):
+                copied["value"] = mask_cnic(str(copied["value"]))
+            elif key in {"payout_phone", "phone"} and copied.get("value"):
+                copied["value"] = mask_phone(str(copied["value"]))
+            out[key] = copied
+        else:
+            out[key] = val
+    return out
 
 
 def _event_json(event: AuditEvent) -> dict[str, Any]:
@@ -163,7 +185,7 @@ def case_trace(case_id: uuid.UUID, actor: AuditorActor, db: DbSession) -> dict[s
                 "full_name": citizen.full_name if citizen else None,
                 "cnic_masked": mask_cnic(citizen.cnic_digits) if citizen else None,
             },
-            "facts": case.draft_answers or {},
+            "facts": _mask_facts_dict(case.draft_answers),
             "flags": case.flags_json or [],
             "ai_case_note": case.ai_case_note,
             "citizen_explanation": case.citizen_explanation,
@@ -175,7 +197,14 @@ def case_trace(case_id: uuid.UUID, actor: AuditorActor, db: DbSession) -> dict[s
             if case.latest_rule_version_id
             else None,
         },
-        "decisions": [decision_to_dict(decision) for decision in decisions],
+        "decisions": [
+            {
+                **decision_to_dict(decision),
+                "rule_trace": decision.rule_trace_json or [],
+                "input_snapshot": _mask_facts_dict(decision.input_snapshot_json),
+            }
+            for decision in decisions
+        ],
         "agent_steps": [note_to_dict(note) for note in notes if note.note_type == "AGENT_STEP"],
         "notes": [note_to_dict(note) for note in notes],
         "events": [_event_json(event) for event in events],

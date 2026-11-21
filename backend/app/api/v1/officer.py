@@ -175,6 +175,7 @@ def _record_officer_decision(
     note: str | None,
     override_amount_pkr: int | None,
     second_approval: bool,
+    is_override: bool = False,
 ) -> Decision:
     rule_version = _rule_version_for(db, case)
     snapshot = {
@@ -226,10 +227,10 @@ def _record_officer_decision(
         escalation_reasons=[],
         model_versions={"decision": "officer-v1"},
         citizen_explanation=explanation,
-        computed_amount_pkr=override_amount_pkr,
+        computed_amount_pkr=override_amount_pkr if override_amount_pkr is not None else case.approved_amount_pkr,
         officer_reason_codes=reason_codes,
         officer_note=note,
-        is_override=True,
+        is_override=is_override,
     )
     db.add(decision)
     db.flush()
@@ -404,6 +405,22 @@ def officer_case(case_id: uuid.UUID, actor: OfficerActor, db: DbSession) -> dict
     ).scalar_one_or_none()
     body.update(decision_evidence(latest_decision))
     body["latest_decision_id"] = str(latest_decision.id) if latest_decision else None
+    body["confidence_components"] = (
+        latest_decision.confidence_components if latest_decision else None
+    )
+    body["agent_steps"] = [
+        {
+            "id": str(note.id),
+            "step": (note.metadata_json or {}).get("step") or note.body,
+            "body": note.body,
+            "status": (note.metadata_json or {}).get("status") or "OK",
+            "latency_ms": (note.metadata_json or {}).get("latency_ms"),
+            "metadata": note.metadata_json or {},
+            "created_at": note.created_at.isoformat() if note.created_at else None,
+        }
+        for note in notes
+        if note.note_type == NoteType.AGENT_STEP.value
+    ]
 
     db.commit()
     return body
@@ -516,15 +533,36 @@ def decide_case(
 
     assert_transition(previous, target, actor_role=actor.role_value)
 
+    latest_ai = db.execute(
+        select(Decision)
+        .where(Decision.case_id == case.id, Decision.decision_source == DecisionSource.AI_ENGINE.value)
+        .order_by(Decision.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+    # An officer fulfilling an AI-requested HUMAN_REVIEW is NOT overriding the AI.
+    # It is an override only when overturning an AUTO_APPROVE or overriding the computed amount.
+    ai_amount = latest_ai.computed_amount_pkr if latest_ai else None
+    is_override = bool(
+        (latest_ai and latest_ai.route_action == "AUTO_APPROVE" and target is not CaseStatus.APPROVED)
+        or (override_amount_pkr is not None and ai_amount is not None and override_amount_pkr != ai_amount)
+    )
+
     case.status = target.value
     if target is CaseStatus.APPROVED:
         case.decided_at = _now()
         if override_amount_pkr is not None:
             case.approved_amount_pkr = override_amount_pkr
+        elif case.approved_amount_pkr is None and ai_amount is not None:
+            case.approved_amount_pkr = ai_amount
     elif target is CaseStatus.REJECTED:
         case.decided_at = _now()
     elif target is CaseStatus.PENDING_SECOND_APPROVAL:
         case.first_approver_id = actor.user_id
+        if override_amount_pkr is not None:
+            case.approved_amount_pkr = override_amount_pkr
+        elif case.approved_amount_pkr is None and ai_amount is not None:
+            case.approved_amount_pkr = ai_amount
     elif target is CaseStatus.NEEDS_INFO:
         case.ask_more_rounds = (case.ask_more_rounds or 0) + 1
     elif target is CaseStatus.HUMAN_REVIEW:
@@ -540,6 +578,7 @@ def decide_case(
         note=note,
         override_amount_pkr=override_amount_pkr,
         second_approval=second_approval,
+        is_override=is_override,
     )
 
     if target is CaseStatus.NEEDS_INFO and case.case_type == CaseType.BENEFIT_APPLICATION.value:
@@ -612,21 +651,22 @@ def decide_case(
 @router.post("/cases/{case_id}/reevaluate", summary="Re-run the pipeline against current rules")
 def reevaluate(
     case_id: uuid.UUID,
-    payload: dict[str, Any],
     actor: OfficerActor,
     db: DbSession,
+    payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     case = _load_case(db, case_id, actor)
     _case_consent(db, case, actor, category=DataCategory.CASE_HISTORY)
 
     from app.agent.case_agent import ReevaluationNotAllowed, reevaluate_case
 
+    body = payload or {}
     try:
         result = reevaluate_case(
             db,
             case.id,
             officer_user_id=actor.user_id,
-            reason=(str(payload.get("reason"))[:500] if payload.get("reason") else None),
+            reason=(str(body.get("reason"))[:500] if body.get("reason") else None),
         )
     except ReevaluationNotAllowed as exc:
         db.rollback()
@@ -707,14 +747,20 @@ def list_corrections(
         .where(DataCorrectionRequest.status == status)
     )
     if actor.tenant_id is not None:
-        query = query.where(
-            (DataCorrectionRequest.tenant_id == actor.tenant_id)
-            | (DataCorrectionRequest.tenant_id.is_(None))
+        from app.models.consent import ConsentGrant
+        from app.models.enums import ConsentRecipientType, ConsentStatus
+
+        consented_citizens = select(ConsentGrant.citizen_id).where(
+            ConsentGrant.recipient_type == ConsentRecipientType.DEPARTMENT.value,
+            ConsentGrant.recipient_tenant_id == actor.tenant_id,
+            ConsentGrant.status == ConsentStatus.ACTIVE.value,
         )
-        count_query = count_query.where(
-            (DataCorrectionRequest.tenant_id == actor.tenant_id)
-            | (DataCorrectionRequest.tenant_id.is_(None))
+        scope_cond = (DataCorrectionRequest.tenant_id == actor.tenant_id) | (
+            DataCorrectionRequest.tenant_id.is_(None)
+            & DataCorrectionRequest.citizen_id.in_(consented_citizens)
         )
+        query = query.where(scope_cond)
+        count_query = count_query.where(scope_cond)
 
     total = db.execute(count_query).scalar_one()
     rows = (

@@ -242,7 +242,13 @@ def create_grant(
             raise ValidationError(
                 details={"fields": [{"field": "otp_challenge_id", "reason": "INVALID_UUID"}]}
             ) from exc
-        verify_challenge(db, challenge_id=challenge_uuid, code=str(code))
+        citizen = db.get(Citizen, citizen_id)
+        verify_challenge(
+            db,
+            challenge_id=challenge_uuid,
+            code=str(code),
+            expected_phone=citizen.phone if citizen and citizen.phone else None,
+        )
 
     if assurance_level == "VERBAL_WITNESSED" and not payload.get("verbal_audio_id"):
         raise ValidationError(

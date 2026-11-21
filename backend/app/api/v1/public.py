@@ -160,16 +160,15 @@ def public_verify_message(
         select(Notification).where(Notification.verification_code == code).limit(1)
     ).scalar_one_or_none()
 
-    if notification is None:
+    if notification is None or (
+        notification.tenant_id is not None and notification.tenant_id != key.tenant_id
+    ):
         return {
             "verification_code": code,
             "valid": False,
             "message_en": "This code does not match any official Haqdaar message.",
             "message_ur": "یہ کوڈ کسی سرکاری حقدار پیغام سے مطابقت نہیں رکھتا۔",
         }
-
-    if notification.tenant_id is not None and notification.tenant_id != key.tenant_id:
-        raise NotFoundError()
 
     return {
         "verification_code": code,

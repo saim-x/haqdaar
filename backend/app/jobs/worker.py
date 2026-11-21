@@ -120,7 +120,9 @@ class Worker:
             db.rollback()
             if job is not None:
                 try:
-                    mark_failed(db, job, f"{type(exc).__name__}: {exc}")
+                    from app.security.masking import scrub_text
+
+                    mark_failed(db, job, scrub_text(f"{type(exc).__name__}: {exc}"))
                 except Exception:  # noqa: BLE001
                     db.rollback()
                     logger.exception("could not record job failure")

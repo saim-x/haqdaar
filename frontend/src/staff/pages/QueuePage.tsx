@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
+import { errorMessage } from '../../shared/api/errors';
 import type { QueueItem, QueueResponse } from '../../shared/api/types';
 import {
   Card,
@@ -16,6 +17,32 @@ import {
   statusWord,
 } from '../ui';
 import { IconRefresh, IconWarning } from '../../shared/ui/Icons';
+
+interface PendingCorrectionItem {
+  id: string;
+  citizen_id: string;
+  citizen_name: string | null;
+  field_key: string;
+  source_type: string;
+  old_value: { value?: unknown } | unknown;
+  requested_value: { value?: unknown } | unknown;
+  reason: string | null;
+  status: string;
+  created_at: string | null;
+}
+
+interface CorrectionsListResponse {
+  items: PendingCorrectionItem[];
+  total: number;
+}
+
+function unwrapVal(v: unknown): string {
+  if (v && typeof v === 'object' && 'value' in v) {
+    const inner = (v as { value?: unknown }).value;
+    return inner === null || inner === undefined ? '—' : String(inner);
+  }
+  return v === null || v === undefined ? '—' : String(v);
+}
 
 type Sort = 'priority' | 'confidence_asc' | 'oldest';
 
@@ -52,10 +79,12 @@ function waitingFor(iso: string): string {
  * loud when two people are looking at the same screen.
  */
 export default function QueuePage() {
+  const qc = useQueryClient();
   const [sort, setSort] = useState<Sort>('priority');
   const [status, setStatus] = useState('');
   const [assigned, setAssigned] = useState<'all' | 'me' | 'unassigned'>('all');
   const [secondApproval, setSecondApproval] = useState(false);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
 
   const params = new URLSearchParams({ sort, assigned, limit: '50' });
   if (status) params.set('status', status);
@@ -65,6 +94,22 @@ export default function QueuePage() {
     queryKey: ['officer-queue', sort, status, assigned, secondApproval],
     queryFn: () => api.get<QueueResponse>(`/officer/queue?${params.toString()}`),
     refetchInterval: 20_000,
+  });
+
+  const corrections = useQuery({
+    queryKey: ['officer-corrections'],
+    queryFn: () => api.get<CorrectionsListResponse>('/officer/corrections?status=PENDING_OFFICER'),
+    refetchInterval: 30_000,
+  });
+
+  const resolveCorrection = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'APPROVE' | 'REJECT' }) =>
+      api.post(`/officer/corrections/${id}/resolve`, { decision }),
+    onSuccess: () => {
+      setCorrectionError(null);
+      void qc.invalidateQueries({ queryKey: ['officer-corrections'] });
+    },
+    onError: (err) => setCorrectionError(errorMessage(err, 'en')),
   });
 
   return (
@@ -223,6 +268,70 @@ export default function QueuePage() {
             </tbody>
           </table>
         </Card>
+      )}
+
+      {corrections.data && corrections.data.items.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-caption font-semibold uppercase tracking-wide text-ink-3">
+            Pending citizen registry corrections ({corrections.data.items.length})
+          </h2>
+          {correctionError && (
+            <p className="mb-2 text-caption text-danger" role="alert">
+              {correctionError}
+            </p>
+          )}
+          <Card className="overflow-x-auto p-0">
+            <table className="ledger min-w-[760px]">
+              <thead>
+                <tr>
+                  <th>Citizen</th>
+                  <th>Field</th>
+                  <th>Current</th>
+                  <th>Requested</th>
+                  <th>Reason</th>
+                  <th className="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {corrections.data.items.map((c) => (
+                  <tr key={c.id}>
+                    <td className="font-medium text-ink">{c.citizen_name ?? c.citizen_id}</td>
+                    <td className="font-mono text-meta text-ink-2">{c.field_key}</td>
+                    <td className="text-meta text-ink-3">{unwrapVal(c.old_value)}</td>
+                    <td className="text-meta font-medium text-ink">
+                      {unwrapVal(c.requested_value)}
+                    </td>
+                    <td className="text-meta text-ink-2">{c.reason ?? '—'}</td>
+                    <td className="text-end">
+                      <div className="inline-flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={resolveCorrection.isPending}
+                          onClick={() =>
+                            resolveCorrection.mutate({ id: c.id, decision: 'APPROVE' })
+                          }
+                          className="press rounded-control bg-accent px-2.5 py-1 text-meta font-medium text-white disabled:opacity-40"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={resolveCorrection.isPending}
+                          onClick={() =>
+                            resolveCorrection.mutate({ id: c.id, decision: 'REJECT' })
+                          }
+                          className="press rounded-control border border-ink/[0.14] bg-card px-2.5 py-1 text-meta text-ink-2 hover:text-danger disabled:opacity-40"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
       )}
     </div>
   );
