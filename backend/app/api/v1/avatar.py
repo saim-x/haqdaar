@@ -44,3 +44,49 @@ def avatar_config(user: AnyActor) -> dict[str, Any]:
     return avatar.get_avatar_config()
 
 
+@router.post("/session", summary="Mint a short-lived guide session token")
+async def avatar_session(
+    request: Request,
+    db: DbSession,
+    user: CitizenActor,
+) -> JSONResponse:
+    """Create one guide session, or degrade gracefully to the audio-only guide.
+
+    A vendor failure is a ``200`` with ``available: false`` - a citizen screen
+    must never show a 5xx because a third party is down.
+    """
+    try:
+        payload = await request.json()
+    except Exception:  # noqa: BLE001 - an empty body is a valid request
+        payload = {}
+    body = payload if isinstance(payload, dict) else {}
+
+    surface = str(body.get("surface") or "ask").strip().lower()
+    if surface not in avatar.SURFACES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "UNSUPPORTED_SURFACE",
+                "surface": surface,
+                "allowed": sorted(avatar.SURFACES),
+            },
+        )
+
+    lang = "en" if str(body.get("lang") or "ur").lower().startswith("en") else "ur"
+
+    actor_id = user.user_id or user.api_key_id
+    if actor_id is not None:
+        check_avatar_limit(str(actor_id))
+
+    try:
+        result = avatar.create_avatar_session(db, user, surface=surface, lang=lang)
+    except ValueError as exc:  # pragma: no cover - surface already validated
+        raise HTTPException(
+            status_code=422, detail={"error": "UNSUPPORTED_SURFACE", "message": str(exc)}
+        ) from exc
+
+    db.commit()
+    return JSONResponse(status_code=200, content=result)
+
+
+__all__ = ["router"]
