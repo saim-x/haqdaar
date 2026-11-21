@@ -31,13 +31,13 @@ export function RequireRole({ roles, children }: { roles: Role[]; children: Reac
   const location = useLocation();
   if (status === 'loading') return <FullScreenMessage>…</FullScreenMessage>;
   if (status === 'anon' || !session) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  if (!roles.includes(session.user.role)) return <Navigate to={roleHome(session.user.role)} replace />;
+  if (!roles.includes(session.user.role)) return <Navigate to={roleHome(session.user)} replace />;
   return <>{children}</>;
 }
 
 /** Signed-in users should not sit on /login. */
 export function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const { status, session } = useAuth();
-  if (status === 'authed' && session) return <Navigate to={roleHome(session.user.role)} replace />;
+  if (status === 'authed' && session) return <Navigate to={roleHome(session.user)} replace />;
   return <>{children}</>;
 }

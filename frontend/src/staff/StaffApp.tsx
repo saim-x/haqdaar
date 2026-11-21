@@ -1,7 +1,10 @@
-import { Suspense, lazy, useMemo } from 'react';
+import { Suspense, lazy, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { NavLink, Navigate, matchPath, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
+import { roleHome } from '../shared/auth/roleHome';
+import type { Session } from '../shared/auth/session';
+import { useDemoMode } from '../shared/auth/useDemoMode';
 import { BrandLockup } from '../shared/ui/Brand';
 import type { Role } from '../shared/api/types';
 import {
@@ -10,6 +13,7 @@ import {
   IconKey,
   IconList,
   IconLogout,
+  IconMenu,
   IconPhone,
   IconServer,
   IconShield,
@@ -36,6 +40,10 @@ interface NavItem {
   label: string;
   Icon: typeof IconList;
   roles: Role[];
+  detail?: string;
+  platformOnly?: boolean;
+  tenantOnly?: boolean;
+  demoOnly?: boolean;
 }
 
 interface NavGroup {
@@ -45,34 +53,40 @@ interface NavGroup {
 
 const NAV: NavGroup[] = [
   {
-    title: 'Officer',
+    title: 'Cases',
     items: [
-      { to: '/staff/queue', label: 'Review queue', Icon: IconList, roles: ['OFFICER'] },
+      { to: '/staff/queue', detail: '/staff/cases/:id', label: 'Review queue', Icon: IconList, roles: ['OFFICER'] },
+    ],
+  },
+  {
+    title: 'Reports',
+    items: [
       { to: '/staff/eval', label: 'Evaluation', Icon: IconChart, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
       { to: '/staff/analytics', label: 'Analytics', Icon: IconChart, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
     ],
   },
   {
-    title: 'Admin',
+    title: 'Administration',
     items: [
-      { to: '/admin/rules', label: 'Rules & Digital Twin', Icon: IconGavel, roles: ['ADMIN'] },
+      { to: '/admin/rules', detail: '/admin/rules/:id/twin', label: 'Rules & Digital Twin', Icon: IconGavel, roles: ['ADMIN'], tenantOnly: true },
       { to: '/admin/users', label: 'Users', Icon: IconUsers, roles: ['ADMIN'] },
-      { to: '/admin/api-keys', label: 'API keys', Icon: IconKey, roles: ['ADMIN'] },
-      { to: '/admin/mocks', label: 'Mock services', Icon: IconServer, roles: ['ADMIN'] },
+      { to: '/admin/api-keys', label: 'API keys', Icon: IconKey, roles: ['ADMIN'], tenantOnly: true },
       { to: '/admin/jobs', label: 'Jobs & Health', Icon: IconServer, roles: ['ADMIN'] },
     ],
   },
   {
-    title: 'Auditor',
+    title: 'Audit',
     items: [
-      { to: '/auditor/events', label: 'Audit events', Icon: IconShield, roles: ['AUDITOR'] },
+      { to: '/auditor/events', detail: '/auditor/cases/:id', label: 'Audit events', Icon: IconShield, roles: ['AUDITOR'] },
       { to: '/auditor/consents', label: 'Consent audit', Icon: IconUsers, roles: ['AUDITOR'] },
+      { to: '/admin/rules', label: 'Rule history', Icon: IconGavel, roles: ['AUDITOR'], tenantOnly: true },
     ],
   },
   {
     title: 'Demo',
     items: [
-      { to: '/staff/device-sim', label: 'Device simulator', Icon: IconPhone, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
+      { to: '/staff/device-sim', label: 'Device simulator', Icon: IconPhone, roles: ['OFFICER', 'ADMIN', 'AUDITOR'], demoOnly: true },
+      { to: '/admin/mocks', label: 'Mock services', Icon: IconServer, roles: ['ADMIN'], platformOnly: true },
     ],
   },
 ];
@@ -89,24 +103,56 @@ function PageFallback() {
   );
 }
 
-/**
- * Staff shell — docs/11 §6. Lazy-loaded as its own chunk so none of this code
- * can ever reach the citizen entry bundle.
- *
- * The console is a tool, not a page: a fixed 248px rail, 34px nav rows, and a
- * content column capped at 1440 so a 27-inch monitor does not stretch a table
- * into unreadable lines. The rail is the only place with a filled surface, which
- * is what keeps the eye on the work.
- */
-export default function StaffApp({ children }: { children: ReactNode }) {
-  const { session, logout } = useAuth();
-  const navigate = useNavigate();
-  const role = session?.user.role ?? 'OFFICER';
+function StaffNavigation({ groups, current, onNavigate }: {
+  groups: NavGroup[];
+  current: NavItem;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav aria-label="Workspace" className="space-y-5 px-3 py-4">
+      {groups.map(({ title, items }) => (
+        <div key={title}>
+          <p className="mb-1 px-3 text-meta font-medium text-ink-3">{title}</p>
+          <ul className="space-y-1">
+            {items.map(({ to, label, Icon }) => (
+              <li key={to}>
+                <Link
+                  to={to}
+                  onClick={onNavigate}
+                  aria-current={to === current.to ? 'page' : undefined}
+                  className={`press flex min-h-tap items-center gap-2.5 rounded-control border-s-2 px-3 text-caption md:min-h-[40px] ${
+                    to === current.to
+                      ? 'border-accent bg-accent-wash font-semibold text-accent-ink'
+                      : 'border-transparent text-ink-2 hover:bg-raised hover:text-ink'
+                  }`}
+                >
+                  <Icon size={17} className="shrink-0" />
+                  <span>{label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+}
 
-  const groups = NAV.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => item.roles.includes(role)),
-  })).filter((group) => group.items.length > 0);
+function StaffApp({ children, session, groups, current }: {
+  children: ReactNode;
+  session: Session;
+  groups: NavGroup[];
+  current: NavItem;
+}) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const role = session.user.role;
+  function closeMenu() {
+    setMenuOpen(false);
+    menuButton.current?.focus();
+  }
 
   return (
     <div
@@ -114,83 +160,66 @@ export default function StaffApp({ children }: { children: ReactNode }) {
       dir="ltr"
       lang="en"
     >
-      <aside className="hidden w-[248px] shrink-0 border-e border-ink/[0.08] bg-card md:flex md:flex-col">
+      <aside className="sticky top-[var(--banner-h)] hidden max-h-[calc(100dvh-var(--banner-h))] w-[232px] shrink-0 self-start overflow-y-auto border-e border-ink/[0.08] bg-card md:block">
         <div className="border-b border-ink/[0.08] px-5 py-4">
           <BrandLockup height={22} />
-          <p className="mt-1.5 text-meta text-ink-3">Staff console</p>
+          <p className="mt-1.5 text-meta text-ink-3">{roleWord(role)} workspace</p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {groups.map((group) => (
-            <div key={group.title} className="mb-6 last:mb-0">
-              <p className="mb-2 px-2 text-meta text-ink-3">{group.title}</p>
-              <ul>
-                {group.items.map(({ to, label, Icon }) => (
-                  <li key={to}>
-                    <NavLink
-                      to={to}
-                      className={({ isActive }) =>
-                        `press flex min-h-[34px] items-center gap-2.5 rounded-[8px] px-2 text-caption ${
-                          isActive
-                            ? 'row-active font-medium text-accent-ink'
-                            : 'text-ink-2 hover:bg-raised hover:text-ink'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <Icon size={16} className={isActive ? 'text-accent' : 'text-ink-3'} />
-                          <span className="truncate">{label}</span>
-                        </>
-                      )}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
+        <StaffNavigation groups={groups} current={current} />
 
         <div className="border-t border-ink/[0.08] px-5 py-3">
-          <p className="truncate text-caption text-ink">{session?.user.full_name}</p>
+          <p className="truncate text-caption text-ink">{session.user.full_name}</p>
           <p className="mt-0.5 text-meta text-ink-3">
-            {roleWord(role)} · {session?.tenant?.code ?? 'Platform scope'}
+            {roleWord(role)} · {session.tenant?.code ?? 'Platform scope'}
           </p>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-ink/[0.08] bg-card/95 px-6 py-2.5 backdrop-blur-sm lg:px-8">
-          <span className="rounded-[6px] border border-ink/[0.12] px-1.5 py-0.5 font-mono text-meta text-ink-2">
-            {session?.tenant?.code ?? 'PLATFORM'}
-          </span>
-          <span className="hidden truncate text-meta text-ink-3 sm:block">
-            {session?.tenant?.name ?? 'Platform scope'}
-          </span>
-
-          <div className="ms-auto flex items-center gap-1">
-            <NavLink
+        <header className="sticky top-[var(--banner-h)] z-30 border-b border-ink/[0.08] bg-card/95 backdrop-blur-sm">
+          <div className="flex items-center gap-2 px-4 py-1.5 md:px-6 lg:px-8">
+            <button
+              ref={menuButton}
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="staff-mobile-navigation"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="press flex min-h-tap shrink-0 items-center gap-2 rounded-control px-2 text-caption font-medium text-ink-2 hover:bg-raised md:hidden"
+            >
+              <IconMenu size={18} />
+              Menu
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-caption font-semibold text-ink">{current.label}</p>
+              <p className="truncate text-meta text-ink-3">{session.tenant?.name ?? 'Platform scope'}</p>
+            </div>
+            <Link
               to="/transparency"
-              className="press rounded-[8px] px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink"
+              className="press hidden rounded-control px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink sm:inline-block"
             >
               Real vs Simulated
-            </NavLink>
-            <NavLink
-              to="/scam-check"
-              className="press hidden rounded-[8px] px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink sm:inline-block"
-            >
-              Scam Checker
-            </NavLink>
+            </Link>
             <button
               type="button"
               onClick={() => {
                 void logout().then(() => navigate('/login', { replace: true }));
               }}
-              className="press grid h-8 w-8 place-items-center rounded-[8px] text-ink-3 hover:bg-raised hover:text-ink"
-              aria-label="Sign out"
+              className="press flex min-h-tap shrink-0 items-center gap-2 rounded-control px-2 text-meta text-ink-2 hover:bg-raised hover:text-ink"
             >
               <IconLogout size={16} />
+              Sign out
             </button>
+          </div>
+          <div
+            id="staff-mobile-navigation"
+            className="max-h-[50dvh] overflow-y-auto border-t border-ink/[0.08] md:hidden"
+            hidden={!menuOpen}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') closeMenu();
+            }}
+          >
+            {menuOpen && <StaffNavigation groups={groups} current={current} onNavigate={closeMenu} />}
           </div>
         </header>
 
@@ -213,16 +242,18 @@ export default function StaffApp({ children }: { children: ReactNode }) {
  */
 export function StaffRoutes() {
   const { pathname } = useLocation();
+  const { session } = useAuth();
+  const demoMode = useDemoMode();
 
-  const page = useMemo<ReactNode>(() => {
+  const page = (() => {
     if (matchPath('/staff/queue', pathname)) return <QueuePage />;
     const review = matchPath('/staff/cases/:id', pathname);
     if (review) return <CaseReviewPage caseId={review.params.id} />;
     if (matchPath('/staff/eval', pathname)) return <EvalPage />;
     if (matchPath('/staff/analytics', pathname)) return <AnalyticsPage />;
     if (matchPath('/staff/device-sim', pathname)) return <DeviceSimPage />;
-    if (matchPath('/admin/rules', pathname)) return <RulesPage />;
-    if (matchPath('/admin/rules/:id/twin', pathname)) return <RulesPage />;
+    if (matchPath('/admin/rules', pathname)) return <RulesPage canEdit={session?.user.role === 'ADMIN'} />;
+    if (matchPath('/admin/rules/:id/twin', pathname)) return <RulesPage canEdit />;
     if (matchPath('/admin/users', pathname)) return <UsersPage />;
     if (matchPath('/admin/api-keys', pathname)) return <ApiKeysPage />;
     if (matchPath('/admin/mocks', pathname)) return <MocksPage />;
@@ -231,8 +262,24 @@ export function StaffRoutes() {
     const trace = matchPath('/auditor/cases/:id', pathname);
     if (trace) return <TracePage caseId={trace.params.id} />;
     if (matchPath('/auditor/consents', pathname)) return <ConsentsPage />;
-    return <Navigate to="/staff/queue" replace />;
-  }, [pathname]);
+    return null;
+  })();
 
-  return <StaffApp>{page}</StaffApp>;
+  if (!session) return null;
+  const groups = NAV.map((group) => ({
+    ...group,
+    items: group.items.filter((item) =>
+      item.roles.includes(session.user.role)
+      && (!item.platformOnly || session.user.tenant_id === null)
+      && (!item.tenantOnly || session.user.tenant_id !== null)
+      && (!item.demoOnly || demoMode.data === true)),
+  })).filter((group) => group.items.length > 0);
+  const current = groups.flatMap((group) => group.items).find(({ to, detail }) =>
+    matchPath(to, pathname) || (detail && matchPath(detail, pathname)));
+
+  if (!current || !page) {
+    if (matchPath('/staff/device-sim', pathname) && demoMode.isPending) return <PageFallback />;
+    return <Navigate to={roleHome(session.user)} replace />;
+  }
+  return <StaffApp key={pathname} session={session} groups={groups} current={current}>{page}</StaffApp>;
 }

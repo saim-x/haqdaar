@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
+import { useDemoMode } from '../../shared/auth/useDemoMode';
 import type { MocksResponse, MockMode, MockServiceConfig } from '../../shared/api/types';
 import { Card, ErrorState, Loading, mockModeWord, PageHeader } from '../ui';
 
@@ -39,6 +40,7 @@ const MODE_TONE: Record<MockMode, { dot: string; text: string; on: string }> = {
  */
 export default function MocksPage() {
   const queryClient = useQueryClient();
+  const demoMode = useDemoMode();
   const [message, setMessage] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -76,7 +78,7 @@ export default function MocksPage() {
         title="Mock services"
         subtitle="Simulated DPI rails. Chaos here proves the platform never guesses when a registry is down."
         actions={
-          confirmReset ? (
+          !demoMode.data ? null : confirmReset ? (
             <>
               <button
                 type="button"

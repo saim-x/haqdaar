@@ -132,4 +132,4 @@ jobs:
 
       - name: Engine purity + mock boundary + no auto-reject
         working-directory: backend
-        run: python -m pytest tests/test_invariants.py -q
+        run: python -m pytest --noconftest tests/test_invariants.py -q

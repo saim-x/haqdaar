@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { PERSONAS, type PersonaKey } from './personas';
 import { roleHome } from './roleHome';
+import { useDemoMode } from './useDemoMode';
 import { useI18n } from '../i18n/I18nProvider';
 import { errorMessage } from '../api/errors';
 import type { Role } from '../api/types';
@@ -39,6 +40,7 @@ export function LoginPage() {
   const { t, lang, toggleLang } = useI18n();
   const navigate = useNavigate();
   const { demoLogin, loginWithPassword, requestOtp, verifyOtp } = useAuth();
+  const { data: demoMode } = useDemoMode();
 
   const [tab, setTab] = useState<Tab>('citizen');
   const [phone, setPhone] = useState('+923001000001');
@@ -55,8 +57,7 @@ export function LoginPage() {
     setError(null);
     try {
       const session = await demoLogin(key);
-      const persona = PERSONAS.find((p) => p.key === key);
-      navigate(persona?.home ?? roleHome(session.user.role), { replace: true });
+      navigate(roleHome(session.user), { replace: true });
     } catch (err) {
       setError(errorMessage(err, lang));
     } finally {
@@ -84,7 +85,7 @@ export function LoginPage() {
     setError(null);
     try {
       const session = await verifyOtp(challengeId, otp);
-      navigate(roleHome(session.user.role), { replace: true });
+      navigate(roleHome(session.user), { replace: true });
     } catch (err) {
       setError(errorMessage(err, lang));
     } finally {
@@ -97,7 +98,7 @@ export function LoginPage() {
     setError(null);
     try {
       const session = await loginWithPassword(email, password);
-      navigate(roleHome(session.user.role), { replace: true });
+      navigate(roleHome(session.user), { replace: true });
     } catch (err) {
       setError(errorMessage(err, lang));
     } finally {
@@ -107,7 +108,7 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto w-full max-w-[560px] px-5 pb-16 pt-5 lg:flex lg:min-h-[calc(100vh-28px)] lg:max-w-[940px] lg:items-center">
-      <div className="w-full lg:grid lg:grid-cols-2 lg:items-start lg:gap-16">
+      <div className={demoMode ? 'w-full lg:grid lg:grid-cols-2 lg:items-start lg:gap-16' : 'mx-auto w-full max-w-[480px]'}>
         <div>
           <header className="enter enter-1 mb-7 mt-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -262,7 +263,7 @@ export function LoginPage() {
           )}
         </div>
 
-        <section className="enter enter-4 mt-9 lg:mt-4">
+        {demoMode && <section className="enter enter-4 mt-9 lg:mt-4">
           <h2 className="section-label">{t('login.demoTitle')}</h2>
           <p className="mt-2 text-meta leading-[1.7] text-ink-3">{t('login.demoHint')}</p>
 
@@ -294,7 +295,7 @@ export function LoginPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </section>}
       </div>
     </div>
   );

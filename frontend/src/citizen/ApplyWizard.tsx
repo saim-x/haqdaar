@@ -706,6 +706,16 @@ export function ApplyWizard() {
             ))}
           </ul>
 
+          {session?.user.role === 'HELPER' ? (
+            <div className="mt-5 rounded-control bg-warn-wash p-3">
+              <p className="text-caption text-ink-2">
+                {grants.isPending ? t('common.loading') : grants.error ? errorMessage(grants.error, lang) : t('helper.departmentConsentNeeded')}
+              </p>
+              <TapButton variant="secondary" size="tap" className="mt-2" disabled={grants.isFetching} onClick={() => void grants.refetch()}>
+                {t('helper.checkPermissions')}
+              </TapButton>
+            </div>
+          ) : <>
           <TapButton
             block
             className="mt-5"
@@ -719,6 +729,7 @@ export function ApplyWizard() {
           <p className="mt-2 text-center text-meta text-ink-3">
             {t('wizard.consent.withdrawAnytime')}
           </p>
+          </>}
         </section>
       )}
 

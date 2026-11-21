@@ -1,8 +1,8 @@
-import type { Role } from '../api/types';
+import type { Role, User } from '../api/types';
 
 /** Where each role lands after sign-in (AC-01.1). */
-export function roleHome(role: Role): string {
-  switch (role) {
+export function roleHome(user: Pick<User, 'role' | 'tenant_id'>): string {
+  switch (user.role) {
     case 'CITIZEN':
       return '/c';
     case 'HELPER':
@@ -10,7 +10,7 @@ export function roleHome(role: Role): string {
     case 'OFFICER':
       return '/staff/queue';
     case 'ADMIN':
-      return '/admin/rules';
+      return user.tenant_id === null ? '/admin/mocks' : '/admin/rules';
     case 'AUDITOR':
       return '/auditor/events';
     default:

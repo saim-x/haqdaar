@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
-import { errorMessage } from '../shared/api/errors';
+import { ApiError, errorMessage } from '../shared/api/errors';
 import type { CaseStatus, CaseView, Program } from '../shared/api/types';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
@@ -70,6 +70,10 @@ export function CitizenHome() {
 
   const program = programs.data?.items[0];
   const activeCase = cases.data?.items.find((c) => !TERMINAL.includes(c.status));
+  const isHelper = session?.user.role === 'HELPER';
+  const draft = activeCase?.status === 'DRAFT' && activeCase.case_type === 'BENEFIT_APPLICATION';
+  const casesUnavailable = cases.error && !(cases.error instanceof ApiError && cases.error.code === 'NETWORK_ERROR');
+  const loadError = casesUnavailable ? cases.error : !program && programs.error;
 
   const startApplication = useCallback(async () => {
     setBusy(true);
@@ -85,6 +89,10 @@ export function CitizenHome() {
       });
       navigate(`/c/apply/${created.id}`);
     } catch (err) {
+      if (!(err instanceof ApiError) || err.code !== 'NETWORK_ERROR') {
+        setError(errorMessage(err, lang));
+        return;
+      }
       // Offline: continue with `/c/apply/new?offline=1` so the wizard hydrates
       // cleanly from local IndexedDB and queues creation + submission on reconnect.
       try {
@@ -103,7 +111,7 @@ export function CitizenHome() {
     } finally {
       setBusy(false);
     }
-  }, [program, navigate, lang, actFor, session]);
+  }, [program, navigate, lang, actFor, session, t]);
 
   const displayName = actFor?.fullName ?? session?.citizen?.full_name ?? session?.user.full_name ?? '';
   // In helper mode the citizen's own CNIC is not in the act-for payload, so the
@@ -116,7 +124,7 @@ export function CitizenHome() {
   const rows = [
     { key: 'cases', to: '/c/cases', label: t('home.cases'), hint: t('home.casesHint'), Icon: IconList },
     { key: 'scam', to: '/scam-check', label: t('home.scam'), hint: t('home.scamHint'), Icon: IconShield },
-    { key: 'data', to: '/c/consent', label: t('home.data'), hint: t('home.dataHint'), Icon: IconUsers },
+    { key: 'data', to: '/c/consent', label: isHelper ? t('nav.permissions') : t('home.data'), hint: isHelper ? t('helper.permissionsHint') : t('home.dataHint'), Icon: IconUsers },
     { key: 'ask', to: '/c/ask', label: t('home.ask'), hint: t('home.askHint'), Icon: IconQuestion },
   ];
 
@@ -147,10 +155,19 @@ export function CitizenHome() {
       )}
 
       {/* The lead surface. One accent, one primary action. */}
-      <section className="card enter enter-2 mt-5 overflow-hidden">
-        {activeCase ? (
+      <section className="card enter enter-2 mt-5 overflow-hidden border-accent/25">
+        {cases.isLoading || (programs.isLoading && !activeCase) ? (
+          <p className="px-5 py-6 text-caption text-ink-2" role="status">{t('common.loading')}</p>
+        ) : loadError && !activeCase ? (
+          <div className="p-5" role="alert">
+            <p className="text-caption text-ink-2">{errorMessage(loadError, lang)}</p>
+            <TapButton size="tap" variant="secondary" className="mt-3" onClick={() => void (casesUnavailable ? cases.refetch() : programs.refetch())}>
+              {t('common.tryAgain')}
+            </TapButton>
+          </div>
+        ) : activeCase ? (
           <>
-            <div className="p-5">
+            <div className="bg-accent-wash/60 p-5">
               <p className="text-meta text-ink-3">{t('home.inProgress')}</p>
               <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <StatusBadge status={activeCase.status} size="lg" />
@@ -174,18 +191,20 @@ export function CitizenHome() {
               </div>
             </div>
             <div className="flex items-center gap-2 border-t border-ink/[0.08] bg-raised/40 px-5 py-3">
-              <TapButton data-tour="application" size="tap" onClick={() => navigate(`/c/cases/${activeCase.id}`)} className="flex-1">
-                {t('home.viewApplication')}
+              <TapButton data-tour="application" size="tap" onClick={() => navigate(draft ? `/c/apply/${activeCase.id}` : `/c/cases/${activeCase.id}`)} className="flex-1">
+                {t(draft ? 'home.continueApplication' : 'home.viewApplication')}
               </TapButton>
               <span data-tour="listen-button" className="inline-flex">
                 <AudioButton audioKey="home_cases" text={t('home.cases')} />
               </span>
             </div>
           </>
+        ) : !program ? (
+          <p className="p-5 text-body text-ink-2">{t('home.noProgram')}</p>
         ) : (
           <>
-            <div className="p-5">
-              <p className="text-meta text-ink-3">{t('home.apply')}</p>
+            <div className="bg-accent-wash/60 p-5">
+              <p className="text-body font-semibold text-accent-ink">{t('home.apply')}</p>
               <p className="mt-1.5 text-body leading-[1.7] text-ink-2">{t('home.applyHint')}</p>
             </div>
             <div className="flex items-center gap-2 border-t border-ink/[0.08] bg-raised/40 px-5 py-3">
@@ -208,13 +227,13 @@ export function CitizenHome() {
       </section>
 
       {/* Support rows. Same height, same gap, one icon column. */}
-      <ul className="enter enter-3 mt-6 border-y border-ink/[0.08]">
+      <h2 className="section-label enter enter-3 mb-2 mt-6">{t('home.helpAndTools')}</h2>
+      <ul className="card enter enter-3 overflow-hidden">
         {rows.map(({ key, to, label, hint, Icon }) => (
           <li key={key} className="flex items-center gap-1 border-b border-ink/[0.08] last:border-b-0">
-            <button
-              type="button"
-              onClick={() => navigate(to)}
-              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-1 py-3 text-start hover:bg-raised/50"
+            <Link
+              to={to}
+              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-3 py-3 text-start hover:bg-raised/50"
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-raised text-ink-2">
                 <Icon size={18} />
@@ -224,9 +243,9 @@ export function CitizenHome() {
                 <span className="mt-0.5 block text-caption leading-[1.5] text-ink-3">{hint}</span>
               </span>
               <IconChevron size={16} className="shrink-0 text-ink-3" />
-            </button>
+            </Link>
             <AudioButton
-              audioKey={key === 'ask' ? 'ask_intro' : `home_${key}`}
+              audioKey={key === 'ask' ? 'ask_intro' : isHelper && key === 'data' ? undefined : `home_${key}`}
               label={`${t('common.listen')} · ${label}`}
               text={hint}
               variant="quiet"

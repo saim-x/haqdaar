@@ -153,7 +153,7 @@ function Field({
  * bilingual labels underneath — reading a ruleset should feel like reading the
  * policy, not like reading a config file.
  */
-export default function RulesPage() {
+export default function RulesPage({ canEdit }: { canEdit: boolean }) {
   const queryClient = useQueryClient();
   const [programId, setProgramId] = useState<string>('');
   const [selectedId, setSelectedId] = useState<string>('');
@@ -193,7 +193,7 @@ export default function RulesPage() {
     [versions.data, selectedId],
   );
 
-  const readOnly = selected?.status !== 'DRAFT';
+  const readOnly = !canEdit || selected?.status !== 'DRAFT';
 
   const saveDraft = useMutation({
     mutationFn: () => api.put<RuleVersion>(`/admin/rules/${selectedId}`, { rules_json: draft }),
@@ -302,8 +302,8 @@ export default function RulesPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Rules & Digital Twin"
-        subtitle="Publish a new version without a deploy. Published versions are immutable."
+        title={canEdit ? 'Rules & Digital Twin' : 'Rule history'}
+        subtitle={canEdit ? 'Review, simulate, and publish eligibility rules.' : 'Inspect eligibility rules and past versions.'}
         actions={
           <>
             <select
@@ -323,7 +323,7 @@ export default function RulesPage() {
                 </option>
               ))}
             </select>
-            <button
+            {canEdit && <button
               type="button"
               onClick={() => createDraft.mutate()}
               data-tour="rule-draft"
@@ -331,7 +331,7 @@ export default function RulesPage() {
               className="press min-h-[36px] rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
               New draft
-            </button>
+            </button>}
           </>
         }
       />
@@ -399,10 +399,12 @@ export default function RulesPage() {
         </Card>
 
         <div className="space-y-4">
-          {!draft && (
+          {versions.error && <ErrorState error={versions.error} />}
+          {programId && versions.isLoading && <Loading label="Loading rule versions…" />}
+          {!draft && !versions.error && !versions.isLoading && (
             <Card>
               <p className="text-caption text-ink-3">
-                Select a version to edit, or create a new draft.
+                {canEdit ? 'Select a version or create a new draft.' : 'Select a version to inspect.'}
               </p>
             </Card>
           )}
@@ -411,7 +413,7 @@ export default function RulesPage() {
             <>
               <Card>
                 <CardTitle
-                  hint={readOnly ? 'read-only — published versions are immutable' : 'form editor'}
+                  hint={readOnly ? 'Read only' : 'Form editor'}
                 >
                   Eligibility rules
                 </CardTitle>
