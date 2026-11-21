@@ -34,6 +34,15 @@ const SUGGESTIONS_UR = ['میں درخواست کیسے دوں؟', 'رقم کب 
 const SUGGESTIONS_SD = ['مان درخواست ڪيئن ڏيان؟', 'رقم ڪڏهن ملندي؟', 'جيڪڏهن سڃاڻپ ڪارڊ ناهي ته ڇا ڪريان؟'];
 const SUGGESTIONS_EN = ['How do I apply?', 'When will I get the money?', 'What if I do not have a CNIC?'];
 
+/** The guided-action chip's glyph, keyed by the intent the router detected. */
+const ACTION_ICON: Record<GuideAction['icon'], typeof IconDocument> = {
+  document: IconDocument,
+  list: IconList,
+  shield: IconShield,
+  warning: IconWarning,
+  user: IconUsers,
+};
+
 export function AskPage() {
   const { t, lang, isRtl } = useI18n();
   const [question, setQuestion] = useState('');
