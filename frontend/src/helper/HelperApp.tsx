@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
@@ -10,8 +10,17 @@ import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { wipeCitizenLocalData } from '../shared/offline/db';
 import { AudioButton } from '../shared/ui/AudioButton';
-import { TapButton } from '../shared/ui/TapButton';
-import { IconCheck, IconMic, IconPlus, IconSearch, IconShield, IconUsers, IconWarning } from '../shared/ui/Icons';
+import { ScreenHeader } from '../shared/ui/ScreenHeader';
+import { TapButton, TapLink } from '../shared/ui/TapButton';
+import {
+  IconCheck,
+  IconMic,
+  IconPlus,
+  IconSearch,
+  IconShield,
+  IconUsers,
+  IconWarning,
+} from '../shared/ui/Icons';
 import { SINDH_DISTRICTS, districtLabel } from '../shared/lib/districts';
 import { digitsOnly, formatCnic, isCompleteCnic, isCompletePhone, toE164Pk } from '../shared/lib/cnic';
 import { DigitPad } from '../citizen/wizard/inputs';
@@ -28,6 +37,11 @@ interface FamiliesResponse {
  * behind: query cache cleared synchronously, wizard state wiped, IndexedDB
  * drafts for the old citizen deleted, and a full-screen confirmation before any
  * citizen screen can render.
+ *
+ * The roster is a list of people, so it is drawn as a list: one row per family,
+ * hairline between them, the name carrying the weight. The consent state is a
+ * dot and a word, not a coloured pill — a helper scanning forty rows needs to
+ * see which two are blocked, and forty pills would hide them.
  */
 export function HelperRosterPage() {
   const { t, lang } = useI18n();
@@ -70,25 +84,28 @@ export function HelperRosterPage() {
       });
       setPending(family);
       setSwitching(false);
-      void play('helper_switch', lang === 'ur' ? 'آپ اب اس گھرانے کی مدد کر رہی ہیں' : 'You are now helping this family');
+      void play(
+        'helper_switch',
+        lang === 'ur' ? 'آپ اب اس گھرانے کی مدد کر رہی ہیں' : 'You are now helping this family',
+      );
     },
     [actFor?.citizenId, lang, play, queryClient, setActFor],
   );
 
   return (
     <div className="screen">
-      <header className="mb-3 mt-1 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="screen-title">{t('helper.title')}</h1>
-          <p className="screen-hint">
-            {lang === 'ur' ? 'ایک فون، کئی گھرانے۔ ہر گھرانہ الگ رکھا جاتا ہے۔' : 'One phone, many families. Each family stays separate.'}
-          </p>
-        </div>
-        <AudioButton audioKey="helper_intro" text={t('helper.title')} />
-      </header>
+      <ScreenHeader
+        title={t('helper.title')}
+        hint={
+          lang === 'ur'
+            ? 'ایک فون، کئی گھرانے۔ ہر گھرانہ الگ رکھا جاتا ہے۔'
+            : 'One phone, many families. Each family stays separate.'
+        }
+        audioKey="helper_intro"
+      />
 
-      <div className="mb-3 flex items-center gap-2 rounded-2xl border-2 border-ink/15 bg-white px-3">
-        <IconSearch size={18} className="shrink-0 text-ink-soft" />
+      <div className="enter enter-2 mb-4 flex items-center gap-2 rounded-control border border-ink/[0.10] bg-card px-3 focus-within:border-accent">
+        <IconSearch size={18} className="shrink-0 text-ink-3" />
         <label htmlFor="family-search" className="sr-only">
           {t('helper.search')}
         </label>
@@ -97,100 +114,120 @@ export function HelperRosterPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('helper.search')}
-          className="min-h-tap flex-1 border-0 bg-transparent px-0 text-base focus:ring-0"
+          className="min-h-tap flex-1 border-0 bg-transparent px-0 text-body-lg focus:ring-0"
         />
       </div>
 
-      {families.isLoading && <p className="text-sm text-ink-soft">{t('common.loading')}</p>}
+      {families.isLoading && <p className="text-caption text-ink-3">{t('common.loading')}</p>}
 
       {families.isError && (
         <div className="card p-4">
-          <p className="text-sm text-ink-soft">{errorMessage(families.error, lang)}</p>
-          <TapButton size="tap" variant="secondary" className="mt-3" onClick={() => void families.refetch()}>
+          <p className="text-caption text-ink-2">{errorMessage(families.error, lang)}</p>
+          <TapButton
+            size="tap"
+            variant="secondary"
+            className="mt-3"
+            onClick={() => void families.refetch()}
+          >
             {t('common.tryAgain')}
           </TapButton>
         </div>
       )}
 
-      <ul className="space-y-2">
-        {filtered.map((family) => {
-          const active = actFor?.citizenId === family.citizen_id;
-          const locked = family.consent_status !== 'ACTIVE';
-          return (
-            <li key={family.citizen_id}>
-              <button
-                type="button"
-                disabled={switching}
-                onClick={() => void switchTo(family)}
-                className={`card flex w-full items-center gap-3 p-3 text-start ${
-                  active ? 'ring-2 ring-teal-600' : ''
-                } ${locked ? 'opacity-70' : ''}`}
+      {filtered.length > 0 && (
+        <ul className="card enter enter-3 overflow-hidden">
+          {filtered.map((family) => {
+            const active = actFor?.citizenId === family.citizen_id;
+            const locked = family.consent_status !== 'ACTIVE';
+            return (
+              <li
+                key={family.citizen_id}
+                className={`flex items-center border-b border-ink/[0.08] last:border-b-0 ${
+                  active ? 'row-active' : ''
+                }`}
+                data-active={active ? 'true' : undefined}
               >
-                <span
-                  aria-hidden
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-                  style={{ backgroundColor: family.avatar_color }}
+                <button
+                  type="button"
+                  disabled={switching}
+                  onClick={() => void switchTo(family)}
+                  className="press flex min-h-primary flex-1 items-center gap-3 px-4 py-3 text-start disabled:opacity-60"
                 >
-                  {family.full_name.slice(0, 1)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-base font-bold text-ink">{family.full_name}</span>
-                  <span className="num block text-[11px] text-ink-soft" dir="ltr">
-                    {family.cnic_masked ?? '—'}
-                    {family.district ? ` · ${districtLabel(family.district, lang)}` : ''}
+                  <span
+                    aria-hidden
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-body-lg font-medium text-white"
+                    style={{ backgroundColor: family.avatar_color }}
+                  >
+                    {family.full_name.slice(0, 1)}
                   </span>
-                  <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        locked ? 'bg-[#B42318]/10 text-[#B42318]' : 'bg-[#0F7B3F]/10 text-[#0F7B3F]'
-                      }`}
-                    >
-                      {locked ? t('helper.consentExpired') : t('helper.consentActive')}
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-body-lg font-medium text-ink">
+                      {family.full_name}
                     </span>
-                    {family.active_case_count > 0 && (
-                      <span className="rounded-full bg-[#1D4ED8]/10 px-2 py-0.5 text-[10px] font-bold text-[#1D4ED8]">
-                        {family.active_case_count} {t('helper.activeCases')}
+                    <span className="num mt-0.5 block truncate text-meta text-ink-3" dir="ltr">
+                      {family.cnic_masked ?? '—'}
+                      {family.district ? ` · ${districtLabel(family.district, lang)}` : ''}
+                    </span>
+                    <span className="mt-1 flex items-center gap-3">
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`live-dot ${locked ? 'bg-negative' : 'bg-positive'}`}
+                          aria-hidden
+                        />
+                        <span
+                          className={`text-meta ${locked ? 'text-negative' : 'text-ink-2'}`}
+                        >
+                          {locked ? t('helper.consentExpired') : t('helper.consentActive')}
+                        </span>
                       </span>
-                    )}
+                      {family.active_case_count > 0 && (
+                        <span className="num text-meta text-ink-3">
+                          {family.active_case_count} {t('helper.activeCases')}
+                        </span>
+                      )}
+                    </span>
                   </span>
-                </span>
-                <AudioButton audioKey={null} text={family.full_name} label={`${t('common.listen')}: ${family.full_name}`} />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                </button>
+
+                <AudioButton
+                  className="me-3 shrink-0"
+                  audioKey={null}
+                  text={family.full_name}
+                  label={`${t('common.listen')}: ${family.full_name}`}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {!families.isLoading && filtered.length === 0 && (
-        <div className="card mt-3 p-5 text-center">
-          <IconUsers size={32} className="mx-auto text-ink-soft" />
-          <p className="mt-2 text-sm text-ink-soft">
+        <div className="card enter enter-3 px-5 py-10 text-center">
+          <IconUsers size={28} className="mx-auto text-ink-3" />
+          <p className="mt-3 text-body text-ink-2">
             {lang === 'ur' ? 'ابھی کوئی گھرانہ شامل نہیں۔' : 'No families yet.'}
           </p>
         </div>
       )}
 
-      <Link
-        to="/h/new"
-        className="mt-4 flex min-h-primary w-full items-center justify-center gap-2 rounded-2xl border-2 border-teal-700 bg-teal-600 text-base font-bold text-white"
-      >
-        <IconPlus size={22} />
+      <TapLink to="/h/new" block className="mt-5" icon={<IconPlus size={20} />}>
         {t('helper.addFamily')}
-      </Link>
+      </TapLink>
 
       {pending && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white px-6 text-center">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-paper px-6 text-center">
           <span
             aria-hidden
-            className="grid h-28 w-28 place-items-center rounded-full text-4xl font-bold text-white"
+            className="grid h-24 w-24 place-items-center rounded-full text-display font-medium text-white"
             style={{ backgroundColor: pending.avatar_color }}
           >
             {pending.full_name.slice(0, 1)}
           </span>
-          <p className="mt-5 text-sm font-semibold text-ink-soft">{t('helper.switchTitle')}</p>
-          <h2 className="mt-1 text-2xl font-bold text-ink">{pending.full_name}</h2>
+          <p className="mt-6 text-caption text-ink-3">{t('helper.switchTitle')}</p>
+          <h2 className="mt-1 text-title-lg font-medium text-ink">{pending.full_name}</h2>
           <AudioButton
-            className="mt-3"
+            className="mt-4"
             audioKey="helper_switch"
             text={`${t('helper.switchTitle')} ${pending.full_name}`}
             size="lg"
@@ -198,7 +235,7 @@ export function HelperRosterPage() {
           <TapButton
             block
             className="mt-8 max-w-[420px]"
-            icon={<IconCheck size={22} />}
+            icon={<IconCheck size={20} />}
             onClick={() => {
               setPending(null);
               navigate('/c');
@@ -209,7 +246,7 @@ export function HelperRosterPage() {
           <button
             type="button"
             onClick={() => setPending(null)}
-            className="mt-3 min-h-tap text-sm font-semibold text-ink-soft underline"
+            className="press mt-2 min-h-tap px-4 text-body text-ink-2 underline decoration-ink/20 underline-offset-4 hover:text-ink"
           >
             {t('common.cancel')}
           </button>
@@ -237,7 +274,9 @@ export function AddFamilyPage() {
   const [attested, setAttested] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{ citizenId: string; challengeId: string | null } | null>(null);
+  const [created, setCreated] = useState<{ citizenId: string; challengeId: string | null } | null>(
+    null,
+  );
   const [otp, setOtp] = useState('');
   const [done, setDone] = useState(false);
 
@@ -260,7 +299,10 @@ export function AddFamilyPage() {
         payload.append('verbal_audio', capture.blob, 'consent.webm');
         payload.append('attested', 'true');
       }
-      const res = await api.upload<{ citizen_id: string; challenge_id?: string | null }>('/helper/families', payload);
+      const res = await api.upload<{ citizen_id: string; challenge_id?: string | null }>(
+        '/helper/families',
+        payload,
+      );
       setCreated({ citizenId: res.citizen_id, challengeId: res.challenge_id ?? null });
       void queryClient.invalidateQueries({ queryKey: ['helper', 'families'] });
       if (mode === 'VERBAL_WITNESSED') setDone(true);
@@ -289,19 +331,19 @@ export function AddFamilyPage() {
   if (done) {
     return (
       <div className="screen">
-        <div className="card mt-6 p-6 text-center">
-          <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#0F7B3F] text-white">
-            <IconCheck size={44} />
+        <div className="card enter mt-8 px-6 py-10 text-center">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-positive-wash text-positive">
+            <IconCheck size={32} />
           </span>
-          <h1 className="mt-4 text-xl font-bold text-ink">{fullName}</h1>
-          <p className="mt-2 text-sm text-ink-soft">
+          <h1 className="mt-5 text-title font-medium text-ink">{fullName}</h1>
+          <p className="mt-2 text-body leading-[1.7] text-ink-2">
             {mode === 'VERBAL_WITNESSED'
               ? t('helper.consentVerbalWarning')
               : lang === 'ur'
                 ? 'اجازت مل گئی۔ اب آپ اس گھرانے کی مدد کر سکتی ہیں۔'
                 : 'Consent granted. You can help this family now.'}
           </p>
-          <TapButton block className="mt-5" onClick={() => navigate('/h', { replace: true })}>
+          <TapButton block className="mt-6" onClick={() => navigate('/h', { replace: true })}>
             {t('helper.title')}
           </TapButton>
         </div>
@@ -310,114 +352,164 @@ export function AddFamilyPage() {
   }
 
   return (
-    <div className="screen pb-8">
-      <header className="mb-3 mt-1 flex items-start justify-between gap-3">
-        <h1 className="screen-title">{t('helper.addFamily')}</h1>
-        <AudioButton audioKey="helper_add_family" text={t('helper.addFamily')} />
-      </header>
+    <div className="screen pb-10">
+      <ScreenHeader
+        title={t('helper.addFamily')}
+        hint={
+          lang === 'ur'
+            ? 'صرف وہی گھرانہ شامل کریں جو آپ کو جانتا ہو۔'
+            : 'Only add a family that knows you.'
+        }
+        audioKey="helper_add_family"
+        backTo="/h"
+      />
 
       {error && (
-        <div role="alert" className="mb-3 rounded-2xl border-2 border-[#B42318]/40 bg-[#B42318]/10 px-4 py-3 text-sm font-semibold text-[#B42318]">
+        <div
+          role="alert"
+          className="enter mb-4 rounded-control border border-negative/25 bg-negative-wash px-4 py-3 text-caption font-medium text-negative"
+        >
           {error}
         </div>
       )}
 
-      <section className="card p-4">
-        <label htmlFor="family-name" className="block text-sm font-semibold text-ink">
+      <section className="card enter enter-2 p-5">
+        <label htmlFor="family-name" className="block text-caption font-medium text-ink-2">
           {t('wizard.name.title')}
         </label>
         <input
           id="family-name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="mt-1 text-base"
+          className="mt-1.5"
           placeholder={lang === 'ur' ? 'پورا نام' : 'Full name'}
         />
 
-        <p className="mt-3 text-sm font-semibold text-ink">{t('wizard.payout.title')}</p>
-        <DigitPad
-          value={digitsOnly(phoneDigits)}
-          onChange={setPhoneDigits}
-          maxDigits={11}
-          format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
-          audioKey="wizard_payout_phone"
-          audioText={t('wizard.payout.title')}
-        />
+        <p className="mt-5 text-caption font-medium text-ink-2">{t('wizard.payout.title')}</p>
+        <div className="mt-1.5">
+          <DigitPad
+            value={digitsOnly(phoneDigits)}
+            onChange={setPhoneDigits}
+            maxDigits={11}
+            format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
+            audioKey="wizard_payout_phone"
+            audioText={t('wizard.payout.title')}
+          />
+        </div>
 
-        <p className="mt-3 text-sm font-semibold text-ink">{t('wizard.cnic.title')}</p>
-        <DigitPad
-          value={digitsOnly(cnicDigits)}
-          onChange={setCnicDigits}
-          maxDigits={13}
-          format={formatCnic}
-          onUnknown={() => setCnicDigits('')}
-          audioKey="wizard_applicant_cnic"
-          audioText={t('wizard.cnic.title')}
-        />
+        <p className="mt-5 text-caption font-medium text-ink-2">{t('wizard.cnic.title')}</p>
+        <div className="mt-1.5">
+          <DigitPad
+            value={digitsOnly(cnicDigits)}
+            onChange={setCnicDigits}
+            maxDigits={13}
+            format={formatCnic}
+            onUnknown={() => setCnicDigits('')}
+            audioKey="wizard_applicant_cnic"
+            audioText={t('wizard.cnic.title')}
+          />
+        </div>
 
-        <p className="mt-3 text-sm font-semibold text-ink">{t('wizard.district.title')}</p>
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          {SINDH_DISTRICTS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setDistrict(item)}
-              aria-pressed={district === item}
-              className={`min-h-tap rounded-full border-2 px-3 text-xs font-bold ${
-                district === item ? 'border-teal-700 bg-teal-600 text-white' : 'border-ink/15 bg-white text-ink'
-              }`}
-            >
-              {districtLabel(item, lang)}
-            </button>
-          ))}
+        <p className="mt-5 text-caption font-medium text-ink-2">{t('wizard.district.title')}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {SINDH_DISTRICTS.map((item) => {
+            const selected = district === item;
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setDistrict(item)}
+                aria-pressed={selected}
+                className={`press min-h-tap rounded-control border px-3 text-caption ${
+                  selected
+                    ? 'border-accent/40 bg-accent-wash font-medium text-accent-ink'
+                    : 'border-ink/[0.10] bg-card text-ink-2 hover:bg-raised hover:text-ink'
+                }`}
+              >
+                {districtLabel(item, lang)}
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      <section className="card mt-3 p-4">
-        <h2 className="text-sm font-bold text-ink">{t('helper.consentCapture')}</h2>
+      <section className="card enter enter-3 mt-4 p-5">
+        <h2 className="text-caption font-medium text-ink-2">{t('helper.consentCapture')}</h2>
 
-        <div className="mt-2 space-y-2">
+        <div className="mt-2 border-y border-ink/[0.08]">
           <button
             type="button"
             onClick={() => setMode('OTP')}
             aria-pressed={mode === 'OTP'}
-            className={`flex min-h-primary w-full items-center gap-2 rounded-2xl border-2 px-3 text-start text-sm font-bold ${
-              mode === 'OTP' ? 'border-teal-700 bg-teal-50 text-teal-800' : 'border-ink/15 bg-white text-ink'
-            }`}
+            className="press flex min-h-primary w-full items-center gap-3 border-b border-ink/[0.08] px-1 text-start"
           >
-            <IconShield size={20} className="shrink-0" />
-            {t('helper.consentOtp')}
+            <IconShield
+              size={20}
+              className={`shrink-0 ${mode === 'OTP' ? 'text-accent-ink' : 'text-ink-3'}`}
+            />
+            <span
+              className={`flex-1 text-body ${mode === 'OTP' ? 'font-medium text-ink' : 'text-ink-2'}`}
+            >
+              {t('helper.consentOtp')}
+            </span>
+            <span
+              aria-hidden
+              className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                mode === 'OTP' ? 'border-accent bg-accent text-white' : 'border-ink/20'
+              }`}
+            >
+              {mode === 'OTP' && <IconCheck size={12} />}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setMode('VERBAL_WITNESSED')}
             aria-pressed={mode === 'VERBAL_WITNESSED'}
-            className={`flex min-h-primary w-full items-center gap-2 rounded-2xl border-2 px-3 text-start text-sm font-bold ${
-              mode === 'VERBAL_WITNESSED' ? 'border-amber-500 bg-amber-50 text-[#3B2A00]' : 'border-ink/15 bg-white text-ink'
-            }`}
+            className="press flex min-h-primary w-full items-center gap-3 px-1 text-start"
           >
-            <IconMic size={20} className="shrink-0" />
-            {t('helper.consentVerbal')}
+            <IconMic
+              size={20}
+              className={`shrink-0 ${
+                mode === 'VERBAL_WITNESSED' ? 'text-warn' : 'text-ink-3'
+              }`}
+            />
+            <span
+              className={`flex-1 text-body ${
+                mode === 'VERBAL_WITNESSED' ? 'font-medium text-ink' : 'text-ink-2'
+              }`}
+            >
+              {t('helper.consentVerbal')}
+            </span>
+            <span
+              aria-hidden
+              className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                mode === 'VERBAL_WITNESSED' ? 'border-warn bg-warn text-white' : 'border-ink/20'
+              }`}
+            >
+              {mode === 'VERBAL_WITNESSED' && <IconCheck size={12} />}
+            </span>
           </button>
         </div>
 
         {mode === 'VERBAL_WITNESSED' && (
-          <div className="mt-3 rounded-2xl border-2 border-amber-400 bg-amber-50 p-3">
-            <p className="flex items-start gap-1.5 text-xs font-semibold text-[#3B2A00]">
+          <div className="mt-4 rounded-control border border-warn/25 bg-warn-wash p-4">
+            <p className="flex items-start gap-2 text-meta leading-[1.7] text-warn">
               <IconWarning size={16} className="mt-0.5 shrink-0" />
               {t('helper.consentVerbalWarning')}
             </p>
 
             <button
               type="button"
-              onClick={() => (capture.state === 'recording' ? capture.stop() : void capture.start())}
-              className={`mt-2 inline-flex min-h-primary w-full items-center justify-center gap-2 rounded-2xl border-2 text-sm font-bold ${
+              onClick={() =>
+                capture.state === 'recording' ? capture.stop() : void capture.start()
+              }
+              className={`press mt-3 inline-flex min-h-primary w-full items-center justify-center gap-2 rounded-control border text-body font-medium ${
                 capture.state === 'recording'
-                  ? 'border-[#B42318] bg-[#B42318] text-white'
+                  ? 'border-transparent bg-negative text-white'
                   : capture.blob
-                    ? 'border-[#0F7B3F] bg-[#0F7B3F]/10 text-[#0F7B3F]'
-                    : 'border-ink/20 bg-white text-ink'
+                    ? 'border-positive/30 bg-positive-wash text-positive'
+                    : 'border-ink/[0.14] bg-card text-ink hover:bg-raised'
               }`}
             >
               <IconMic size={20} />
@@ -428,12 +520,12 @@ export function AddFamilyPage() {
                   : t('helper.record')}
             </button>
 
-            <label className="mt-2 flex items-start gap-2 text-xs font-semibold text-[#3B2A00]">
+            <label className="mt-3 flex items-start gap-2.5 text-meta leading-[1.7] text-ink-2">
               <input
                 type="checkbox"
                 checked={attested}
                 onChange={(e) => setAttested(e.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[#0F766E]"
               />
               {t('helper.attest')}
             </label>
@@ -442,25 +534,38 @@ export function AddFamilyPage() {
       </section>
 
       {created && mode === 'OTP' && (
-        <section className="card mt-3 p-4">
-          <p className="text-sm font-semibold text-ink">
-            {lang === 'ur' ? 'شہری کے فون پر آیا کوڈ لکھیں' : "Enter the code sent to the citizen's phone"}
+        <section className="card enter mt-4 p-5">
+          <p className="text-body text-ink">
+            {lang === 'ur'
+              ? 'شہری کے فون پر آیا کوڈ لکھیں'
+              : "Enter the code sent to the citizen's phone"}
           </p>
           <input
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D+/g, '').slice(0, 6))}
             inputMode="numeric"
-            className="num mt-2 text-center text-2xl tracking-[0.4em]"
+            aria-label={lang === 'ur' ? 'کوڈ' : 'Code'}
+            className="num mt-3 text-center font-mono text-title-lg tracking-[0.2em]"
             dir="ltr"
           />
-          <TapButton block className="mt-3" disabled={busy || otp.length !== 6} onClick={() => void verifyOtp()}>
+          <TapButton
+            block
+            className="mt-3"
+            disabled={busy || otp.length !== 6}
+            onClick={() => void verifyOtp()}
+          >
             {busy ? t('common.loading') : t('common.confirm')}
           </TapButton>
         </section>
       )}
 
       {!created && (
-        <TapButton block className="mt-4" disabled={busy || !canSubmit} onClick={() => void createFamily()}>
+        <TapButton
+          block
+          className="mt-5"
+          disabled={busy || !canSubmit}
+          onClick={() => void createFamily()}
+        >
           {busy ? t('common.loading') : t('helper.addFamily')}
         </TapButton>
       )}

@@ -222,6 +222,17 @@
 
   /* ---- Signature detail ---------------------------------------------- */
 
+  /* The row you are acting on. Same mark as a selected ledger row: a 2px
+     start-edge rule, so the eye finds it without a filled block. */
+  .row-active {
+    @apply bg-accent-wash;
+    box-shadow: inset 2px 0 0 #0f766e;
+  }
+
+  [dir='rtl'] .row-active {
+    box-shadow: inset -2px 0 0 #0f766e;
+  }
+
   /* The stamp. A rotated teal outline seal, used only on a verified or
      approved state — the one place the product gets to be a government form. */
   .stamp {
