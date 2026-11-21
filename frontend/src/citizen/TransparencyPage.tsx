@@ -4,6 +4,7 @@ import type { TransparencyPayload } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { IconCheck, IconWarning } from '../shared/ui/Icons';
+import { DashboardBackLink } from './DashboardBackLink';
 
 /**
  * /transparency — RULE-5 / AC-25.2.
@@ -22,6 +23,7 @@ export function TransparencyPage() {
 
   return (
     <div className="screen">
+      <DashboardBackLink />
       <header className="mb-4 mt-2 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink">{t('transparency.title')}</h1>

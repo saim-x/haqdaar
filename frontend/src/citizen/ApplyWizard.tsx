@@ -35,6 +35,7 @@ import {
   IconShield,
   IconWarning,
 } from '../shared/ui/Icons';
+import { DashboardBackLink } from './DashboardBackLink';
 import { Counter, DigitPad, DistrictList, IncomeBands, YearPicker } from './wizard/inputs';
 import { VoiceField } from './wizard/VoiceField';
 
@@ -557,11 +558,16 @@ export function ApplyWizard() {
 
   useAutoReadPrompt(`wizard_${step}`, t(STEP_TITLE[step]));
 
+  function saveBeforeLeaving() {
+    if (hydrated) void persist(step, answers).catch(() => undefined);
+  }
+
   /* ------------------------------------------------------------------ render */
 
   if (submitted) {
     return (
       <div className="screen">
+        <DashboardBackLink />
         <div className="card mt-6 p-6 text-center">
           <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#0F7B3F] text-white">
             <IconCheck size={44} />
@@ -597,6 +603,7 @@ export function ApplyWizard() {
 
   return (
     <div className="screen pb-28" data-testid="wizard" data-step={step}>
+      <DashboardBackLink onClick={saveBeforeLeaving} />
       <div className="mb-3 mt-1">
         <ProgressDots total={total} current={stepIndex} />
       </div>

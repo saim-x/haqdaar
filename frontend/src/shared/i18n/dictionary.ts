@@ -69,6 +69,7 @@ export const ur = {
   'home.data': 'میرا ڈیٹا اور اجازت',
   'home.ask': 'سوال پوچھیں',
   'home.greeting': 'السلام علیکم',
+  'home.backToDashboard': 'ڈیش بورڈ پر واپس جائیں',
   'home.helperStrip': 'آپ مدد کر رہی ہیں',
   'home.switchFamily': 'گھرانہ بدلیں',
 
@@ -291,6 +292,7 @@ export const en: Record<DictKey, string> = {
   'home.data': 'My Data & Permissions',
   'home.ask': 'Ask a Question',
   'home.greeting': 'Assalam-o-Alaikum',
+  'home.backToDashboard': 'Back to dashboard',
   'home.helperStrip': 'You are helping',
   'home.switchFamily': 'Switch family',
 

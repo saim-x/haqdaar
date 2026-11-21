@@ -1,9 +1,10 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { OfflinePill } from '../shared/ui/OfflinePill';
 import { IconGlobe, IconHome, IconList, IconLogout, IconQuestion, IconShield, IconUsers } from '../shared/ui/Icons';
+import { DashboardBackLink } from './DashboardBackLink';
 
 /**
  * Citizen shell — docs/11 §3.1.
@@ -16,6 +17,7 @@ export function CitizenLayout() {
   const { lite, toggle: toggleLite } = useLiteMode();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const onDashboard = useMatch('/c');
   // The wizard owns the bottom of the screen: its own action bar would sit
   // underneath the tab bar, so the tab bar steps aside for the whole flow.
   const focused = pathname.startsWith('/c/apply/');
@@ -88,6 +90,11 @@ export function CitizenLayout() {
                 {t('home.switchFamily')}
               </NavLink>
             </div>
+          </div>
+        )}
+        {!onDashboard && !focused && (
+          <div className="mx-auto w-full max-w-[520px] px-3">
+            <DashboardBackLink />
           </div>
         )}
       </header>

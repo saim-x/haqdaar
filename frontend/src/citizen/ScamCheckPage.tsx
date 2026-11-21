@@ -7,6 +7,7 @@ import { AudioButton } from '../shared/ui/AudioButton';
 import { CopyCode } from '../shared/ui/CopyCode';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconCamera, IconCheck, IconCross, IconMic, IconQuestion, IconShield, IconWarning } from '../shared/ui/Icons';
+import { DashboardBackLink } from './DashboardBackLink';
 
 type Tab = 'text' | 'image' | 'voice';
 
@@ -71,6 +72,7 @@ export function ScamCheckPage() {
 
   return (
     <div className="screen">
+      <DashboardBackLink />
       <header className="mb-4 mt-1 flex items-start justify-between gap-3">
         <div>
           <h1 className="screen-title">{t('scam.title')}</h1>
