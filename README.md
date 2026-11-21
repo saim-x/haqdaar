@@ -81,6 +81,15 @@ No setup or external phone required - log in with one click on `/login` (`DEMO_M
 
 ---
 
+### Follow a case from submission to notification
+
+1. Sign in as demo citizen Fatima and submit an application with `fatima_cnic_forged_name.jpg` and the genuine synthetic death certificate. The CNIC specimen intentionally has a printed name that differs from its QR data. Show the voice transcript, confirm or correct the parsed value, then note the case reference in **My cases**.
+2. Sign in as Officer Sana and find that reference in **Cases to review** after the background checks finish. Compare the case summary with the evidence and document checks. Select **Start review**. If you need to start at the review step, use seeded case `HQ-2026-000101` and follow that reference for the rest of the demo.
+3. Record the first approval with a reason and note. Show **Awaiting second approval**, then sign in as Officer Imran and record the second approval.
+4. Once the background worker processes the simulated payout, open **Device Simulator** and look for the notification for the approved case. Use its verification code in the scam checker to show how a citizen can verify the message.
+
+The registry checks, payout, and SMS delivery are simulated. The queue, decisions, and audit trail are recorded by the application.
+
 ## 3. The Problem & Personas
 
 > We help widowed women in low-income Sindh households claim and safely receive the (fictional) Sahara Widow Support Grant, even though they cannot read the forms, have weak and dropping mobile signal, have records that are misspelled or incomplete across government systems, and are targeted by fake "relief payment" scam messages.

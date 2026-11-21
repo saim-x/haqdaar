@@ -333,7 +333,14 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               {unresolvedRules.length > 0 && (
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-caption text-ink-2">
                   {unresolvedRules.slice(0, 3).map((entry) => (
-                    <li key={entry.rule_id}>{entry.reason_en || entry.label_en || 'This check needs a closer look.'}</li>
+                    <li key={entry.rule_id}>
+                      {entry.reason_en || entry.label_en || 'This check needs a closer look.'}
+                      {entry.fact && Object.hasOwn(facts, entry.fact) && (
+                        <> <a href={`#case-fact-${entry.fact}`} className="font-medium text-accent-ink underline">
+                          See {factLabel(entry.fact)}
+                        </a></>
+                      )}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -358,7 +365,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     items: caseData.ai_case_note.uncertain,
                   },
                   {
-                    label: 'Suggested checks',
+                    label: 'AI suggestions to verify',
                     dot: 'bg-info',
                     items: caseData.ai_case_note.suggested_checks,
                   },
@@ -369,11 +376,24 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                       {group.label}
                     </p>
                     <ul className="mt-1.5 space-y-1">
-                      {group.items.map((item) => (
+                      {group.items.map((item) => {
+                        const rule = ruleTrace.find((entry) =>
+                          item.startsWith(`${entry.rule_id}:`) ||
+                          item.includes(`rule ${entry.rule_id}:`) ||
+                          item === `Ask the applicant for: ${entry.ask_prompt_en || entry.label_en}`,
+                        );
+                        const fact = rule?.fact;
+                        return (
                         <li key={item} className="text-caption leading-[1.6] text-ink">
                           {item}
+                          {fact && Object.hasOwn(facts, fact) ? (
+                            <> <a href={`#case-fact-${fact}`} className="text-accent-ink underline">See {factLabel(fact)}</a></>
+                          ) : group.label === 'AI suggestions to verify' && (
+                            <> <a href="#case-review-evidence" className="text-accent-ink underline">Review evidence</a></>
+                          )}
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                   </div>
                 ))}
