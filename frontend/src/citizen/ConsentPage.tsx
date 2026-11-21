@@ -165,7 +165,7 @@ export function ConsentPage() {
             <button
               type="button"
               onClick={() => setPendingWithdraw(grant)}
-              className="press mt-4 inline-flex min-h-tap items-center gap-2 rounded-control px-1 text-caption font-medium text-negative hover:bg-negative-wash"
+              className="press -ms-2 mt-4 inline-flex min-h-tap items-center gap-2 rounded-control px-2 text-caption font-medium text-negative hover:bg-negative-wash"
             >
               <IconLock size={16} />
               {t('consent.withdraw')}
@@ -198,9 +198,13 @@ export function ConsentPage() {
       )}
 
       <section className="enter enter-4 mt-6">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-caption font-medium text-ink-2">{t('consent.accessLog')}</h2>
-          <AudioButton audioKey="consent_access_log" text={t('consent.accessLog')} />
+        <div className="mb-3 flex items-center gap-3">
+          <h2 className="section-label flex-1">{t('consent.accessLog')}</h2>
+          <AudioButton
+            audioKey="consent_access_log"
+            text={t('consent.accessLog')}
+            variant="quiet"
+          />
         </div>
         <ul className="border-y border-ink/[0.08]">
           {logs.data?.items.map((log) => (
