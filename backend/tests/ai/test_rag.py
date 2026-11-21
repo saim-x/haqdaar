@@ -451,6 +451,154 @@ class TestAnswerGuardrails:
 
 
 # --------------------------------------------------------------------------- #
+# spoken reframing - ADR-025
+# --------------------------------------------------------------------------- #
+class TestSpokenSummary:
+    """The guide may rephrase a grounded answer; it may never add a fact.
+
+    These tests pin the three properties that make that true: the field is
+    opt-in, the grounded answer is untouched, and an abstention never reaches a
+    model at all.
+    """
+
+    def test_off_by_default(self, session: RagSession) -> None:
+        payload = _ask(session, "widow grant monthly amount").as_dict()
+        assert "spoken_summary" not in payload
+
+    def test_answered_question_gets_a_spoken_summary(self, session: RagSession) -> None:
+        answer = _ask(session, "widow grant monthly amount", conversational=True)
+        assert answer.status == "ANSWERED"
+        assert answer.spoken_summary
+        assert len(answer.spoken_summary) <= rag.SPOKEN_SUMMARY_MAX_CHARS
+        assert answer.spoken_summary.startswith("بہن")
+
+    def test_spoken_summary_is_urdu(self, session: RagSession) -> None:
+        answer = _ask(session, "widow grant monthly amount", conversational=True)
+        assert any("؀" <= ch <= "ۿ" for ch in answer.spoken_summary or "")
+
+    def test_english_question_gets_an_english_greeting(self, session: RagSession) -> None:
+        answer = _ask(session, "widow grant monthly amount", lang="en", conversational=True)
+        assert answer.spoken_summary
+        assert answer.spoken_summary.startswith("Sister")
+
+    def test_answer_and_citations_are_unchanged(self, session: RagSession) -> None:
+        plain = _ask(session, "widow grant monthly amount")
+        spoken = _ask(session, "widow grant monthly amount", conversational=True)
+        assert spoken.answer == plain.answer
+        assert spoken.citations == plain.citations
+        assert spoken.status == plain.status
+        assert spoken.top_score == plain.top_score
+
+    def test_serialised_payload_adds_only_the_summary(self, session: RagSession) -> None:
+        plain = _ask(session, "widow grant monthly amount").as_dict()
+        spoken = _ask(session, "widow grant monthly amount", conversational=True).as_dict()
+        assert set(spoken) - set(plain) == {"spoken_summary"}
+        for key in plain:
+            assert spoken[key] == plain[key]
+
+    def test_not_sure_returns_the_fixed_abstention(self, session: RagSession) -> None:
+        answer = _ask(session, "What is the capital of France?", conversational=True)
+        assert answer.status == "NOT_SURE"
+        assert answer.spoken_summary == rag.SPOKEN_ABSTENTION_UR
+
+    def test_not_sure_english_abstention(self, session: RagSession) -> None:
+        answer = _ask(
+            session, "What is the capital of France?", lang="en", conversational=True
+        )
+        assert answer.spoken_summary == rag.SPOKEN_ABSTENTION_EN
+
+    def test_abstention_makes_zero_llm_calls_even_when_conversational(
+        self, session: RagSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.ai import provider as provider_module
+
+        calls: list[str] = []
+        real = provider_module.get_provider()
+
+        class Counting:
+            name = "counting"
+
+            def __getattr__(self, item: str) -> Any:
+                def wrapper(*args: Any, **kwargs: Any) -> Any:
+                    calls.append(item)
+                    return getattr(real, item)(*args, **kwargs)
+
+                return wrapper
+
+        monkeypatch.setattr(rag, "get_provider", lambda: Counting())
+        answer = _ask(session, "What is the capital of France?", conversational=True)
+        assert answer.status == "NOT_SURE"
+        # Retrieval still embeds the question; what must not happen is a
+        # generation call, which is where a hallucination would come from.
+        assert "rag_synthesize" not in calls, f"an abstention reached the model: {calls}"
+        assert "spoken_summary" not in calls, f"an abstention reached the model: {calls}"
+
+    def test_summary_is_capped(self, session: RagSession, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.ai import provider as provider_module
+
+        real = provider_module.get_provider()
+
+        class Verbose:
+            name = "verbose"
+
+            def spoken_summary(self, answer: str, excerpt: str, lang: str) -> str:
+                return "بہن " + ("بہت لمبی بات " * 200)
+
+            def __getattr__(self, item: str) -> Any:
+                return getattr(real, item)
+
+        monkeypatch.setattr(rag, "get_provider", lambda: Verbose())
+        answer = _ask(session, "widow grant monthly amount", conversational=True)
+        assert len(answer.spoken_summary or "") <= rag.SPOKEN_SUMMARY_MAX_CHARS
+
+    def test_summary_is_grounded_in_the_first_citation(
+        self, session: RagSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.ai import provider as provider_module
+
+        real = provider_module.get_provider()
+        seen: list[str] = []
+
+        class Spy:
+            name = "spy"
+
+            def spoken_summary(self, answer: str, excerpt: str, lang: str) -> str:
+                seen.append(excerpt)
+                return real.spoken_summary(answer, excerpt, lang)
+
+            def __getattr__(self, item: str) -> Any:
+                return getattr(real, item)
+
+        monkeypatch.setattr(rag, "get_provider", lambda: Spy())
+        answer = _ask(session, "widow grant monthly amount", conversational=True)
+        assert seen, "the provider must receive the excerpt"
+        assert answer.citations
+        assert seen[0].startswith(answer.citations[0]["excerpt"][:40])
+
+    def test_provider_failure_falls_back_to_the_deterministic_wrapper(
+        self, session: RagSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.ai import provider as provider_module
+
+        real = provider_module.get_provider()
+
+        class Broken:
+            name = "broken"
+
+            def spoken_summary(self, answer: str, excerpt: str, lang: str) -> str:
+                raise RuntimeError("model down")
+
+            def __getattr__(self, item: str) -> Any:
+                return getattr(real, item)
+
+        monkeypatch.setattr(rag, "get_provider", lambda: Broken())
+        answer = _ask(session, "widow grant monthly amount", conversational=True)
+        assert answer.status == "ANSWERED"
+        assert answer.spoken_summary
+        assert answer.spoken_summary.startswith("بہن")
+
+
+# --------------------------------------------------------------------------- #
 # rule summaries - RAG must never quote a stale threshold
 # --------------------------------------------------------------------------- #
 class TestRuleSummary:
