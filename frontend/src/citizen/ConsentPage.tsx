@@ -53,6 +53,8 @@ export function ConsentPage() {
   const { session } = useAuth();
   const isCitizen = session?.user.role === 'CITIZEN';
   const queryClient = useQueryClient();
+  const grantsQueryKey = ['consent-grants', session?.user.id] as const;
+  const accessLogsQueryKey = ['consent-access-logs', session?.user.id] as const;
   const [pendingWithdraw, setPendingWithdraw] = useState<ConsentGrant | null>(null);
   const [resumedBanner, setResumedBanner] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,12 +69,12 @@ export function ConsentPage() {
   }, [pendingWithdraw]);
 
   const grants = useQuery({
-    queryKey: ['consent-grants'],
+    queryKey: grantsQueryKey,
     queryFn: () => api.get<{ items: ConsentGrant[] }>('/consent/grants'),
   });
 
   const logs = useQuery({
-    queryKey: ['consent-access-logs'],
+    queryKey: accessLogsQueryKey,
     queryFn: () => api.get<{ items: ConsentAccessLog[] }>('/consent/access-logs'),
     refetchInterval: lite ? false : 30_000,
     enabled: isCitizen,
@@ -84,8 +86,8 @@ export function ConsentPage() {
     onSuccess: () => {
       setPendingWithdraw(null);
       setResumedBanner(null);
-      void queryClient.invalidateQueries({ queryKey: ['consent-grants'] });
-      void queryClient.invalidateQueries({ queryKey: ['consent-access-logs'] });
+      void queryClient.invalidateQueries({ queryKey: grantsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: accessLogsQueryKey });
     },
     onError: (err) => setError(errorMessage(err, lang)),
   });
@@ -112,8 +114,8 @@ export function ConsentPage() {
             ? 'اجازت دوبارہ فعال ہو گئی۔'
             : 'Access restored.',
       );
-      void queryClient.invalidateQueries({ queryKey: ['consent-grants'] });
-      void queryClient.invalidateQueries({ queryKey: ['consent-access-logs'] });
+      void queryClient.invalidateQueries({ queryKey: grantsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: accessLogsQueryKey });
       void queryClient.invalidateQueries({ queryKey: ['cases'] });
     },
     onError: (err) => setError(errorMessage(err, lang)),
@@ -156,7 +158,7 @@ export function ConsentPage() {
         </p>
       )}
 
-      {active.length === 0 && grants.isSuccess && (
+      {active.length === 0 && grants.isSuccess && !grants.isFetching && (
         <div data-tour="my-data" className="card enter enter-2 px-6 py-10 text-center">
           <IconUsers size={28} className="mx-auto text-ink-3" />
           <p className="mt-3 text-body text-ink-2">{t('consent.empty')}</p>
