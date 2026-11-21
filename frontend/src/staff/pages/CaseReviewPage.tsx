@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
+import { useAuth } from '../../shared/auth/AuthProvider';
 import type { OfficerCaseReview } from '../../shared/api/types';
 import {
   Card,
@@ -51,8 +52,9 @@ type ActionKey = (typeof ACTIONS)[number]['key'];
 export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const params = useParams();
   const id = caseId ?? params.id ?? '';
+  const { session } = useAuth();
   const queryClient = useQueryClient();
-  const [action, setAction] = useState<ActionKey>('APPROVE');
+  const [selectedAction, setAction] = useState<ActionKey>('APPROVE');
   const [reasonCodes, setReasonCodes] = useState<string[]>([]);
   const [requestedFields, setRequestedFields] = useState<string[]>([]);
   const [note, setNote] = useState('');
@@ -65,6 +67,12 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
     queryFn: () => api.get<OfficerCaseReview>(`/officer/cases/${id}`),
     retry: (count, err) => !(err instanceof ApiError && err.isConsentRevoked) && count < 2,
   });
+  const secondReview = query.data?.status === 'PENDING_SECOND_APPROVAL';
+  const firstApprover = secondReview && query.data?.first_approver_id === session?.user.id;
+  const availableActions = secondReview
+    ? ACTIONS.filter(({ key }) => key === 'REJECT' || (key === 'APPROVE' && !firstApprover))
+    : ACTIONS;
+  const action = availableActions.find(({ key }) => key === selectedAction)?.key ?? availableActions[0].key;
 
   const decide = useMutation({
     mutationFn: () =>
@@ -157,6 +165,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const unresolvedRules = ruleTrace.filter((entry) => entry.result === 'FAIL' || entry.result === 'UNKNOWN');
   const conflictingFacts = Object.values(facts).filter((fact) => fact.conflict).length;
   const reviewInProgress = ['HUMAN_REVIEW', 'IN_REVIEW', 'NEEDS_INFO', 'PENDING_SECOND_APPROVAL'].includes(caseData.status);
+  const canAssign = caseData.status === 'HUMAN_REVIEW';
+  const canDecide = caseData.status === 'IN_REVIEW' || secondReview;
   const canSubmit =
     (!needsReason || (reasonCodes.length > 0 && note.trim().length > 0)) &&
     (!needsFields || requestedFields.length > 0);
@@ -181,14 +191,14 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           .join(' · ')}
         actions={
           <>
-            <button
+            {canAssign && <button
               type="button"
               onClick={() => assign.mutate()}
               disabled={assign.isPending}
               className="press inline-flex min-h-[36px] items-center rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
             >
               Assign to me
-            </button>
+            </button>}
             <Link
               to="/staff/queue"
               className="press inline-flex min-h-[36px] items-center rounded-control px-3 text-caption text-ink-2 hover:bg-raised hover:text-ink"
@@ -440,8 +450,16 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               <ConfidenceBar value={caseData.latest_confidence ?? null} />
             </div>
 
+            {!canDecide ? (
+              <p className="mt-3 text-caption text-ink-2">
+                {canAssign ? 'Assign this case to yourself to start the review.' : 'No decision is available for this case right now.'}
+              </p>
+            ) : <>
+            {firstApprover && (
+              <p className="mt-3 text-caption text-ink-2">You recorded the first approval. A different officer can record the second.</p>
+            )}
             <div className="mt-3 grid grid-cols-2 gap-1.5">
-              {ACTIONS.map(({ key, label, on }) => (
+              {availableActions.map(({ key, label, on }) => (
                 <button
                   key={key}
                   type="button"
@@ -530,7 +548,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               placeholder="Explain the decision. The citizen sees a plain-language version."
             />
 
-            {highFlags.length > 0 && (
+            {highFlags.length > 0 && !secondReview && action === 'APPROVE' && (
               <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta leading-[1.7] text-warn">
                 HIGH flag present: your approval sends this case to a second officer.
               </p>
@@ -550,6 +568,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 least one field.
               </p>
             )}
+            </>}
           </Card>
 
           <Card>
