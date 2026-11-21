@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { EvalDashboard } from '../../shared/api/types';
-import { Card, CardTitle, ErrorState, Kpi, Loading, PageHeader } from '../ui';
+import { Card, CardTitle, ErrorState, Kpi, Loading, PageHeader, routeWord } from '../ui';
 
 function pct(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
@@ -240,8 +240,8 @@ export default function EvalPage() {
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-ink/[0.08] pt-3">
           {Object.entries(live_operations.by_route).map(([route, count]) => (
             <span key={route} className="text-meta text-ink-2">
-              <span className="font-mono">{route}</span>{' '}
-              <span className="num font-mono font-medium text-ink">{count}</span>
+              <span>{routeWord(route)}</span>{' '}
+              <span className="num font-medium text-ink">{count}</span>
             </span>
           ))}
         </div>

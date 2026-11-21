@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { JobListResponse, JobStatus } from '../../shared/api/types';
-import { Card, ErrorState, jobWord, Loading, PageHeader } from '../ui';
+import { Card, ErrorState, humanize, jobWord, Loading, PageHeader } from '../ui';
 
 const STATUSES: (JobStatus | '')[] = [
   '',
@@ -92,7 +92,7 @@ export default function JobsPage() {
               const tone = TONE[job.status] ?? TONE_FALLBACK;
               return (
                 <tr key={job.id}>
-                  <td className="font-mono text-meta font-medium text-ink">{job.job_type}</td>
+                  <td className="text-meta font-medium text-ink">{humanize(job.job_type)}</td>
                   <td>
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`live-dot ${tone.dot}`} aria-hidden />
