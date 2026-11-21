@@ -278,3 +278,97 @@ def resolve_avatar_id() -> str:
         return ""
 
 
+# --------------------------------------------------------------------------- #
+# voice + llm discovery
+# --------------------------------------------------------------------------- #
+def _catalogue(payload: Any) -> list[dict[str, Any]]:
+    """The entries from a ``GET /v1/{avatars,voices,llms}`` response.
+
+    The live API wraps them in ``{"data": [...]}``; older docs and fixtures use a
+    bare list or a named key. Accepting all three keeps the resolvers working
+    against the real service and against a fixture.
+    """
+    return _avatar_list(payload)
+
+
+def _voice_languages(entry: dict[str, Any]) -> list[str]:
+    raw = entry.get("languages")
+    if not isinstance(raw, list):
+        return []
+    return [str(item).strip().lower() for item in raw if str(item).strip()]
+
+
+def _pick_voice(voices: list[dict[str, Any]]) -> str:
+    """Prefer a voice that can actually pronounce Urdu, then a warm female one.
+
+    Anam's catalogue carries no ``ur`` voice today, so the Hindi fallback is the
+    one that matters in practice: Hindi and Urdu are the same spoken language, so
+    a Hindi voice reading Urdu is far closer than an English one.
+    """
+    usable = [voice for voice in voices if voice.get("id")]
+    for language in PREFERRED_VOICE_LANGUAGES:
+        for voice in usable:
+            if language in _voice_languages(voice):
+                return str(voice["id"])
+    by_name = {
+        str(voice.get("displayName") or "").strip().lower(): str(voice["id"]) for voice in usable
+    }
+    for preferred in PREFERRED_VOICE_NAMES:
+        found = by_name.get(preferred.lower())
+        if found:
+            return found
+    for voice in usable:
+        if str(voice.get("gender") or "").upper() == "FEMALE":
+            return str(voice["id"])
+    return str(usable[0]["id"]) if usable else ""
+
+
+def _pick_llm(llms: list[dict[str, Any]]) -> str:
+    """Prefer Anam's own persona-default model, never the "disable LLM" sentinel."""
+    usable = [
+        llm
+        for llm in llms
+        if llm.get("id") and str(llm.get("id")) != DISABLED_LLM_ID
+    ]
+    for llm in usable:
+        tags = llm.get("displayTags") or []
+        if isinstance(tags, list) and "persona-default" in tags:
+            return str(llm["id"])
+    for llm in usable:
+        if llm.get("isDefault") is True:
+            return str(llm["id"])
+    return str(usable[0]["id"]) if usable else ""
+
+
+def _discover(path: str, picker: Any) -> str:
+    """One cached catalogue read. Failure returns ``""`` and the caller degrades."""
+    url = f"{settings.anam_base_url.rstrip('/')}{path}"
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            response = client.get(
+                url, headers={"Authorization": f"Bearer {settings.anam_api_key.strip()}"}
+            )
+        if response.status_code != 200:
+            logger.warning("%s discovery failed: status=%s", path, response.status_code)
+            return ""
+        return str(picker(_catalogue(response.json())) or "")
+    except Exception as exc:  # noqa: BLE001 - discovery is best effort
+        logger.warning("%s discovery failed: %s", path, type(exc).__name__)
+        return ""
+
+
+def resolve_voice_id() -> str:
+    """The configured voice, or the best one the account has, cached once."""
+    global _RESOLVED_VOICE_ID
+
+    configured = settings.anam_voice_id.strip()
+    if configured:
+        return configured
+    if _RESOLVED_VOICE_ID:
+        return _RESOLVED_VOICE_ID
+    if _is_fake_mode() or not _live_ready():
+        return ""
+    _RESOLVED_VOICE_ID = _discover("/v1/voices", _pick_voice)
+    return _RESOLVED_VOICE_ID
+
+
