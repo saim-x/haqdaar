@@ -8,8 +8,9 @@ import { useI18n } from '../i18n/I18nProvider';
 import { errorMessage } from '../api/errors';
 import type { Role } from '../api/types';
 import { TapButton } from '../ui/TapButton';
-import { IconArrowRight, IconGlobe, IconPhone, IconShield } from '../ui/Icons';
+import { IconArrowRight, IconPhone, IconShield } from '../ui/Icons';
 import { AudioButton } from '../ui/AudioButton';
+import { LanguageSelector } from '../ui/LanguageSelector';
 import { BrandLockup } from '../ui/Brand';
 
 type Tab = 'citizen' | 'staff';
@@ -37,7 +38,7 @@ const ROLE_LABEL = {
  * viewport instead of scrolling past a long strip of empty paper.
  */
 export function LoginPage() {
-  const { t, lang, toggleLang } = useI18n();
+  const { t, lang } = useI18n();
   const navigate = useNavigate();
   const { demoLogin, loginWithPassword, requestOtp, verifyOtp } = useAuth();
   const { data: demoMode } = useDemoMode();
@@ -118,16 +119,7 @@ export function LoginPage() {
               <p className="mt-2 text-body leading-[1.7] text-ink-2">{t('app.tagline')}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={toggleLang}
-                data-testid="lang-toggle"
-                className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:text-ink"
-                aria-label={t('common.switchLanguage')}
-              >
-                <IconGlobe size={14} />
-                {lang === 'ur' ? 'سنڌي' : lang === 'sd' ? 'EN' : 'اردو'}
-              </button>
+              <LanguageSelector className="border-transparent bg-transparent px-2 hover:border-ink/[0.12]" />
               <AudioButton audioKey="login_welcome" text={t('login.subtitle')} />
             </div>
           </header>

@@ -5,9 +5,9 @@ import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { useOffline } from '../shared/offline/OfflineProvider';
 import { BrandMark } from '../shared/ui/Brand';
+import { LanguageSelector } from '../shared/ui/LanguageSelector';
 import { OfflinePill } from '../shared/ui/OfflinePill';
 import {
-  IconGlobe,
   IconHome,
   IconList,
   IconLogout,
@@ -17,7 +17,7 @@ import {
 } from '../shared/ui/Icons';
 
 export function CitizenLayout() {
-  const { t, toggleLang, lang } = useI18n();
+  const { t } = useI18n();
   const { session, actFor, logout } = useAuth();
   const { lite, toggle: toggleLite } = useLiteMode();
   const { autoRead, setAutoRead } = useAudio();
@@ -25,7 +25,6 @@ export function CitizenLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const focused = pathname.startsWith('/c/apply/');
-  const nextLangLabel = lang === 'ur' ? 'سنڌي' : lang === 'sd' ? 'EN' : 'اردو';
   const isHelper = session?.user.role === 'HELPER';
   const hasWorkspace = !isHelper || Boolean(actFor);
 
@@ -75,16 +74,7 @@ export function CitizenLayout() {
             >
               {t('common.liteMode')}
             </button>
-            <button
-              type="button"
-              onClick={toggleLang}
-              data-testid="lang-toggle"
-              className="press inline-flex min-h-tap items-center gap-1 rounded-control bg-card border border-ink/[0.12] px-2.5 text-meta font-medium text-ink-2 hover:bg-raised hover:text-ink"
-              aria-label={t('common.switchLanguage')}
-            >
-              <IconGlobe size={14} />
-              {nextLangLabel}
-            </button>
+            <LanguageSelector />
             <button
               type="button"
               onClick={() => {

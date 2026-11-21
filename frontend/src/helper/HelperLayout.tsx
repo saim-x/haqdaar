@@ -3,15 +3,15 @@ import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { BrandMark } from '../shared/ui/Brand';
-import { IconGlobe, IconLogout } from '../shared/ui/Icons';
+import { LanguageSelector } from '../shared/ui/LanguageSelector';
+import { IconLogout } from '../shared/ui/Icons';
 import { OfflinePill } from '../shared/ui/OfflinePill';
 
 export function HelperLayout() {
   const { logout } = useAuth();
-  const { t, lang, toggleLang } = useI18n();
+  const { t } = useI18n();
   const { lite, toggle: toggleLite } = useLiteMode();
   const navigate = useNavigate();
-  const nextLangLabel = lang === 'ur' ? 'سنڌي' : lang === 'sd' ? 'EN' : 'اردو';
 
   return (
     <div>
@@ -30,16 +30,7 @@ export function HelperLayout() {
           >
             {t('common.liteMode')}
           </button>
-          <button
-            type="button"
-            onClick={toggleLang}
-            data-testid="lang-toggle"
-            aria-label={t('common.switchLanguage')}
-            className="press flex min-h-tap shrink-0 items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:bg-raised"
-          >
-            <IconGlobe size={16} />
-            {nextLangLabel}
-          </button>
+          <LanguageSelector className="border-transparent bg-transparent px-2 hover:border-ink/[0.12]" />
           <button
             type="button"
             onClick={() => void logout().then(() => navigate('/login', { replace: true }))}
