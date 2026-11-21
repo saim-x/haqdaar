@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ScamCheckResult, ScamVerdict } from '../shared/api/types';
+import { AvatarToggleCard } from '../shared/avatar/AvatarToggleCard';
+import type { AvatarMood } from '../shared/avatar/types';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
+import { useAuth } from '../shared/auth/AuthProvider';
 import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
@@ -15,6 +19,7 @@ import {
   IconCheck,
   IconCross,
   IconMic,
+  IconPlay,
   IconQuestion,
   IconShield,
   IconWarning,
