@@ -120,9 +120,9 @@ class TestFeContract:
             assert f"scam_{verdict}" in manifest, verdict
 
     def test_fe_key_registry_covers_every_fe_call_site(self) -> None:
-        """ADR-018 pinned 31; the login/helper screens added five more call sites."""
-        assert len(tts_pregen.FE_KEYS) == 36
-        assert len(set(tts_pregen.FE_KEYS)) == 36
+        """ADR-018 pinned 31; login/helper added five, My Data documents one more."""
+        assert len(tts_pregen.FE_KEYS) == 37
+        assert len(set(tts_pregen.FE_KEYS)) == 37
         assert _fe_static_keys() <= set(tts_pregen.FE_KEYS)
         manifest = _manifest()
         missing = [key for key in tts_pregen.FE_KEYS if key not in manifest]

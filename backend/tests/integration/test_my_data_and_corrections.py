@@ -114,6 +114,66 @@ def test_my_data_groups_every_category_with_provenance(
     assert "*" in str(masked)
 
 
+def test_my_data_reports_the_household_facts_it_actually_holds(
+    client: Any, citizen_headers: dict[str, str]
+) -> None:
+    """Regression: `/me/data` read `profile_data["household"]`, a nested key the
+    seed never writes, so every citizen's household came back `{}`.
+
+    An empty household is not a neutral answer — it reads as "we hold nothing
+    about you", which is the opposite of the truth for a seeded citizen. The
+    old test only asserted the group *existed*, which an empty dict satisfies.
+    """
+    response = client.get("/api/v1/me/data", headers=citizen_headers)
+    assert response.status_code == 200, response.text
+
+    household = response.json()["household"]
+    assert household, "household is empty — the flat profile_data keys are not being read"
+
+    # widow_fatima is seeded with all four canonical household facts.
+    for key in ("children_under_18", "household_size", "monthly_income_pkr", "payout_phone"):
+        assert key in household, f"{key} missing from household"
+
+    assert household["household_size"]["state"] == "KNOWN"
+    assert household["household_size"]["value"] == 4
+    assert household["monthly_income_pkr"]["value"] == 28000
+    assert household["household_size"]["source"] == "HOUSEHOLD_SURVEY"
+    assert household["payout_phone"]["source"] == "SELF_DECLARED"
+
+
+def test_my_data_states_unknown_rather_than_omitting_it(
+    client: Any, persona_headers: Any
+) -> None:
+    """docs/04 §5 — `UNKNOWN` is a first-class value, and it says why.
+
+    A fact the citizen never supplied must come back as `UNKNOWN` with a
+    `missing_reason`, not as a zero, an empty string, or a missing row.
+
+    `shopkeeper_rasool` is seeded with no household facts at all, so he is the
+    case that actually exercises the branch — asserting over a citizen who has
+    every value would pass without ever reaching an `UNKNOWN`.
+    """
+    response = client.get("/api/v1/me/data", headers=persona_headers("shopkeeper_rasool"))
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    household = body["household"]
+    assert household, "household is empty — the flat profile_data keys are not being read"
+
+    unknown = {key: entry for key, entry in household.items() if entry["state"] == "UNKNOWN"}
+    assert unknown, "a citizen with no household facts reported none as UNKNOWN"
+
+    for key, entry in household.items():
+        assert entry["state"] in {"KNOWN", "UNKNOWN"}, f"{key} has no tri-state"
+        if entry["state"] == "KNOWN":
+            assert entry["value"] is not None, f"{key} is KNOWN but has no value"
+            assert entry["missing_reason"] is None, f"{key} is KNOWN but carries a reason"
+        else:
+            assert entry["value"] is None, f"{key} is UNKNOWN but carries a value"
+            assert entry["source"] is None, f"{key} is UNKNOWN but claims a source"
+            assert entry["missing_reason"], f"{key} is UNKNOWN but does not say why"
+
+
 # --- corrections ------------------------------------------------------------
 
 

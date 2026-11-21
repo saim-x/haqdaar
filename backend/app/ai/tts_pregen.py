@@ -186,6 +186,9 @@ FE_KEYS: tuple[str, ...] = (
     "helper_intro",
     "helper_switch",
     "helper_add_family",
+    # My Data grew a per-section speaker; the documents section is the one
+    # section whose key is not built from a group name, so it is static.
+    "mydata_documents",
 )
 
 

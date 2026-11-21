@@ -33,6 +33,7 @@ COMPONENTS: list[dict[str, Any]] = [
         "name_ur": "تصدیق، رضامندی اور آڈٹ",
         "status": "REAL",
         "details": "Enforced server-side in FastAPI + PostgreSQL 16 (Alembic migrations).",
+        "details_ur": "FastAPI اور PostgreSQL 16 میں سرور کی طرف نافذ — JWT، کردار کی بنیاد پر رسائی، رضامندی کا انجن اور آڈٹ کی زنجیر۔",
     },
     {
         "component": (
@@ -42,6 +43,10 @@ COMPONENTS: list[dict[str, Any]] = [
         "name_ur": "قواعد انجن اور ڈیجیٹل ٹوئن",
         "status": "REAL",
         "details": "Pure Python deterministic engine (app/engine/) evaluating live DB rules.",
+                "details_ur": (
+            "خالص Python کا انجن (app/engine/) جو ڈیٹابیس کے قواعد پر فیصلہ کرتا ہے — "
+            "تین حالتوں والا جائزہ، ناموں کی تطبیق اور ڈیجیٹل ٹوئن۔"
+        ),
     },
     {
         "component": "Offline-First PWA & Idempotent Outbox",
@@ -50,6 +55,10 @@ COMPONENTS: list[dict[str, Any]] = [
         "details": (
             "Workbox Service Worker + Dexie IndexedDB + server-side "
             "Idempotency-Key deduplication."
+        ),
+                "details_ur": (
+            "Workbox سروس ورکر، Dexie IndexedDB اور سرور کی طرف Idempotency-Key کی "
+            "جانچ — ایک ہی درخواست دو بار اثر نہیں کرتی۔"
         ),
     },
     {
@@ -60,6 +69,10 @@ COMPONENTS: list[dict[str, Any]] = [
             "Trained on synthetic data. Hybrid deterministic rules + calibrated "
             "scikit-learn TF-IDF/LR model + cryptographic SMS body_sha256 lookup."
         ),
+                "details_ur": (
+            "مصنوعی ڈیٹا پر تربیت یافتہ۔ قواعد، scikit-learn کا TF-IDF/LR ماڈل اور "
+            "پیغام کے body_sha256 کی کرپٹوگرافک جانچ۔"
+        ),
     },
     {
         "component": "Document Verification (Blur, Signed QR, OCR Cross-Check)",
@@ -68,6 +81,10 @@ COMPONENTS: list[dict[str, Any]] = [
         "details": (
             "On mock specimens. OpenCV Laplacian blur + QRCodeDetector + "
             "HMAC-SHA256 signature + vision OCR comparison."
+        ),
+                "details_ur": (
+            "نمونہ کارڈز پر۔ OpenCV کی دھندلاہٹ جانچ، QRCodeDetector، HMAC-SHA256 "
+            "دستخط اور OCR سے موازنہ۔"
         ),
     },
     {
@@ -78,6 +95,10 @@ COMPONENTS: list[dict[str, Any]] = [
             "With fake fallback. OpenAI whisper-1 / gpt-4o-mini / "
             "text-embedding-3-small + edge-tts + hybrid Postgres/NumPy retrieval."
         ),
+                "details_ur": (
+            "fake fallback کے ساتھ۔ OpenAI whisper-1، gpt-4o-mini، "
+            "text-embedding-3-small، edge-tts اور Postgres/NumPy کی مشترکہ تلاش۔"
+        ),
     },
     {
         "component": "Identity Registry (NADRA-like)",
@@ -86,6 +107,10 @@ COMPONENTS: list[dict[str, Any]] = [
         "details": (
             "Mock REST API (/mock/v1/identity/lookup) with synthetic 99900-* CNICs "
             "& chaos modes."
+        ),
+                "details_ur": (
+            "مصنوعی 99900-* شناختی کارڈ نمبروں کے ساتھ mock REST API "
+            "(/mock/v1/identity/lookup) اور خرابی کے آزمائشی موڈ۔"
         ),
     },
     {
@@ -96,6 +121,10 @@ COMPONENTS: list[dict[str, Any]] = [
             "Mock REST APIs (/mock/v1/civil/*, /household/*, /benefits/*) with "
             "synthetic data."
         ),
+                "details_ur": (
+            "مصنوعی ڈیٹا کے ساتھ mock REST APIs "
+            "(/mock/v1/civil/*، /household/*، /benefits/*)۔"
+        ),
     },
     {
         "component": "Instant Payment Rails (Raast-like) & Complaints",
@@ -104,6 +133,10 @@ COMPONENTS: list[dict[str, Any]] = [
         "details": (
             "Mock REST API (/mock/v1/payments/*, /complaints) with idempotent "
             "transfers & test failure alias."
+        ),
+                "details_ur": (
+            "mock REST API (/mock/v1/payments/*، /complaints) — ادائیگیاں دہرانے پر "
+            "بھی ایک ہی اثر، اور ناکامی کی آزمائش کا راستہ۔"
         ),
     },
     {
@@ -114,6 +147,10 @@ COMPONENTS: list[dict[str, Any]] = [
             "Stored in notifications & displayed live in /staff/device-sim; no real "
             "telecom gateway."
         ),
+                "details_ur": (
+            "پیغامات notifications میں محفوظ ہوتے ہیں اور /staff/device-sim پر فوراً "
+            "نظر آتے ہیں؛ کوئی حقیقی ٹیلی کام گیٹ وے نہیں۔"
+        ),
     },
     {
         "component": "Citizens, Cases & Documents",
@@ -122,6 +159,10 @@ COMPONENTS: list[dict[str, Any]] = [
         "details": (
             "100 % fictional Pakistani personas and watermarked MOCK SPECIMEN cards. "
             "Zero real personal data."
+        ),
+                "details_ur": (
+            "مکمل فرضی پاکستانی کردار اور MOCK SPECIMEN کی مہر والے کارڈ۔ کوئی حقیقی "
+            "ذاتی معلومات نہیں۔"
         ),
     },
 ]
@@ -145,6 +186,9 @@ def transparency(db: DbSession) -> dict[str, Any]:
         "mock_services": mock_service_statuses(db),
         "mock_services_note": (
             "Live chaos modes are also editable by platform admins at /api/v1/admin/mocks."
+        ),
+        "mock_services_note_ur": (
+            "خرابی کے موجودہ موڈ پلیٹ فارم ایڈمن /api/v1/admin/mocks سے تبدیل کر سکتے ہیں۔"
         ),
     }
 

@@ -131,7 +131,7 @@ Every 4xx/5xx error returns:
 | `PATCH` | `/consent/grants/{grant_id}` | CITIZEN | Modify categories/purposes |
 | `POST` | `/consent/grants/{grant_id}/withdraw` | CITIZEN | Immediately sets `status = 'WITHDRAWN'`. If `DEPARTMENT` grant withdrawn and open cases exist, requires `{ "confirm_case_hold": true }` and moves open cases in that tenant to `ON_HOLD_CONSENT`. |
 | `GET` | `/consent/access-logs` | CITIZEN, AUDITOR | Paginated list of **allowed and denied** data accesses on this citizen |
-| `GET` | `/me/data` | CITIZEN, HELPER (with consent) | Grouped view of all stored citizen data + provenance badges |
+| `GET` | `/me/data` | CITIZEN, HELPER (with consent) | Grouped view of all stored citizen data + provenance badges. Every `identity`/`household` value is the docs/04 §5 fact shape `{state, value, source, missing_reason}` — `UNKNOWN` is stated with a reason, never omitted or coerced (ADR-020). |
 | `POST` | `/me/corrections` | CITIZEN, HELPER | Request correction `{ "field_key", "requested_value", "reason" }`. Self-declared applied immediately; registry-sourced queued for officer. |
 | `GET` | `/me/notifications` | CITIZEN, HELPER | In-app notifications with verification codes |
 

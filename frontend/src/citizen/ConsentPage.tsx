@@ -219,7 +219,7 @@ export function ConsentPage() {
                   {(lang === 'ur' ? CATEGORY_LABELS[log.category]?.ur : CATEGORY_LABELS[log.category]?.en) ??
                     log.category}
                   {' · '}
-                  <bdi className="num">{stamp(log.created_at, lang)}</bdi>
+                  <bdi className="date">{stamp(log.created_at, lang)}</bdi>
                 </p>
               </div>
               <span

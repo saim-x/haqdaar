@@ -348,9 +348,22 @@ def test_transparency_discloses_every_simulated_subsystem() -> None:
 
     allowed = {"REAL", "SIMULATED", "SYNTHETIC"}
     for row in COMPONENTS:
-        assert set(row) >= {"component", "status", "details"}, row
+        assert set(row) >= {"component", "status", "details", "name_ur", "details_ur"}, row
         assert row["status"] in allowed, row
         assert row["details"].strip(), row
+
+        # The page is Urdu-first. A row without Urdu renders English prose in the
+        # middle of an Urdu table, which is the one thing a citizen reading only
+        # Urdu cannot work around. Require real Urdu, not a copy of the English.
+        for field in ("name_ur", "details_ur"):
+            text = row[field].strip()
+            assert text, f"{row['component']} has an empty {field}"
+            assert any("؀" <= ch <= "ۿ" for ch in text), (
+                f"{row['component']} {field} contains no Urdu characters"
+            )
+            assert text != row["details" if field == "details_ur" else "component"], (
+                f"{row['component']} {field} is just the English copied over"
+            )
 
     simulated = " ".join(
         row["component"] for row in COMPONENTS if row["status"] == "SIMULATED"

@@ -287,7 +287,7 @@ def _seed_citizens(db: Session, metadata: Any, users: dict[str, uuid.UUID]) -> d
         user_id: uuid.UUID | None = None,
         dob: str | None = None,
         created_by: uuid.UUID | None = None,
-        avatar: str = "#0F766E",
+        avatar: str = "#0E6A60",
         profile: dict[str, Any] | None = None,
     ) -> uuid.UUID:
         citizen_id = sd.uid(f"citizen:{key}")
@@ -1156,7 +1156,7 @@ def _seed_historical_cases(
                 "phone": payout,
                 "district": district,
                 "dob": date.fromisoformat(dob),
-                "avatar_color": "#0F766E",
+                "avatar_color": "#0E6A60",
                 "profile_data": {
                     "children_under_18": children,
                     "household_size": household_size,

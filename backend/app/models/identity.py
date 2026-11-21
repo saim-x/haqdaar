@@ -79,7 +79,7 @@ class Citizen(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     district: Mapped[str | None] = mapped_column(String(64), nullable=True)
     dob: Mapped[date | None] = mapped_column(Date, nullable=True)
     avatar_color: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="#0F766E", server_default=text("'#0F766E'")
+        String(16), nullable=False, default="#0E6A60", server_default=text("'#0E6A60'")
     )
     profile_data: Mapped[dict] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
