@@ -234,6 +234,9 @@ export const ur = {
   'helper.record': 'ریکارڈ کریں',
   'helper.recording': 'ریکارڈ ہو رہا ہے…',
   'helper.blocked': 'اس گھرانے کی اجازت واپس لے لی گئی ہے۔ رسائی بند ہے۔',
+  'helper.optional': '(اختیاری)',
+  'helper.add': 'شامل کریں',
+  'helper.remove': 'ہٹائیں',
 
   'transparency.title': 'اصلی اور نقلی',
   'transparency.subtitle': 'اس پروٹوٹائپ میں کیا اصلی ہے اور کیا نقلی۔',
@@ -502,6 +505,9 @@ export const en: Record<DictKey, string> = {
   'helper.record': 'Record',
   'helper.recording': 'Recording…',
   'helper.blocked': 'This family withdrew consent. Access is blocked.',
+  'helper.optional': '(optional)',
+  'helper.add': 'Add',
+  'helper.remove': 'Remove',
 
   'transparency.title': 'Real vs Simulated',
   'transparency.subtitle': 'What is real and what is simulated in this prototype.',

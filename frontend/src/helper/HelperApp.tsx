@@ -14,6 +14,7 @@ import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton, TapLink } from '../shared/ui/TapButton';
 import {
   IconCheck,
+  IconChevronDown,
   IconMic,
   IconPlus,
   IconSearch,
@@ -294,6 +295,7 @@ export function AddFamilyPage() {
   const [phoneDigits, setPhoneDigits] = useState('');
   const [cnicDigits, setCnicDigits] = useState('');
   const [district, setDistrict] = useState<string | null>(null);
+  const [showCnic, setShowCnic] = useState(false);
   const [mode, setMode] = useState<ConsentMode>('OTP');
   const [attested, setAttested] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -421,18 +423,43 @@ export function AddFamilyPage() {
           />
         </div>
 
-        <p className="mt-5 text-caption font-medium text-ink-2">{t('wizard.cnic.title')}</p>
-        <div className="mt-1.5">
-          <DigitPad
-            value={digitsOnly(cnicDigits)}
-            onChange={setCnicDigits}
-            maxDigits={13}
-            format={formatCnic}
-            onUnknown={() => setCnicDigits('')}
-            audioKey="wizard_applicant_cnic"
-            audioText={t('wizard.cnic.title')}
-          />
+        {/* The CNIC is optional here, so it does not get a 300px keypad by
+            default: two stacked pads pushed the consent choice — the most
+            important decision on this screen — below the fold. */}
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <p className="text-caption font-medium text-ink-2">
+            {t('wizard.cnic.title')}
+            <span className="ms-1.5 font-normal text-ink-3">{t('helper.optional')}</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setShowCnic((prev) => !prev);
+              if (showCnic) setCnicDigits('');
+            }}
+            aria-expanded={showCnic}
+            className="press inline-flex min-h-tap shrink-0 items-center gap-1 rounded-control px-2 text-caption font-medium text-accent-ink hover:bg-raised"
+          >
+            {showCnic ? t('helper.remove') : t('helper.add')}
+            <IconChevronDown
+              size={14}
+              className={`transition-transform duration-200 ${showCnic ? 'rotate-180' : ''}`}
+            />
+          </button>
         </div>
+        {showCnic && (
+          <div className="enter mt-1.5">
+            <DigitPad
+              value={digitsOnly(cnicDigits)}
+              onChange={setCnicDigits}
+              maxDigits={13}
+              format={formatCnic}
+              onUnknown={() => setCnicDigits('')}
+              audioKey="wizard_applicant_cnic"
+              audioText={t('wizard.cnic.title')}
+            />
+          </div>
+        )}
 
         <p className="mt-5 text-caption font-medium text-ink-2">{t('wizard.district.title')}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
