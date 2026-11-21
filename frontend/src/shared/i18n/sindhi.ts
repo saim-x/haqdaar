@@ -183,7 +183,7 @@ export const sd: Partial<Record<DictKey, string>> = {
   'wizard.voice.preview': 'هينئر تائين هي ٻڌوسين',
   'wizard.voice.waiting': 'آواز جو انتظار آهي…',
   'wizard.voice.sayDate': 'ڏينهن، مهيني جو نالو ۽ پورو سال چئو۔',
-  'wizard.voice.sayDigits': 'صفر سميت هر انگ الڳ چئو۔',
+  'wizard.voice.sayDigits': 'صفر سميت هر انگ الڳ چئو. ورجندڙ انگن لاءِ ڊبل يا ٽرپل چئي سگهو ٿا.',
   'wizard.voice.correct': 'جيڪڏهن غلط آهي، ٻيهر چئو يا مٿي درست ڪريو.',
   'wizard.input.empty': 'هي خانو خالي آهي.',
   'wizard.dob.exact': 'صحيح ڄم جي تاريخ',

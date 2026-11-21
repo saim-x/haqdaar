@@ -526,22 +526,35 @@ _DIGIT_WORDS_EN = dict(zip(
     range(10),
     strict=True,
 ))
+_DIGIT_REPEATS = {"double": 2, "ڈبل": 2, "triple": 3, "ٹرپل": 3}
 
 
 def parse_digit_sequence(text: str) -> str | None:
     """Join numeric groups and spoken single digits, preserving leading zeros."""
     runs: list[list[str]] = []
     current: list[str] = []
+    repeat = 1
     for token in re.findall(r"\w+", normalize_text(text).lower()):
-        if token.isascii() and token.isdecimal():
-            current.append(token)
+        if token in _DIGIT_REPEATS:
+            if repeat != 1:
+                return None
+            repeat = _DIGIT_REPEATS[token]
             continue
-        digit = _DIGIT_WORDS_EN.get(token, _word_value(token))
-        if digit is not None and 0 <= digit <= 9:
-            current.append(str(digit))
+        if token.isascii() and token.isdecimal():
+            digits = token
+        else:
+            digit = _DIGIT_WORDS_EN.get(token, _word_value(token))
+            digits = str(digit) if digit is not None and 0 <= digit <= 9 else ""
+        if repeat != 1 and len(digits) != 1:
+            return None
+        if digits:
+            current.append(digits * repeat)
+            repeat = 1
         elif current:
             runs.append(current)
             current = []
+    if repeat != 1:
+        return None
     if current:
         runs.append(current)
     return "".join(runs[0]) if len(runs) == 1 else None
@@ -679,7 +692,8 @@ def _spoken_year(text: str) -> int | None:
     if digits:
         value = int(digits.group(1))
         return value if 1900 <= value <= 2100 else None
-    words = parse_number(text)
+    # Urdu STT sometimes renders "انیس سو" as the single word "انیسو".
+    words = parse_number(re.sub(r"\bانیسو\b", "انیس سو", text))
     if words is not None and 1900 <= words <= 2100:
         return words
     return None
