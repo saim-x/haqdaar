@@ -18,3 +18,9 @@ import { IconMic, IconMicOff, IconPause, IconRefresh, IconSpeaker, IconXCircle }
 import type { AvatarGuide, AvatarMood } from './types';
 import { useAnamAvatar } from './useAnamAvatar';
 
+interface AvatarStageProps {
+  guide: AvatarGuide;
+  /** PiP dock: shorter stage, same controls. */
+  compact?: boolean;
+}
+
