@@ -612,12 +612,16 @@ class TestApi:
         assert statuses[10] == 429
 
     def test_session_response_never_contains_the_api_key(
-        self, client: Any, citizen_headers: dict[str, str]
+        self, client: Any, citizen_headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # The key has to be non-empty for this to mean anything: an empty string
+        # is a substring of every string, so the assertion would pass vacuously
+        # on a machine with no key configured - which is exactly CI.
+        monkeypatch.setattr(settings, "anam_api_key", "test-anam-key-not-real")
         response = client.post(
             "/api/v1/avatar/session", json={"surface": "ask"}, headers=citizen_headers
         )
-        assert settings.anam_api_key not in response.text
+        assert "test-anam-key-not-real" not in response.text
 
 
 # --------------------------------------------------------------------------- #
@@ -977,7 +981,11 @@ class TestConversationalConfig:
         assert session["conversational"] is True
         assert session["simulated"] is True
 
-    def test_fake_session_never_carries_a_real_token(self) -> None:
+    def test_fake_session_never_carries_a_real_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # See the API test above: an empty key would make this vacuous.
+        monkeypatch.setattr(settings, "anam_api_key", "test-anam-key-not-real")
         session = avatar.create_avatar_session(None, _Actor(), surface="ask")
         assert session["session_token"] == avatar.FAKE_SESSION_TOKEN
-        assert settings.anam_api_key not in json.dumps(session)
+        assert "test-anam-key-not-real" not in json.dumps(session)
