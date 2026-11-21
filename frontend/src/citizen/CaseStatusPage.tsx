@@ -154,7 +154,7 @@ export function CaseStatusPage() {
                 <div className="pb-4">
                   <p className="text-body leading-[1.6] text-ink">{pick(entry.label_ur, entry.label_en)}</p>
                   <p className="mt-0.5 text-meta text-ink-3">
-                    <bdi className="num">{stamp(entry.at, lang)}</bdi>
+                    <bdi className="date">{stamp(entry.at, lang)}</bdi>
                   </p>
                 </div>
               </li>

@@ -606,11 +606,27 @@ export interface Notification {
   created_at: string;
 }
 
-/** One provenance-tagged value inside `GET /me/data`. */
+/**
+ * One provenance-tagged value inside `GET /me/data` — docs/04 §5 tri-state.
+ *
+ * `UNKNOWN` is a real answer, not an absent one: `value` and `source` are null
+ * and `missing_reason` says why. Never coerce it to a default, and never infer
+ * it from `value === null` alone — the backend states it.
+ */
 export interface MyDataValue {
+  state: 'KNOWN' | 'UNKNOWN';
   value: string | number | boolean | null;
-  source: string;
+  source: string | null;
+  missing_reason: MissingReason | null;
 }
+
+/** Why a fact is `UNKNOWN` — mirrors `app.engine.facts.MissingReason`. */
+export type MissingReason =
+  | 'USER_UNKNOWN'
+  | 'NOT_PROVIDED'
+  | 'NOT_APPLICABLE'
+  | 'SERVICE_UNAVAILABLE'
+  | 'DOCUMENT_MISSING';
 
 /** `GET /me/data` — grouped view of everything stored about the citizen. */
 export interface MyDataResponse {
@@ -814,6 +830,8 @@ export interface TransparencyPayload {
     name_ur: string;
     status: TransparencyStatus;
     details: string;
+    /** Urdu rendering of `details`. Technical proper nouns stay in Latin. */
+    details_ur: string;
   }[];
   /** Live chaos mode of each simulated DPI service (`mock_service_statuses`). */
   mock_services: {
@@ -824,4 +842,5 @@ export interface TransparencyPayload {
     updated_at: string | null;
   }[];
   mock_services_note: string;
+  mock_services_note_ur: string;
 }

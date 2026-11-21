@@ -69,6 +69,35 @@ def _audit_actor(actor: ActorContext) -> dict[str, Any]:
     }
 
 
+#: The household facts `/me/data` reports, each with the source docs/04 §5 names
+#: as authoritative. `payout_phone` is self-declared; the other three come from
+#: the household survey.
+_HOUSEHOLD_FACT_KEYS: dict[str, str] = {
+    "children_under_18": "SELF_DECLARED",
+    "household_size": "HOUSEHOLD_SURVEY",
+    "monthly_income_pkr": "HOUSEHOLD_SURVEY",
+    "payout_phone": "SELF_DECLARED",
+}
+
+
+def _fact(value: Any, source: str) -> dict[str, Any]:
+    """One provenance-tagged value in the docs/04 §5 tri-state shape.
+
+    `UNKNOWN` is a real answer, not an absence: the citizen is told which field
+    we do not hold and why, instead of the row disappearing or a zero standing
+    in for a number nobody supplied. `NOT_PROVIDED` is the honest reason here —
+    nothing failed, the value was simply never collected.
+    """
+    if value is None or value == "":
+        return {
+            "state": "UNKNOWN",
+            "value": None,
+            "source": None,
+            "missing_reason": "NOT_PROVIDED",
+        }
+    return {"state": "KNOWN", "value": value, "source": source, "missing_reason": None}
+
+
 def _scope(db: Session, actor: ActorContext, request: Request) -> uuid.UUID:
     act_for = get_act_for_citizen(request)
     return resolve_citizen_scope(db, actor, act_for)
@@ -101,21 +130,29 @@ def my_data(request: Request, actor: CitizenActor, db: DbSession) -> dict[str, A
 
     profile = citizen.profile_data or {}
     identity = {
-        "full_name": {"value": citizen.full_name, "source": "SELF_DECLARED"},
-        "cnic_masked": {"value": mask_cnic(citizen.cnic_digits), "source": "IDENTITY_REGISTRY"},
-        "phone_masked": {
-            "value": (citizen.phone or "")[:4] + "****" + (citizen.phone or "")[-2:]
+        "full_name": _fact(citizen.full_name, "SELF_DECLARED"),
+        "cnic_masked": _fact(mask_cnic(citizen.cnic_digits), "IDENTITY_REGISTRY"),
+        "phone_masked": _fact(
+            (citizen.phone or "")[:4] + "****" + (citizen.phone or "")[-2:]
             if citizen.phone
             else None,
-            "source": "SELF_DECLARED",
-        },
-        "district": {"value": citizen.district, "source": "SELF_DECLARED"},
-        "dob": {"value": citizen.dob.isoformat() if citizen.dob else None, "source": "SELF_DECLARED"},
+            "SELF_DECLARED",
+        ),
+        "district": _fact(citizen.district, "SELF_DECLARED"),
+        "dob": _fact(citizen.dob.isoformat() if citizen.dob else None, "SELF_DECLARED"),
     }
 
+    # `profile_data` is flat — the canonical fact keys sit directly on it, not
+    # under a `household` sub-object. Reading the nested key silently returned
+    # `{}` for every citizen, which is the one thing this endpoint must never do:
+    # an empty household reads as "we hold nothing", not "we hold nothing *yet*".
+    #
+    # Every canonical key is emitted, present or not. A key that is absent comes
+    # back as `UNKNOWN` with a reason, so the citizen sees "we do not know this"
+    # rather than the row quietly disappearing — docs/04 §5, and the same
+    # tri-state the decision engine consumes.
     household = {
-        key: {"value": value, "source": "HOUSEHOLD_SURVEY"}
-        for key, value in (profile.get("household") or {}).items()
+        key: _fact(profile.get(key), source) for key, source in _HOUSEHOLD_FACT_KEYS.items()
     }
 
     cases = (

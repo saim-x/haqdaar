@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
-import type { CorrectionRequest, MyDataResponse, MyDataValue } from '../shared/api/types';
+import type {
+  CorrectionRequest,
+  MissingReason,
+  MyDataResponse,
+  MyDataValue,
+} from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import type { DictKey } from '../shared/i18n/dictionary';
 import { ScreenHeader } from '../shared/ui/ScreenHeader';
+import { AudioButton } from '../shared/ui/AudioButton';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconCheck, IconPencil, IconRefresh } from '../shared/ui/Icons';
 import { dayMonth } from '../shared/lib/dates';
@@ -65,6 +72,21 @@ function fieldLabel(key: string, lang: 'ur' | 'en'): string {
   if (known) return lang === 'ur' ? known.ur : known.en;
   return prettyKey(key);
 }
+
+/**
+ * Why a value is `UNKNOWN`, in the citizen's words. The backend states the
+ * reason rather than leaving the client to guess, so "we do not know" can say
+ * *which* kind of not-knowing it is — "you have not told us" is a different
+ * message from "a government service was down", and only one of them is the
+ * citizen's to act on.
+ */
+const MISSING_LABEL: Record<MissingReason, DictKey> = {
+  NOT_PROVIDED: 'consent.missingNotProvided',
+  USER_UNKNOWN: 'consent.missingUserUnknown',
+  NOT_APPLICABLE: 'consent.missingNotApplicable',
+  SERVICE_UNAVAILABLE: 'consent.missingServiceUnavailable',
+  DOCUMENT_MISSING: 'consent.missingDocumentMissing',
+};
 
 /** A value that is a bare ISO date is a date, not a string of digits. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -207,14 +229,26 @@ export function MyDataPage() {
       <div className="space-y-7">
         {groups.map((group) => (
           <section key={group.key} className="enter enter-2">
-            <h2 className="section-label mb-3">{lang === 'ur' ? group.label_ur : group.label_en}</h2>
+            {/* The screen-level speaker in the header reads the intro; each
+                section gets its own quiet speaker so a citizen who only wants
+                the household facts does not have to sit through the identity
+                ones. `quiet` keeps the header button the prominent one. */}
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="section-label">{lang === 'ur' ? group.label_ur : group.label_en}</h2>
+              <AudioButton
+                audioKey={`mydata_${group.key}`}
+                label={lang === 'ur' ? group.label_ur : group.label_en}
+                variant="quiet"
+                className="-my-2"
+              />
+            </div>
             {/* The row is the button. Seven identical "request a correction"
                 links down one column is seven pieces of furniture; a pencil at
                 the end of each row says the same thing once per row and keeps
                 the value the loudest thing on the line. */}
             <ul className="border-y border-ink/[0.08]">
               {group.fields.map(([fieldKey, field]) => {
-                const unknown = field.value === null || field.value === '';
+                const unknown = field.state === 'UNKNOWN';
                 const registry = field.source !== 'SELF_DECLARED';
                 const label = fieldLabel(fieldKey, lang);
                 return (
@@ -239,9 +273,16 @@ export function MyDataPage() {
                             answered claimed to come from a government record.
                             Unknown is a first-class value here: say so. */}
                         {unknown ? (
-                          <span className="mt-0.5 block text-body text-ink-3">
-                            {t('consent.sourceUnknown')}
-                          </span>
+                          <>
+                            <span className="mt-0.5 block text-body text-ink-3">
+                              {t('consent.sourceUnknown')}
+                            </span>
+                            {field.missing_reason && (
+                              <span className="mt-0.5 block text-meta text-ink-3">
+                                {t(MISSING_LABEL[field.missing_reason])}
+                              </span>
+                            )}
+                          </>
                         ) : (
                           <>
                             {/* `<bdi>` isolates the value without forcing a
@@ -268,7 +309,15 @@ export function MyDataPage() {
 
         {documents.length > 0 && (
           <section className="enter enter-3">
-            <h2 className="section-label mb-3">{t('data.documents')}</h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="section-label">{t('data.documents')}</h2>
+              <AudioButton
+                audioKey="mydata_documents"
+                label={t('data.documents')}
+                variant="quiet"
+                className="-my-2"
+              />
+            </div>
             <ul className="border-y border-ink/[0.08]">
               {documents.map((doc) => {
                 const status = DOC_STATUS_LABELS[doc.verify_status] ?? { ur: doc.verify_status, en: doc.verify_status };
@@ -287,7 +336,7 @@ export function MyDataPage() {
                       <p className="text-caption font-medium text-ink">{lang === 'ur' ? typeLabel.ur : typeLabel.en}</p>
                       <p className="mt-0.5 text-meta text-ink-3">
                         {lang === 'ur' ? status.ur : status.en} ·{' '}
-                        <bdi className="num">{dayMonth(doc.created_at, lang)}</bdi>
+                        <bdi className="date">{dayMonth(doc.created_at, lang)}</bdi>
                       </p>
                     </div>
                     {ok ? (

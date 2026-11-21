@@ -80,18 +80,20 @@
     --ink-3: theme('colors.ink.3');
     --rule: theme('colors.raised');
 
-    /* Height of the prototype banner. docs/11 asks for a compact 28 px bar, and
-       that is what it is from `sm` up. On a 390 px phone the pinned English
-       sentence needs 375 px on its own — more than the screen once the
-       "Real vs Simulated" link is beside it — so the bar wraps to two lines
-       there rather than cutting the legally required claim in half. */
-    --banner-h: 46px;
-  }
+    /* Height of the prototype banner — docs/11 asks for a compact 28 px bar and
+       that is what this is, at every width.
 
-  @media (min-width: 640px) {
-    :root {
-      --banner-h: 28px;
-    }
+       docs/11 also pins the full sentence ("… Identity, payment & data services
+       are simulated."), which is 96 characters and cannot fit a 390 px phone at
+       12 px in any arrangement. So the bar carries the claim — the part RULE-3
+       actually requires on screen — and the detail clause joins it from `sm` up,
+       where there is room. The claim plus the link measures 277 px against 282 px
+       available at 390 px, so it holds one line.
+
+       `min-height`, not `height`: below ~375 px the claim genuinely needs two
+       lines and the bar grows rather than clipping a legally required sentence.
+       That is the one case where being taller than 28 px is the correct answer. */
+    --banner-h: 28px;
   }
 
   html {
@@ -127,7 +129,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid #0f766e;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -140,6 +142,16 @@
      and let the paragraph's own direction place it. */
   .num {
     direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* A date is not a number. `21 نومبر 2026` holds an Urdu word, so forcing a
+     Latin base direction on it reorders the pieces into `21 2026 نومبر`. This
+     isolates the run — so the paragraph cannot reorder it either — and keeps
+     the tabular figures, but leaves the base direction to the paragraph. */
+  .date {
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
@@ -293,11 +305,11 @@
 
   .ledger tbody tr[data-selected='true'] {
     @apply bg-accent-wash;
-    box-shadow: inset 2px 0 0 #0f766e;
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   [dir='rtl'] .ledger tbody tr[data-selected='true'] {
-    box-shadow: inset -2px 0 0 #0f766e;
+    box-shadow: inset -2px 0 0 var(--accent);
   }
 
   /* ---- Signature detail ---------------------------------------------- */
@@ -306,11 +318,11 @@
      start-edge rule, so the eye finds it without a filled block. */
   .row-active {
     @apply bg-accent-wash;
-    box-shadow: inset 2px 0 0 #0f766e;
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   [dir='rtl'] .row-active {
-    box-shadow: inset -2px 0 0 #0f766e;
+    box-shadow: inset -2px 0 0 var(--accent);
   }
 
   /* The stamp. A rotated teal outline seal, used only on a verified or

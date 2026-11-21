@@ -36,9 +36,11 @@ const MODE_TONE: Record<string, string> = {
  * This is a reference table, so it is set as one: hairline rules, a quiet header,
  * and the verdict as a dot plus a word rather than a coloured pill per row.
  *
- * The English `details` strings come from the backend untranslated, so each one
- * is wrapped in `<bdi>`: without isolation the trailing full stop is a neutral
- * character and RTL reorders it to the front of the sentence.
+ * `details` arrives in both languages; the Urdu keeps technical proper nouns
+ * (FastAPI, OpenCV, HMAC-SHA256) in Latin, which is how Urdu technical prose is
+ * normally written. Each string is wrapped in `<bdi>` regardless: without
+ * isolation a trailing full stop is a neutral character and RTL reorders it to
+ * the front of the sentence.
  */
 export function TransparencyPage() {
   const { t, lang } = useI18n();
@@ -88,7 +90,7 @@ export function TransparencyPage() {
                   <td>
                     <p className="font-medium text-ink">{lang === 'ur' ? row.name_ur : row.component}</p>
                     <p className="mt-0.5 text-meta leading-[1.7] text-ink-3">
-                      <bdi>{row.details}</bdi>
+                      <bdi>{lang === 'ur' ? row.details_ur : row.details}</bdi>
                     </p>
                   </td>
                   <td className="whitespace-nowrap">
@@ -147,6 +149,9 @@ export function TransparencyPage() {
                 ))}
               </tbody>
             </table>
+            <p className="mt-2 text-meta leading-[1.7] text-ink-3">
+              {lang === 'ur' ? query.data?.mock_services_note_ur : query.data?.mock_services_note}
+            </p>
           </section>
         )}
 

@@ -94,7 +94,7 @@ class CitizenOut(BaseModel):
     cnic_masked: str | None = None
     phone_masked: str | None = None
     district: str | None = None
-    avatar_color: str = "#0F766E"
+    avatar_color: str = "#0E6A60"
 
 
 class TenantOut(BaseModel):
