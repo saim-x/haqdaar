@@ -3,22 +3,50 @@
 @tailwind utilities;
 
 /*
- * Urdu UI face — docs/11 §2.4 decision: Noto Sans Arabic (not Nastaliq) because
- * Nastaliq is heavy and slow to render on cheap Android screens.
- * The subset at /fonts/NotoSansArabic-subset.woff2 is 54 KB: one variable file
- * covering weights 400–700, cut to the Urdu alphabet, both digit sets, and the
- * Latin range the UI actually prints (PKR, reference codes). It is a static
- * asset, so it never counts against the 150 KB JS budget.
- * If the file is absent the system Arabic stack below renders identically enough
- * that no layout breaks — the font is an enhancement, never a dependency.
+ * Two faces, split by script, each scoped with `unicode-range` so the browser
+ * downloads only what a page actually prints and picks the right face per
+ * character inside a mixed line.
+ *
+ * Latin — Instrument Sans. A grotesque with a slightly condensed skeleton and
+ * open apertures; it reads as printed matter rather than as a UI default, which
+ * is the register this product wants. Variable, so 400–700 is one file.
+ *
+ * Urdu — Noto Sans Arabic, the docs/11 §2.4 decision (not Nastaliq: too heavy
+ * and too slow on cheap Android screens). Cut to the Arabic block and Arabic
+ * supplement, which is the whole Urdu alphabet plus both digit sets; the Latin
+ * it used to carry now belongs to Instrument Sans. The block is kept whole
+ * rather than trimmed to the letters the dictionary happens to use, because
+ * citizen names arrive from the API and a missing glyph is tofu in someone's
+ * name — 8 KB is the cheaper mistake.
+ *
+ * 26.2 KB + 26.6 KB = 51.6 KB, still under the 54 KB single file this replaces,
+ * and an English-only page fetches just the 26.2 KB Latin face. Static assets,
+ * so neither counts against the 150 KB JS budget. If a file is missing the
+ * system stacks below render close enough that nothing breaks — the fonts are
+ * an enhancement, never a dependency.
+ *
+ * Rebuild both with `python scripts/build-fonts.py`.
+ *
+ * Instrument Sans has no ≠ ≤ ≥ (U+2260/2264/2265). Those three fall through to
+ * system-ui, which is correct: they only appear as comparison operators in the
+ * rule trace, where the glyph is the notation.
  */
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/InstrumentSans-subset.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-00FF, U+2000-206F, U+2192, U+2212;
+}
+
 @font-face {
   font-family: 'Noto Sans Arabic';
   src: url('/fonts/NotoSansArabic-subset.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+0020-007E;
+  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF;
 }
 
 @layer base {
@@ -35,6 +63,22 @@
     /* The hairline. One line weight for every divider, table rule and track. */
     --hairline: rgba(28, 25, 23, 0.08);
     --hairline-strong: rgba(28, 25, 23, 0.14);
+
+    /* The accent as bare channels, so the focus ring can be the accent at 14%
+       without a second hardcoded copy of the hex drifting out of sync. */
+    --accent-rgb: 14 106 96;
+
+    /* Palette mirrors, resolved from tailwind.config.js at build time. An SVG
+       attribute cannot take a Tailwind class, so the charts read these instead
+       of repeating hexes that would drift the moment a token changes. */
+    --accent: theme('colors.accent.DEFAULT');
+    --positive: theme('colors.positive.DEFAULT');
+    --negative: theme('colors.negative.DEFAULT');
+    --warn: theme('colors.warn.DEFAULT');
+    --info: theme('colors.info.DEFAULT');
+    --paused: theme('colors.paused.DEFAULT');
+    --ink-3: theme('colors.ink.3');
+    --rule: theme('colors.raised');
 
     /* Height of the prototype banner. docs/11 asks for a compact 28 px bar, and
        that is what it is from `sm` up. On a 390 px phone the pinned English
@@ -57,7 +101,7 @@
 
   body {
     @apply bg-paper text-ink antialiased;
-    font-family: 'Noto Sans Arabic', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Instrument Sans', 'Noto Sans Arabic', 'Segoe UI', system-ui, -apple-system, sans-serif;
     /* Urdu needs more line height than Latin: dots and marks sit above and
        below the baseline. rtl.md asks for 1.6–1.8 on body. */
     line-height: 1.7;
@@ -131,7 +175,7 @@
   textarea:focus,
   select:focus {
     @apply border-accent outline-none;
-    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.14);
   }
 
   input::placeholder,
@@ -208,7 +252,7 @@
 
   .field:focus {
     @apply border-accent outline-none;
-    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.14);
   }
 
   /* A ledger table: hairline rules, tabular figures, one header treatment.

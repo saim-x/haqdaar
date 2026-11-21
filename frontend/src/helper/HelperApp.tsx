@@ -576,7 +576,7 @@ export function AddFamilyPage() {
                 type="checkbox"
                 checked={attested}
                 onChange={(e) => setAttested(e.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0 accent-[#0F766E]"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
               />
               {t('helper.attest')}
             </label>
