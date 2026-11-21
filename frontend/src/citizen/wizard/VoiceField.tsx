@@ -9,7 +9,7 @@ import { IconCheck, IconCross, IconMic } from '../../shared/ui/Icons';
 
 interface VoiceFieldProps {
   fieldKey: string;
-  /** Called only after the citizen taps ✅ on the read-back. */
+  /** Called only after the citizen confirms the read-back. */
   onConfirm(value: string | number | boolean | null): void;
   audioKey?: string;
   audioText?: string;
@@ -19,7 +19,8 @@ interface VoiceFieldProps {
  * Voice input with mandatory read-back — docs/11 §2.3, docs/07 §2.
  *
  * The value is never stored on the strength of the transcript alone: the parsed
- * value is shown, spoken back in Urdu, and only written when the citizen taps ✅.
+ * value is shown, spoken back in Urdu, and only written when the citizen
+ * confirms it.
  * When the microphone is unavailable this component renders nothing at all —
  * voice is an accelerator, never a single point of failure.
  *
