@@ -88,16 +88,29 @@ COMPONENTS: list[dict[str, Any]] = [
         ),
     },
     {
-        "component": "Urdu Voice STT/TTS & RAG Policy Q&A",
-        "name_ur": "اردو آواز اور پالیسی سوالات",
+        "component": "Urdu Voice STT/TTS, RAG Policy Q&A & Optional Video Guide",
+        "name_ur": "اردو آواز، پالیسی سوالات اور ویڈیو گائیڈ",
         "status": "REAL",
         "details": (
             "With fake fallback. Deepgram nova-3 STT + Deepgram Flux pre-recorded Urdu prompts "
-            "+ OpenAI gpt-4o-mini & text-embedding-3-small + hybrid Postgres/NumPy retrieval."
+            "+ OpenAI gpt-4o-mini & text-embedding-3-small + hybrid Postgres/NumPy retrieval. "
+            "The optional video guide (Anam.ai WebRTC avatar) runs in conversational mode by "
+            "default: it hears the citizen's spoken Urdu and replies in Urdu, guided only by a "
+            "system prompt built from the live active rule set with zero citizen PII - it never "
+            "receives a case, a decision, a CNIC or a phone number, and it never decides "
+            "anything. In passthrough mode it only lip-syncs our own Urdu audio. It runs as a "
+            "local simulator when AI_PROVIDER=fake, and steps down to the audio-only guide in "
+            "Lite Mode or offline."
         ),
         "details_ur": (
             "fake fallback کے ساتھ۔ Deepgram nova-3 آواز شناخت، Deepgram Flux اردو آڈیو، "
-            "OpenAI gpt-4o-mini، text-embedding-3-small اور Postgres/NumPy کی مشترکہ تلاش۔"
+            "OpenAI gpt-4o-mini، text-embedding-3-small اور Postgres/NumPy کی مشترکہ تلاش۔ "
+            "اختیاری ویڈیو گائیڈ (Anam.ai کا WebRTC اوتار) بطور ڈیفالٹ گفتگو کے موڈ میں چلتی ہے: "
+            "وہ شہری کی بولی ہوئی اردو سنتی ہے اور اردو میں جواب دیتی ہے، مگر صرف اُس ہدایت نامے پر "
+            "جو ڈیٹابیس کے موجودہ فعال قواعد سے بنتا ہے اور جس میں شہری کا کوئی ذاتی ڈیٹا نہیں ہوتا - "
+            "اُسے نہ کیس ملتا ہے، نہ فیصلہ، نہ شناختی کارڈ، نہ فون نمبر، اور وہ کوئی فیصلہ نہیں کرتی۔ "
+            "passthrough موڈ میں وہ صرف ہماری اپنی اردو آڈیو پر ہونٹ ہلاتی ہے۔ "
+            "AI_PROVIDER=fake پر مقامی نقلی گائیڈ چلتی ہے، اور ہلکے موڈ یا آف لائن میں صرف آڈیو گائیڈ رہ جاتی ہے۔"
         ),
     },
     {

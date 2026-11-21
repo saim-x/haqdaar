@@ -4,6 +4,10 @@ import { useParams } from 'react-router-dom';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import { useCasePolling } from '../shared/api/useCasePolling';
+import type { CaseStatus } from '../shared/api/types';
+import { AvatarToggleCard } from '../shared/avatar/AvatarToggleCard';
+import type { AvatarMood } from '../shared/avatar/types';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
@@ -11,10 +15,22 @@ import { pkr } from '../shared/lib/money';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge, statusLabelKey } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconArrowLeft, IconWarning } from '../shared/ui/Icons';
+import { IconArrowLeft, IconPlay, IconWarning } from '../shared/ui/Icons';
 import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
 import { CaseNextStep } from './CaseNextStep';
 
+
+/**
+ * The guide's tone for a status. Deterministic, and deliberately conservative:
+ * only a settled case gets `happy`, and only a rejection gets `warning`. A case
+ * under human review is `calm` - the citizen is waiting, not in trouble.
+ */
+function moodForStatus(status: CaseStatus): AvatarMood {
+  if (status === 'APPROVED' || status === 'PAID') return 'happy';
+  if (status === 'NEEDS_INFO') return 'reassuring';
+  if (status === 'REJECTED' || status === 'PAYMENT_FAILED') return 'warning';
+  return 'calm';
+}
 
 /**
  * Case status - docs/11 §3.3 / F-10.
@@ -31,6 +47,7 @@ export function CaseStatusPage() {
   const { data, error, loading, fromCache } = useCasePolling(id, actFor?.citizenId ?? session?.citizen?.id ?? null);
   const [complaintState, setComplaintState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [complaintError, setComplaintError] = useState<string | null>(null);
+  const guide = useAvatarGuide('case_status');
 
   async function fileComplaint() {
     setComplaintState('sending');
@@ -95,6 +112,17 @@ export function CaseStatusPage() {
   const canComplain = ['APPROVED', 'PAID', 'PAYMENT_FAILED', 'PAYMENT_INITIATED'].includes(data.status);
   const settled = ['APPROVED', 'PAID', 'PAYMENT_INITIATED'].includes(data.status);
 
+  // The briefing is assembled from the deterministic explanation the server
+  // already computed. No model is called, so the guide cannot add a fact that
+  // the decision did not contain.
+  const briefing = [headline, ...reasons.slice(0, 3), nextStep].filter(Boolean).join('۔ ');
+  const briefingMood = moodForStatus(data.status);
+
+  function explainWithSaima() {
+    guide.start();
+    guide.speak({ text: briefing, caption: briefing, mood: briefingMood });
+  }
+
   return (
     <div className="screen">
       <header className="enter enter-1 mb-4 flex items-center gap-2">
@@ -140,6 +168,25 @@ export function CaseStatusPage() {
               variant="quiet"
             />
           </div>
+
+          {guide.active ? (
+            <AvatarToggleCard guide={guide} className="mb-3" />
+          ) : (
+            guide.available &&
+            !guide.steppedDown && (
+              <button
+                type="button"
+                onClick={explainWithSaima}
+                data-testid="avatar-watch-explain"
+                className="press mb-3 flex min-h-primary w-full items-center gap-2.5 rounded-control border border-accent/30 bg-accent-wash px-3.5 text-start text-body font-medium text-accent-ink hover:bg-accent/15"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white">
+                  <IconPlay size={16} />
+                </span>
+                {t('avatar.watchExplain')}
+              </button>
+            )
+          )}
           <ul className="border-y border-ink/[0.08]">
             {reasons.slice(0, 3).map((reason) => (
               <li key={reason} className="flex items-start gap-2.5 border-b border-ink/[0.08] py-2.5 last:border-b-0">

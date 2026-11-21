@@ -1,0 +1,879 @@
+"""Interactive Urdu video guide - "Saima - Haqdaar Guide" (ADR-025).
+
+Three modes, one face:
+
+* ``conversational`` (default) - the vendor listens to the citizen's own Urdu
+  over WebRTC and answers in its own voice. This is the only mode that gives a
+  low-literacy citizen a real two-way conversation, and the only one that needs
+  no Deepgram or OpenAI key of ours. The vendor is grounded by a system prompt
+  built from the **live active rule version in PostgreSQL**, so a published rule
+  change is quoted by Saima on her very next session.
+* ``passthrough`` - the avatar is a **mouth, not a mind**: it lip-syncs the Urdu
+  PCM this system already produced (the 73 pre-cached ``/audio/ur/*.mp3``
+  prompts and the dynamic ``POST /voice/tts`` clips), decoded to 24 kHz mono in
+  the browser. The vendor never receives a question, a case, a CNIC or a prompt.
+* ``talk`` - the documented single-turn fallback.
+
+Four rules shape this module:
+
+1. **Zero credits outside a deliberate live demo.** ``AI_PROVIDER=fake`` returns a
+   complete, deterministic session envelope with ``provider: "fake"``, so every
+   test, CI run and Playwright spec exercises the whole client flow without
+   opening a WebRTC connection. Inside pytest the simulator is forced even when
+   ``.env`` asks for live, so a test run can never spend a streaming minute.
+2. **A vendor outage is not a citizen error.** Any HTTP error, timeout or quota
+   exhaustion returns a ``200`` degradation envelope pointing at the audio-only
+   guide, and records the failure in ``ai_telemetry``. It never raises a 5xx.
+3. **The key never leaves the process.** Only a short-lived session token is
+   returned; the API key is never logged, never returned, and never placed in a
+   ``VITE_*`` variable.
+4. **Unknown is a first-class value.** If the active rule version cannot be read,
+   the prompt carries no amounts or thresholds at all and Saima is told to point
+   the citizen at the official rules screen. She never quotes a stale number.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import time
+import uuid
+from datetime import UTC, datetime
+from typing import Any
+
+import httpx
+
+from app.config import settings
+from app.security import audit
+
+logger = logging.getLogger("haqdaar.ai.avatar")
+
+#: The four citizen surfaces allowed to open a guide session (ADR-025).
+SURFACES = frozenset({"ask", "case_status", "wizard", "scam_check"})
+
+PERSONA_NAME_UR = "سائرہ — حقدار گائیڈ"
+PERSONA_NAME_EN = "Saima — Haqdaar Guide"
+
+#: Anam's passthrough stream is 24 kHz mono ``pcm_s16le``; the browser resamples
+#: to exactly this rate so the vendor never has to guess.
+SAMPLE_RATE = 24000
+
+#: Stock avatars that read as a warm female guide, in preference order. The first
+#: one the account actually has wins; otherwise the first returned avatar is used.
+PREFERRED_AVATAR_NAMES = ("Cara", "Layla", "Mia", "Sophie", "Julia")
+
+#: Anam's catalogue has no ``ur``-tagged voice (checked against all 1437 entries
+#: in the public catalogue), so the resolver falls back to the closest spoken
+#: relative - Hindi, which shares Urdu's Hindustani register - and then to a warm
+#: female English voice. ``ANAM_VOICE_ID`` overrides all of it.
+PREFERRED_VOICE_LANGUAGES = ("ur", "hi")
+PREFERRED_VOICE_NAMES = (
+    "Amanda - Warm Guide",
+    "Michelle - Empathetic Voice",
+    "Rachel - Polished Presence",
+)
+
+#: ``CUSTOMER_CLIENT_V1`` is Anam's "disable the LLM" sentinel; conversational
+#: mode needs a real one, so it is never a candidate here.
+DISABLED_LLM_ID = "CUSTOMER_CLIENT_V1"
+
+FAKE_SESSION_TOKEN = "fake-anam-session-token"
+FAKE_AVATAR_ID = "fake-saima-avatar"
+
+DEGRADED_MESSAGE_UR = "ویڈیو گائیڈ اس وقت دستیاب نہیں، آڈیو گائیڈ فعال ہے۔"
+DEGRADED_MESSAGE_EN = "Video guide is temporarily unavailable; audio guide is active."
+
+#: The one sentence Saima must use when a question is outside her remit. It is
+#: also the exact string the RAG layer returns on ``NOT_SURE``, so the citizen
+#: hears the same honest abstention whether she asked by voice or by text.
+ABSTENTION_UR = (
+    "بہن، مجھے اس بارے میں صحیح معلومات نہیں ہیں اور میں غلط بات نہیں بتانا چاہتی۔ "
+    "میں صرف حقدار اور سہارا گرانٹ کے بارے میں مدد کر سکتی ہوں۔"
+)
+
+#: Resolved once per process. Each is a cheap catalogue read, but it is still a
+#: network call on a citizen's request path, so it happens once.
+_RESOLVED_AVATAR_ID: str | None = None
+_RESOLVED_VOICE_ID: str | None = None
+_RESOLVED_LLM_ID: str | None = None
+
+#: Set only by the test suite's ``live`` fixture. Those tests also replace
+#: ``avatar.httpx`` with a recorder, so flipping this lets the *code path* run
+#: without any socket ever being opened.
+_ALLOW_LIVE_IN_TESTS = False
+
+
+# --------------------------------------------------------------------------- #
+# mode helpers
+# --------------------------------------------------------------------------- #
+def _in_test_context() -> bool:
+    """True inside pytest or an ``APP_ENV=test`` process.
+
+    ``PYTEST_CURRENT_TEST`` is set by pytest for the duration of each test, which
+    is exactly the window in which a stray ``.env`` must not be able to reach the
+    vendor.
+    """
+    return bool(os.environ.get("PYTEST_CURRENT_TEST")) or settings.app_env == "test"
+
+
+def set_test_live_override(enabled: bool) -> None:
+    """Test seam: let the suite exercise the live code path with a shimmed client."""
+    global _ALLOW_LIVE_IN_TESTS
+    _ALLOW_LIVE_IN_TESTS = bool(enabled)
+
+
+def _is_fake_mode() -> bool:
+    """True when the deterministic simulator should serve the session.
+
+    Order matters. A test context wins over everything, so CI is free no matter
+    how ``.env`` is configured. Outside tests, a configured key is enough when
+    either the AI layer is live or ``ANAM_ALLOW_LIVE_IN_FAKE_AI`` is on - that
+    flag is what lets a developer see the real avatar while the rest of the AI
+    layer stays deterministic.
+    """
+    if _in_test_context() and not _ALLOW_LIVE_IN_TESTS:
+        return True
+    if not _live_ready():
+        return True
+    try:
+        from app.ai.provider import provider_mode
+
+        if provider_mode() == "live":
+            return False
+    except Exception:  # pragma: no cover - provider import is always available
+        return True
+    return not settings.anam_allow_live_in_fake_ai
+
+
+def _live_ready() -> bool:
+    return bool(settings.anam_enabled and settings.anam_api_key.strip())
+
+
+def _live_requested_without_key() -> bool:
+    """True when the operator asked for live but there is no key to go live with.
+
+    That is a misconfiguration, not a reason to silently simulate: the guide is
+    withdrawn so the audio-only companion is the whole experience, rather than a
+    citizen being shown a fake face while the operator believes it is real.
+    """
+    if _live_ready():
+        return False
+    try:
+        from app.ai.provider import provider_mode
+
+        return provider_mode() == "live"
+    except Exception:  # pragma: no cover - provider import is always available
+        return False
+
+
+def _provider_name() -> str:
+    """``"anam"`` only when a live session can actually be created."""
+    if _is_fake_mode():
+        return "fake"
+    return "anam" if _live_ready() else "fake"
+
+
+# --------------------------------------------------------------------------- #
+# public configuration
+# --------------------------------------------------------------------------- #
+def get_avatar_config() -> dict[str, Any]:
+    """The safe, key-free configuration the citizen client reads.
+
+    ``enabled`` is the only field a caller needs to branch on: when it is false
+    the guide is not offered at all and the audio-only companion is the whole
+    experience. ``provider`` then says *how* an enabled guide runs - ``fake`` is
+    the local simulator, ``anam`` is a real WebRTC stream. ``conversational``
+    tells the stage whether to offer the microphone.
+    """
+    provider = _provider_name()
+    return {
+        "enabled": not _live_requested_without_key(),
+        "provider": provider,
+        "mode": settings.anam_mode,
+        "conversational": settings.anam_mode == "conversational",
+        "avatar_id": settings.anam_avatar_id or (FAKE_AVATAR_ID if provider == "fake" else ""),
+        "sample_rate": SAMPLE_RATE,
+        "max_session_seconds": int(settings.anam_max_session_seconds),
+        "idle_timeout_seconds": int(settings.anam_idle_timeout_seconds),
+        "persona_name_ur": PERSONA_NAME_UR,
+        "persona_name_en": PERSONA_NAME_EN,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# avatar discovery
+# --------------------------------------------------------------------------- #
+def _avatar_list(payload: Any) -> list[dict[str, Any]]:
+    """The catalogue entries from ``GET /v1/avatars``.
+
+    The live API wraps them in ``{"data": [...]}``; older docs and the mock use a
+    bare list or ``{"avatars": [...]}``. Accepting all three keeps the resolver
+    working against the real service and against a fixture.
+    """
+    if isinstance(payload, list):
+        return [entry for entry in payload if isinstance(entry, dict)]
+    if isinstance(payload, dict):
+        for key in ("data", "avatars", "items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [entry for entry in value if isinstance(entry, dict)]
+    return []
+
+
+def _avatar_name(entry: dict[str, Any]) -> str:
+    """``displayName`` on the live API, ``name`` on fixtures."""
+    return str(entry.get("displayName") or entry.get("name") or "").strip()
+
+
+def _pick_avatar(avatars: list[dict[str, Any]]) -> str:
+    """Prefer a warm female stock avatar, else the first id the account has."""
+    by_name = {
+        _avatar_name(avatar).lower(): str(avatar.get("id") or "")
+        for avatar in avatars
+        if avatar.get("id")
+    }
+    for preferred in PREFERRED_AVATAR_NAMES:
+        found = by_name.get(preferred.lower())
+        if found:
+            return found
+    for avatar in avatars:
+        if avatar.get("id"):
+            return str(avatar["id"])
+    return ""
+
+
+def resolve_avatar_id() -> str:
+    """The configured avatar id, or a stock one discovered once and cached.
+
+    A blank ``ANAM_AVATAR_ID`` is the documented default, so this is the normal
+    path rather than an error path. Discovery failure returns ``""`` and the
+    caller degrades to the audio-only guide.
+    """
+    global _RESOLVED_AVATAR_ID
+
+    configured = settings.anam_avatar_id.strip()
+    if configured:
+        return configured
+    if _RESOLVED_AVATAR_ID:
+        return _RESOLVED_AVATAR_ID
+    if _is_fake_mode() or not _live_ready():
+        return FAKE_AVATAR_ID
+
+    url = f"{settings.anam_base_url.rstrip('/')}/v1/avatars"
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            response = client.get(
+                url, headers={"Authorization": f"Bearer {settings.anam_api_key.strip()}"}
+            )
+        if response.status_code != 200:
+            logger.warning("avatar discovery failed: status=%s", response.status_code)
+            return ""
+        avatars = _avatar_list(response.json())
+        if not avatars:
+            return ""
+        _RESOLVED_AVATAR_ID = _pick_avatar(avatars)
+        return _RESOLVED_AVATAR_ID
+    except Exception as exc:  # noqa: BLE001 - discovery is best effort
+        logger.warning("avatar discovery failed: %s", type(exc).__name__)
+        return ""
+
+
+# --------------------------------------------------------------------------- #
+# voice + llm discovery
+# --------------------------------------------------------------------------- #
+def _catalogue(payload: Any) -> list[dict[str, Any]]:
+    """The entries from a ``GET /v1/{avatars,voices,llms}`` response.
+
+    The live API wraps them in ``{"data": [...]}``; older docs and fixtures use a
+    bare list or a named key. Accepting all three keeps the resolvers working
+    against the real service and against a fixture.
+    """
+    return _avatar_list(payload)
+
+
+def _voice_languages(entry: dict[str, Any]) -> list[str]:
+    raw = entry.get("languages")
+    if not isinstance(raw, list):
+        return []
+    return [str(item).strip().lower() for item in raw if str(item).strip()]
+
+
+def _pick_voice(voices: list[dict[str, Any]]) -> str:
+    """Prefer a voice that can actually pronounce Urdu, then a warm female one.
+
+    Anam's catalogue carries no ``ur`` voice today, so the Hindi fallback is the
+    one that matters in practice: Hindi and Urdu are the same spoken language, so
+    a Hindi voice reading Urdu is far closer than an English one.
+    """
+    usable = [voice for voice in voices if voice.get("id")]
+    for language in PREFERRED_VOICE_LANGUAGES:
+        for voice in usable:
+            if language in _voice_languages(voice):
+                return str(voice["id"])
+    by_name = {
+        str(voice.get("displayName") or "").strip().lower(): str(voice["id"]) for voice in usable
+    }
+    for preferred in PREFERRED_VOICE_NAMES:
+        found = by_name.get(preferred.lower())
+        if found:
+            return found
+    for voice in usable:
+        if str(voice.get("gender") or "").upper() == "FEMALE":
+            return str(voice["id"])
+    return str(usable[0]["id"]) if usable else ""
+
+
+def _pick_llm(llms: list[dict[str, Any]]) -> str:
+    """Prefer Anam's own persona-default model, never the "disable LLM" sentinel."""
+    usable = [
+        llm
+        for llm in llms
+        if llm.get("id") and str(llm.get("id")) != DISABLED_LLM_ID
+    ]
+    for llm in usable:
+        tags = llm.get("displayTags") or []
+        if isinstance(tags, list) and "persona-default" in tags:
+            return str(llm["id"])
+    for llm in usable:
+        if llm.get("isDefault") is True:
+            return str(llm["id"])
+    return str(usable[0]["id"]) if usable else ""
+
+
+def _discover(path: str, picker: Any) -> str:
+    """One cached catalogue read. Failure returns ``""`` and the caller degrades."""
+    url = f"{settings.anam_base_url.rstrip('/')}{path}"
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            response = client.get(
+                url, headers={"Authorization": f"Bearer {settings.anam_api_key.strip()}"}
+            )
+        if response.status_code != 200:
+            logger.warning("%s discovery failed: status=%s", path, response.status_code)
+            return ""
+        return str(picker(_catalogue(response.json())) or "")
+    except Exception as exc:  # noqa: BLE001 - discovery is best effort
+        logger.warning("%s discovery failed: %s", path, type(exc).__name__)
+        return ""
+
+
+def resolve_voice_id() -> str:
+    """The configured voice, or the best one the account has, cached once."""
+    global _RESOLVED_VOICE_ID
+
+    configured = settings.anam_voice_id.strip()
+    if configured:
+        return configured
+    if _RESOLVED_VOICE_ID:
+        return _RESOLVED_VOICE_ID
+    if _is_fake_mode() or not _live_ready():
+        return ""
+    _RESOLVED_VOICE_ID = _discover("/v1/voices", _pick_voice)
+    return _RESOLVED_VOICE_ID
+
+
+def resolve_llm_id() -> str:
+    """The configured LLM, or Anam's persona-default model, cached once."""
+    global _RESOLVED_LLM_ID
+
+    configured = settings.anam_llm_id.strip()
+    if configured:
+        return configured
+    if _RESOLVED_LLM_ID:
+        return _RESOLVED_LLM_ID
+    if _is_fake_mode() or not _live_ready():
+        return ""
+    _RESOLVED_LLM_ID = _discover("/v1/llms", _pick_llm)
+    return _RESOLVED_LLM_ID
+
+
+# --------------------------------------------------------------------------- #
+# live-policy system prompt
+# --------------------------------------------------------------------------- #
+#: The program Saima is allowed to talk about. One program, one prompt: a guide
+#: that can talk about everything is a guide that can be wrong about everything.
+PROGRAM_CODE = "SAHARA_WIDOW_GRANT"
+
+_SURFACE_HINT = {
+    "ask": "the policy question screen",
+    "case_status": "her own case status screen",
+    "wizard": "the application wizard",
+    "scam_check": "the scam-check screen",
+}
+
+
+def _active_rules(db: Any) -> dict[str, Any] | None:
+    """The live active rule set for the Sahara grant, or ``None``.
+
+    Reads ``programs.active_rule_version_id`` - the same pointer the policy engine
+    resolves - so a published v2 is quoted by Saima on her next session. Falls
+    back to the newest ``PUBLISHED`` version, then gives up: a prompt with no
+    numbers is honest, a prompt with stale numbers is not.
+    """
+    if db is None:
+        return None
+    try:
+        from sqlalchemy import select
+
+        from app.models.programs import Program, RuleVersion
+
+        active = db.execute(
+            select(RuleVersion.rules_json)
+            .join(Program, Program.active_rule_version_id == RuleVersion.id)
+            .where(Program.code == PROGRAM_CODE, Program.is_active.is_(True))
+            .limit(1)
+        ).scalar_one_or_none()
+        if isinstance(active, dict):
+            return active
+        newest = db.execute(
+            select(RuleVersion.rules_json)
+            .where(RuleVersion.status == "PUBLISHED")
+            .order_by(RuleVersion.version_number.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        return newest if isinstance(newest, dict) else None
+    except Exception as exc:  # noqa: BLE001 - a prompt must never break a session
+        logger.warning("active rule read failed: %s", type(exc).__name__)
+        return None
+
+
+def _rule_facts(rules: dict[str, Any]) -> dict[str, Any]:
+    """The handful of numbers and lists a spoken answer actually needs."""
+    formula = rules.get("benefit_formula") or {}
+    income_cap: Any = None
+    districts: list[str] = []
+    for rule in rules.get("eligibility_rules") or []:
+        if not isinstance(rule, dict):
+            continue
+        fact = rule.get("fact")
+        if fact == "monthly_income_pkr" and rule.get("op") == "lte":
+            income_cap = rule.get("value")
+        elif fact == "applicant_district" and rule.get("op") == "in":
+            districts = [str(item) for item in (rule.get("value") or [])]
+    return {
+        "income_cap": income_cap,
+        "base_amount": formula.get("base_amount_pkr"),
+        "per_child": formula.get("per_child_bonus_pkr"),
+        "max_children": formula.get("max_children_counted"),
+        "hard_cap": formula.get("hard_cap_pkr"),
+        "districts": districts,
+    }
+
+
+def _facts_block(facts: dict[str, Any]) -> str:
+    """The live numbers, or an explicit instruction to quote none."""
+    lines: list[str] = []
+    if facts["income_cap"] is not None:
+        lines.append(
+            f"- Monthly household income must be at most PKR {int(facts['income_cap']):,}."
+        )
+    if facts["base_amount"] is not None:
+        amount = f"- Base amount PKR {int(facts['base_amount']):,}"
+        if facts["per_child"] is not None:
+            amount += f", plus PKR {int(facts['per_child']):,} per child under 18"
+            if facts["max_children"] is not None:
+                amount += f" (up to {int(facts['max_children'])} children)"
+        if facts["hard_cap"] is not None:
+            amount += f", hard cap PKR {int(facts['hard_cap']):,}"
+        lines.append(amount + ".")
+    if facts["districts"]:
+        lines.append(f"- Eligible districts: {', '.join(facts['districts'])}.")
+    if not lines:
+        return (
+            "CURRENT RULES: the live rule set could not be read just now. Do NOT quote any "
+            "amount, income limit or district list. Tell the user to open the official rules "
+            "screen, and offer to help with the application steps instead."
+        )
+    return "CURRENT RULES (live, from the official rules database):\n" + "\n".join(lines)
+
+
+def build_saima_system_prompt(db: Any, surface: str, lang: str = "ur") -> str:
+    """The grounded, zero-PII prompt that makes Saima safe to talk to.
+
+    Contains no citizen data of any kind: no CNIC, no phone, no name, no case
+    record. It carries only public policy facts read from the live rule version,
+    which is what lets a published rule change reach her next sentence.
+    """
+    rules = _active_rules(db)
+    facts = _rule_facts(rules) if rules else _rule_facts({})
+    language = "English" if str(lang).lower().startswith("en") else "Urdu"
+    hint = _SURFACE_HINT.get(surface, "the Haqdaar app")
+
+    return (
+        f"You are Saima ({PERSONA_NAME_UR}), a warm, empathetic, respectful Pakistani "
+        "community guide helping widowed women and families in Sindh use the Haqdaar "
+        "prototype platform for the (fictional) Sahara Widow Support Grant.\n\n"
+        f"LANGUAGE: Always reply in natural, simple, warm spoken Pakistani Urdu (Urdu "
+        f"script) unless the user clearly speaks English or Sindhi, in which case match "
+        f"them. Keep every reply to 2 or 3 short sentences so it is easy to listen to. "
+        f"The user's interface language is {language}.\n\n"
+        "CONVERSATION: Warmly answer greetings (السلام علیکم), thank-yous, worry and "
+        "follow-up questions. Guide the user step by step: how to apply, which documents "
+        "are needed, how consent works, and how to stay safe from scams. Applying is free, "
+        "complaints are free, and official messages carry a code starting with HQ-.\n\n"
+        "ONE CONTINUOUS CONVERSATION: This is a single ongoing conversation, not a series "
+        "of separate calls. Say السلام علیکم and introduce yourself ONLY in your very first "
+        "reply. From the second turn onward NEVER greet again, never repeat your name, "
+        "never re-introduce yourself, and never restart the conversation - answer the new "
+        "question directly, the way someone continuing a chat would. Do not open a reply "
+        "with السلام علیکم, وعلیکم السلام, or any other welcome phrase.\n\n"
+        f"{_facts_block(facts)}\n\n"
+        "HARD RULES (never break):\n"
+        "1. You are an information guide ONLY. NEVER tell a user she is approved, "
+        "eligible or rejected. Haqdaar's official rules system and human officers decide, "
+        "and Haqdaar NEVER auto-rejects anyone.\n"
+        "2. NEVER ask for CNIC digits, passwords, OTPs, PINs, or any payment. Haqdaar is "
+        "100% free and never asks for EasyPaisa or JazzCash fees or PINs.\n"
+        "3. If asked anything outside Haqdaar and the Sahara Grant (weather, politics, "
+        f"news, medical or legal advice, maths), warmly abstain with exactly: {ABSTENTION_UR}\n\n"
+        f"The user opened you from {hint}."
+    )
+
+
+# --------------------------------------------------------------------------- #
+# telemetry + audit
+# --------------------------------------------------------------------------- #
+def _record_telemetry(
+    db: Any,
+    *,
+    tenant_id: Any,
+    latency_ms: int,
+    succeeded: bool,
+    error_code: str | None,
+    provider: str,
+) -> None:
+    """One ``ai_telemetry`` row per session attempt, inside a savepoint.
+
+    A failed telemetry insert must never abort the caller's transaction, so this
+    mirrors ``app.ai.provider._isolated_write``: best effort, never raises.
+    """
+    if db is None:
+        return
+    row = {
+        "id": uuid.uuid4(),
+        "tenant_id": tenant_id,
+        "task_type": "AVATAR_SESSION",
+        "provider": provider,
+        "model_name": "anam-passthrough" if provider == "anam" else "fake-avatar",
+        "prompt_version": "v1.1.0",
+        "latency_ms": int(latency_ms),
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "estimated_cost_usd": 0,
+        "succeeded": succeeded,
+        "error_code": error_code,
+        "case_id": None,
+        "created_at": datetime.now(UTC),
+    }
+    try:
+        from app.models.ai import AiTelemetry
+
+        begin_nested = getattr(db, "begin_nested", None)
+        if begin_nested is None:
+            db.add(AiTelemetry(**row))
+            return
+        with begin_nested():
+            db.add(AiTelemetry(**row))
+    except Exception as exc:  # noqa: BLE001 - telemetry must not break the request
+        logger.warning("avatar telemetry write failed: %s", type(exc).__name__)
+
+
+def _record_audit(
+    db: Any,
+    *,
+    user: Any,
+    surface: str,
+    lang: str,
+    provider: str,
+    succeeded: bool,
+    error_code: str | None,
+) -> None:
+    """``avatar.session_created`` in the caller's transaction (invariant 7)."""
+    if db is None:
+        return
+    try:
+        audit.record(
+            db,
+            action="avatar.session_created",
+            resource_type="avatar_session",
+            resource_id=None,
+            actor_type="USER",
+            actor_id=getattr(user, "user_id", None) or getattr(user, "id", None),
+            actor_role=str(getattr(user, "role", "") or "") or None,
+            tenant_id=getattr(user, "tenant_id", None),
+            payload={
+                "surface": surface,
+                "lang": lang,
+                "provider": provider,
+                "mode": settings.anam_mode,
+                "succeeded": succeeded,
+                "error_code": error_code,
+            },
+        )
+    except Exception as exc:  # noqa: BLE001 - audit failure is logged, not raised
+        logger.warning("avatar audit write failed: %s", type(exc).__name__)
+
+
+# --------------------------------------------------------------------------- #
+# session creation
+# --------------------------------------------------------------------------- #
+def _degraded(reason: str = "PROVIDER_UNAVAILABLE") -> dict[str, Any]:
+    """The graceful envelope: the citizen keeps a working audio guide."""
+    return {
+        "available": False,
+        "fallback": "AUDIO_ONLY",
+        "reason": reason,
+        "message_ur": DEGRADED_MESSAGE_UR,
+        "message_en": DEGRADED_MESSAGE_EN,
+    }
+
+
+def _persona_config(
+    avatar_id: str,
+    *,
+    voice_id: str = "",
+    llm_id: str = "",
+    system_prompt: str = "",
+    lang: str = "ur",
+) -> dict[str, Any]:
+    """The exact vendor payload for the configured mode.
+
+    ``passthrough`` asks for a mouth only: ``enableAudioPassthrough`` tells Anam
+    to play the PCM we send instead of synthesising speech from text. ``talk`` is
+    the documented fallback and is the only mode where the vendor speaks from a
+    single sentence. ``conversational`` gives the vendor ears and a voice, and is
+    the only mode that carries a ``systemPrompt`` - which is why that prompt is
+    built from the live rule version and contains no citizen data.
+
+    ``skipGreeting`` is set in every mode: the client owns the first utterance,
+    so a citizen never hears two greetings at once.
+    """
+    if settings.anam_mode == "conversational":
+        persona: dict[str, Any] = {
+            "avatarId": avatar_id,
+            "skipGreeting": True,
+            "languageCode": "en" if str(lang).lower().startswith("en") else "ur",
+            "name": PERSONA_NAME_EN,
+            "maxSessionLengthSeconds": int(settings.anam_max_session_seconds),
+        }
+        # A blank id is omitted rather than sent empty, so the vendor falls back
+        # to the avatar's own default instead of rejecting the payload.
+        resolved_llm = llm_id or settings.anam_llm_id.strip()
+        if resolved_llm:
+            persona["llmId"] = resolved_llm
+        resolved_voice = voice_id or settings.anam_voice_id.strip()
+        if resolved_voice:
+            persona["voiceId"] = resolved_voice
+        if system_prompt:
+            persona["systemPrompt"] = system_prompt
+        return persona
+
+    if settings.anam_mode == "talk":
+        persona = {
+            "avatarId": avatar_id,
+            "llmId": DISABLED_LLM_ID,
+            "skipGreeting": True,
+            "languageCode": "ur",
+        }
+        resolved_voice = voice_id or settings.anam_voice_id.strip()
+        if resolved_voice:
+            persona["voiceId"] = resolved_voice
+        return persona
+
+    return {"avatarId": avatar_id, "enableAudioPassthrough": True}
+
+
+def _fake_session() -> dict[str, Any]:
+    return {
+        "available": True,
+        "provider": "fake",
+        "mode": settings.anam_mode,
+        "conversational": settings.anam_mode == "conversational",
+        "session_token": FAKE_SESSION_TOKEN,
+        "avatar_id": FAKE_AVATAR_ID,
+        "sample_rate": SAMPLE_RATE,
+        "max_session_seconds": int(settings.anam_max_session_seconds),
+        "idle_timeout_seconds": int(settings.anam_idle_timeout_seconds),
+        "simulated": True,
+    }
+
+
+def create_avatar_session(
+    db: Any,
+    user: Any,
+    *,
+    surface: str,
+    lang: str = "ur",
+) -> dict[str, Any]:
+    """Mint a short-lived guide session, or degrade to the audio-only guide.
+
+    ``surface`` is validated by the router; it is recorded in the audit payload so
+    an auditor can see which screen opened a guide and when.
+    """
+    if surface not in SURFACES:
+        raise ValueError(f"unsupported avatar surface: {surface}")
+
+    language = "en" if str(lang).lower().startswith("en") else "ur"
+    tenant_id = getattr(user, "tenant_id", None)
+
+    if _is_fake_mode() or not _live_ready():
+        # The simulator is a first-class mode, not a stub: it is what every test
+        # and every offline demo runs, and it must never touch the network.
+        _record_telemetry(
+            db,
+            tenant_id=tenant_id,
+            latency_ms=0,
+            succeeded=True,
+            error_code=None,
+            provider="fake",
+        )
+        _record_audit(
+            db,
+            user=user,
+            surface=surface,
+            lang=language,
+            provider="fake",
+            succeeded=True,
+            error_code=None,
+        )
+        return _fake_session()
+
+    avatar_id = resolve_avatar_id()
+    if not avatar_id:
+        _record_telemetry(
+            db,
+            tenant_id=tenant_id,
+            latency_ms=0,
+            succeeded=False,
+            error_code="NO_AVATAR",
+            provider="anam",
+        )
+        _record_audit(
+            db,
+            user=user,
+            surface=surface,
+            lang=language,
+            provider="anam",
+            succeeded=False,
+            error_code="NO_AVATAR",
+        )
+        return _degraded("NO_AVATAR")
+
+    url = f"{settings.anam_base_url.rstrip('/')}/v1/auth/session-token"
+    started = time.perf_counter()
+    error_code: str | None = None
+    token: str | None = None
+    voice_id = ""
+    llm_id = ""
+    system_prompt = ""
+    if settings.anam_mode == "conversational":
+        # Discovery is best effort: a blank voice or llm simply means the vendor
+        # falls back to the avatar's own defaults, which is still a working guide.
+        voice_id = resolve_voice_id()
+        llm_id = resolve_llm_id()
+        system_prompt = build_saima_system_prompt(db, surface, language)
+    persona = _persona_config(
+        avatar_id,
+        voice_id=voice_id,
+        llm_id=llm_id,
+        system_prompt=system_prompt,
+        lang=language,
+    )
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            response = client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {settings.anam_api_key.strip()}",
+                    "Content-Type": "application/json",
+                },
+                json={"personaConfig": persona},
+            )
+        if response.status_code in {401, 403}:
+            error_code = "AUTH_FAILED"
+        elif response.status_code == 402:
+            error_code = "QUOTA_EXHAUSTED"
+        elif response.status_code == 429:
+            error_code = "RATE_LIMITED"
+        elif response.status_code >= 400:
+            error_code = "PROVIDER_ERROR"
+        else:
+            payload = response.json()
+            if isinstance(payload, dict):
+                token = payload.get("sessionToken") or payload.get("session_token")
+            if not token:
+                error_code = "NO_TOKEN"
+    except httpx.TimeoutException:
+        error_code = "TIMEOUT"
+    except Exception as exc:  # noqa: BLE001 - any transport failure degrades
+        error_code = "PROVIDER_UNAVAILABLE"
+        logger.warning("avatar session request failed: %s", type(exc).__name__)
+
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    succeeded = bool(token)
+    _record_telemetry(
+        db,
+        tenant_id=tenant_id,
+        latency_ms=latency_ms,
+        succeeded=succeeded,
+        error_code=error_code,
+        provider="anam",
+    )
+    _record_audit(
+        db,
+        user=user,
+        surface=surface,
+        lang=language,
+        provider="anam",
+        succeeded=succeeded,
+        error_code=error_code,
+    )
+
+    if not succeeded:
+        return _degraded(error_code or "PROVIDER_UNAVAILABLE")
+
+    return {
+        "available": True,
+        "provider": "anam",
+        "mode": settings.anam_mode,
+        "conversational": settings.anam_mode == "conversational",
+        "session_token": token,
+        "avatar_id": avatar_id,
+        "sample_rate": SAMPLE_RATE,
+        "max_session_seconds": int(settings.anam_max_session_seconds),
+        "idle_timeout_seconds": int(settings.anam_idle_timeout_seconds),
+    }
+
+
+def reset_avatar_cache() -> None:
+    """Drop every cached catalogue id (tests and admin reconfiguration)."""
+    global _RESOLVED_AVATAR_ID, _RESOLVED_VOICE_ID, _RESOLVED_LLM_ID
+    _RESOLVED_AVATAR_ID = None
+    _RESOLVED_VOICE_ID = None
+    _RESOLVED_LLM_ID = None
+
+
+__all__ = [
+    "ABSTENTION_UR",
+    "DEGRADED_MESSAGE_EN",
+    "DEGRADED_MESSAGE_UR",
+    "DISABLED_LLM_ID",
+    "FAKE_AVATAR_ID",
+    "FAKE_SESSION_TOKEN",
+    "PERSONA_NAME_EN",
+    "PERSONA_NAME_UR",
+    "PREFERRED_AVATAR_NAMES",
+    "PREFERRED_VOICE_LANGUAGES",
+    "PREFERRED_VOICE_NAMES",
+    "PROGRAM_CODE",
+    "SAMPLE_RATE",
+    "SURFACES",
+    "build_saima_system_prompt",
+    "create_avatar_session",
+    "get_avatar_config",
+    "reset_avatar_cache",
+    "resolve_avatar_id",
+    "resolve_llm_id",
+    "resolve_voice_id",
+    "set_test_live_override",
+]

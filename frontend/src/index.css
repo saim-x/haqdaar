@@ -399,6 +399,71 @@
   .live-dot {
     @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
   }
+
+  /* ---- Video guide (ADR-025) ------------------------------------------ */
+
+  .avatar-halo {
+    animation: avatar-halo 2.6s var(--ease) infinite;
+  }
+
+  .avatar-wave {
+    animation: avatar-wave 900ms var(--ease) infinite;
+    transform-origin: center;
+  }
+
+  .avatar-shimmer {
+    animation: avatar-shimmer 1.6s linear infinite;
+  }
+
+  /*
+   * The live WebRTC surface gets its own compositor layer. The caption below it
+   * reflows on every streamed token, and without this the browser can decide the
+   * video needs repainting along with it - which reads as a stuttering avatar.
+   */
+  .avatar-video {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/*
+ * ADR-025 - the video guide's own motion, and nothing else's.
+ *
+ * Three animations, each with one job: the halo says "she is present", the wave
+ * says "she is speaking", the shimmer says "she is thinking". They are scoped to
+ * `.avatar-*` classes so no other surface in the app gains a new animation, and
+ * the global reduced-motion rule above already flattens them to a single 200 ms
+ * pass.
+ */
+@keyframes avatar-halo {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+@keyframes avatar-wave {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes avatar-shimmer {
+  0% {
+    transform: translateX(-40%);
+  }
+  100% {
+    transform: translateX(140%);
+  }
 }
 
 @keyframes rise {

@@ -277,6 +277,7 @@ def _include_routers(app: FastAPI) -> None:
         analytics,
         auditor,
         auth,
+        avatar,
         cases,
         consent,
         documents,
@@ -315,6 +316,7 @@ def _include_routers(app: FastAPI) -> None:
         voice,
         scam,
         rag,
+        avatar,
     ):
         app.include_router(module.router, prefix=api_prefix)
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { VoiceParseResult } from '../../shared/api/types';
@@ -12,12 +12,23 @@ interface VoiceFieldProps {
   fieldKey: string;
   /** Called only after the citizen confirms the read-back. */
   onConfirm(value: string | number | boolean | null, missingReason?: string | null): void;
+  /**
+   * ADR-025: when the video guide is open she speaks the readback face-to-face.
+   * Returning `true` means the guide handled it and the shared player must stay
+   * silent - two voices reading the same confirmation is worse than none.
+   */
+  onReadback?: (text: string) => boolean;
   valueText?: string;
 }
 
-export function VoiceField({ fieldKey, onConfirm, valueText }: VoiceFieldProps) {
+export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: VoiceFieldProps) {
   const { t, lang, isRtl } = useI18n();
   const { play, stop } = useAudio();
+  // Held in a ref so a new callback identity never re-runs the upload effect.
+  const readbackRef = useRef(onReadback);
+  useEffect(() => {
+    readbackRef.current = onReadback;
+  }, [onReadback]);
   const numeric = fieldKey.endsWith('_cnic') || fieldKey === 'payout_phone' || fieldKey === 'applicant_dob';
   const capture = useVoiceCapture(numeric ? 25 : 12, true);
   const [parsed, setParsed] = useState<VoiceParseResult | null>(null);
@@ -74,7 +85,7 @@ export function VoiceField({ fieldKey, onConfirm, valueText }: VoiceFieldProps) 
         setParsed(result);
         // Mandatory voice readback (docs/11 §2.6): speak the confirmation immediately.
         const spoken = isRtl ? result.readback_ur : result.readback_en;
-        if (spoken) void play(null, spoken);
+        if (spoken && !readbackRef.current?.(spoken)) void play(null, spoken);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(errorMessage(err, lang));

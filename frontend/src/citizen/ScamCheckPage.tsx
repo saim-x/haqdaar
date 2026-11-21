@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../shared/api/client';
 import { errorMessage } from '../shared/api/errors';
 import type { ScamCheckResult, ScamVerdict } from '../shared/api/types';
+import { AvatarToggleCard } from '../shared/avatar/AvatarToggleCard';
+import type { AvatarMood } from '../shared/avatar/types';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
+import { useAuth } from '../shared/auth/AuthProvider';
 import { useVoiceCapture } from '../shared/audio/useVoiceCapture';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { stamp } from '../shared/lib/dates';
@@ -15,6 +19,7 @@ import {
   IconCheck,
   IconCross,
   IconMic,
+  IconPlay,
   IconQuestion,
   IconShield,
   IconWarning,
@@ -37,6 +42,18 @@ const VERDICT: Record<
 };
 
 /**
+ * The guide's tone for a verdict. `warning` for a scam and `not_sure` for
+ * `CANNOT_TELL` are the two that matter: the first is a shield, the second is an
+ * honest shrug, and neither is allowed to look like the other.
+ */
+function moodForVerdict(verdict: ScamVerdict): AvatarMood {
+  if (verdict === 'LIKELY_SCAM') return 'warning';
+  if (verdict === 'VERIFIED_OFFICIAL') return 'happy';
+  if (verdict === 'CANNOT_TELL') return 'not_sure';
+  return 'calm';
+}
+
+/**
  * Scam checker - docs/11 §3.4, F-14.
  * Public: no login. Advisory only - it never blocks or deletes anything (AC-14.5).
  *
@@ -54,6 +71,12 @@ export function ScamCheckPage() {
   const [disputed, setDisputed] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const capture = useVoiceCapture(20);
+  const { session } = useAuth();
+  const guide = useAvatarGuide('scam_check');
+  // The public route stays audio-only on purpose: an anonymous visitor must not
+  // be able to spend the deployment's video minutes, and there is no account to
+  // rate-limit against.
+  const canGuide = Boolean(session && ['CITIZEN', 'HELPER'].includes(session.user.role));
 
   async function check(payload: { text?: string; image?: File; audio?: Blob }) {
     setBusy(true);
@@ -100,6 +123,20 @@ export function ScamCheckPage() {
   }
 
   const verdict = result ? VERDICT[result.verdict] : null;
+
+  // Assembled from the verdict the model already produced - the guide explains,
+  // it never re-scores. Zero extra model calls.
+  const guideBriefing = result
+    ? [
+        t(VERDICT[result.verdict].key),
+        lang !== 'en' ? result.explanation_ur : result.explanation_en,
+        ...result.red_flags.slice(0, 3).map((flag) => (lang !== 'en' ? flag.label_ur : flag.label_en)),
+        lang !== 'en' ? result.advice_ur : result.advice_en,
+      ]
+        .filter(Boolean)
+        .join('۔ ')
+    : '';
+  const guideMood: AvatarMood = result ? moodForVerdict(result.verdict) : 'calm';
   const recording = capture.state === 'recording';
   const micBlocked = capture.state === 'unsupported' || capture.state === 'denied';
 
@@ -231,6 +268,29 @@ export function ScamCheckPage() {
             </div>
 
             <div className="p-5">
+              {canGuide &&
+                (guide.active ? (
+                  <AvatarToggleCard guide={guide} className="mb-4" />
+                ) : (
+                  guide.available &&
+                  !guide.steppedDown && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        guide.start();
+                        guide.speak({ text: guideBriefing, caption: guideBriefing, mood: guideMood });
+                      }}
+                      data-testid="avatar-explain-verdict"
+                      className="press mb-4 flex min-h-primary w-full items-center gap-2.5 rounded-control border border-accent/30 bg-accent-wash px-3.5 text-start text-body font-medium text-accent-ink hover:bg-accent/15"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white">
+                        <IconPlay size={16} />
+                      </span>
+                      {t('avatar.explainVerdict')}
+                    </button>
+                  )
+                ))}
+
               {/* Visual calibrated risk band gauge so citizens & judges see the honest CANNOT_TELL band. */}
               {result.verdict !== 'VERIFIED_OFFICIAL' && (
                 <div className="mb-4 rounded-control border border-ink/[0.08] bg-raised/60 px-3 py-2.5">

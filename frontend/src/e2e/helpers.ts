@@ -35,15 +35,22 @@ export async function demoLogin(page: Page, personaKey: string): Promise<void> {
 }
 
 /**
- * Switch the UI to English so selectors stay readable. The toggle's accessible
- * name is the localised "switch language" label, not the visible "EN".
+ * Switch the UI to English so selectors stay readable.
+ *
+ * The control cycles Urdu -> Sindhi -> English and its accessible name is
+ * translated, so neither the label nor a single press is a stable handle: one
+ * press from Urdu lands on Sindhi, which is still RTL. The `lang-toggle` test id
+ * is the stable handle, and the loop presses until the document is LTR.
  */
 export async function useEnglish(page: Page): Promise<void> {
-  const toggle = page.getByRole('button', { name: /English|switch language|زبان/i }).first();
+  const toggle = page.locator('[data-testid="lang-toggle"]').first();
   await toggle.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => undefined);
   if ((await page.locator('html').getAttribute('dir')) === 'ltr') return;
   if ((await toggle.count()) === 0) return;
-  await toggle.click();
+  for (let press = 0; press < 3; press += 1) {
+    await toggle.click();
+    if ((await page.locator('html').getAttribute('dir')) === 'ltr') break;
+  }
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 }
 

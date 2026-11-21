@@ -20,6 +20,7 @@ export function PublicHeader() {
           <button
             type="button"
             onClick={toggleLang}
+            data-testid="lang-toggle"
             aria-label={t('common.switchLanguage')}
             className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-ink-2 hover:bg-raised hover:text-ink"
           >

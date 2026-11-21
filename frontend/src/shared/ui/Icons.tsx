@@ -93,6 +93,14 @@ export const IconMic = (p: IconProps) => (
   </svg>
 );
 
+export const IconMicOff = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M9 6.5a3 3 0 0 1 6 0v4M9 9.5v1.5a3 3 0 0 0 4.6 2.5" />
+    <path d="M5.5 11.5a6.5 6.5 0 0 0 9.9 5.6M12 18v3" />
+    <path d="M4 4l16 16" />
+  </svg>
+);
+
 export const IconCheck = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M4.5 12.5 9.5 17.5 19.5 6.5" />

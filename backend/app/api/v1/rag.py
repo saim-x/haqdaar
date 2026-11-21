@@ -72,6 +72,9 @@ async def ask(
 
     lang = "en" if str(payload.get("lang") or "ur").lower().startswith("en") else "ur"
     program_id = _parse_uuid(payload.get("program_id"))
+    # Additive and off by default (ADR-025): only the video guide asks for a
+    # spoken reframing, and it must never change the grounded answer.
+    conversational = payload.get("conversational") is True
 
     try:
         answer = await run_in_threadpool(
@@ -81,23 +84,26 @@ async def ask(
             program_id=program_id,
             lang=lang,
             tenant_id=api_support.user_tenant(user),
+            conversational=conversational,
         )
     except Exception as exc:  # pragma: no cover - retrieval already degrades
         logger.warning("rag ask failed: %s", exc)
-        return JSONResponse(
-            status_code=200,
-            content={
-                "status": "NOT_SURE",
-                "answer": rag.NOT_SURE_UR if lang == "ur" else rag.NOT_SURE_EN,
-                "citations": [],
-                "top_score": 0.0,
-                "lang": lang,
-                "provider": "unavailable",
-                "model": "unavailable",
-                "guardrail_triggered": False,
-                "retrieved": 0,
-            },
-        )
+        degraded: dict[str, Any] = {
+            "status": "NOT_SURE",
+            "answer": rag.NOT_SURE_UR if lang == "ur" else rag.NOT_SURE_EN,
+            "citations": [],
+            "top_score": 0.0,
+            "lang": lang,
+            "provider": "unavailable",
+            "model": "unavailable",
+            "guardrail_triggered": False,
+            "retrieved": 0,
+        }
+        if conversational:
+            degraded["spoken_summary"] = (
+                rag.SPOKEN_ABSTENTION_UR if lang == "ur" else rag.SPOKEN_ABSTENTION_EN
+            )
+        return JSONResponse(status_code=200, content=degraded)
 
     return JSONResponse(status_code=200, content=answer.as_dict())
 

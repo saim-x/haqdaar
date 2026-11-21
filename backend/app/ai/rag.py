@@ -83,6 +83,21 @@ DISCLAIMER_EN = (
     "This is general guidance only. Submit an application to find out whether you qualify."
 )
 
+#: The guide's honest abstention (ADR-025). Fixed text, never generated: an
+#: abstention that a model paraphrases is no longer a guaranteed abstention.
+SPOKEN_ABSTENTION_UR = (
+    "بہن، مجھے اس بارے میں صحیح معلومات نہیں ہیں اور میں غلط بات نہیں بتانا چاہتی۔ "
+    "آپ مدد کے لیے افسر یا ہیلپر سے پوچھ سکتی ہیں۔"
+)
+SPOKEN_ABSTENTION_EN = (
+    "Sister, I do not have reliable information about that and I will not guess. "
+    "Please ask an officer or a community helper for help."
+)
+
+#: One breath of speech. Matches ``provider.SPOKEN_SUMMARY_MAX_CHARS`` so the
+#: client can size its caption bar against a known ceiling.
+SPOKEN_SUMMARY_MAX_CHARS = 280
+
 # --------------------------------------------------------------------------- #
 # data types
 # --------------------------------------------------------------------------- #
@@ -120,9 +135,12 @@ class RagAnswer:
     guardrail_triggered: bool = False
     retrieved: int = 0
     coverage: float = 0.0
+    #: Only present when the caller asked for ``conversational: true`` (ADR-025).
+    #: ``answer`` and ``citations`` are never altered by it.
+    spoken_summary: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        body: dict[str, Any] = {
             "status": self.status,
             "answer": self.answer,
             "citations": self.citations,
@@ -134,6 +152,11 @@ class RagAnswer:
             "retrieved": self.retrieved,
             "coverage": round(self.coverage, 4),
         }
+        # Omitted entirely when not requested, so the existing contract and every
+        # existing test see byte-identical payloads.
+        if self.spoken_summary is not None:
+            body["spoken_summary"] = self.spoken_summary
+        return body
 
 
 # --------------------------------------------------------------------------- #
@@ -670,6 +693,43 @@ def _synthesize(
     return answer, result.provider, result.model
 
 
+def _spoken_summary(
+    db: Any,
+    *,
+    answer: str,
+    chunks: Sequence[RetrievedChunk],
+    lang: str,
+    tenant_id: Any = None,
+) -> str:
+    """Warm spoken reframing of an already-grounded answer (ADR-025).
+
+    The excerpt handed to the model is the **single** chunk the answer was built
+    from, so the reframing cannot reach a fact the citation does not contain. If
+    the provider fails, the deterministic wrapper is used instead - a guide that
+    goes quiet mid-sentence is worse than one that speaks plainly.
+    """
+    from app.ai.provider import _spoken_wrapper
+
+    if not chunks:
+        return SPOKEN_ABSTENTION_UR if lang == "ur" else SPOKEN_ABSTENTION_EN
+
+    excerpt = chunks[0].content
+    provider = get_provider()
+    try:
+        with telemetry(db, tenant_id=tenant_id, resource_type="rag_spoken", resource_id=None):
+            spoken = provider.spoken_summary(answer, excerpt, lang)
+    except Exception as exc:  # pragma: no cover - provider already degrades
+        logger.warning("spoken reframing failed, using deterministic wrapper: %s", exc)
+        spoken = ""
+
+    spoken = (spoken or "").strip()
+    if not spoken:
+        spoken = _spoken_wrapper(answer, lang)
+    if not spoken:
+        return SPOKEN_ABSTENTION_UR if lang == "ur" else SPOKEN_ABSTENTION_EN
+    return spoken[:SPOKEN_SUMMARY_MAX_CHARS]
+
+
 def ask(
     db: Any,
     question: str,
@@ -678,8 +738,14 @@ def ask(
     lang: str = "ur",
     tenant_id: Any = None,
     top_k: int = TOP_K,
+    conversational: bool = False,
 ) -> RagAnswer:
-    """Answer a policy question, or abstain honestly."""
+    """Answer a policy question, or abstain honestly.
+
+    ``conversational`` is additive and off by default: it only adds a
+    ``spoken_summary`` for the video guide, and never changes ``answer`` or
+    ``citations``.
+    """
     language = "en" if str(lang).lower().startswith("en") else "ur"
     cleaned = guardrails.sanitize(
         db, question or "", resource_type="rag_question", resource_id=None
@@ -690,6 +756,11 @@ def ask(
             status="NOT_SURE",
             answer=NOT_SURE_UR if language == "ur" else NOT_SURE_EN,
             lang=language,
+            spoken_summary=(
+                SPOKEN_ABSTENTION_UR if language == "ur" else SPOKEN_ABSTENTION_EN
+            )
+            if conversational
+            else None,
         )
 
     chunks = retrieve(db, cleaned, program_id=program_id, top_k=top_k)
@@ -704,7 +775,8 @@ def ask(
         low_coverage = False
 
     if not chunks or top_score < threshold or low_coverage:
-        # Zero LLM calls on abstention - the whole point of the gate.
+        # Zero LLM calls on abstention - the whole point of the gate. The spoken
+        # abstention is a fixed sentence for the same reason.
         return RagAnswer(
             status="NOT_SURE",
             answer=NOT_SURE_UR if language == "ur" else NOT_SURE_EN,
@@ -712,6 +784,11 @@ def ask(
             lang=language,
             retrieved=len(chunks),
             coverage=coverage,
+            spoken_summary=(
+                SPOKEN_ABSTENTION_UR if language == "ur" else SPOKEN_ABSTENTION_EN
+            )
+            if conversational
+            else None,
         )
 
     answer, provider_name, model = _synthesize(
@@ -733,6 +810,14 @@ def ask(
     if disclaimer not in answer_text:
         answer_text = f"{answer_text}\n\n{disclaimer}"
 
+    spoken = (
+        _spoken_summary(
+            db, answer=answer_text, chunks=chunks, lang=language, tenant_id=tenant_id
+        )
+        if conversational
+        else None
+    )
+
     return RagAnswer(
         status="ANSWERED",
         answer=answer_text,
@@ -744,6 +829,7 @@ def ask(
         guardrail_triggered=filtered.triggered,
         retrieved=len(chunks),
         coverage=coverage,
+        spoken_summary=spoken,
     )
 
 
@@ -760,6 +846,9 @@ __all__ = [
     "NOT_SURE_EN",
     "NOT_SURE_UR",
     "POLICY_DIR",
+    "SPOKEN_ABSTENTION_EN",
+    "SPOKEN_ABSTENTION_UR",
+    "SPOKEN_SUMMARY_MAX_CHARS",
     "TOP_K",
     "PolicyDoc",
     "RagAnswer",

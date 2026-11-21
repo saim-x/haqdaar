@@ -12,6 +12,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './src/e2e',
+  // Refuses to run against a live Anam avatar, so the suite can never spend a
+  // free-tier streaming minute (ADR-025).
+  globalSetup: './src/e2e/global-setup.ts',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

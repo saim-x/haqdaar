@@ -6,6 +6,8 @@ import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
 import type { CaseDocument, CaseView, ConsentGrant, DraftAnswer, DraftAnswers, Program } from '../shared/api/types';
 import { useAudio, useAutoReadPrompt } from '../shared/audio/AudioProvider';
+import { AvatarPiPBubble } from '../shared/avatar/AvatarPiPBubble';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import type { DictKey } from '../shared/i18n/dictionary';
@@ -141,6 +143,7 @@ export function ApplyWizard() {
   const { session, actFor } = useAuth();
   const { lite } = useLiteMode();
   const { play } = useAudio();
+  const guide = useAvatarGuide('wizard');
 
   const citizenId = actFor?.citizenId ?? session?.citizen?.id ?? null;
   const actForCitizenId = actFor?.citizenId ?? null;
@@ -453,9 +456,19 @@ export function ApplyWizard() {
             ? t('wizard.doc.unverifiable')
             : t('wizard.doc.checking'),
       );
-      // Spoken retake feedback - docs/11 §3.2 step 12.
+      // Spoken retake feedback - docs/11 §3.2 step 12. With the guide open the
+      // coaching is face-to-face and `reassuring`: a blurry photo is a small
+      // mistake, and the tone is what stops a citizen giving up here.
       if (doc.verify_status === 'NEEDS_RETAKE' || doc.verify_status === 'UNVERIFIABLE') {
-        void play(null, lang === 'ur' ? doc.retake_reason_ur ?? t('wizard.doc.unverifiable') : doc.retake_reason_en ?? t('wizard.doc.unverifiable'));
+        const retakeText =
+          lang === 'ur'
+            ? doc.retake_reason_ur ?? t('wizard.doc.unverifiable')
+            : doc.retake_reason_en ?? t('wizard.doc.unverifiable');
+        if (guide.active) {
+          guide.speak({ text: retakeText, caption: retakeText, mood: 'reassuring' });
+        } else {
+          void play(null, retakeText);
+        }
       }
       if (docType === 'CNIC_FRONT') {
         setAnswer('cnic_doc_verified', doc.verify_status === 'VERIFIED');
@@ -573,6 +586,34 @@ export function ApplyWizard() {
 
   useAutoReadPrompt(`wizard_${step}`, t(STEP_TITLE[step]));
 
+  /* ------------------------------------------------------------- video guide */
+
+  /**
+   * The PiP guide lip-syncs the step prompt this screen already ships as a
+   * pre-cached MP3 - `wizard_<step>` - so opening her costs zero TTS calls and
+   * zero vendor text. She is a mouth for a clip that already exists.
+   */
+  const lastSpokenStep = useRef<string | null>(null);
+  useEffect(() => {
+    if (!guide.active) {
+      lastSpokenStep.current = null;
+      return;
+    }
+    if (lastSpokenStep.current === step) return;
+    lastSpokenStep.current = step;
+    guide.speak({ text: t(STEP_TITLE[step]), mood: 'listening', clipKey: `wizard_${step}` });
+  }, [guide.active, guide.speak, step, t]);
+
+  /** Mandatory readback, spoken face-to-face when the guide is open. */
+  const handleReadback = useCallback(
+    (text: string): boolean => {
+      if (!guide.active) return false;
+      guide.speak({ text, caption: text, mood: 'listening' });
+      return true;
+    },
+    [guide.active, guide.speak],
+  );
+
   /**
    * Autosave runs on a 250ms debounce, so a citizen who types an answer and
    * immediately taps the way out would lose it. Flush the pending write first.
@@ -634,6 +675,7 @@ export function ApplyWizard() {
 
   return (
     <div className="screen pb-28" data-testid="wizard" data-step={step}>
+      <AvatarPiPBubble guide={guide} />
       {/* The tab bar steps aside for the whole flow and the bottom Back button
           is disabled on the first step, so without this a citizen who opened
           the form and changed her mind had no way out of it. */}
@@ -747,6 +789,7 @@ export function ApplyWizard() {
             placeholder={t('wizard.name.placeholder')}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_full_name"
             valueText={textOf(answers, 'applicant_full_name')}
             onConfirm={(value) => setAnswer('applicant_full_name', value === null ? '' : String(value))}
@@ -767,6 +810,7 @@ export function ApplyWizard() {
             <p className="mt-2 text-meta font-medium text-negative">{t('wizard.cnic.invalid')}</p>
           )}
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_cnic"
             onConfirm={(value) => setAnswer('applicant_cnic', digitsOnly(String(value ?? '')))}
           />
@@ -798,6 +842,7 @@ export function ApplyWizard() {
             {t('wizard.dob.yearEnough')}
           </p>
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_dob"
             valueText={textOf(answers, 'applicant_dob')}
             onConfirm={(value) => setAnswer('applicant_dob', value === null ? null : String(value))}
@@ -818,6 +863,7 @@ export function ApplyWizard() {
             placeholder={t('wizard.spouseName.placeholder')}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="spouse_full_name"
             valueText={textOf(answers, 'spouse_full_name')}
             onConfirm={(value) => setAnswer('spouse_full_name', value === null ? '' : String(value))}
@@ -844,6 +890,7 @@ export function ApplyWizard() {
             </p>
           )}
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="spouse_cnic"
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('spouse_cnic');
@@ -861,6 +908,7 @@ export function ApplyWizard() {
             onChange={(district) => setAnswer('applicant_district', district)}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_district"
             valueText={textOf(answers, 'applicant_district')}
             onConfirm={(value) => {
@@ -879,6 +927,7 @@ export function ApplyWizard() {
             max={15}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="children_under_18"
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('children_under_18');
@@ -897,6 +946,7 @@ export function ApplyWizard() {
             max={25}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="household_size"
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('household_size');
@@ -918,6 +968,7 @@ export function ApplyWizard() {
             onExactDigits={setExactDigits}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="monthly_income_pkr"
             valueText={textOf(answers, 'monthly_income_pkr')}
             onConfirm={(value, missingReason) => {
@@ -960,6 +1011,7 @@ export function ApplyWizard() {
             format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="payout_phone"
             onConfirm={(value) => {
               if (value) setAnswer('payout_phone', toE164Pk(String(value)));
