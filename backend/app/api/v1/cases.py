@@ -244,7 +244,7 @@ def _case_documents(db: Session, case_id: uuid.UUID) -> list[Document]:
         db.execute(
             select(Document)
             .where(Document.case_id == case_id)
-            .order_by(Document.created_at.asc())
+            .order_by(Document.created_at.asc(), Document.id.asc())
         )
         .scalars()
         .all()
@@ -711,8 +711,8 @@ def submit_case(
         )
 
     required_docs = _required_documents(program)
-    uploaded = {doc.doc_type for doc in _case_documents(db, case.id)}
-    missing_docs = [doc for doc in required_docs if doc not in uploaded]
+    latest_documents = {doc.doc_type: doc for doc in _case_documents(db, case.id)}
+    missing_docs = [doc for doc in required_docs if doc not in latest_documents]
     if missing_docs:
         raise ValidationError(
             message_en="Some required documents are missing.",
@@ -721,9 +721,8 @@ def submit_case(
         )
 
     unverified = [
-        doc.doc_type
-        for doc in _case_documents(db, case.id)
-        if doc.doc_type in required_docs and doc.verify_status == "NEEDS_RETAKE"
+        doc_type for doc_type in required_docs
+        if latest_documents[doc_type].verify_status == "NEEDS_RETAKE"
     ]
     if unverified:
         raise ValidationError(
@@ -736,6 +735,7 @@ def submit_case(
     case.status = CaseStatus.SUBMITTED.value
     case.submitted_at = _now()
     case.wizard_step = "review"
+    case.citizen_explanation = None
 
     audit.record(
         db,

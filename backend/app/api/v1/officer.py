@@ -65,6 +65,33 @@ QUEUE_STATUSES = frozenset(
     }
 )
 
+# Only these public wizard labels appear in the citizen's request for information.
+_REQUEST_FIELD_LABELS = {
+    "applicant_full_name": ("Your name", "آپ کا نام"),
+    "applicant_cnic": ("Your identity card number", "آپ کا شناختی کارڈ نمبر"),
+    "applicant_dob": ("Your date of birth", "آپ کی تاریخ پیدائش"),
+    "spouse_full_name": ("Your spouse’s name", "آپ کے شریک حیات کا نام"),
+    "spouse_cnic": ("Your spouse’s identity card number", "آپ کے شریک حیات کا شناختی کارڈ نمبر"),
+    "applicant_district": ("Your district", "آپ کا ضلع"),
+    "children_under_18": ("Children under eighteen", "اٹھارہ سال سے کم عمر بچے"),
+    "household_size": ("Number of people in your household", "آپ کے گھر کے افراد کی تعداد"),
+    "monthly_income_pkr": ("Monthly household income", "گھر کی ماہانہ آمدنی"),
+    "payout_phone": ("Phone number for payment", "ادائیگی کے لیے فون نمبر"),
+}
+
+
+def _information_request(fields: list[str]) -> tuple[dict[str, Any], str | None]:
+    known = [field for field in dict.fromkeys(fields) if field in _REQUEST_FIELD_LABELS]
+    labels = [_REQUEST_FIELD_LABELS[field] for field in known]
+    return {
+        "headline_en": "An officer asked for more information.",
+        "headline_ur": "افسر نے مزید معلومات مانگی ہیں۔",
+        "reasons_en": [label[0] for label in labels],
+        "reasons_ur": [label[1] for label in labels],
+        "next_step_en": "Check the requested details and submit your application again.",
+        "next_step_ur": "مانگی گئی معلومات دیکھیں اور درخواست دوبارہ جمع کریں۔",
+    }, known[0] if known else None
+
 
 def _now() -> datetime:
     return datetime.now(UTC)
@@ -514,6 +541,15 @@ def decide_case(
         override_amount_pkr=override_amount_pkr,
         second_approval=second_approval,
     )
+
+    if target is CaseStatus.NEEDS_INFO and case.case_type == CaseType.BENEFIT_APPLICATION.value:
+        explanation, first_step = _information_request(requested_fields)
+        case.citizen_explanation = explanation
+        decision.citizen_explanation = explanation
+        if first_step:
+            case.wizard_step = first_step
+    elif previous == CaseStatus.NEEDS_INFO.value:
+        case.citizen_explanation = None
 
     if note or requested_fields:
         db.add(

@@ -154,6 +154,9 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
 
   const needsReason = action === 'REJECT' || action === 'APPROVE';
   const needsFields = action === 'REQUEST_INFO';
+  const unresolvedRules = ruleTrace.filter((entry) => entry.result === 'FAIL' || entry.result === 'UNKNOWN');
+  const conflictingFacts = Object.values(facts).filter((fact) => fact.conflict).length;
+  const reviewInProgress = ['HUMAN_REVIEW', 'IN_REVIEW', 'NEEDS_INFO', 'PENDING_SECOND_APPROVAL'].includes(caseData.status);
   const canSubmit =
     (!needsReason || (reasonCodes.length > 0 && note.trim().length > 0)) &&
     (!needsFields || requestedFields.length > 0);
@@ -225,6 +228,32 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
+          {reviewInProgress && (
+            <Card className="border-accent/25 bg-accent-wash">
+              <CardTitle>What would unblock this case?</CardTitle>
+              {caseData.status === 'NEEDS_INFO' ? (
+                <p className="text-body text-ink-2">The case is waiting for the information already requested from the citizen.</p>
+              ) : caseData.status === 'PENDING_SECOND_APPROVAL' ? (
+                <p className="text-body text-ink-2">A different officer needs to review the case and record the second decision.</p>
+              ) : (
+                <p className="text-body text-ink-2">
+                  {conflictingFacts > 0
+                    ? 'Compare the conflicting records and their sources before deciding.'
+                    : 'Review the handoff and check the evidence before deciding or requesting more information.'}
+                </p>
+              )}
+              {unresolvedRules.length > 0 && (
+                <ul className="mt-2 list-disc space-y-1 ps-5 text-caption text-ink-2">
+                  {unresolvedRules.slice(0, 3).map((entry) => (
+                    <li key={entry.rule_id}>{entry.reason_en || entry.label_en || entry.rule_id}</li>
+                  ))}
+                </ul>
+              )}
+              <a href="#case-review-evidence" className="mt-2 inline-flex min-h-tap items-center text-caption font-medium text-accent-ink underline">
+                Open evidence and sources
+              </a>
+            </Card>
+          )}
           <Card>
             <CardTitle hint="AI proposes, policy disposes">AI case handoff</CardTitle>
             {caseData.ai_case_note ? (
@@ -266,7 +295,9 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             )}
           </Card>
 
-          <FactTable facts={facts} />
+          <div id="case-review-evidence" className="scroll-mt-24">
+            <FactTable facts={facts} />
+          </div>
 
           {ruleTrace.length > 0 ? (
             <RuleTraceTable trace={ruleTrace} />

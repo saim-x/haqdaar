@@ -294,10 +294,15 @@ def _step_fetch_benefits(ctx: _Context) -> None:
 # -- step 6: documents ---------------------------------------------------
 def _step_check_documents(ctx: _Context) -> None:
     rows = (
-        ctx.db.execute(select(Document).where(Document.case_id == ctx.case.id))
+        ctx.db.execute(
+            select(Document)
+            .where(Document.case_id == ctx.case.id)
+            .order_by(Document.created_at.asc(), Document.id.asc())
+        )
         .scalars()
         .all()
     )
+    latest_documents = {row.doc_type: row for row in rows}
     ctx.documents = tuple(
         DocumentRow(
             doc_type=row.doc_type,
@@ -310,7 +315,7 @@ def _step_check_documents(ctx: _Context) -> None:
             verify_checks=tuple(row.verify_checks or ()),
             extracted_fields=row.extracted_fields or {},
         )
-        for row in rows
+        for row in latest_documents.values()
     )
 
 

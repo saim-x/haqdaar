@@ -12,6 +12,8 @@ import { AudioButton } from '../shared/ui/AudioButton';
 import { StatusBadge, statusLabelKey } from '../shared/ui/StatusBadge';
 import { TapButton } from '../shared/ui/TapButton';
 import { IconArrowLeft, IconWarning } from '../shared/ui/Icons';
+import { ConsentRevokedNotice } from '../shared/ui/ConsentRevoked';
+import { CaseNextStep } from './CaseNextStep';
 
 
 /**
@@ -52,7 +54,9 @@ export function CaseStatusPage() {
     );
   }
 
-  if (error && !data) {
+  if (error?.isConsentRevoked) return <ConsentRevokedNotice backTo={actFor ? '/h' : '/c/cases'} />;
+
+  if (error && (!data || [401, 403, 404].includes(error.status))) {
     return (
       <div className="screen">
         <div role="alert" className="card border-negative/25 p-4">
@@ -117,6 +121,8 @@ export function CaseStatusPage() {
         )}
       </section>
 
+      <CaseNextStep caseView={data} fromCache={fromCache} isHelper={session?.user.role === 'HELPER'} />
+
       {reasons.length > 0 && (
         <section className="enter enter-3 mt-6">
           <h2 className="section-label mb-3">{t('cases.explanation')}</h2>
@@ -128,7 +134,7 @@ export function CaseStatusPage() {
               </li>
             ))}
           </ul>
-          {nextStep && (
+          {nextStep && !['NEEDS_INFO', 'HUMAN_REVIEW', 'IN_REVIEW', 'PENDING_SECOND_APPROVAL', 'ON_HOLD_CONSENT', 'WAITING_EXTERNAL'].includes(data.status) && (
             <p className="mt-3 rounded-control bg-accent-wash px-3 py-2.5 text-caption font-medium leading-[1.7] text-accent-ink">
               {nextStep}
             </p>

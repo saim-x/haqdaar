@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { documentRetake, latestDocument } from './caseNextStep';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
@@ -131,6 +132,9 @@ function numberOf(answers: DraftAnswers, key: string, fallback = 0): number {
  */
 export function ApplyWizard() {
   const { caseId = 'new' } = useParams<{ caseId: string }>();
+  const [searchParams] = useSearchParams();
+  const retakeStep = searchParams.get('retake');
+  const resumeRequest = searchParams.get('resume') === 'request';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, lang } = useI18n();
@@ -211,11 +215,15 @@ export function ApplyWizard() {
       setAnswers(merged);
       if (view?.documents) {
         setDocs({
-          cnic: view.documents.find((doc) => doc.doc_type === 'CNIC_FRONT') ?? null,
-          death: view.documents.find((doc) => doc.doc_type === 'SPOUSE_DEATH_CERTIFICATE') ?? null,
+          cnic: latestDocument(view, 'CNIC_FRONT'),
+          death: latestDocument(view, 'SPOUSE_DEATH_CERTIFICATE'),
         });
       }
-      const savedStep = local?.wizardStep ?? view?.wizard_step ?? null;
+      const retake = view && documentRetake(view);
+      const requestedStep = resumeRequest && view?.status === 'NEEDS_INFO' ? view.wizard_step : null;
+      const savedStep = retake && retake.step === retakeStep
+        ? retake.step
+        : requestedStep ?? local?.wizardStep ?? view?.wizard_step ?? null;
       const index = savedStep ? STEPS.indexOf(savedStep as StepKey) : -1;
       if (index > 0) setStepIndex(index);
       setHydrated(true);
@@ -223,7 +231,7 @@ export function ApplyWizard() {
     return () => {
       cancelled = true;
     };
-  }, [caseId, citizenId, existingCase.data, hydrated]);
+  }, [caseId, citizenId, existingCase.data, hydrated, resumeRequest, retakeStep]);
 
   // Skip the consent gate when a live department grant already exists.
   useEffect(() => {
