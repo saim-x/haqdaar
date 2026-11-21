@@ -274,11 +274,12 @@ def live_server() -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
-def mock_base_url(live_server: str) -> str:
-    """Point the case agent's HTTP client at the live app (the mock router is mounted there)."""
+def mock_base_url(live_server: str) -> Iterator[str]:
+    """Point the case agent and payment runner at the same test HTTP server."""
     settings = importlib.import_module("app.config").settings
-    settings.MOCK_BASE_URL = live_server
-    return live_server
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(settings, "mock_base_url", live_server)
+        yield live_server
 
 
 @pytest.fixture(scope="session", autouse=True)
