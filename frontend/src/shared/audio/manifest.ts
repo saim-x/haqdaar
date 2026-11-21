@@ -14,6 +14,8 @@
 
 export type AudioManifest = Record<string, string>;
 
+const availableFiles = new Set<string>();
+
 /**
  * Semantic call-site key → canonical registry key (ADR-018).
  * `resolveAudioKey` tries the call-site key first, so when DPI retargets the
@@ -55,6 +57,19 @@ function normalise(json: unknown): AudioManifest {
   if (!json || typeof json !== 'object') return {};
   const record = json as Record<string, unknown>;
   const out: AudioManifest = {};
+
+  availableFiles.clear();
+  const meta = record._meta;
+  if (meta && typeof meta === 'object') {
+    const files = (meta as Record<string, unknown>).files;
+    if (files && typeof files === 'object') {
+      for (const [key, entry] of Object.entries(files as Record<string, unknown>)) {
+        if (entry && typeof entry === 'object' && (entry as Record<string, unknown>).status !== 'pending') {
+          availableFiles.add(key);
+        }
+      }
+    }
+  }
 
   // Envelope shape: { keys: { "<key>": "<text>" } }
   const nested = record.keys;
@@ -106,7 +121,7 @@ export function resolveAudioKey(key: string): string {
 /** Synchronous best-effort check once the manifest has loaded. */
 export function hasAudio(key: string): boolean {
   if (cache === null) return false;
-  return resolveAudioKey(key) in cache;
+  return availableFiles.has(resolveAudioKey(key));
 }
 
 export function manifestText(key: string): string | null {
