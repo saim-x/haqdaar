@@ -183,6 +183,8 @@ export function AskPage() {
         audioText={t('ask.title')}
       />
 
+      <AvatarToggleCard guide={guide} className="mb-4" />
+
       <div className="flex-1">
         {turns.length === 0 && (
           <section className="enter enter-2">
