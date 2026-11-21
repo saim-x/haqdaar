@@ -51,21 +51,88 @@ export function AskPage() {
   const [transcribing, setTranscribing] = useState(false);
   const nextId = useRef(1);
   const capture = useVoiceCapture(15);
+  const guide = useAvatarGuide('ask');
+  const greetedRef = useRef(false);
+  // The last question this page already put in the log. A spoken question arrives
+  // back from the vendor as a turn, and must not be logged twice.
+  const lastAskedRef = useRef('');
+  const askRef = useRef<(text: string) => void>(() => undefined);
+
+  // Opening the guide is the citizen's tap; greeting her is the guide's first
+  // act, and it reuses the clip this screen already ships - no extra TTS call.
+  useEffect(() => {
+    if (!guide.active) {
+      greetedRef.current = false;
+      return;
+    }
+    if (greetedRef.current) return;
+    greetedRef.current = true;
+    // In two-way mode the greeting is spoken by the vendor, so it must be a real
+    // sentence rather than the page title. In every other mode the pre-cached
+    // clip is used, which costs no TTS call at all.
+    guide.speak(
+      guide.conversational
+        ? { text: t('avatar.greeting'), mood: 'listening' }
+        : { text: t('ask.title'), mood: 'listening', clipKey: 'ask_intro' },
+    );
+  }, [guide.active, guide.conversational, guide.speak, t]);
+
+  // A question the citizen asked out loud never passes through the composer, so
+  // the vendor's own transcript is the only record of it. Feeding it back through
+  // `ask` gives a spoken question exactly the same grounded citations as a typed
+  // one - and the guided-action chip appears the moment she says what she wants.
+  useEffect(() => {
+    guide._registerTurn((turn) => {
+      if (turn.role !== 'user') return;
+      const text = turn.content.trim();
+      if (!text || text === lastAskedRef.current) return;
+      lastAskedRef.current = text;
+      askRef.current(text);
+    });
+    return () => guide._registerTurn(null);
+  }, [guide]);
 
   async function ask(text: string) {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
+    lastAskedRef.current = trimmed;
     const id = nextId.current++;
     setTurns((prev) => [...prev, { id, question: trimmed, answer: null, error: null }]);
     setQuestion('');
     setBusy(true);
+    // Two-way mode: Saima answers out loud in her own words, grounded by the
+    // system prompt the backend built from the live rule version. The `/rag/ask`
+    // call below runs in parallel and supplies the verifiable citation chip, so
+    // the citizen gets both a conversation and a receipt.
+    if (guide.active && guide.conversational) guide.sendUserMessage(trimmed);
     try {
       const answer = await api.post<RagAnswer>('/rag/ask', {
         question: trimmed,
         program_id: null,
         lang: isRtl ? 'ur' : 'en',
+        // ADR-025: only ask for the warm spoken reframing while the guide is
+        // open. The verbatim `answer` and its citations are unchanged either way.
+        ...(guide.active ? { conversational: true } : {}),
       });
       setTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, answer } : turn)));
+      // In two-way mode Saima has already answered in her own voice; speaking the
+      // verbatim text as well would make her say everything twice. The evidence
+      // chips still have to land, though - they are the checkable half of the
+      // answer, and they come from `/rag/ask`, not from the vendor.
+      const first = answer.citations[0];
+      const citation = first ? `${first.doc_title} · ${first.section}` : null;
+      if (guide.active && guide.conversational) {
+        guide.setEvidence({ citation, notSure: answer.status === 'NOT_SURE' });
+      } else if (guide.active) {
+        const spoken = answer.spoken_summary || answer.answer;
+        guide.speak({
+          text: spoken,
+          caption: spoken,
+          mood: answer.status === 'NOT_SURE' ? 'not_sure' : 'happy',
+          notSure: answer.status === 'NOT_SURE',
+          citation: citation ?? undefined,
+        });
+      }
     } catch (err) {
       setTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, error: errorMessage(err, lang) } : turn)));
     } finally {
