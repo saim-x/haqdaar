@@ -759,3 +759,88 @@ class TestRealPostgresRanking:
                 if rag.ask(db, question, lang="en").status != "NOT_SURE":
                     leaked.append(question)
         assert not leaked, f"off-topic questions were answered: {leaked}"
+
+
+# --------------------------------------------------------------------------- #
+# the HTTP contract for the spoken reframing - ADR-025
+# --------------------------------------------------------------------------- #
+class TestConversationalApi:
+    """``conversational`` is additive: absent by default, present on request."""
+
+    def test_default_request_has_no_spoken_summary(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        response = client.post(
+            "/api/v1/rag/ask",
+            json={"question": "widow grant monthly amount", "lang": "ur"},
+            headers=citizen_headers,
+        )
+        assert response.status_code == 200, response.text
+        assert "spoken_summary" not in response.json()
+
+    def test_conversational_request_adds_the_summary(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        response = client.post(
+            "/api/v1/rag/ask",
+            json={
+                "question": "widow grant monthly amount",
+                "lang": "ur",
+                "conversational": True,
+            },
+            headers=citizen_headers,
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["spoken_summary"]
+        assert len(body["spoken_summary"]) <= rag.SPOKEN_SUMMARY_MAX_CHARS
+        # The grounded answer is still there, verbatim, with its citations.
+        assert body["answer"]
+        assert body["citations"]
+
+    def test_conversational_does_not_change_the_answer(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        payload = {"question": "widow grant monthly amount", "lang": "ur"}
+        plain = client.post("/api/v1/rag/ask", json=payload, headers=citizen_headers).json()
+        spoken = client.post(
+            "/api/v1/rag/ask",
+            json={**payload, "conversational": True},
+            headers=citizen_headers,
+        ).json()
+        assert spoken["answer"] == plain["answer"]
+        assert spoken["citations"] == plain["citations"]
+        assert spoken["status"] == plain["status"]
+
+    def test_off_topic_conversational_request_abstains_warmly(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        response = client.post(
+            "/api/v1/rag/ask",
+            json={
+                "question": "What is the capital of France?",
+                "lang": "ur",
+                "conversational": True,
+            },
+            headers=citizen_headers,
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["status"] == "NOT_SURE"
+        assert body["spoken_summary"] == rag.SPOKEN_ABSTENTION_UR
+
+    def test_conversational_must_be_a_real_boolean(
+        self, client: Any, citizen_headers: dict[str, str]
+    ) -> None:
+        """A string ``"true"`` is not a request for a spoken summary."""
+        response = client.post(
+            "/api/v1/rag/ask",
+            json={
+                "question": "widow grant monthly amount",
+                "lang": "ur",
+                "conversational": "true",
+            },
+            headers=citizen_headers,
+        )
+        assert response.status_code == 200, response.text
+        assert "spoken_summary" not in response.json()
