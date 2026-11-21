@@ -148,3 +148,79 @@ test('a case briefing is deterministic and launches from the explanation section
       .waitFor({ state: 'visible', timeout: 10_000 })
       .then(() => true)
       .catch(() => false);
+    if (visible) {
+      opened = true;
+      await button.click();
+      break;
+    }
+  }
+  expect(opened, 'no submitted case carried a citizen explanation').toBe(true);
+
+  await expect(page.locator('[data-testid="avatar-stage"]')).toBeVisible({ timeout: 30_000 });
+  // The briefing is built from the server's own explanation, so the caption must
+  // contain the headline the page already shows.
+  await expect(page.locator('[data-testid="avatar-caption"]')).not.toBeEmpty();
+  await expect(page.locator('[data-testid="avatar-governance"]')).toContainText(/info only|صرف معلومات/i);
+});
+
+test('the wizard carries a collapsed PiP bubble that steps down in Lite Mode', async ({ page }) => {
+  await demoLogin(page, 'widow_fatima');
+  await useEnglish(page);
+  await page.goto('/c/apply/new');
+
+  const pip = page.locator('[data-testid="avatar-pip"]');
+  await expect(pip).toBeVisible({ timeout: 30_000 });
+  // Collapsed by default: the form is the screen, not the guide.
+  await expect(page.locator('[data-testid="avatar-pip-open"]')).toHaveCount(0);
+
+  await pip.click();
+  await expect(page.locator('[data-testid="avatar-pip-open"]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-testid="avatar-stage"]')).toBeVisible();
+
+  // Collapse again without losing the form.
+  await page.locator('[data-testid="avatar-pip-collapse"]').click();
+  await expect(page.locator('[data-testid="avatar-pip-open"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="wizard"]')).toBeVisible();
+
+  // Lite Mode hides the bubble entirely - the wizard's own cached prompts still
+  // speak, so nothing is lost.
+  await page.locator('[data-testid="lite-toggle"]').click();
+  await expect(page.locator('[data-testid="avatar-pip"]')).toHaveCount(0);
+});
+
+test('conversational mode offers the microphone and keeps the grounded answer path', async ({ page }) => {
+  await demoLogin(page, 'widow_fatima');
+  await useEnglish(page);
+  await page.goto('/c/ask');
+
+  // The invitation promises a conversation, not a video clip - and it says so
+  // before a single byte of the SDK is fetched.
+  await expect(page.locator('[data-testid="avatar-live-badge"]')).toBeVisible({ timeout: 20_000 });
+
+  await startGuide(page);
+
+  // The microphone is the whole point of this mode, so it is on by default and
+  // it is a real toggle in both directions.
+  const mic = page.locator('[data-testid="avatar-mic"]');
+  await expect(mic).toBeVisible();
+  await expect(mic).toHaveAttribute('aria-pressed', 'true');
+  await expect(mic).toHaveAttribute('aria-label', /mic on|مائیک آن/i);
+
+  await mic.click();
+  await expect(mic).toHaveAttribute('aria-pressed', 'false');
+  await expect(mic).toHaveAttribute('aria-label', /mic is off|مائیک بند/i);
+
+  await mic.click();
+  await expect(mic).toHaveAttribute('aria-pressed', 'true');
+
+  // A citizen who cannot or will not speak must still get a verifiable answer:
+  // the composer keeps working while the guide is live, and the citation chip
+  // still appears on the stage.
+  await ask(page, 'widow grant eligibility');
+  await expect(page.locator('[data-testid="avatar-citation"]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-testid="avatar-caption"]')).not.toBeEmpty();
+
+  await page.locator('[data-testid="avatar-end"]').click();
+  await expect(page.locator('[data-testid="avatar-stage"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="avatar-cta"]')).toBeVisible();
+});
