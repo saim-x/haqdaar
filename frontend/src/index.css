@@ -88,7 +88,12 @@
     border-radius: 4px;
   }
 
-  /* Figures: one format, tabular, isolated from the RTL paragraph. */
+  /* Figures: one format, tabular, isolated from the RTL paragraph.
+     Only for content that is entirely Latin or numeric. `direction: ltr` is a
+     base direction, so putting it on a span that also holds Urdu prose flips
+     the order of the words around the number — "20,000 سے کم" becomes
+     "کم سے 20,000". For a number inside an Urdu sentence use `tabular-nums`
+     and let the paragraph's own direction place it. */
   .num {
     direction: ltr;
     unicode-bidi: isolate;

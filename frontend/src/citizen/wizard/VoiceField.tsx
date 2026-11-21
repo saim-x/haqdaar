@@ -101,7 +101,10 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
         <div className="card enter p-4">
           <p className="text-meta text-ink-3">{t('wizard.readback.question')}</p>
           <div className="mt-1.5 flex items-center gap-2">
-            <p className="num flex-1 font-mono text-title-lg font-medium text-ink" dir="auto">
+            {/* `dir="auto"` picks the base direction from the value itself: a
+                parsed number reads LTR, "not understood" reads RTL. `.num`
+                would pin it to LTR and drag the Urdu fallback with it. */}
+            <p className="flex-1 text-title-lg font-medium tabular-nums text-ink" dir="auto">
               {parsed.parsed_value === null || parsed.parsed_value === ''
                 ? t('wizard.voice.notUnderstood')
                 : String(parsed.parsed_value)}

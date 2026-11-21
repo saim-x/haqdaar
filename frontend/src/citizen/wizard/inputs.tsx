@@ -201,7 +201,10 @@ export function IncomeBands({ value, onChange, exact, onExactChange, exactDigits
               }`}
             >
               {selected && <IconCheck size={16} className="shrink-0" />}
-              <span className="num font-mono">{t(band.key)}</span>
+              {/* The band label is Urdu prose with a number in it, so it takes
+                  tabular figures but not `.num` — that would set an LTR base
+                  direction and read "کم سے 20,000". */}
+              <span className="tabular-nums">{t(band.key)}</span>
             </button>
           );
         })}
