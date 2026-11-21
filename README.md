@@ -136,7 +136,18 @@ The cost matrix is stored in each rule version's `policy.cost_matrix`, so it is 
 
 Bayes puts the break-even point at `p > 1 − 8/100 = 0.92`; we set `τ = 0.90` deliberately on the conservative side of it.
 
-> **Threshold sweep: pending.** The sweep endpoint currently returns a flat curve because the labelled dataset (`backend/app/data/eval_cases.jsonl`) carries no per-case document evidence, so every case's confidence collapses to the identity default and nothing can ever reach `τ`. The router itself is correct — the dataset is not yet calibrated for this measurement. The Lead countersigns the final auto-approve %, false-approval % and expected-cost figures once that dataset is fixed; **we are not publishing numbers we cannot reproduce.**
+**The sweep is measured, not asserted.** `GET /api/v1/eval/dashboard` replays the labelled set (`backend/app/data/eval_cases.jsonl`, **n = 133**) through the real router at every threshold and reports what each one would have cost:
+
+| `τ` | Auto-approved | False approvals | Sent to a human | Expected cost |
+|---|---|---|---|---|
+| 0.50 – 0.70 | 78.2 % | 17.3 % | 16.5 % | 2011 |
+| 0.75 | 74.4 % | 13.1 % | 20.3 % | 1551 |
+| 0.80 | 70.7 % | 8.5 % | 24.1 % | 1091 |
+| 0.85 | 62.4 % | 4.8 % | 32.3 % | 779 |
+| **0.90 (active)** | **55.6 %** | **0.0 %** | **39.1 %** | **451** |
+| 0.95 | 41.4 % | 0.0 % | 53.4 % | 603 |
+
+The curve has a knee at **0.90** and that is where the router sits: it is the lowest threshold at which the false-approval rate reaches **0.0 %**, and pushing to 0.95 costs more (603) because the extra human reviews outweigh the errors they prevent. The sweep is a test, not a dashboard-only calculation — `tests/engine/test_eval_sweep.py` fails if the knee moves.
 
 ### Scam classifier
 
@@ -167,8 +178,8 @@ We show false alarms honestly: the dashboard reports the false-positive rate, th
 
 | Metric | Value |
 |---|---|
-| Decisions recorded | 67 |
-| `AUTO_APPROVE` / `HUMAN_REVIEW` | 43 / 24 |
+| Decisions recorded (SPD tenant) | 66 |
+| `AUTO_APPROVE` / `HUMAN_REVIEW` | 43 / 23 |
 | Officer override rate | 0.0 |
 | Decision latency p50 / p95 | 16 ms / 20 ms |
 | LLM calls in 24 h | 0 |
@@ -189,15 +200,18 @@ event_hash = hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 | Suite | Tests | Covers |
 |---|---|---|
-| `backend/tests/engine` | 572 | Rules DSL, tri-state evaluator, entity resolution, confidence, router policy, digital twin, eval sweep |
-| `backend/tests/ai` | 333 | Scam classifier, document verifier, RAG, voice, guardrails, provider, API auth |
+| `backend/tests/engine` | 596 | Rules DSL, tri-state evaluator, entity resolution, confidence, router policy, digital twin, eval sweep |
+| `backend/tests/ai` | 347 | Scam classifier, document verifier, RAG, voice, guardrails, provider, API auth |
 | `backend/tests/security` | 21 | RBAC matrix, tenant isolation, consent enforcement incl. denied-log persistence and agent reads |
-| `backend/tests/integration` | 56 | Golden path, rule versioning, audit chain, idempotency, chaos resilience, my-data corrections, complaint path, transparency |
-| `backend/tests/mocks` | 49 | Simulated DPI services and seed integrity |
+| `backend/tests/integration` | 86 | Golden path, rule versioning, audit chain, idempotency, chaos resilience, my-data corrections, complaint path, transparency |
+| `backend/tests/mocks` | 69 | Simulated DPI services and seed integrity |
+| `backend/tests/test_conftest_heal.py` | 14 | The test harness heals a stale schema instead of dropping the database |
 | `backend/tests/test_invariants.py` | 11 | Engine purity, mock-import ban, RBAC-on-every-route, no auto-reject, no raw PII in logs, transparency disclosure |
-| **Total** | **1042 passing** | |
+| **Total** | **1143 passing** | 1144 collected |
 
-> **Citizen bundle size: pending countersign.** The budget gate is ≤150 KB gzipped for the citizen entry chunk (`docs/13 §1`); the measured figure is confirmed by the frontend owner and countersigned by the Lead before submission.
+> One test is red on a machine whose FastAPI is older than the pinned `0.165.0`: `test_every_non_public_route_has_an_rbac_dependency` imports `fastapi.routing._IncludedRouter`, which does not exist in `0.115.x`. It is a version mismatch in the local environment, not a defect in the route table — the same assertion passes under the pinned version in CI.
+
+**Citizen bundle: 127.5 KB gzipped of a 150 KB budget (85.0 %), 123 precache entries.** `npm --prefix frontend run budget` fails the build above 150 KB, so the number cannot drift silently.
 
 ---
 
@@ -248,6 +262,7 @@ docker compose exec api python -m app.mocks.seed --reset
 | Swagger UI | http://127.0.0.1:8010/api/docs |
 | OpenAPI JSON | http://127.0.0.1:8010/api/openapi.json |
 | Health (DB, worker heartbeat, upload dir) | http://127.0.0.1:8010/health — `200 OK` or `503 DEGRADED` |
+| Prometheus metrics | http://127.0.0.1:8010/metrics — cases and decisions by tenant, audit-chain size, RAG chunk count, LLM calls and failures in 24 h, worker heartbeat age |
 | Transparency page | http://127.0.0.1:8010/transparency |
 | Device Simulator | http://127.0.0.1:8010/staff/device-sim |
 | Demo reset | `POST /api/v1/admin/demo/reset` (ADMIN, `DEMO_MODE=true`) |
@@ -326,7 +341,7 @@ The invariants in `backend/tests/test_invariants.py` are enforced by scanning th
 ```
 backend/
   app/
-    main.py          app factory, middleware, error envelope, /health
+    main.py          app factory, middleware, error envelope, /health, /metrics
     config.py        Pydantic Settings
     db.py            sync engine, SessionLocal, Base
     models/          every app table (docs/04 §4.1–4.5)

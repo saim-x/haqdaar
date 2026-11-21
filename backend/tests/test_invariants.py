@@ -64,6 +64,7 @@ PUBLIC_ROUTE_PREFIXES = (
     "/api/v1/transparency",
     "/api/v1/public/",
     "/health",
+    "/metrics",
     "/mock/",
     "/api/docs",
     "/api/openapi.json",

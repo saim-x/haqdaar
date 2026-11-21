@@ -391,6 +391,7 @@ class TestAnswers:
             "model",
             "guardrail_triggered",
             "retrieved",
+            "coverage",
         }
 
     def test_retrieval_ranks_the_most_relevant_chunk_first(self, session: RagSession) -> None:

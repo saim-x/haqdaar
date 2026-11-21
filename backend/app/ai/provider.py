@@ -614,7 +614,102 @@ def cosine(a: Sequence[float], b: Sequence[float]) -> float:
 # --------------------------------------------------------------------------- #
 # extractive RAG answer (fake mode)
 # --------------------------------------------------------------------------- #
-_SENTENCE = re.compile(r"[^.!?\n۔]+[.!?\n۔]?", re.UNICODE)
+_WORD = re.compile(r"[\w\u0600-\u06ff]+", re.UNICODE)
+
+#: Question cue -> the words that mark a sentence as *answering* it.
+#:
+#: Word overlap alone finds sentences that share vocabulary with the question,
+#: which is not the same as answering it: "what documents do I need?" overlaps
+#: most with the paragraph that names the grant, not the list of documents. Each
+#: pair is (question cues, answer cues); a sentence containing an answer cue for
+#: a cue the question used gets a bonus, so the list of documents wins.
+_INTENT_CUES: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+    (
+        (
+            "document", "documents", "paper", "papers", "proof", "dastavez", "kaghaz",
+            "دستاویز", "دستاویزات", "کاغذ", "ثبوت",
+        ),
+        (
+            "document", "documents", "cnic", "certificate", "certificates", "attach",
+            "دستاویز", "دستاویزات", "شناختی", "سرٹیفکیٹ", "وفات",
+        ),
+    ),
+    (
+        (
+            "amount", "much", "money", "pay", "paid", "payment", "rupees", "kitne",
+            "kitna", "paise", "paisa", "rupay", "رقم", "پیسے", "کتنی", "ادائیگی",
+        ),
+        (
+            "pkr", "rs", "rupee", "rupees", "amount", "monthly", "money", "pay", "paid",
+            "payment", "روپے", "رقم", "ماہانہ", "ہزار", "پیسے", "ادائیگی",
+        ),
+    ),
+    (
+        (
+            "eligible", "eligibility", "qualify", "qualifies", "mustahiq", "sharait",
+            "اہلیت", "اہل", "مستحق", "شرائط",
+        ),
+        (
+            "eligible", "eligibility", "must", "condition", "conditions", "alive", "valid",
+            "years", "income", "death", "widow", "district", "conflicting",
+            "اہل", "مستحق", "شرط", "شرائط", "زندہ", "میعاد", "عمر", "آمدنی", "وفات", "ضلع",
+        ),
+    ),
+    (
+        (
+            "long", "duration", "months", "continue", "waqt", "din",
+            "مدت", "کب", "تک",
+        ),
+        (
+            "month", "months", "monthly", "duration", "continue", "day", "days",
+            "working", "within", "immediately", "hours", "ماہ", "ماہانہ", "مدت",
+            "جاری", "دن", "گھنٹے", "فوراً",
+        ),
+    ),
+    (
+        ("apply", "application", "how", "kaise", "darkhwast", "درخواست", "کیسے"),
+        ("apply", "application", "submit", "درخواست", "جمع", "فارم"),
+    ),
+)
+
+#: A sentence that only restates the mock-specimen banner answers nothing.
+_BOILERPLATE = (
+    "mock specimen",
+    "not an official document",
+    "not legal advice",
+    "is synthetic",
+    "synthetic and",
+    "does not describe any real",
+    "demonstrate the haqdaar prototype",
+)
+
+#: Markdown that must not reach the reader: emphasis, blockquote markers, bullets.
+_MARKDOWN = re.compile(r"(\*\*|__|\*|`|^\s*>\s?|^\s*[-•]\s+)", re.MULTILINE)
+
+#: Function words that carry no topic. Without this list "who is eligible?"
+#: matched the heading "What This Grant Is Not" on *is* and *grant* and answered
+#: from the wrong section; "how much does the widow grant pay?" matched the
+#: Guzara allowance on *how* and *much*.
+_STOPWORDS = frozenset(
+    """
+    a an the and or but if then than that this these those there here
+    is are was were be been being am do does did done doing have has had having
+    i me my we us our you your he she it they them their his her its
+    of in on at to for from by with about into over under again further
+    what which who whom whose when where why how
+    can could should would will shall may might must
+    not no nor so very too also just only own same such
+    much many more most some any all each every few other another
+    please tell know need want get got give
+    aur hai hain ka ki ke ko se mein main kya koi kuch
+    اور ہے ہیں کا کی کے کو سے میں کیا کوئی کچھ یہ وہ
+    """.split()
+)
+
+
+def _topic_words(text: str) -> set[str]:
+    """Content words of ``text`` — the ones that say what it is about."""
+    return {word for word in _WORD.findall(text.lower()) if word not in _STOPWORDS}
 
 
 def _chunk_field(chunk: Any, name: str, default: Any = None) -> Any:
@@ -623,39 +718,161 @@ def _chunk_field(chunk: Any, name: str, default: Any = None) -> Any:
     return getattr(chunk, name, default)
 
 
+def _unwrap(text: str) -> str:
+    """Join hard-wrapped lines inside a paragraph.
+
+    The policy corpus is wrapped at ~80 columns, so splitting on newlines cuts
+    sentences in half — "…widowed women living in the" was a real answer. A
+    paragraph break is still a break; a single newline is just wrapping.
+    """
+    paragraphs = re.split(r"\n\s*\n", text)
+    return "\n\n".join(re.sub(r"\s*\n\s*", " ", para).strip() for para in paragraphs)
+
+
+def _plain(text: str) -> str:
+    """Corpus prose without the markdown that would otherwise be read aloud."""
+    return re.sub(r"\s{2,}", " ", _MARKDOWN.sub("", text)).strip()
+
+
+def _paragraphs(content: str) -> list[str]:
+    """Paragraphs of a chunk, de-wrapped and de-marked, boilerplate dropped.
+
+    A paragraph is the unit of quotation, not a sentence. The corpus is written
+    as an English paragraph followed by its Urdu counterpart, so a paragraph is
+    already one coherent, single-language statement — quoting one whole is what
+    makes the answer read like a policy rather than like a search result.
+    """
+    out: list[str] = []
+    for paragraph in _unwrap(content).split("\n\n"):
+        text = _plain(paragraph)
+        if len(text) < 20:
+            continue
+        lowered = text.lower()
+        if any(mark in lowered for mark in _BOILERPLATE):
+            continue
+        # "Two documents are required:" is a lead-in, not an answer. The list it
+        # introduces is the next paragraph, so quoting the lead-in alone returned
+        # a sentence that stops exactly where the information starts.
+        if out and out[-1].endswith(":"):
+            out[-1] = f"{out[-1]} {text}"
+            continue
+        out.append(text)
+    return out
+
+
+def _script_ratio(text: str) -> float:
+    """Share of letters in ``text`` that are Arabic-script (Urdu)."""
+    letters = [ch for ch in text if ch.isalpha()]
+    if not letters:
+        return 0.0
+    arabic = sum(1 for ch in letters if "\u0600" <= ch <= "\u06ff")
+    return arabic / len(letters)
+
+
+def _answer_cues(question_words: set[str]) -> set[str]:
+    """The answer-side vocabulary implied by the question's own cues."""
+    cues: set[str] = set()
+    for question_cues, answer_cues in _INTENT_CUES:
+        if question_words & set(question_cues):
+            cues.update(answer_cues)
+    return cues
+
+
 def _extractive_answer(
     question: str, chunks: Sequence[Any], lang: str
 ) -> tuple[str, list[str]]:
+    """Quote the paragraph that answers the question, from one source only.
+
+    Five rules, each learned from a bad answer:
+
+    1. **The heading decides first.** "What documents do I need?" was answered
+       from the consent document because the word "documents" appears there too;
+       the section actually titled *Required Documents* lost on word overlap. A
+       heading that matches the question outranks a sentence that merely shares
+       its vocabulary.
+    2. **One paragraph, one source.** Gluing the top three sentences across
+       chunks produced "…living in the [uuid] The Sahara Widow Grant is not a
+       loan". A paragraph is already a complete thought; quote it whole.
+    3. **No identifiers in the prose.** The chunk id is already in the citation
+       list; a 36-character UUID in the middle of an Urdu sentence is noise to
+       the reader it is meant to reassure.
+    4. **Answer in the language that was asked.** The corpus is bilingual, so
+       retrieval happily returns the English paragraph to an Urdu question. The
+       requested script is worth a bonus, which is what makes the Urdu answer
+       Urdu rather than English with an Urdu preamble.
+    5. **Answer, do not merely overlap.** A paragraph that shares vocabulary with
+       the question but answers a different one is demoted by the intent cues.
+    """
     if not chunks:
         return "", []
 
-    question_words = set(re.findall(r"[\w\u0600-\u06ff]+", urdu_nlp.normalize_text(question).lower()))
-    scored: list[tuple[float, str, str]] = []
-    for chunk in chunks:
-        chunk_id = str(_chunk_field(chunk, "chunk_id") or _chunk_field(chunk, "id") or "")
-        content = str(_chunk_field(chunk, "content") or "")
-        for sentence in _SENTENCE.findall(content):
-            sentence = sentence.strip()
-            if len(sentence) < 25:
-                continue
-            words = set(re.findall(r"[\w\u0600-\u06ff]+", sentence.lower()))
-            overlap = len(words & question_words) / (len(question_words) or 1)
-            scored.append((overlap, sentence, chunk_id))
+    wants_urdu = lang.startswith("ur")
+    question_words = _topic_words(urdu_nlp.normalize_text(question))
+    cues = _answer_cues(question_words)
 
-    scored.sort(key=lambda item: item[0], reverse=True)
-    picked = [item for item in scored[:3] if item[0] > 0] or scored[:2]
-    if not picked:
+    best_chunk_id = ""
+    best_paragraph = ""
+    best_score = -1.0
+
+    # If the question names a document, answer from that document. "How much
+    # does the widow grant pay?" was answered from the Guzara allowance because
+    # both documents have an amount section and the allowance's paragraph scored
+    # a hair higher; a soft bonus could not settle it. Naming the program is a
+    # hard constraint, not a preference.
+    named = {
+        str(_chunk_field(chunk, "doc_title") or "")
+        for chunk in chunks
+        if _topic_words(str(_chunk_field(chunk, "doc_title") or "")) & question_words
+    }
+    candidates = [
+        chunk for chunk in chunks if str(_chunk_field(chunk, "doc_title") or "") in named
+    ] or list(chunks)
+
+    for chunk in candidates:
+        chunk_id = str(_chunk_field(chunk, "chunk_id") or _chunk_field(chunk, "id") or "")
+        heading_words = _topic_words(str(_chunk_field(chunk, "section_heading") or ""))
+        paragraphs = _paragraphs(str(_chunk_field(chunk, "content") or ""))
+        if not paragraphs:
+            continue
+
+        for paragraph in paragraphs:
+            words = _topic_words(paragraph)
+            overlap = len(words & question_words) / (len(question_words) or 1)
+            cue_bonus = 0.5 if words & cues else 0.0
+            urdu_share = _script_ratio(paragraph)
+            language_bonus = 0.6 * (urdu_share if wants_urdu else 1.0 - urdu_share)
+            # The heading describes the whole section, so it scores every
+            # paragraph in it. It used to require the paragraph to echo a heading
+            # word, which silently penalised the Urdu half of a bilingual section:
+            # "3. Required Documents" shares no word with its Urdu paragraph, so
+            # the Urdu answer lost to the English one for an Urdu question.
+            heading_overlap = len(heading_words & question_words) / (
+                len(question_words) or 1
+            )
+            # A section titled with an answer cue — "Required Documents", "Who Is
+            # Eligible", "Payout Schedule and Amount" — is the section that
+            # answers that kind of question. This is what separates "Who Is
+            # Eligible" from "What This Grant Is Not" when both mention the grant.
+            heading_cue_bonus = 1.5 if heading_words & cues else 0.0
+            score = (
+                overlap
+                + cue_bonus
+                + language_bonus
+                + 3.0 * heading_overlap
+                + heading_cue_bonus
+            )
+            if score <= best_score:
+                continue
+            best_score = score
+            best_chunk_id = chunk_id
+            best_paragraph = paragraph
+
+    if not best_paragraph:
         return "", []
 
-    citations: list[str] = []
-    lines: list[str] = []
-    for _, sentence, chunk_id in picked:
-        lines.append(f"{sentence} [{chunk_id}]" if chunk_id else sentence)
-        if chunk_id and chunk_id not in citations:
-            citations.append(chunk_id)
-
-    prefix = "دستیاب پالیسی کے مطابق:" if lang.startswith("ur") else "According to the available policy:"
-    return f"{prefix} " + " ".join(lines), citations
+    prefix = "دستیاب پالیسی کے مطابق:" if wants_urdu else "According to the available policy:"
+    citations = [best_chunk_id] if best_chunk_id else []
+    return f"{prefix} {best_paragraph}", citations
 
 
 # --------------------------------------------------------------------------- #

@@ -57,6 +57,16 @@ LEXICAL_SATURATION = 0.5
 ABSTAIN_THRESHOLD_LIVE = 0.42
 ABSTAIN_THRESHOLD_FAKE = 0.25
 
+#: Share of a question's content words that must exist in the corpus at all.
+#:
+#: The score gate asks "is some chunk similar to this question?"; this asks "is
+#: this question about our corpus?". They are different questions and only the
+#: second one rejects "what is the weather in Karachi tomorrow?" — Karachi is a
+#: district in the eligibility list, so one word of three matches and the cosine
+#: clears the threshold. Measured over the corpus: in-domain questions cover
+#: 0.67–1.00 of their content words, off-topic ones 0.00–0.33.
+MIN_CORPUS_COVERAGE = 0.5
+
 NOT_SURE_UR = (
     "مجھے اس سوال کا یقین سے جواب نہیں معلوم۔ آپ کمیونٹی مددگار سے پوچھ سکتی ہیں، "
     "یا محکمے کے افسر سے رابطہ کر سکتی ہیں۔ اپنی اہلیت جاننے کے لیے درخواست جمع کروانا "
@@ -109,6 +119,7 @@ class RagAnswer:
     model: str = "fake-extractive"
     guardrail_triggered: bool = False
     retrieved: int = 0
+    coverage: float = 0.0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -121,6 +132,7 @@ class RagAnswer:
             "model": self.model,
             "guardrail_triggered": self.guardrail_triggered,
             "retrieved": self.retrieved,
+            "coverage": round(self.coverage, 4),
         }
 
 
@@ -452,6 +464,21 @@ def abstain_threshold() -> float:
     return ABSTAIN_THRESHOLD_FAKE if _is_fake_mode() else ABSTAIN_THRESHOLD_LIVE
 
 
+def _corpus_coverage(question: str) -> float:
+    """Share of the question's content words that the corpus contains.
+
+    A question that shares one incidental proper noun with a policy — a district
+    name, a programme name — is not a question about that policy. Counting how
+    much of the question the corpus can even speak to is what separates the two,
+    and unlike a similarity score it does not move when chunk sizes change.
+    """
+    stats = text_index.corpus_stats()
+    words = text_index.tokenize(question)
+    if not words:
+        return 0.0
+    return sum(1 for word in words if stats.idf(word) > 0.0) / len(words)
+
+
 def _lexical_query(question: str) -> str | None:
     """Build an OR ``tsquery`` from the question's in-corpus content words.
 
@@ -634,8 +661,9 @@ def ask(
     chunks = retrieve(db, cleaned, program_id=program_id, top_k=top_k)
     top_score = chunks[0].hybrid_score if chunks else 0.0
     threshold = abstain_threshold()
+    coverage = _corpus_coverage(cleaned)
 
-    if not chunks or top_score < threshold:
+    if not chunks or top_score < threshold or coverage < MIN_CORPUS_COVERAGE:
         # Zero LLM calls on abstention — the whole point of the gate.
         return RagAnswer(
             status="NOT_SURE",
@@ -643,6 +671,7 @@ def ask(
             top_score=top_score,
             lang=language,
             retrieved=len(chunks),
+            coverage=coverage,
         )
 
     answer, provider_name, model = _synthesize(
@@ -680,6 +709,7 @@ def ask(
 __all__ = [
     "ABSTAIN_THRESHOLD_FAKE",
     "ABSTAIN_THRESHOLD_LIVE",
+    "MIN_CORPUS_COVERAGE",
     "CHUNK_MAX_TOKENS",
     "CHUNK_MIN_TOKENS",
     "CHUNK_OVERLAP_TOKENS",

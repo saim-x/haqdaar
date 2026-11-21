@@ -158,3 +158,63 @@ Returns live + benchmark numbers directly backing Challenges 01 and 08:
 - `scam_classifier`: `{test_size, precision, recall, f1, false_positive_rate, hard_negative_fpr, confusion_matrix, live_checks_count, user_disputed_count}`.
 - `document_verifier`: `{test_size, genuine_verified_rate, tampered_caught_rate, false_tamper_rate, blurry_retake_rate}`.
 - `live_operations`: `{total_decisions, by_route, officer_override_rate, latency_p50_ms, latency_p95_ms, llm_calls_24h, llm_cost_usd_24h, llm_failure_rate}`.
+
+---
+
+## 9. Model & Tool Selection — What We Chose, What We Rejected, and Why
+
+Every choice below is a trade-off made against the actual constraints of this problem: a bilingual corpus of four documents, 172 labelled scam messages, 30 labelled document images, a citizen on a 2G phone, and a rule that a wrong approval costs 100 while a human review costs 8. Model size is not the axis that matters here; the cost of being wrong is.
+
+### 9.1 Policy Q&A — `gpt-4o-mini` + hybrid retrieval
+
+| Option | Verdict |
+|---|---|
+| **`gpt-4o-mini` + `tsvector`/cosine hybrid** | **Chosen.** The corpus is four documents. Retrieval quality dominates model size: a bigger model given the wrong section still answers wrongly, and a small model given the right section answers correctly. `gpt-4o-mini` is also cheap enough that the abstention gate — not the price — is what limits calls. |
+| `gpt-4o` / a reasoning model | Rejected. Higher latency and cost for a task whose hard part is retrieval, not reasoning. The answer is a quotation from a policy, not a synthesis. |
+| `pgvector` | Rejected. It is an extension to install, version and operate for 30 chunks. A generated `tsvector` column plus NumPy cosine over a 64-dimension hashed TF-IDF vector needs no extension, and the fake path is deterministic — which is what lets the abstention gate be tested without an embedding service. |
+| Fine-tuning on the policy corpus | Rejected. Four documents fit in a prompt. Fine-tuning would bake a corpus into weights that are supposed to be versioned in the database and re-indexed on publish. |
+
+### 9.2 Scam classification — TF-IDF + calibrated logistic regression
+
+| Option | Verdict |
+|---|---|
+| **char n-gram TF-IDF + `CalibratedClassifierCV(LogisticRegression)`** | **Chosen.** 172 labelled examples. A linear model on character n-grams generalises across Roman-Urdu spelling variation ("paisay"/"paise"/"پیسے") and its coefficients are inspectable, so a verdict can be explained. Calibration matters more than capacity: the UI shows a confidence, and an uncalibrated margin would make that number a lie. |
+| Fine-tuned transformer | Rejected. It would memorise 172 examples. The measured hard-negative false-positive rate (0.00) comes from the feature space, not from capacity. |
+| An LLM as the classifier | Rejected. Non-deterministic, per-call cost, and it cannot be evaluated against a frozen confusion matrix. The LLM is used for *language*, not for a decision that must be reproducible. |
+| Keyword blocklist | Rejected. It is what the fraudsters already defeat. The model is paired with HMAC code verification, which is a cryptographic fact rather than a guess. |
+
+### 9.3 Document verification — OpenCV + HMAC-signed QR
+
+| Option | Verdict |
+|---|---|
+| **OpenCV preprocess + QR decode + HMAC verify + RapidFuzz name match** | **Chosen.** The QR carries a signature the department issued. Verifying it is a cryptographic check, not a judgement, so a genuine card cannot be rejected by a model having a bad day. OpenCV handles the blur/crop/glare triage that decides `NEEDS_RETAKE` versus `TAMPER`. |
+| A vision LLM | Rejected. Slower, costlier, and *less* certain on the one question that matters — is this signature ours? It would also send a citizen's identity document to a third party, which the consent model forbids. |
+| Perceptual hashing against a reference set | Rejected. It catches only exact reuse, and it fails on the WhatsApp recompression that real citizens produce. |
+
+### 9.4 Speech-to-text — `whisper-1`
+
+| Option | Verdict |
+|---|---|
+| **`whisper-1`** | **Chosen.** Handles Urdu and Roman-Urdu code-switching, which is how people actually speak. |
+| Browser Web Speech API | Rejected. Unavailable offline, and Urdu is unsupported on most Android builds — the exact devices this app targets. |
+| A local Whisper build | Rejected for the prototype. It would remove the network dependency but adds a multi-hundred-MB model to a deployment whose whole point is a 127.5 KB client. |
+
+### 9.5 Text-to-speech — `edge-tts` + 73 pre-cached MP3s
+
+| Option | Verdict |
+|---|---|
+| **`edge-tts` for dynamic text, 73 pre-generated MP3s for fixed prompts** | **Chosen.** A citizen on 2G cannot wait for synthesis before hearing "what is your name?". The fixed prompts ship in the bundle and play offline; only genuinely dynamic text (an explanation of *this* decision) is synthesised. |
+| Live TTS for every prompt | Rejected. It makes the first screen of the wizard depend on the network, which is the one thing the offline design exists to avoid. |
+| A commercial TTS vendor | Rejected on cost and on the same third-party-data argument as 9.3. |
+
+### 9.6 Embeddings — `text-embedding-3-small` (live) / hashed TF-IDF (fake)
+
+| Option | Verdict |
+|---|---|
+| **`text-embedding-3-small`, 1536 dims** | **Chosen.** Ample for 30 chunks, and cheap enough that re-indexing on every ruleset publish is free. |
+| `text-embedding-3-large` | Rejected. Three times the cost and storage for a corpus where retrieval is already saturated. |
+| **Hashed TF-IDF, 64 dims (fake mode)** | **Chosen for tests.** Deterministic, so a retrieval score is reproducible and the abstention gate can be asserted. `cosine` returns `0.0` on a dimension mismatch rather than truncating, so a live 1536-dim vector left in the database can never be silently compared against a 64-dim fake query. |
+
+### 9.7 The rule that governs all of the above
+
+**The LLM proposes; policy disposes.** No model in this system can approve, reject, or disburse. The engine that decides is pure Python with no network access, and `tests/test_invariants.py` fails the build if that ever stops being true. Models are used where language is the problem — reading a message, hearing a question, explaining a decision — and never where arithmetic and accountability are.
