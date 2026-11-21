@@ -2,7 +2,7 @@ import type { CaseView } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { TapLink } from '../shared/ui/TapButton';
-import { documentRetake } from './caseNextStep';
+import { documentRetake } from './documentAttempts';
 
 export function CaseNextStep({ caseView, fromCache, isHelper }: {
   caseView: CaseView;

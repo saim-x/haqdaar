@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { documentRetake, latestDocument } from './caseNextStep';
+import { documentRetake, latestDocument } from './documentAttempts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
