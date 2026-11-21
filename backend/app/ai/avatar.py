@@ -622,3 +622,79 @@ def _degraded(reason: str = "PROVIDER_UNAVAILABLE") -> dict[str, Any]:
     return {
         "available": False,
         "fallback": "AUDIO_ONLY",
+        "reason": reason,
+        "message_ur": DEGRADED_MESSAGE_UR,
+        "message_en": DEGRADED_MESSAGE_EN,
+    }
+
+
+def _persona_config(
+    avatar_id: str,
+    *,
+    voice_id: str = "",
+    llm_id: str = "",
+    system_prompt: str = "",
+    lang: str = "ur",
+) -> dict[str, Any]:
+    """The exact vendor payload for the configured mode.
+
+    ``passthrough`` asks for a mouth only: ``enableAudioPassthrough`` tells Anam
+    to play the PCM we send instead of synthesising speech from text. ``talk`` is
+    the documented fallback and is the only mode where the vendor speaks from a
+    single sentence. ``conversational`` gives the vendor ears and a voice, and is
+    the only mode that carries a ``systemPrompt`` - which is why that prompt is
+    built from the live rule version and contains no citizen data.
+
+    ``skipGreeting`` is set in every mode: the client owns the first utterance,
+    so a citizen never hears two greetings at once.
+    """
+    if settings.anam_mode == "conversational":
+        persona: dict[str, Any] = {
+            "avatarId": avatar_id,
+            "skipGreeting": True,
+            "languageCode": "en" if str(lang).lower().startswith("en") else "ur",
+            "name": PERSONA_NAME_EN,
+            "maxSessionLengthSeconds": int(settings.anam_max_session_seconds),
+        }
+        # A blank id is omitted rather than sent empty, so the vendor falls back
+        # to the avatar's own default instead of rejecting the payload.
+        resolved_llm = llm_id or settings.anam_llm_id.strip()
+        if resolved_llm:
+            persona["llmId"] = resolved_llm
+        resolved_voice = voice_id or settings.anam_voice_id.strip()
+        if resolved_voice:
+            persona["voiceId"] = resolved_voice
+        if system_prompt:
+            persona["systemPrompt"] = system_prompt
+        return persona
+
+    if settings.anam_mode == "talk":
+        persona = {
+            "avatarId": avatar_id,
+            "llmId": DISABLED_LLM_ID,
+            "skipGreeting": True,
+            "languageCode": "ur",
+        }
+        resolved_voice = voice_id or settings.anam_voice_id.strip()
+        if resolved_voice:
+            persona["voiceId"] = resolved_voice
+        return persona
+
+    return {"avatarId": avatar_id, "enableAudioPassthrough": True}
+
+
+def _fake_session() -> dict[str, Any]:
+    return {
+        "available": True,
+        "provider": "fake",
+        "mode": settings.anam_mode,
+        "conversational": settings.anam_mode == "conversational",
+        "session_token": FAKE_SESSION_TOKEN,
+        "avatar_id": FAKE_AVATAR_ID,
+        "sample_rate": SAMPLE_RATE,
+        "max_session_seconds": int(settings.anam_max_session_seconds),
+        "idle_timeout_seconds": int(settings.anam_idle_timeout_seconds),
+        "simulated": True,
+    }
+
+
