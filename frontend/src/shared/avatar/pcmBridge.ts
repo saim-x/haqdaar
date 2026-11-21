@@ -95,3 +95,43 @@ export function splitForTts(text: string, maxChars = TTS_MAX_CHARS): string[] {
   return pieces;
 }
 
+/**
+ * Decode any browser-supported audio container to 24 kHz mono `pcm_s16le`.
+ *
+ * The `AudioContext` is created only to decode and is closed immediately: a
+ * long-lived context would keep an audio device open on a phone that is trying
+ * to save battery.
+ */
+export async function decodeToPcm24kMono(audioBuffer: ArrayBuffer): Promise<Int16Array> {
+  const Ctx =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) throw new Error('Web Audio is not available');
+
+  const decodeContext = new Ctx();
+  let decoded: AudioBuffer;
+  try {
+    // `decodeAudioData` detaches the buffer, so hand it a copy.
+    decoded = await decodeContext.decodeAudioData(audioBuffer.slice(0));
+  } finally {
+    void decodeContext.close().catch(() => undefined);
+  }
+
+  const frames = Math.max(1, Math.ceil(decoded.duration * ANAM_SAMPLE_RATE));
+  const offline = new OfflineAudioContext(1, frames, ANAM_SAMPLE_RATE);
+  const source = offline.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offline.destination);
+  source.start();
+
+  const rendered = await offline.startRendering();
+  const channel = rendered.getChannelData(0);
+  const pcm = new Int16Array(channel.length);
+  for (let index = 0; index < channel.length; index += 1) {
+    // Clamp before scaling: a value above 1.0 would wrap to a loud click.
+    const sample = Math.max(-1, Math.min(1, channel[index] ?? 0));
+    pcm[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+  }
+  return pcm;
+}
+
