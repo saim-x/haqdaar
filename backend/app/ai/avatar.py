@@ -103,3 +103,73 @@ _RESOLVED_LLM_ID: str | None = None
 _ALLOW_LIVE_IN_TESTS = False
 
 
+# --------------------------------------------------------------------------- #
+# mode helpers
+# --------------------------------------------------------------------------- #
+def _in_test_context() -> bool:
+    """True inside pytest or an ``APP_ENV=test`` process.
+
+    ``PYTEST_CURRENT_TEST`` is set by pytest for the duration of each test, which
+    is exactly the window in which a stray ``.env`` must not be able to reach the
+    vendor.
+    """
+    return bool(os.environ.get("PYTEST_CURRENT_TEST")) or settings.app_env == "test"
+
+
+def set_test_live_override(enabled: bool) -> None:
+    """Test seam: let the suite exercise the live code path with a shimmed client."""
+    global _ALLOW_LIVE_IN_TESTS
+    _ALLOW_LIVE_IN_TESTS = bool(enabled)
+
+
+def _is_fake_mode() -> bool:
+    """True when the deterministic simulator should serve the session.
+
+    Order matters. A test context wins over everything, so CI is free no matter
+    how ``.env`` is configured. Outside tests, a configured key is enough when
+    either the AI layer is live or ``ANAM_ALLOW_LIVE_IN_FAKE_AI`` is on - that
+    flag is what lets a developer see the real avatar while the rest of the AI
+    layer stays deterministic.
+    """
+    if _in_test_context() and not _ALLOW_LIVE_IN_TESTS:
+        return True
+    if not _live_ready():
+        return True
+    try:
+        from app.ai.provider import provider_mode
+
+        if provider_mode() == "live":
+            return False
+    except Exception:  # pragma: no cover - provider import is always available
+        return True
+    return not settings.anam_allow_live_in_fake_ai
+
+
+def _live_ready() -> bool:
+    return bool(settings.anam_enabled and settings.anam_api_key.strip())
+
+
+def _live_requested_without_key() -> bool:
+    """True when the operator asked for live but there is no key to go live with.
+
+    That is a misconfiguration, not a reason to silently simulate: the guide is
+    withdrawn so the audio-only companion is the whole experience, rather than a
+    citizen being shown a fake face while the operator believes it is real.
+    """
+    if _live_ready():
+        return False
+    try:
+        from app.ai.provider import provider_mode
+
+        return provider_mode() == "live"
+    except Exception:  # pragma: no cover - provider import is always available
+        return False
+
+
+def _provider_name() -> str:
+    """``"anam"`` only when a live session can actually be created."""
+    if _is_fake_mode():
+        return "fake"
+    return "anam" if _live_ready() else "fake"
+
+
