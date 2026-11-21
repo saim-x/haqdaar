@@ -207,7 +207,17 @@ export function AskPage() {
         )}
 
         <div className="space-y-5">
-          {turns.map((turn) => (
+          {turns.map((turn) => {
+            const action = detectGuideAction(turn.question);
+            const ActionIcon = action ? ACTION_ICON[action.icon] : null;
+            const actionLabel = action
+              ? lang === 'sd'
+                ? action.label_sd
+                : lang === 'en'
+                  ? action.label_en
+                  : action.label_ur
+              : '';
+            return (
             <div key={turn.id} className="enter space-y-2.5">
               <p className="ms-auto max-w-[85%] rounded-control rounded-ee-[4px] bg-raised px-3.5 py-2.5 text-body leading-[1.6] text-ink">
                 {turn.question}
