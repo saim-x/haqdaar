@@ -77,11 +77,12 @@ export default function App() {
   return (
     <div className="min-h-dvh bg-paper">
       <PrototypeBanner />
-      {session && location.pathname.replace(/\/$/, '') === roleHome(session.user.role) && (
+      {session && (
         <Suspense fallback={null}>
           <WelcomeTour key={`${session.user.role}:${session.user.id}`} accountId={session.user.id} role={session.user.role} />
         </Suspense>
       )}
+      <div id="tour-content">
       <Suspense fallback={<RouteFallback />}>
         <Routes location={location}>
           <Route path="/" element={<RootRedirect />} />
@@ -158,6 +159,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      </div>
     </div>
   );
 }
