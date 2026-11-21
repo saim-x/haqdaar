@@ -4,7 +4,8 @@ import type { Role } from '../api/types';
 import { useAudio } from '../audio/AudioProvider';
 import { roleHome } from '../auth/roleHome';
 import { useI18n } from '../i18n/I18nProvider';
-import { IconCross, IconSpeaker } from './Icons';
+import { AudioButton } from './AudioButton';
+import { IconCross } from './Icons';
 import { TourQuestion } from './TourQuestion';
 import { positionTour, type TourPosition } from './tourPosition';
 
@@ -15,7 +16,7 @@ type Stops = readonly [TourStop, ...TourStop[]];
 export function RoamingTour({ accountId, role, pages }: { accountId: string; role: Role; pages: Stops }) {
   const storageKey = `haqdaar:welcome-tour:v1:${role}:${accountId}`;
   const { pick, lang } = useI18n();
-  const { play, stop, autoRead } = useAudio();
+  const { stop } = useAudio();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const route = pathname.replace(/\/$/, '');
@@ -27,7 +28,6 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
   const returnFocus = useRef(false);
   const [step, setStep] = useState<number | null>(null);
   const [position, setPosition] = useState<TourPosition | null>(null);
-  const [readAloud, setReadAloud] = useState(autoRead);
   const [asking, setAsking] = useState(false);
   const [seen, setSeen] = useState(() => {
     try { return localStorage.getItem(storageKey) === 'seen'; } catch { return false; }
@@ -100,10 +100,6 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
     try { localStorage.setItem(storageKey, 'seen'); } catch { /* Storage may be disabled. */ }
   }
 
-  function speak(stopPage: TourStop) {
-    void play(null, `${stopPage.title[1]}۔ ${stopPage.text[1]}`);
-  }
-
   function go(index: number) {
     const next = pages[index];
     if (!next) return;
@@ -111,7 +107,6 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
     setAsking(false);
     setStep(index);
     if (route !== next.to) navigate(next.to, { replace: true });
-    if (readAloud) speak(next);
   }
 
   function finish() {
@@ -208,21 +203,23 @@ export function RoamingTour({ accountId, role, pages }: { accountId: string; rol
                   <img src="/icons/haqdaar-tour-pointing.webp" width="84" height="84" alt=""
                     className="h-[84px] w-[84px] shrink-0 rounded-[14px] bg-accent-wash object-contain"
                     style={{ transform: pointer && Math.cos(pointer.angle) < 0 ? 'scaleX(-1)' : undefined }} />
-                  <div className="min-w-0 flex-1 py-1" aria-live={readAloud ? 'off' : 'polite'} aria-atomic="true">
-                    <h2 id={titleId} className="text-title font-semibold leading-[1.35]">{topic}</h2>
-                    <p className="mt-1 text-caption leading-[1.65] text-ink-2">{pick(page.text[1], page.text[0])}</p>
+                  <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
+                    <div className="flex items-center gap-1">
+                      <h2 id={titleId} className="min-w-0 flex-1 text-title font-semibold leading-[1.35]">{topic}</h2>
+                      <AudioButton text={page.title[1]} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
+                    </div>
+                    <div className="flex items-start gap-1">
+                      <p className="min-w-0 flex-1 pt-1 text-caption leading-[1.65] text-ink-2">{pick(page.text[1], page.text[0])}</p>
+                      <AudioButton text={page.text[1]} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
+                    </div>
                   </div>
                 </div>
                 {asking && <TourQuestion key={step} topic={topic} starter={starter} />}
               </div>
               <div className="mt-1 flex shrink-0 flex-wrap items-center justify-between gap-x-1 border-t border-ink/10 px-2.5 py-1.5">
-                <button type="button" aria-pressed={readAloud} className="press inline-flex min-h-tap items-center gap-1 rounded-control px-2 text-meta font-medium text-accent-ink hover:bg-accent-wash"
-                  onClick={() => { setReadAloud(!readAloud); if (readAloud) stop(); else speak(page); }}>
-                  <IconSpeaker size={16} /> {readAloud ? pick('آواز بند', 'Mute guide') : pick('سنیں', 'Listen')}
-                </button>
                 <button type="button" aria-expanded={asking} className="press min-h-tap rounded-control px-2 text-meta font-medium text-accent-ink hover:bg-accent-wash"
                   onClick={() => { stop(); setAsking(!asking); }}>
-                  {asking ? pick('سوال بند کریں', 'Close question') : pick('اے آئی سے پوچھیں', 'Ask AI')}
+                  {asking ? pick('مدد بند کریں', 'Close help') : pick('مزید جانیں', 'Know more')}
                 </button>
                 {step > 0 && <button type="button" className="press min-h-tap rounded-control px-2 text-caption text-ink-2" onClick={() => go(step - 1)}>{pick('پیچھے', 'Back')}</button>}
                 <button type="button" className="press ms-auto min-h-tap rounded-control bg-accent px-4 text-body font-medium text-white"
