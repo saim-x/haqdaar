@@ -532,8 +532,6 @@ export function AddFamilyPage() {
             onChange={setPhoneDigits}
             maxDigits={11}
             format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
-            audioKey="wizard_payout_phone"
-            audioText={t('wizard.payout.title')}
           />
         </div>
 
@@ -569,8 +567,6 @@ export function AddFamilyPage() {
               maxDigits={13}
               format={formatCnic}
               onUnknown={() => setCnicDigits('')}
-              audioKey="wizard_applicant_cnic"
-              audioText={t('wizard.cnic.title')}
             />
           </div>
         )}

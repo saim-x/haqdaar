@@ -12,19 +12,50 @@ interface VoiceFieldProps {
   fieldKey: string;
   /** Called only after the citizen confirms the read-back. */
   onConfirm(value: string | number | boolean | null, missingReason?: string | null): void;
-  audioKey?: string;
-  audioText?: string;
+  valueText?: string;
 }
 
-export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFieldProps) {
+export function VoiceField({ fieldKey, onConfirm, valueText }: VoiceFieldProps) {
   const { t, lang, isRtl } = useI18n();
-  const { play } = useAudio();
-  const capture = useVoiceCapture(12);
+  const { play, stop } = useAudio();
+  const numeric = fieldKey.endsWith('_cnic') || fieldKey === 'payout_phone' || fieldKey === 'applicant_dob';
+  const capture = useVoiceCapture(numeric ? 25 : 12, true);
   const [parsed, setParsed] = useState<VoiceParseResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState('');
 
   const readyBlob = capture.state === 'ready' ? capture.blob : null;
+  const recording = capture.state === 'recording';
+  const snapshot = capture.snapshot;
+
+  useEffect(() => {
+    if (!recording) return;
+    const controller = new AbortController();
+    let pending = false;
+    let submittedBytes = 0;
+    const timer = setInterval(() => {
+      if (pending) return;
+      const audio = snapshot();
+      if (!audio || audio.size === submittedBytes) return;
+      submittedBytes = audio.size;
+      pending = true;
+      const form = new FormData();
+      form.append('audio', audio, 'preview');
+      void api.upload<{ transcript: string }>('/rag/transcribe', form, { signal: controller.signal })
+        .then(({ transcript }) => {
+          if (!controller.signal.aborted && transcript) setPreview(transcript);
+        })
+        .catch(() => {
+          // The complete recording is still transcribed when the user stops.
+        })
+        .finally(() => { pending = false; });
+    }, 1800);
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
+  }, [recording, snapshot]);
 
   // The recorder hands the blob back after `stop()`; upload it once.
   useEffect(() => {
@@ -65,7 +96,6 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
     );
   }
 
-  const recording = capture.state === 'recording';
   const isUserUnknown = parsed?.missing_reason === 'USER_UNKNOWN';
   const canConfirm = Boolean(
     parsed && !parsed.needs_retry && (parsed.parsed_value !== null || isUserUnknown),
@@ -77,7 +107,15 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => (recording ? capture.stop() : void capture.start())}
+            onClick={() => {
+              if (recording) {
+                capture.stop();
+              } else {
+                stop();
+                setPreview('');
+                void capture.start();
+              }
+            }}
             disabled={busy}
             className={`press inline-flex min-h-primary flex-1 items-center justify-center gap-2 rounded-control border text-body font-medium disabled:opacity-60 ${
               recording
@@ -92,10 +130,23 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
                 ? t('common.loading')
                 : t('common.speak')}
           </button>
-          <AudioButton audioKey={audioKey} text={audioText} />
+          {valueText !== undefined && !recording && !busy && (
+            <AudioButton text={valueText || t('wizard.input.empty')} />
+          )}
         </div>
       )}
 
+      {!parsed && (recording || busy) && (
+        <div className="mt-2 rounded-control bg-raised px-3 py-2" role="status">
+          <p className="text-meta font-medium text-ink-2">{t('wizard.voice.preview')}</p>
+          <p className="text-body text-ink" dir="auto">{preview || t('wizard.voice.waiting')}</p>
+        </div>
+      )}
+      {numeric && !parsed && (
+        <p className="mt-2 text-meta text-ink-3">
+          {t(fieldKey === 'applicant_dob' ? 'wizard.voice.sayDate' : 'wizard.voice.sayDigits')}
+        </p>
+      )}
       {error && (
         <p role="alert" className="mt-2 text-meta font-medium text-negative">
           {error}
@@ -115,7 +166,8 @@ export function VoiceField({ fieldKey, onConfirm, audioKey, audioText }: VoiceFi
             </p>
             <AudioButton audioKey={null} text={isRtl ? parsed.readback_ur : parsed.readback_en} />
           </div>
-          <p className="mt-1 text-meta leading-[1.7] text-ink-3">{parsed.transcript}</p>
+          <p className="mt-1 text-meta leading-[1.7] text-ink-3" dir="auto">{parsed.transcript}</p>
+          {numeric && <p className="mt-1 text-meta text-ink-3">{t('wizard.voice.correct')}</p>}
 
           <div className="mt-4 flex gap-2">
             <button

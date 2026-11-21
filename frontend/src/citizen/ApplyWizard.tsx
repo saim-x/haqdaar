@@ -748,8 +748,7 @@ export function ApplyWizard() {
           />
           <VoiceField
             fieldKey="applicant_full_name"
-            audioKey="wizard_applicant_full_name"
-            audioText={title}
+            valueText={textOf(answers, 'applicant_full_name')}
             onConfirm={(value) => setAnswer('applicant_full_name', value === null ? '' : String(value))}
           />
         </section>
@@ -763,15 +762,12 @@ export function ApplyWizard() {
             onChange={(next) => setAnswer('applicant_cnic', next)}
             maxDigits={13}
             format={formatCnic}
-            audioKey="wizard_applicant_cnic"
-            audioText={title}
           />
           {textOf(answers, 'applicant_cnic').length > 0 && !isCompleteCnic(textOf(answers, 'applicant_cnic')) && (
             <p className="mt-2 text-meta font-medium text-negative">{t('wizard.cnic.invalid')}</p>
           )}
           <VoiceField
             fieldKey="applicant_cnic"
-            audioText={title}
             onConfirm={(value) => setAnswer('applicant_cnic', digitsOnly(String(value ?? '')))}
           />
         </section>
@@ -780,6 +776,20 @@ export function ApplyWizard() {
       {/* ---------------------------------------------------------------- dob */}
       {step === 'applicant_dob' && (
         <section className="card enter enter-2 p-5">
+          <label className="mb-3 block text-meta font-medium text-ink-2">
+            {t('wizard.dob.exact')}
+            <input
+              type="date"
+              dir="ltr"
+              value={textOf(answers, 'applicant_dob')}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(event) => {
+                const { value, validity } = event.currentTarget;
+                if (validity.valid) setAnswer('applicant_dob', value);
+              }}
+              className="mt-1 block min-h-tap w-full rounded-control border border-ink/[0.14] bg-card px-3 text-body"
+            />
+          </label>
           <YearPicker
             value={textOf(answers, 'applicant_dob').slice(0, 4) || null}
             onChange={(year) => setAnswer('applicant_dob', `${year}-01-01`)}
@@ -789,7 +799,7 @@ export function ApplyWizard() {
           </p>
           <VoiceField
             fieldKey="applicant_dob"
-            audioText={title}
+            valueText={textOf(answers, 'applicant_dob')}
             onConfirm={(value) => setAnswer('applicant_dob', value === null ? null : String(value))}
           />
         </section>
@@ -809,7 +819,7 @@ export function ApplyWizard() {
           />
           <VoiceField
             fieldKey="spouse_full_name"
-            audioText={title}
+            valueText={textOf(answers, 'spouse_full_name')}
             onConfirm={(value) => setAnswer('spouse_full_name', value === null ? '' : String(value))}
           />
         </section>
@@ -825,8 +835,6 @@ export function ApplyWizard() {
             format={formatCnic}
             unknown={valueOf(answers, 'spouse_cnic')?.missing_reason === 'USER_UNKNOWN'}
             onUnknown={() => markUnknown('spouse_cnic')}
-            audioKey="wizard_spouse_cnic"
-            audioText={title}
           />
           {valueOf(answers, 'spouse_cnic')?.missing_reason === 'USER_UNKNOWN' && (
             <p className="mt-3 rounded-control bg-warn-wash px-3 py-2.5 text-meta leading-[1.7] text-warn">
@@ -837,8 +845,6 @@ export function ApplyWizard() {
           )}
           <VoiceField
             fieldKey="spouse_cnic"
-            audioKey="wizard_spouse_cnic"
-            audioText={title}
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('spouse_cnic');
               else setAnswer('spouse_cnic', digitsOnly(String(value)));
@@ -856,8 +862,7 @@ export function ApplyWizard() {
           />
           <VoiceField
             fieldKey="applicant_district"
-            audioKey="wizard_applicant_district"
-            audioText={title}
+            valueText={textOf(answers, 'applicant_district')}
             onConfirm={(value) => {
               if (value) setAnswer('applicant_district', String(value));
             }}
@@ -872,13 +877,9 @@ export function ApplyWizard() {
             value={numberOf(answers, 'children_under_18')}
             onChange={(next) => setAnswer('children_under_18', next)}
             max={15}
-            audioKey="wizard_children_under_18"
-            audioText={title}
           />
           <VoiceField
             fieldKey="children_under_18"
-            audioKey="wizard_children_under_18"
-            audioText={title}
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('children_under_18');
               else setAnswer('children_under_18', Math.max(0, Math.min(15, Number(value))));
@@ -894,13 +895,9 @@ export function ApplyWizard() {
             onChange={(next) => setAnswer('household_size', next)}
             min={1}
             max={25}
-            audioKey="wizard_household_size"
-            audioText={title}
           />
           <VoiceField
             fieldKey="household_size"
-            audioKey="wizard_household_size"
-            audioText={title}
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('household_size');
               else setAnswer('household_size', Math.max(1, Math.min(25, Number(value))));
@@ -922,7 +919,7 @@ export function ApplyWizard() {
           />
           <VoiceField
             fieldKey="monthly_income_pkr"
-            audioText={title}
+            valueText={textOf(answers, 'monthly_income_pkr')}
             onConfirm={(value, missingReason) => {
               if (missingReason === 'USER_UNKNOWN' || value === null) markUnknown('monthly_income_pkr');
               else setAnswer('monthly_income_pkr', Number(value));
@@ -961,13 +958,9 @@ export function ApplyWizard() {
             }}
             maxDigits={11}
             format={(digits) => (digits ? digits.replace(/(\d{4})(\d{0,7})/, '$1 $2').trim() : '')}
-            audioKey="wizard_payout_phone"
-            audioText={title}
           />
           <VoiceField
             fieldKey="payout_phone"
-            audioKey="wizard_payout_phone"
-            audioText={title}
             onConfirm={(value) => {
               if (value) setAnswer('payout_phone', toE164Pk(String(value)));
             }}

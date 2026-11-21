@@ -15,8 +15,6 @@ interface DigitPadProps {
   /** Renders the prominent "I don't know" escape hatch (docs/11 §3.2 step 6). */
   onUnknown?: () => void;
   unknown?: boolean;
-  audioKey?: string;
-  audioText?: string;
 }
 
 /**
@@ -33,11 +31,17 @@ export function DigitPad({
   format,
   onUnknown,
   unknown,
-  audioKey,
-  audioText,
 }: DigitPadProps) {
-  const { t } = useI18n();
+  const { t, isRtl } = useI18n();
   const display = format ? format(value) : value;
+  const digitWords = isRtl
+    ? ['صفر', 'ایک', 'دو', 'تین', 'چار', 'پانچ', 'چھ', 'سات', 'آٹھ', 'نو']
+    : ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  const spoken = maxDigits === 13 && value.length === 13 && !value.startsWith('99900')
+    ? t('wizard.cnic.invalid')
+    : maxDigits === 6 && value
+    ? String(Number(value))
+    : [...value].map((digit) => digitWords[Number(digit)]).join(', ');
 
   function press(digit: string) {
     if (value.length >= maxDigits) return;
@@ -54,7 +58,7 @@ export function DigitPad({
         >
           {display || <span className="text-ink-3">-</span>}
         </output>
-        <AudioButton audioKey={audioKey} text={audioText} />
+        <AudioButton text={unknown ? t('common.dontKnow') : spoken || t('wizard.input.empty')} />
       </div>
 
       <div className="grid grid-cols-3 gap-2" data-testid="digit-pad">
@@ -119,12 +123,10 @@ interface CounterProps {
   onChange(next: number): void;
   min?: number;
   max?: number;
-  audioKey?: string;
-  audioText?: string;
 }
 
 /** Giant − [ n ] + counter (docs/11 §3.2 steps 8–9). */
-export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioText }: CounterProps) {
+export function Counter({ value, onChange, min = 0, max = 20 }: CounterProps) {
   const { t } = useI18n();
   const lessLabel = t('wizard.counter.less');
   const moreLabel = t('wizard.counter.more');
@@ -154,7 +156,7 @@ export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioTex
       >
         <IconPlus size={28} />
       </button>
-      <AudioButton audioKey={audioKey} text={audioText} size="lg" />
+      <AudioButton text={String(value)} size="lg" />
     </div>
   );
 }
@@ -243,8 +245,6 @@ export function IncomeBands({ value, onChange, exact, onExactChange, exactDigits
             }}
             maxDigits={6}
             format={(digits) => (digits ? Number(digits).toLocaleString('en-PK') : '')}
-            audioKey="wizard_income"
-            audioText={t('wizard.income.title')}
           />
         </div>
       )}

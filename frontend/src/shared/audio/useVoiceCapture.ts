@@ -9,6 +9,7 @@ export interface VoiceCapture {
   start(): Promise<void>;
   stop(): void;
   reset(): void;
+  snapshot(): Blob | null;
   error: string | null;
 }
 
@@ -23,7 +24,7 @@ function pickMimeType(): string | undefined {
  * Voice is always an accelerator: every caller must render a tap/keypad path
  * next to it, and `unsupported`/`denied` must degrade silently, never block.
  */
-export function useVoiceCapture(maxSeconds = 15): VoiceCapture {
+export function useVoiceCapture(maxSeconds = 15, preview = false): VoiceCapture {
   const [state, setState] = useState<RecorderState>('idle');
   const [seconds, setSeconds] = useState(0);
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -85,7 +86,8 @@ export function useVoiceCapture(maxSeconds = 15): VoiceCapture {
         teardown();
       };
 
-      rec.start();
+      if (preview) rec.start(500);
+      else rec.start();
       setState('recording');
       ticker.current = setInterval(() => {
         setSeconds((prev) => {
@@ -99,7 +101,13 @@ export function useVoiceCapture(maxSeconds = 15): VoiceCapture {
       setError('MIC_DENIED');
       teardown();
     }
-  }, [maxSeconds, stop, teardown]);
+  }, [maxSeconds, preview, stop, teardown]);
+
+  const snapshot = useCallback(() => {
+    const active = recorder.current;
+    if (active?.state !== 'recording' || !chunks.current.length) return null;
+    return new Blob(chunks.current, { type: active.mimeType || 'audio/webm' });
+  }, []);
 
   const reset = useCallback(() => {
     stop();
@@ -110,5 +118,5 @@ export function useVoiceCapture(maxSeconds = 15): VoiceCapture {
     setState('idle');
   }, [stop, teardown]);
 
-  return { state, seconds, blob, start, stop, reset, error };
+  return { state, seconds, blob, start, stop, reset, snapshot, error };
 }
