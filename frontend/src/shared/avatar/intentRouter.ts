@@ -134,3 +134,19 @@ const RULES: Rule[] = [
   },
 ];
 
+/**
+ * Return the single best navigation suggestion for `text`, or `null`.
+ *
+ * Only one chip is ever offered. Two competing buttons on a screen read by
+ * someone with low literacy is a worse outcome than one slightly wrong one.
+ */
+export function detectGuideAction(text: string): GuideAction | null {
+  const haystack = normalize(text);
+  if (!haystack) return null;
+  for (const rule of RULES) {
+    for (const pattern of rule.patterns) {
+      if (haystack.includes(normalize(pattern))) return rule.action;
+    }
+  }
+  return null;
+}
