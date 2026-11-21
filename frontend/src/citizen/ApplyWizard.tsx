@@ -675,6 +675,7 @@ export function ApplyWizard() {
 
   return (
     <div className="screen pb-28" data-testid="wizard" data-step={step}>
+      <AvatarPiPBubble guide={guide} />
       {/* The tab bar steps aside for the whole flow and the bottom Back button
           is disabled on the first step, so without this a citizen who opened
           the form and changed her mind had no way out of it. */}
@@ -788,6 +789,7 @@ export function ApplyWizard() {
             placeholder={t('wizard.name.placeholder')}
           />
           <VoiceField
+            onReadback={handleReadback}
             fieldKey="applicant_full_name"
             valueText={textOf(answers, 'applicant_full_name')}
             onConfirm={(value) => setAnswer('applicant_full_name', value === null ? '' : String(value))}
