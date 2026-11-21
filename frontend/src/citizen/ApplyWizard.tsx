@@ -23,6 +23,8 @@ import {
 import { uuid } from '../shared/lib/uuid';
 import { AudioButton } from '../shared/ui/AudioButton';
 import { ProgressDots } from '../shared/ui/ProgressDots';
+import { pkr } from '../shared/lib/money';
+import { dayMonth } from '../shared/lib/dates';
 import { TapButton } from '../shared/ui/TapButton';
 import {
   IconArrowLeft,
@@ -278,7 +280,7 @@ export function ApplyWizard() {
             body,
             citizenId,
             actForCitizenId,
-            label: lang === 'ur' ? 'درخواست کا مسودہ' : 'Application draft',
+            label: t('wizard.audio.draft'),
           });
         }
       }
@@ -485,7 +487,7 @@ export function ApplyWizard() {
           body: { wizard_step: 'review', answers: declarableAnswers(answers) },
           citizenId,
           actForCitizenId,
-          label: lang === 'ur' ? 'درخواست کا مسودہ' : 'Application draft',
+          label: t('wizard.audio.draft'),
         });
         await enqueue({
           method: 'POST',
@@ -493,7 +495,7 @@ export function ApplyWizard() {
           body: {},
           citizenId,
           actForCitizenId,
-          label: lang === 'ur' ? 'درخواست جمع کرانا' : 'Submit application',
+          label: t('wizard.audio.submit'),
         });
         setQueued(true);
         setSubmitted(true);
@@ -558,8 +560,14 @@ export function ApplyWizard() {
 
   useAutoReadPrompt(`wizard_${step}`, t(STEP_TITLE[step]));
 
+  /**
+   * Autosave runs on a 250ms debounce, so a citizen who types an answer and
+   * immediately taps the way out would lose it. Flush the pending write first.
+   */
   function saveBeforeLeaving() {
-    if (hydrated) void persist(step, answers).catch(() => undefined);
+    if (!hydrated) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    void persist(step, answers).catch(() => undefined);
   }
 
   /* ------------------------------------------------------------------ render */
@@ -567,30 +575,40 @@ export function ApplyWizard() {
   if (submitted) {
     return (
       <div className="screen">
-        <DashboardBackLink />
-        <div className="card mt-6 p-6 text-center">
-          <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#0F7B3F] text-white">
-            <IconCheck size={44} />
-          </span>
-          <h1 className="mt-4 text-xl font-bold text-ink">{t('wizard.submitted')}</h1>
+        <div className="mt-1">
+          <DashboardBackLink />
+        </div>
+        <div className="card enter mt-4 p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-title font-medium leading-[1.35] text-ink">{t('wizard.submitted')}</h1>
+              <p className="mt-1 text-body leading-[1.7] text-ink-2">
+                {queued
+                  ? t('wizard.review.offlineNote')
+                  : lang === 'ur'
+                    ? 'اب ہم آپ کی درخواست جانچیں گے۔ آپ کو پیغام ملے گا۔'
+                    : 'We will now check your application. You will get a message.'}
+              </p>
+            </div>
+            <AudioButton
+              audioKey={queued ? 'wizard_queued' : 'wizard_submitted'}
+              text={queued ? t('wizard.review.offlineNote') : t('wizard.submitted')}
+            />
+          </div>
+
           {reference && (
-            <p className="num mt-2 text-lg font-bold tracking-wide text-teal-800" data-testid="wizard-reference">
-              {reference}
-            </p>
+            <div className="mt-5 flex items-end justify-between gap-3 border-t border-ink/[0.08] pt-4">
+              <div>
+                <p className="text-meta text-ink-3">{t('cases.reference')}</p>
+                <p className="num mt-0.5 font-mono text-title-lg font-medium text-ink" data-testid="wizard-reference">
+                  {reference}
+                </p>
+              </div>
+              <span className="stamp">{queued ? t('common.queued') : t('cases.approvedStamp')}</span>
+            </div>
           )}
-          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-            {queued
-              ? t('wizard.review.offlineNote')
-              : lang === 'ur'
-                ? 'اب ہم آپ کی درخواست جانچیں گے۔ آپ کو پیغام ملے گا۔'
-                : 'We will now check your application. You will get a message.'}
-          </p>
-          <AudioButton
-            className="mx-auto mt-3"
-            audioKey={queued ? 'wizard_queued' : 'wizard_submitted'}
-            text={queued ? t('wizard.review.offlineNote') : t('wizard.submitted')}
-          />
-          <TapButton block className="mt-5" onClick={() => navigate('/c/cases', { replace: true })}>
+
+          <TapButton block className="mt-6" onClick={() => navigate('/c/cases', { replace: true })}>
             {t('home.cases')}
           </TapButton>
         </div>
@@ -603,82 +621,97 @@ export function ApplyWizard() {
 
   return (
     <div className="screen pb-28" data-testid="wizard" data-step={step}>
-      <DashboardBackLink onClick={saveBeforeLeaving} />
-      <div className="mb-3 mt-1">
+      {/* The tab bar steps aside for the whole flow and the bottom Back button
+          is disabled on the first step, so without this a citizen who opened
+          the form and changed her mind had no way out of it. */}
+      <div className="mb-2 mt-1">
+        <DashboardBackLink onClick={saveBeforeLeaving} />
+      </div>
+      <div className="mb-4">
         <ProgressDots total={total} current={stepIndex} />
       </div>
 
-      <header className="mb-4 flex items-start justify-between gap-3">
+      <header className="mb-5 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="screen-title">{title}</h1>
-          {hintKey && <p className="screen-hint">{t(hintKey)}</p>}
+          <h1 className="text-title font-medium leading-[1.35] text-ink">{title}</h1>
+          {hintKey && <p className="mt-1 text-body leading-[1.7] text-ink-2">{t(hintKey)}</p>}
         </div>
         <AudioButton audioKey={`wizard_${step}`} text={title} size="lg" />
       </header>
 
       {!serverCaseId && (
-        <div className="mb-3 flex items-start gap-2 rounded-2xl border-2 border-amber-400 bg-amber-50 px-3 py-2">
-          <IconCloud size={18} className="mt-0.5 shrink-0 text-amber-700" />
-          <p className="text-xs font-semibold text-[#3B2A00]">{t('wizard.review.offlineNote')}</p>
+        <div className="mb-4 flex items-start gap-2 rounded-control border border-warn/25 bg-warn-wash px-3 py-2.5">
+          <IconCloud size={16} className="mt-1 shrink-0 text-warn" />
+          <p className="text-meta leading-[1.7] text-warn">{t('wizard.review.offlineNote')}</p>
         </div>
       )}
 
       {error && (
-        <div role="alert" className="mb-3 rounded-2xl border-2 border-[#B42318]/40 bg-[#B42318]/10 px-4 py-3 text-sm font-semibold text-[#B42318]">
+        <div
+          role="alert"
+          className="mb-4 rounded-control border border-negative/25 bg-negative-wash px-4 py-3 text-caption font-medium text-negative"
+        >
           {error}
         </div>
       )}
 
       {/* ------------------------------------------------------------ consent */}
       {step === 'consent' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <div className="flex items-start gap-3">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal-600/10 text-teal-700">
-              <IconShield size={26} />
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-accent-wash text-accent-ink">
+              <IconShield size={20} />
             </span>
-            <p className="text-sm leading-relaxed text-ink">{t('wizard.consent.body')}</p>
+            <p className="text-body leading-[1.7] text-ink">{t('wizard.consent.body')}</p>
           </div>
-          <ul className="mt-3 space-y-1.5">
+
+          <ul className="mt-4 border-y border-ink/[0.08]">
             {DEPT_CATEGORIES.map((category) => (
-              <li key={category} className="flex items-center gap-2 text-xs font-semibold text-ink-soft">
-                <IconCheck size={14} className="shrink-0 text-teal-700" />
-                {lang === 'ur'
-                  ? {
-                      IDENTITY: 'شناخت',
-                      HOUSEHOLD: 'گھریلو معلومات',
-                      DOCUMENTS: 'دستاویزات',
-                      PAYMENT: 'ادائیگی',
-                      CASE_HISTORY: 'درخواست کی تاریخ',
-                    }[category]
-                  : {
-                      IDENTITY: 'Identity',
-                      HOUSEHOLD: 'Household',
-                      DOCUMENTS: 'Documents',
-                      PAYMENT: 'Payment',
-                      CASE_HISTORY: 'Case history',
-                    }[category]}
+              <li
+                key={category}
+                className="flex items-center gap-2 border-b border-ink/[0.08] py-2 last:border-b-0"
+              >
+                <IconCheck size={14} className="shrink-0 text-ink-3" />
+                <span className="text-caption text-ink-2">
+                  {lang === 'ur'
+                    ? {
+                        IDENTITY: 'شناخت',
+                        HOUSEHOLD: 'گھریلو معلومات',
+                        DOCUMENTS: 'دستاویزات',
+                        PAYMENT: 'ادائیگی',
+                        CASE_HISTORY: 'درخواست کی تاریخ',
+                      }[category]
+                    : {
+                        IDENTITY: 'Identity',
+                        HOUSEHOLD: 'Household',
+                        DOCUMENTS: 'Documents',
+                        PAYMENT: 'Payment',
+                        CASE_HISTORY: 'Case history',
+                      }[category]}
+                </span>
               </li>
             ))}
           </ul>
+
           <TapButton
             block
-            className="mt-4"
+            className="mt-5"
             disabled={busy || consentGranted}
-            icon={<IconCheck size={22} />}
+            icon={<IconCheck size={20} />}
             onClick={() => void grantConsent()}
             data-testid="consent-grant"
           >
-            {consentGranted ? t('wizard.consent.grant') : busy ? t('common.loading') : t('wizard.consent.grant')}
+            {busy ? t('common.loading') : t('wizard.consent.grant')}
           </TapButton>
-          <p className="mt-2 text-center text-[11px] text-ink-soft">
-            {lang === 'ur' ? 'آپ کسی بھی وقت اجازت واپس لے سکتی ہیں۔' : 'You can take this back at any time.'}
+          <p className="mt-2 text-center text-meta text-ink-3">
+            {t('wizard.consent.withdrawAnytime')}
           </p>
         </section>
       )}
 
       {/* --------------------------------------------------------------- name */}
       {step === 'applicant_full_name' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <label htmlFor="full-name" className="sr-only">
             {title}
           </label>
@@ -687,8 +720,7 @@ export function ApplyWizard() {
             value={textOf(answers, 'applicant_full_name')}
             onChange={(e) => setAnswer('applicant_full_name', e.target.value)}
             autoComplete="name"
-            className="text-lg"
-            placeholder={lang === 'ur' ? 'پورا نام' : 'Full name'}
+            placeholder={t('wizard.name.placeholder')}
           />
           <VoiceField
             fieldKey="applicant_full_name"
@@ -701,7 +733,7 @@ export function ApplyWizard() {
 
       {/* --------------------------------------------------------------- cnic */}
       {step === 'applicant_cnic' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <DigitPad
             value={digitsOnly(textOf(answers, 'applicant_cnic'))}
             onChange={(next) => setAnswer('applicant_cnic', next)}
@@ -711,7 +743,7 @@ export function ApplyWizard() {
             audioText={title}
           />
           {textOf(answers, 'applicant_cnic').length > 0 && !isCompleteCnic(textOf(answers, 'applicant_cnic')) && (
-            <p className="mt-2 text-xs font-semibold text-[#B42318]">{t('wizard.cnic.invalid')}</p>
+            <p className="mt-2 text-meta font-medium text-negative">{t('wizard.cnic.invalid')}</p>
           )}
           <VoiceField
             fieldKey="applicant_cnic"
@@ -723,13 +755,13 @@ export function ApplyWizard() {
 
       {/* ---------------------------------------------------------------- dob */}
       {step === 'applicant_dob' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <YearPicker
             value={textOf(answers, 'applicant_dob').slice(0, 4) || null}
             onChange={(year) => setAnswer('applicant_dob', `${year}-01-01`)}
           />
-          <p className="mt-2 text-[11px] text-ink-soft">
-            {lang === 'ur' ? 'صرف سال کافی ہے۔' : 'The year is enough.'}
+          <p className="mt-2 text-meta text-ink-3">
+            {t('wizard.dob.yearEnough')}
           </p>
           <VoiceField
             fieldKey="applicant_dob"
@@ -741,7 +773,7 @@ export function ApplyWizard() {
 
       {/* -------------------------------------------------------- spouse name */}
       {step === 'spouse_full_name' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <label htmlFor="spouse-name" className="sr-only">
             {title}
           </label>
@@ -749,8 +781,7 @@ export function ApplyWizard() {
             id="spouse-name"
             value={textOf(answers, 'spouse_full_name')}
             onChange={(e) => setAnswer('spouse_full_name', e.target.value)}
-            className="text-lg"
-            placeholder={lang === 'ur' ? 'شوہر کا نام' : "Husband's name"}
+            placeholder={t('wizard.spouseName.placeholder')}
           />
           <VoiceField
             fieldKey="spouse_full_name"
@@ -762,7 +793,7 @@ export function ApplyWizard() {
 
       {/* -------------------------------------------------------- spouse cnic */}
       {step === 'spouse_cnic' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <DigitPad
             value={digitsOnly(textOf(answers, 'spouse_cnic'))}
             onChange={(next) => setAnswer('spouse_cnic', next)}
@@ -774,7 +805,7 @@ export function ApplyWizard() {
             audioText={title}
           />
           {valueOf(answers, 'spouse_cnic')?.missing_reason === 'USER_UNKNOWN' && (
-            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-[#3B2A00]">
+            <p className="mt-3 rounded-control bg-warn-wash px-3 py-2.5 text-meta leading-[1.7] text-warn">
               {lang === 'ur'
                 ? 'ٹھیک ہے۔ ہم سرکاری ریکارڈ سے تصدیق کریں گے۔'
                 : 'That is fine. We will check the government record instead.'}
@@ -785,7 +816,7 @@ export function ApplyWizard() {
 
       {/* ------------------------------------------------------------ district */}
       {step === 'applicant_district' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <DistrictList
             value={textOf(answers, 'applicant_district') || null}
             onChange={(district) => setAnswer('applicant_district', district)}
@@ -795,7 +826,7 @@ export function ApplyWizard() {
 
       {/* ------------------------------------------------------------ counters */}
       {step === 'children_under_18' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <Counter
             value={numberOf(answers, 'children_under_18')}
             onChange={(next) => setAnswer('children_under_18', next)}
@@ -807,7 +838,7 @@ export function ApplyWizard() {
       )}
 
       {step === 'household_size' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <Counter
             value={numberOf(answers, 'household_size', 1)}
             onChange={(next) => setAnswer('household_size', next)}
@@ -821,7 +852,7 @@ export function ApplyWizard() {
 
       {/* -------------------------------------------------------------- income */}
       {step === 'monthly_income_pkr' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <IncomeBands
             value={valueOf(answers, 'monthly_income_pkr') ? numberOf(answers, 'monthly_income_pkr') : null}
             onChange={(next) => setAnswer('monthly_income_pkr', next)}
@@ -840,14 +871,14 @@ export function ApplyWizard() {
 
       {/* -------------------------------------------------------------- payout */}
       {step === 'payout_phone' && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           {session?.user.phone && !session.user.phone.includes('*') && (
             <button
               type="button"
               onClick={() => setAnswer('payout_phone', toE164Pk(session.user.phone ?? ''))}
-              className="mb-3 flex min-h-tap w-full items-center justify-center gap-2 rounded-2xl border-2 border-teal-600 bg-teal-50 text-sm font-bold text-teal-800"
+              className="press mb-3 flex min-h-tap w-full items-center justify-center gap-2 rounded-control border border-accent/40 bg-accent-wash text-caption font-medium text-accent-ink hover:border-accent/60"
             >
-              <IconCheck size={18} />
+              <IconCheck size={16} />
               {t('wizard.payout.useMine')}
             </button>
           )}
@@ -864,7 +895,7 @@ export function ApplyWizard() {
 
       {/* ----------------------------------------------------------- documents */}
       {(step === 'cnic_doc' || step === 'death_cert_doc') && (
-        <section className="card p-4">
+        <section className="card enter enter-2 p-5">
           <input
             ref={fileRef}
             type="file"
@@ -886,20 +917,13 @@ export function ApplyWizard() {
             const retake = doc?.verify_status === 'NEEDS_RETAKE' || doc?.verify_status === 'UNVERIFIABLE';
             return (
               <>
-                <div
-                  className={`flex items-center gap-3 rounded-2xl border-2 px-3 py-3 ${
-                    verified
-                      ? 'border-[#0F7B3F] bg-[#0F7B3F]/10'
-                      : retake
-                        ? 'border-[#B42318] bg-[#B42318]/10'
-                        : 'border-ink/15 bg-white'
-                  }`}
-                >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-teal-700">
-                    {verified ? <IconCheck size={26} className="text-[#0F7B3F]" /> : retake ? <IconWarning size={26} className="text-[#B42318]" /> : <IconDocument size={26} />}
-                  </span>
+                <div className="flex items-center gap-3 rounded-control border border-ink/[0.08] bg-raised px-3 py-3">
+                  <span
+                    aria-hidden
+                    className={`live-dot ${verified ? 'bg-positive' : retake ? 'bg-negative' : 'bg-ink-3'}`}
+                  />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-ink">
+                    <p className="text-body font-medium text-ink">
                       {isUploading
                         ? t('wizard.doc.checking')
                         : verified
@@ -910,15 +934,22 @@ export function ApplyWizard() {
                               ? t('wizard.doc.checking')
                               : t('wizard.doc.takePhoto')}
                     </p>
-                    {uploadNote && <p className="text-[11px] text-ink-soft">{uploadNote}</p>}
+                    {uploadNote && <p className="mt-0.5 text-meta text-ink-3">{uploadNote}</p>}
                   </div>
+                  {verified ? (
+                    <IconCheck size={18} className="shrink-0 text-positive" />
+                  ) : retake ? (
+                    <IconWarning size={18} className="shrink-0 text-negative" />
+                  ) : (
+                    <IconDocument size={18} className="shrink-0 text-ink-3" />
+                  )}
                   <AudioButton
                     audioKey={null}
                     text={
                       retake
                         ? lang === 'ur'
-                          ? doc?.retake_reason_ur ?? t('wizard.doc.unverifiable')
-                          : doc?.retake_reason_en ?? t('wizard.doc.unverifiable')
+                          ? (doc?.retake_reason_ur ?? t('wizard.doc.unverifiable'))
+                          : (doc?.retake_reason_en ?? t('wizard.doc.unverifiable'))
                         : t('wizard.docCnic.hint')
                     }
                   />
@@ -928,7 +959,7 @@ export function ApplyWizard() {
                   block
                   className="mt-3"
                   disabled={isUploading}
-                  icon={<IconCamera size={22} />}
+                  icon={<IconCamera size={20} />}
                   onClick={() => {
                     pendingDocType.current = step === 'cnic_doc' ? 'CNIC_FRONT' : 'SPOUSE_DEATH_CERTIFICATE';
                     fileRef.current?.click();
@@ -938,7 +969,7 @@ export function ApplyWizard() {
                 </TapButton>
 
                 {!lite && (
-                  <p className="mt-2 text-center text-[11px] text-ink-soft">
+                  <p className="mt-2 text-center text-meta leading-[1.7] text-ink-3">
                     {lang === 'ur'
                       ? 'تصویر خود بخود چھوٹی کر دی جاتی ہے تاکہ کم سگنل پر بھی بھیجی جا سکے۔'
                       : 'Photos are shrunk automatically so they send even on a weak signal.'}
@@ -953,8 +984,10 @@ export function ApplyWizard() {
                       markUnknown('death_cert_doc_verified');
                     }}
                     aria-pressed={deathSkipped}
-                    className={`mt-3 min-h-tap w-full rounded-2xl border-2 text-sm font-bold ${
-                      deathSkipped ? 'border-amber-500 bg-amber-100 text-[#3B2A00]' : 'border-ink/15 bg-white text-ink-soft'
+                    className={`press mt-3 min-h-tap w-full rounded-control border text-caption font-medium ${
+                      deathSkipped
+                        ? 'border-warn/40 bg-warn-wash text-warn'
+                        : 'border-ink/[0.14] bg-card text-ink-2 hover:bg-raised'
                     }`}
                   >
                     {t('wizard.doc.skip')}
@@ -968,17 +1001,13 @@ export function ApplyWizard() {
 
       {/* -------------------------------------------------------------- review */}
       {step === 'review' && (
-        <section className="card p-4">
-          <div className="flex items-center gap-2">
-            <AudioButton audioKey="wizard_review" text={t('wizard.review.title')} size="lg" />
-            <p className="text-sm leading-relaxed text-ink-soft">
-              {lang === 'ur'
-                ? 'نیچے دیے گئے جوابات چیک کریں۔ ہر جواب کے ساتھ 🔊 دبا کر سن سکتی ہیں۔'
-                : 'Check the answers below. Tap 🔊 beside any answer to hear it.'}
-            </p>
+        <section className="card enter enter-2 p-5">
+          <div className="flex items-center gap-3">
+            <AudioButton audioKey="wizard_review" text={t('wizard.review.title')} variant="quiet" />
+            <p className="text-caption leading-[1.7] text-ink-2">{t('wizard.review.hint')}</p>
           </div>
 
-          <ul className="mt-3 divide-y divide-ink/10">
+          <ul className="mt-4 border-y border-ink/[0.08]">
             {(
               [
                 ['applicant_full_name', 'wizard.name.title'],
@@ -1002,94 +1031,105 @@ export function ApplyWizard() {
                   ? '—'
                   : key === 'applicant_cnic' || key === 'spouse_cnic'
                     ? formatCnic(String(raw))
-                    : key === 'monthly_income_pkr'
-                      ? `PKR ${Number(raw).toLocaleString('en-PK')}`
-                      : String(raw);
+                    : key === 'applicant_dob'
+                      ? dayMonth(String(raw), lang)
+                      : key === 'payout_phone'
+                        ? String(raw).replace(/^(\d{4})(\d{7})$/, '$1-$2')
+                        : key === 'monthly_income_pkr'
+                          ? `PKR ${pkr(raw as number)}`
+                          : String(raw);
+              // Mono is the app's mark for a code. A name, a district and a
+              // date are not codes, and setting them in mono made the review
+              // list look like a printout of the database.
+              const isCode =
+                key === 'applicant_cnic' || key === 'spouse_cnic' || key === 'payout_phone';
               return (
-                <li key={key} className="flex items-center gap-2 py-2.5">
+                <li
+                  key={key}
+                  className="flex items-center gap-2 border-b border-ink/[0.08] py-2.5 last:border-b-0"
+                >
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold uppercase text-ink-soft">{t(labelKey)}</p>
-                    <p className="num truncate text-base font-bold text-ink" dir="auto">
-                      {display}
+                    <p className="text-meta text-ink-3">{t(labelKey)}</p>
+                    <p
+                      className={`mt-0.5 truncate text-body tabular-nums ${
+                        isCode ? 'font-mono' : ''
+                      } ${unknown ? 'text-ink-3' : 'text-ink'}`}
+                    >
+                      <bdi>{display}</bdi>
                     </p>
                   </div>
-                  <AudioButton audioKey={null} text={`${t(labelKey)}: ${display}`} />
+                  <AudioButton
+                    audioKey={null}
+                    text={`${t(labelKey)}: ${display}`}
+                    variant="quiet"
+                  />
                   <button
                     type="button"
                     onClick={() => {
                       const index = STEPS.indexOf(key as StepKey);
                       if (index >= 0) setStepIndex(index);
                     }}
-                    className="min-h-tap shrink-0 rounded-xl px-2 text-xs font-bold text-teal-700"
+                    className="press min-h-tap shrink-0 rounded-control px-1.5 text-meta font-medium text-ink-2 underline decoration-ink/25 underline-offset-4 hover:bg-raised hover:text-accent-ink"
                   >
-                    {lang === 'ur' ? 'بدلیں' : 'Edit'}
+                    {t('wizard.review.edit')}
                   </button>
                 </li>
               );
             })}
           </ul>
 
-          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-ink/[0.04] px-3 py-2">
-            <IconLock size={16} className="shrink-0 text-ink-soft" />
-            <p className="text-[11px] text-ink-soft">
-              {lang === 'ur'
-                ? 'آپ کی معلومات صرف محکمہ سماجی بہبود دیکھ سکتا ہے، اور صرف آپ کی اجازت سے۔'
-                : 'Only the Social Welfare Department can see your data, and only with your permission.'}
+          <div className="mt-4 flex items-start gap-2 rounded-control bg-raised px-3 py-2.5">
+            <IconLock size={16} className="mt-0.5 shrink-0 text-ink-3" />
+            <p className="text-meta leading-[1.7] text-ink-2">
+              {t('wizard.review.privacy')}
             </p>
           </div>
-
-          <TapButton
-            block
-            className="mt-4"
-            disabled={busy}
-            icon={<IconCheck size={22} />}
-            onClick={() => void submit()}
-            data-testid="wizard-submit"
-          >
-            {busy ? t('common.loading') : t('wizard.review.submit')}
-          </TapButton>
         </section>
       )}
 
       {/* ------------------------------------------------------------ nav bar */}
-      {step !== 'review' && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-[520px] gap-2">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/[0.08] bg-card/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-[560px] gap-2">
+          <TapButton
+            variant="secondary"
+            size="tap"
+            disabled={stepIndex === 0}
+            icon={<IconArrowLeft size={18} />}
+            onClick={goBack}
+            data-testid="wizard-back"
+          >
+            {t('common.back')}
+          </TapButton>
+          {/* The primary action lives in the same place on every step. On the
+              review step it used to sit at the end of the card, which left the
+              bar holding a lone Back button and put Submit below ten rows of
+              scrolling. */}
+          {step === 'review' ? (
             <TapButton
-              variant="secondary"
-              size="tap"
-              disabled={stepIndex === 0}
-              icon={<IconArrowLeft size={18} className="rtl:rotate-180" />}
-              onClick={goBack}
-              data-testid="wizard-back"
+              block
+              disabled={busy}
+              icon={<IconCheck size={20} />}
+              onClick={() => void submit()}
+              data-testid="wizard-submit"
             >
-              {t('common.back')}
+              {busy ? t('common.loading') : t('wizard.review.submit')}
             </TapButton>
+          ) : (
             <TapButton
               block
               disabled={!canAdvance}
-              icon={<IconArrowRight size={20} className="rtl:rotate-180" />}
+              icon={<IconArrowRight size={18} />}
               onClick={goNext}
               data-testid="wizard-next"
             >
               {t('common.next')}
             </TapButton>
-          </div>
+          )}
         </div>
-      )}
-
-      {step === 'review' && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur">
-          <div className="mx-auto w-full max-w-[520px]">
-            <TapButton variant="secondary" size="tap" block icon={<IconArrowLeft size={18} className="rtl:rotate-180" />} onClick={goBack}>
-              {t('common.back')}
-            </TapButton>
-          </div>
-        </div>
-      )}
+      </div>
 
       {!canAdvance && step !== 'review' && step !== 'consent' && (
-        <p className="mt-3 text-center text-xs font-semibold text-ink-soft">{t('wizard.missing')}</p>
+        <p className="mt-3 text-center text-meta text-ink-3">{t('wizard.missing')}</p>
       )}
     </div>
   );

@@ -4,8 +4,9 @@ import { errorMessage } from '../shared/api/errors';
 import type { RagAnswer } from '../shared/api/types';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { AudioButton } from '../shared/ui/AudioButton';
+import { ScreenHeader } from '../shared/ui/ScreenHeader';
 import { TapButton } from '../shared/ui/TapButton';
-import { IconDocument, IconQuestion, IconShield } from '../shared/ui/Icons';
+import { IconChevron, IconDocument, IconShield } from '../shared/ui/Icons';
 
 interface Turn {
   id: number;
@@ -14,22 +15,18 @@ interface Turn {
   error: string | null;
 }
 
-const SUGGESTIONS_UR = [
-  'میں درخواست کیسے دوں؟',
-  'رقم کب ملے گی؟',
-  'شناختی کارڈ نہیں ہے تو کیا کروں؟',
-];
+const SUGGESTIONS_UR = ['میں درخواست کیسے دوں؟', 'رقم کب ملے گی؟', 'شناختی کارڈ نہیں ہے تو کیا کروں؟'];
 
-const SUGGESTIONS_EN = [
-  'How do I apply?',
-  'When will I get the money?',
-  'What if I do not have a CNIC?',
-];
+const SUGGESTIONS_EN = ['How do I apply?', 'When will I get the money?', 'What if I do not have a CNIC?'];
 
 /**
  * Ask a question — docs/11 §3.5, F-12.
+ *
  * Grounded RAG answers with citations. When the retriever is not confident the
  * answer is an explicit "we are not sure" plus a route to a human — never a guess.
+ *
+ * The question is a raised block on the end edge and the answer is a card on the
+ * start edge, so the two voices read apart without a coloured chat bubble.
  */
 export function AskPage() {
   const { t, lang } = useI18n();
@@ -62,99 +59,101 @@ export function AskPage() {
   const suggestions = lang === 'ur' ? SUGGESTIONS_UR : SUGGESTIONS_EN;
 
   return (
-    <div className="screen">
-      <header className="mb-4 mt-1 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="screen-title">{t('ask.title')}</h1>
-          <p className="screen-hint">
-            {lang === 'ur' ? 'اپنا سوال لکھیں یا بولیں۔' : 'Type or speak your question.'}
-          </p>
-        </div>
-        <AudioButton audioKey="ask_intro" text={t('ask.title')} />
-      </header>
+    <div className="screen flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
+      <ScreenHeader
+        title={t('ask.title')}
+        hint={t('ask.hint')}
+        audioKey="ask_intro"
+        audioText={t('ask.title')}
+      />
 
-      {turns.length === 0 && (
-        <section className="card mb-3 p-4">
-          <p className="mb-2 text-sm font-semibold text-ink-soft">
-            {lang === 'ur' ? 'کوئی سوال منتخب کریں' : 'Pick a question'}
-          </p>
-          <ul className="space-y-2">
-            {suggestions.map((s) => (
-              <li key={s}>
-                <button
-                  type="button"
-                  onClick={() => void ask(s)}
-                  className="flex min-h-tap w-full items-center gap-2 rounded-2xl border-2 border-ink/15 px-3 text-start text-sm font-semibold text-ink"
+      <div className="flex-1">
+        {turns.length === 0 && (
+          <section className="enter enter-2">
+            <h2 className="section-label mb-3">{t('ask.pick')}</h2>
+            <ul className="border-y border-ink/[0.08]">
+              {suggestions.map((s) => (
+                <li key={s} className="border-b border-ink/[0.08] last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => void ask(s)}
+                    className="press flex min-h-primary w-full items-center gap-2.5 px-1 py-3 text-start hover:bg-raised/50"
+                  >
+                    <span className="flex-1 text-body text-ink">{s}</span>
+                    <IconChevron size={16} className="shrink-0 text-ink-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <div className="space-y-5">
+          {turns.map((turn) => (
+            <div key={turn.id} className="enter space-y-2.5">
+              <p className="ms-auto max-w-[85%] rounded-control rounded-ee-[4px] bg-raised px-3.5 py-2.5 text-body leading-[1.6] text-ink">
+                {turn.question}
+              </p>
+
+              {turn.error && (
+                <div
+                  role="alert"
+                  className="rounded-control border border-negative/25 bg-negative-wash px-3.5 py-2.5 text-caption font-medium text-negative"
                 >
-                  <IconQuestion size={18} className="shrink-0 text-teal-700" />
-                  <span>{s}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="space-y-3">
-        {turns.map((turn) => (
-          <div key={turn.id} className="space-y-2">
-            <div className="ms-auto max-w-[85%] rounded-2xl rounded-ee-md bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white">
-              {turn.question}
-            </div>
-
-            {turn.error && (
-              <div role="alert" className="rounded-2xl border-2 border-[#B42318]/40 bg-[#B42318]/10 px-4 py-3 text-sm font-semibold text-[#B42318]">
-                {turn.error}
-              </div>
-            )}
-
-            {!turn.answer && !turn.error && (
-              <div className="max-w-[90%] rounded-2xl rounded-es-md bg-white px-4 py-3 text-sm text-ink-soft shadow-card">
-                {t('common.loading')}
-              </div>
-            )}
-
-            {turn.answer && (
-              <div className="max-w-[92%] rounded-2xl rounded-es-md bg-white p-4 shadow-card">
-                <div className="flex items-start gap-2">
-                  <p className="flex-1 text-sm leading-relaxed text-ink">{turn.answer.answer}</p>
-                  <AudioButton audioKey={null} text={turn.answer.answer} />
+                  {turn.error}
                 </div>
+              )}
 
-                {turn.answer.status === 'NOT_SURE' && (
-                  <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2">
-                    <IconShield size={18} className="mt-0.5 shrink-0 text-amber-700" />
-                    <p className="text-xs font-semibold text-[#3B2A00]">{t('ask.notSure')}</p>
-                  </div>
-                )}
+              {!turn.answer && !turn.error && (
+                <p className="max-w-[90%] text-caption text-ink-3" role="status">
+                  {t('common.loading')}
+                </p>
+              )}
 
-                {turn.answer.citations.length > 0 && (
-                  <div className="mt-3">
-                    <p className="mb-1 text-[11px] font-bold uppercase text-ink-soft">{t('ask.citations')}</p>
-                    <ul className="space-y-1.5">
-                      {turn.answer.citations.map((citation, index) => (
-                        <li key={`${citation.doc_title}-${index}`} className="rounded-xl bg-ink/[0.04] px-3 py-2">
-                          <p className="flex items-center gap-1.5 text-[11px] font-bold text-ink">
-                            <IconDocument size={13} className="shrink-0 text-teal-700" />
-                            {citation.doc_title} · {citation.section}
-                          </p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-ink-soft">{citation.excerpt}</p>
-                          <p className="num mt-0.5 text-[10px] text-ink-soft">
-                            v{citation.version} · {Math.round(citation.score * 100)}%
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
+              {turn.answer && (
+                <div className="card max-w-[92%] p-4">
+                  <div className="flex items-start gap-2.5">
+                    <p className="flex-1 text-body leading-[1.7] text-ink">{turn.answer.answer}</p>
+                    <AudioButton audioKey={null} text={turn.answer.answer} />
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+
+                  {turn.answer.status === 'NOT_SURE' && (
+                    <div className="mt-3 flex items-start gap-2 rounded-control bg-warn-wash px-3 py-2.5">
+                      <IconShield size={16} className="mt-0.5 shrink-0 text-warn" />
+                      <p className="text-caption font-medium leading-[1.7] text-warn">{t('ask.notSure')}</p>
+                    </div>
+                  )}
+
+                  {turn.answer.citations.length > 0 && (
+                    <div className="mt-3 border-t border-ink/[0.08] pt-3">
+                      <p className="mb-2 text-meta text-ink-3">{t('ask.citations')}</p>
+                      <ul className="space-y-2">
+                        {turn.answer.citations.map((citation, index) => (
+                          <li key={`${citation.doc_title}-${index}`}>
+                            <p className="flex items-center gap-1.5 text-meta font-medium text-ink">
+                              <IconDocument size={13} className="shrink-0 text-ink-3" />
+                              {citation.doc_title} · {citation.section}
+                            </p>
+                            <p className="mt-0.5 text-meta leading-[1.7] text-ink-3">{citation.excerpt}</p>
+                            <p className="num mt-0.5 font-mono text-meta text-ink-3">
+                              v{citation.version} · {Math.round(citation.score * 100)}%
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
+      {/* The composer belongs at the bottom of the screen, not under the last
+          message: answers arrive above it, so it must not move when they do. */}
       <form
-        className="sticky bottom-20 mt-4 flex items-end gap-2 rounded-2xl bg-white p-2 shadow-card"
+        className="sticky bottom-[76px] mt-5 flex items-end gap-2 rounded-control border border-ink/[0.08] bg-card p-1.5 shadow-lift"
         onSubmit={(e) => {
           e.preventDefault();
           void ask(question);
@@ -169,7 +168,7 @@ export function AskPage() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder={t('ask.placeholder')}
-          className="min-h-tap flex-1 resize-none border-0 bg-transparent px-2 text-base focus:ring-0"
+          className="min-h-tap flex-1 resize-none border-0 bg-transparent px-2 text-body-lg focus:ring-0"
         />
         <TapButton size="tap" type="submit" disabled={busy || question.trim().length === 0}>
           {t('ask.send')}

@@ -24,6 +24,30 @@
 @layer base {
   :root {
     color-scheme: light;
+
+    /* One curve, four durations. Everything in the app uses these. */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-feedback: 120ms;
+    --dur-hover: 160ms;
+    --dur-popover: 200ms;
+    --dur-enter: 320ms;
+
+    /* The hairline. One line weight for every divider, table rule and track. */
+    --hairline: rgba(28, 25, 23, 0.08);
+    --hairline-strong: rgba(28, 25, 23, 0.14);
+
+    /* Height of the prototype banner. docs/11 asks for a compact 28 px bar, and
+       that is what it is from `sm` up. On a 390 px phone the pinned English
+       sentence needs 375 px on its own — more than the screen once the
+       "Real vs Simulated" link is beside it — so the bar wraps to two lines
+       there rather than cutting the legally required claim in half. */
+    --banner-h: 46px;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --banner-h: 28px;
+    }
   }
 
   html {
@@ -34,9 +58,11 @@
   body {
     @apply bg-paper text-ink antialiased;
     font-family: 'Noto Sans Arabic', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    /* Urdu needs a little more line height than Latin to stay legible. */
-    line-height: 1.65;
+    /* Urdu needs more line height than Latin: dots and marks sit above and
+       below the baseline. rtl.md asks for 1.6–1.8 on body. */
+    line-height: 1.7;
     min-height: 100dvh;
+    font-feature-settings: 'kern' 1;
   }
 
   /* Never let a stray horizontal scroll appear on a 390 px phone. */
@@ -45,16 +71,40 @@
     overflow-x: clip;
   }
 
-  :focus-visible {
-    outline: 3px solid #0f766e;
-    outline-offset: 2px;
+  /* Arabic has no capitals and no italic. Both are browser fakes. */
+  [dir='rtl'] {
+    letter-spacing: 0;
   }
 
-  /* Numbers stay LTR even inside an RTL paragraph. */
+  /* Mirror only the glyphs that show direction or order. Play, clock, check,
+     search, phone and anything with Latin letters stay as they are. */
+  [dir='rtl'] svg[data-directional] {
+    transform: scaleX(-1);
+  }
+
+  :focus-visible {
+    outline: 2px solid #0f766e;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Figures: one format, tabular, isolated from the RTL paragraph.
+     Only for content that is entirely Latin or numeric. `direction: ltr` is a
+     base direction, so putting it on a span that also holds Urdu prose flips
+     the order of the words around the number — "20,000 سے کم" becomes
+     "کم سے 20,000". For a number inside an Urdu sentence use `tabular-nums`
+     and let the paragraph's own direction place it. */
   .num {
     direction: ltr;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Latin words, codes and signed numbers inside an Urdu sentence. */
+  .ltr {
+    direction: ltr;
+    unicode-bidi: isolate;
   }
 
   input,
@@ -64,50 +114,256 @@
     font: inherit;
   }
 
-  /* Big, forgiving inputs for shaky hands. */
+  /* Big, forgiving inputs for shaky hands. Hairline border, not a 2px frame. */
   input[type='text'],
   input[type='tel'],
   input[type='number'],
   input[type='date'],
-  textarea {
-    @apply min-h-primary w-full rounded-2xl border-2 border-ink/25 bg-white px-4 text-lg text-ink;
+  input[type='email'],
+  input[type='password'],
+  textarea,
+  select {
+    @apply min-h-primary w-full rounded-control border border-ink/15 bg-card px-4 text-body-lg text-ink;
+    transition: border-color var(--dur-hover) var(--ease), box-shadow var(--dur-hover) var(--ease);
   }
 
   input:focus,
-  textarea:focus {
-    @apply border-teal-600 outline-none ring-2 ring-teal-600/30;
+  textarea:focus,
+  select:focus {
+    @apply border-accent outline-none;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-ink-3;
+  }
+
+  /* A quiet scrollbar so long console tables do not shout. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(28, 25, 23, 0.18) transparent;
   }
 }
 
 @layer components {
+  /* ---- Surfaces ------------------------------------------------------- */
+
+  /* The card: a hairline and a 1px shadow. Depth comes from the surface step,
+     not from a large soft shadow. */
   .card {
-    @apply rounded-card border border-ink/10 bg-white shadow-card;
+    @apply rounded-card border border-ink/[0.08] bg-card;
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
   }
 
+  /* A raised surface: active rows, inputs, inset blocks. */
+  .raised {
+    @apply rounded-control bg-raised;
+  }
+
+  /* The signature: one hairline rule, used for dividers and table rules. */
+  .rule {
+    @apply border-0 border-t border-ink/[0.08];
+  }
+
+  /* ---- Citizen layout ------------------------------------------------- */
+
+  /* The phone column. It is a PWA, so the column is correct — but on a wide
+     screen it sits on the paper backdrop inside a hairline frame instead of
+     floating in a dead band. */
   .screen {
-    @apply mx-auto w-full max-w-[520px] px-4 pb-28 pt-4;
+    @apply mx-auto w-full max-w-[560px] px-5 pb-32 pt-5;
   }
 
   .screen-title {
-    @apply text-2xl font-bold leading-snug text-ink;
+    @apply text-title font-medium leading-[1.35] text-ink;
   }
 
   .screen-hint {
-    @apply mt-1 text-base text-ink-soft;
+    @apply mt-1 text-body text-ink-2;
   }
+
+  /* Section heading with the hairline rule under it. */
+  .section-label {
+    @apply flex items-center gap-3 text-caption font-medium text-ink-2;
+  }
+
+  .section-label::after {
+    content: '';
+    @apply h-px flex-1 bg-ink/[0.08];
+  }
+
+  /* ---- Staff layout --------------------------------------------------- */
+
+  /* Dense console surfaces. Page padding 24–32, content capped at 1440. */
+  .console-page {
+    @apply mx-auto w-full max-w-[1440px] px-6 py-6 lg:px-8;
+  }
+
+  /* Dense console inputs. The 56px citizen floor does not apply here: the
+     pointer is a mouse and the operator is trained. */
+  .field {
+    @apply min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-2.5 text-caption text-ink;
+  }
+
+  .field:focus {
+    @apply border-accent outline-none;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  /* A ledger table: hairline rules, tabular figures, one header treatment.
+     Colour lives on the table and the head, never on the cells. A rule like
+     `.ledger tbody td { color }` outranks a `text-warn` utility on the cell
+     itself, so a status column would silently render in plain ink. */
+  .ledger {
+    @apply w-full border-collapse text-caption text-ink;
+  }
+
+  .ledger thead {
+    @apply text-meta text-ink-3;
+  }
+
+  .ledger thead th {
+    @apply border-b border-ink/[0.08] px-3 py-2 text-start font-medium;
+  }
+
+  .ledger tbody td {
+    @apply border-b border-ink/[0.06] px-3 py-2.5 align-top;
+  }
+
+  .ledger tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* Row states read apart: hover is a surface step, selection is a wash plus a
+     start-edge rule, focus is the global ring. */
+  .ledger tbody tr {
+    transition: background-color var(--dur-hover) var(--ease);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ledger tbody tr:hover {
+      @apply bg-raised/60;
+    }
+  }
+
+  .ledger tbody tr[data-selected='true'] {
+    @apply bg-accent-wash;
+    box-shadow: inset 2px 0 0 #0f766e;
+  }
+
+  [dir='rtl'] .ledger tbody tr[data-selected='true'] {
+    box-shadow: inset -2px 0 0 #0f766e;
+  }
+
+  /* ---- Signature detail ---------------------------------------------- */
+
+  /* The row you are acting on. Same mark as a selected ledger row: a 2px
+     start-edge rule, so the eye finds it without a filled block. */
+  .row-active {
+    @apply bg-accent-wash;
+    box-shadow: inset 2px 0 0 #0f766e;
+  }
+
+  [dir='rtl'] .row-active {
+    box-shadow: inset -2px 0 0 #0f766e;
+  }
+
+  /* The stamp. A rotated teal outline seal, used only on a verified or
+     approved state — the one place the product gets to be a government form. */
+  .stamp {
+    @apply inline-flex items-center gap-1.5 rounded-[6px] border border-accent/45 px-2 py-0.5 text-meta font-medium text-accent-ink;
+    transform: rotate(-2deg);
+  }
+
+  /* ---- Motion --------------------------------------------------------- */
+
+  /* One entrance per route: a short fade and rise, staggered by 40ms. */
+  .enter {
+    animation: rise var(--dur-enter) var(--ease) both;
+  }
+
+  .enter-1 { animation-delay: 0ms; }
+  .enter-2 { animation-delay: 40ms; }
+  .enter-3 { animation-delay: 80ms; }
+  .enter-4 { animation-delay: 120ms; }
+  .enter-5 { animation-delay: 160ms; }
+  .enter-6 { animation-delay: 200ms; }
+
+  /* Press feedback. 0.97 reads; 0.99 does not. */
+  .press {
+    transition: transform var(--dur-feedback) var(--ease),
+      background-color var(--dur-hover) var(--ease),
+      border-color var(--dur-hover) var(--ease),
+      color var(--dur-hover) var(--ease);
+  }
+
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* ---- Utility -------------------------------------------------------- */
 
   .tap {
     @apply min-h-tap min-w-tap;
   }
+
+  /* A live status dot. The only thing in the app allowed to pulse. */
+  .live-dot {
+    @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
+  }
 }
 
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Reduced motion means fewer and gentler animations, not zero. Keep the opacity
+ * change that aids comprehension; drop every transform-based movement.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
+    animation-duration: 200ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    transition-duration: 120ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .enter,
+  .enter-1,
+  .enter-2,
+  .enter-3,
+  .enter-4,
+  .enter-5,
+  .enter-6 {
+    animation-name: fade-only !important;
+    animation-delay: 0ms !important;
+  }
+
+  .press:active {
+    transform: none;
+  }
+
+  .stamp {
+    transform: none;
+  }
+}
+
+@keyframes fade-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

@@ -3,9 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { ConsentAccessLog, ConsentGrant } from '../../shared/api/types';
 import { grantRecipientLabel } from '../../shared/lib/consent';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import { dayMonth, stamp } from '../../shared/lib/dates';
+import { Card, ErrorState, humanize, Loading, PageHeader } from '../ui';
 
-/** Consent audit — docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access. */
+/**
+ * Consent audit — docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access.
+ *
+ * The access log is the important half: a blocked attempt is a row that exists
+ * precisely because the system refused something, so it is drawn with the same
+ * weight as an allowed one — a dot and a word, never a red block that reads as
+ * an error in the console itself.
+ */
 export default function ConsentsPage() {
   const [citizenId, setCitizenId] = useState('');
 
@@ -28,73 +36,129 @@ export default function ConsentsPage() {
         actions={
           <input
             placeholder="Filter by citizen id"
+            aria-label="Filter by citizen id"
             value={citizenId}
             onChange={(e) => setCitizenId(e.target.value)}
-            className="min-h-tap min-w-[240px] rounded-lg border border-ink/15 px-2 text-xs"
+            className="field min-w-[260px] font-mono"
           />
         }
       />
 
-      <Card className="overflow-x-auto">
-        <CardTitle hint={`${query.data?.grants.length ?? 0} grants`}>Grants</CardTitle>
-        <table className="w-full min-w-[720px] text-left text-[11px]">
+      <Card className="overflow-x-auto p-0">
+        <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
+          <h2 className="text-body font-medium text-ink">Grants</h2>
+          <p className="num text-meta text-ink-3">
+            {query.data?.grants.length ?? 0}{' '}
+            {(query.data?.grants.length ?? 0) === 1 ? 'grant' : 'grants'}
+          </p>
+        </div>
+        <table className="ledger min-w-[820px]">
           <thead>
-            <tr className="border-b border-ink/10 text-[10px] uppercase text-ink-soft">
-              <th className="py-1">Recipient</th>
-              <th className="py-1">Type</th>
-              <th className="py-1">Categories</th>
-              <th className="py-1">Assurance</th>
-              <th className="py-1">Status</th>
-              <th className="py-1">Granted</th>
-              <th className="py-1">Expires</th>
+            <tr>
+              <th>Recipient</th>
+              <th>Kind</th>
+              <th>Categories</th>
+              <th>Assurance</th>
+              <th>Status</th>
+              <th>Granted</th>
+              <th>Expires</th>
             </tr>
           </thead>
           <tbody>
             {query.data?.grants.map((grant) => (
-              <tr key={grant.id} className="border-b border-ink/5">
-                <td className="py-1 font-semibold text-ink">{grantRecipientLabel(grant, 'en')}</td>
-                <td className="py-1">{grant.recipient_type}</td>
-                <td className="py-1">{grant.categories.join(', ')}</td>
-                <td className="py-1">{grant.assurance_level}</td>
-                <td className="py-1">
-                  <Chip tone={grant.status === 'ACTIVE' ? 'ok' : grant.status === 'EXPIRED' ? 'warn' : 'danger'}>
-                    {grant.status}
-                  </Chip>
+              <tr key={grant.id}>
+                <td className="font-medium text-ink">{grantRecipientLabel(grant, 'en')}</td>
+                <td className="text-meta text-ink-2">{humanize(grant.recipient_type)}</td>
+                <td className="text-meta text-ink-2">
+                  {grant.categories.map(humanize).join(', ')}
                 </td>
-                <td className="num py-1">{new Date(grant.granted_at).toLocaleDateString()}</td>
-                <td className="num py-1">{grant.expires_at ? new Date(grant.expires_at).toLocaleDateString() : '—'}</td>
+                <td className="text-meta text-ink-2">{humanize(grant.assurance_level)}</td>
+                <td>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`live-dot ${
+                        grant.status === 'ACTIVE'
+                          ? 'bg-positive'
+                          : grant.status === 'EXPIRED'
+                            ? 'bg-warn'
+                            : 'bg-negative'
+                      }`}
+                      aria-hidden
+                    />
+                    <span className="text-meta text-ink-2">{humanize(grant.status)}</span>
+                  </span>
+                </td>
+                <td className="num whitespace-nowrap text-meta text-ink-3">
+                  {dayMonth(grant.granted_at, 'en')}
+                </td>
+                <td className="num whitespace-nowrap text-meta text-ink-3">
+                  {grant.expires_at ? dayMonth(grant.expires_at, 'en') : '—'}
+                </td>
               </tr>
             ))}
+            {query.data?.grants.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-caption text-ink-3">
+                  No grants recorded.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Card>
 
-      <Card className="overflow-x-auto">
-        <CardTitle hint={`${query.data?.access_logs.length ?? 0} entries`}>Access log</CardTitle>
-        <table className="w-full min-w-[720px] text-left text-[11px]">
+      <Card className="overflow-x-auto p-0">
+        <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
+          <h2 className="text-body font-medium text-ink">Access log</h2>
+          <p className="num text-meta text-ink-3">
+            {query.data?.access_logs.length ?? 0}{' '}
+            {(query.data?.access_logs.length ?? 0) === 1 ? 'attempt' : 'attempts'}
+          </p>
+        </div>
+        <table className="ledger min-w-[820px]">
           <thead>
-            <tr className="border-b border-ink/10 text-[10px] uppercase text-ink-soft">
-              <th className="py-1">When</th>
-              <th className="py-1">Actor</th>
-              <th className="py-1">Category</th>
-              <th className="py-1">Resource</th>
-              <th className="py-1">Result</th>
+            <tr>
+              <th>When</th>
+              <th>Actor</th>
+              <th>Category</th>
+              <th>Resource</th>
+              <th>Result</th>
             </tr>
           </thead>
           <tbody>
             {query.data?.access_logs.map((log) => (
-              <tr key={log.id} className="border-b border-ink/5">
-                <td className="num py-1">{new Date(log.created_at).toLocaleString()}</td>
-                <td className="py-1 font-semibold text-ink">{log.actor_label}</td>
-                <td className="py-1">{log.category}</td>
-                <td className="py-1 font-mono">{log.resource_ref}</td>
-                <td className="py-1">
-                  <Chip tone={log.allowed ? 'ok' : 'danger'}>
-                    {log.allowed ? 'ALLOWED' : `BLOCKED${log.denial_reason ? ` · ${log.denial_reason}` : ''}`}
-                  </Chip>
+              <tr key={log.id}>
+                <td className="num whitespace-nowrap text-meta text-ink-3">
+                  {stamp(log.created_at, 'en')}
+                </td>
+                <td className="font-medium text-ink">{log.actor_label}</td>
+                <td className="text-meta text-ink-2">{humanize(log.category)}</td>
+                <td className="font-mono text-meta text-ink-2">{log.resource_ref}</td>
+                <td>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`live-dot ${log.allowed ? 'bg-positive' : 'bg-negative'}`}
+                      aria-hidden
+                    />
+                    <span className="text-meta text-ink-2">
+                      {log.allowed ? 'Allowed' : 'Blocked'}
+                    </span>
+                    {!log.allowed && log.denial_reason && (
+                      <span className="text-meta text-ink-3">
+                        · {humanize(log.denial_reason)}
+                      </span>
+                    )}
+                  </span>
                 </td>
               </tr>
             ))}
+            {query.data?.access_logs.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-caption text-ink-3">
+                  No access attempts recorded.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Card>

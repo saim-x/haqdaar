@@ -1,28 +1,36 @@
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
- * Progress dots for the wizard — no dense text, just "where am I" (docs/11 §3.2).
- * The current dot is also announced to screen readers.
+ * Wizard progress — docs/11 §3.2, "no dense text, just where am I".
+ *
+ * A continuous hairline track with a fill, not a row of segments. At fourteen
+ * steps the segments were 20 px wide with 4 px gaps: a barcode nobody can
+ * count, which is the one thing a segmented bar is supposed to be good at. The
+ * counter carries the exact position; the track only has to carry "how far".
+ *
+ * The fill is a percentage of the track, so it grows from the start edge in
+ * either direction without a direction-specific rule.
  */
 export function ProgressDots({ total, current }: { total: number; current: number }) {
   const { t } = useI18n();
+  const percent = total > 0 ? Math.min(100, Math.round(((current + 1) / total) * 100)) : 0;
+
   return (
-    <div className="flex items-center justify-center gap-1.5" role="group" aria-label={`${t('common.step')} ${current + 1} ${t('common.of')} ${total}`}>
-      {Array.from({ length: total }, (_, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <span
-            key={i}
-            aria-current={active ? 'step' : undefined}
-            className={[
-              'h-2.5 rounded-full transition-all',
-              active ? 'w-7 bg-teal-600' : done ? 'w-2.5 bg-teal-600/60' : 'w-2.5 bg-ink/15',
-            ].join(' ')}
-          />
-        );
-      })}
-      <span className="ms-2 text-xs font-semibold text-ink-soft">
+    <div
+      className="flex items-center gap-3"
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={total}
+      aria-valuenow={current + 1}
+      aria-valuetext={`${t('common.step')} ${current + 1} ${t('common.of')} ${total}`}
+    >
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-ink/[0.10]" aria-hidden>
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-enter ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className="num shrink-0 text-meta font-medium text-ink-3">
         {current + 1}/{total}
       </span>
     </div>

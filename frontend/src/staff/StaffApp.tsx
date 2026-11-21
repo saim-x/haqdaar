@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Navigate, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
+import { BrandLockup } from '../shared/ui/Brand';
 import type { Role } from '../shared/api/types';
 import {
   IconChart,
@@ -15,6 +16,7 @@ import {
   IconShield,
   IconUsers,
 } from '../shared/ui/Icons';
+import { roleWord } from './ui';
 
 const QueuePage = lazy(() => import('./pages/QueuePage'));
 const CaseReviewPage = lazy(() => import('./pages/CaseReviewPage'));
@@ -70,19 +72,32 @@ const NAV: NavGroup[] = [
   },
   {
     title: 'Demo',
-    items: [{ to: '/staff/device-sim', label: 'Device simulator', Icon: IconPhone, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] }],
+    items: [
+      { to: '/staff/device-sim', label: 'Device simulator', Icon: IconPhone, roles: ['OFFICER', 'ADMIN', 'AUDITOR'] },
+    ],
   },
 ];
 
 function PageFallback() {
   return (
-    <div className="grid min-h-[40vh] place-items-center text-sm text-ink-soft">Loading console…</div>
+    <div className="py-10" role="status" aria-label="Loading console">
+      <div className="space-y-2">
+        {[0, 1, 2, 3].map((row) => (
+          <div key={row} className="h-9 rounded-control bg-raised" />
+        ))}
+      </div>
+    </div>
   );
 }
 
 /**
  * Staff shell — docs/11 §6. Lazy-loaded as its own chunk so none of this code
  * can ever reach the citizen entry bundle.
+ *
+ * The console is a tool, not a page: a fixed 248px rail, 34px nav rows, and a
+ * content column capped at 1440 so a 27-inch monitor does not stretch a table
+ * into unreadable lines. The rail is the only place with a filled surface, which
+ * is what keeps the eye on the work.
  */
 export default function StaffApp({ children }: { children: ReactNode }) {
   const { session, logout } = useAuth();
@@ -96,29 +111,40 @@ export default function StaffApp({ children }: { children: ReactNode }) {
   })).filter((group) => group.items.length > 0);
 
   return (
-    <div className="flex min-h-[calc(100dvh-28px)] bg-[#F7F7F5] text-ink" dir="ltr">
-      <aside className="hidden w-60 shrink-0 border-e border-ink/10 bg-white md:block">
-        <div className="border-b border-ink/10 px-4 py-3">
-          <p className="text-sm font-bold text-teal-700">Haqdaar</p>
-          <p className="text-[11px] uppercase tracking-wide text-ink-soft">Staff console</p>
+    <div
+      className="flex min-h-[calc(100dvh-var(--banner-h))] bg-paper text-ink"
+      dir="ltr"
+      lang="en"
+    >
+      <aside className="hidden w-[248px] shrink-0 border-e border-ink/[0.08] bg-card md:flex md:flex-col">
+        <div className="border-b border-ink/[0.08] px-5 py-4">
+          <BrandLockup height={22} />
+          <p className="mt-1.5 text-meta text-ink-3">Staff console</p>
         </div>
-        <nav className="p-2">
+
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {groups.map((group) => (
-            <div key={group.title} className="mb-3">
-              <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-soft">{group.title}</p>
+            <div key={group.title} className="mb-6 last:mb-0">
+              <p className="mb-2 px-2 text-meta text-ink-3">{group.title}</p>
               <ul>
                 {group.items.map(({ to, label, Icon }) => (
                   <li key={to}>
                     <NavLink
                       to={to}
                       className={({ isActive }) =>
-                        `flex min-h-tap items-center gap-2 rounded-lg px-2 text-sm font-medium ${
-                          isActive ? 'bg-teal-50 text-teal-800' : 'text-ink-soft hover:bg-ink/5'
+                        `press flex min-h-[34px] items-center gap-2.5 rounded-[8px] px-2 text-caption ${
+                          isActive
+                            ? 'row-active font-medium text-accent-ink'
+                            : 'text-ink-2 hover:bg-raised hover:text-ink'
                         }`
                       }
                     >
-                      <Icon size={16} />
-                      {label}
+                      {({ isActive }) => (
+                        <>
+                          <Icon size={16} className={isActive ? 'text-accent' : 'text-ink-3'} />
+                          <span className="truncate">{label}</span>
+                        </>
+                      )}
                     </NavLink>
                   </li>
                 ))}
@@ -126,18 +152,29 @@ export default function StaffApp({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
+
+        <div className="border-t border-ink/[0.08] px-5 py-3">
+          <p className="truncate text-caption text-ink">{session?.user.full_name}</p>
+          <p className="mt-0.5 text-meta text-ink-3">
+            {roleWord(role)} · {session?.tenant?.code ?? 'Platform scope'}
+          </p>
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-ink/10 bg-white px-4 py-2">
-          <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-800">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-ink/[0.08] bg-card/95 px-6 py-2.5 backdrop-blur-sm lg:px-8">
+          <span className="rounded-[6px] border border-ink/[0.12] px-1.5 py-0.5 font-mono text-meta text-ink-2">
             {session?.tenant?.code ?? 'PLATFORM'}
           </span>
-          <span className="text-xs text-ink-soft">{session?.tenant?.name ?? 'Platform scope'}</span>
-          <div className="ms-auto flex items-center gap-2">
-            <span className="text-xs font-semibold text-ink">{session?.user.full_name}</span>
-            <span className="rounded bg-ink/5 px-1.5 py-0.5 text-[10px] font-bold uppercase text-ink-soft">{role}</span>
-            <NavLink to="/c" className="rounded px-2 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50">
+          <span className="hidden truncate text-meta text-ink-3 sm:block">
+            {session?.tenant?.name ?? 'Platform scope'}
+          </span>
+
+          <div className="ms-auto flex items-center gap-1">
+            <NavLink
+              to="/c"
+              className="press rounded-[8px] px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink"
+            >
               {t('app.name')} app
             </NavLink>
             <button
@@ -145,7 +182,7 @@ export default function StaffApp({ children }: { children: ReactNode }) {
               onClick={() => {
                 void logout().then(() => navigate('/login', { replace: true }));
               }}
-              className="grid h-tap w-tap place-items-center rounded-full text-ink-soft hover:bg-ink/5"
+              className="press grid h-8 w-8 place-items-center rounded-[8px] text-ink-3 hover:bg-raised hover:text-ink"
               aria-label="Sign out"
             >
               <IconLogout size={16} />
@@ -153,8 +190,10 @@ export default function StaffApp({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-x-auto p-4">
-          <Suspense fallback={<PageFallback />}>{children}</Suspense>
+        <main className="min-w-0 flex-1">
+          <div className="console-page">
+            <Suspense fallback={<PageFallback />}>{children}</Suspense>
+          </div>
         </main>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useI18n } from '../../shared/i18n/I18nProvider';
 import { AudioButton } from '../../shared/ui/AudioButton';
-import { IconArrowLeft, IconCheck, IconCross, IconMinus, IconPlus, IconQuestion } from '../../shared/ui/Icons';
+import { IconBackspace, IconCheck, IconCross, IconMinus, IconPlus, IconQuestion } from '../../shared/ui/Icons';
 import { SINDH_DISTRICTS, districtLabel } from '../../shared/lib/districts';
 import { formatCnic } from '../../shared/lib/cnic';
 
@@ -20,8 +20,11 @@ interface DigitPadProps {
 }
 
 /**
- * Large 0–9 visual keypad. Digits are 64 px tall so a woman who has never used
- * a smartphone can still hit them; the formatted value is read-only above.
+ * Large 0–9 visual keypad. Keys are 56 px tall so a woman who has never used a
+ * smartphone can still hit them; the formatted value is read-only above.
+ *
+ * The keys are hairline surfaces, not 2px frames: fourteen bordered boxes on one
+ * screen reads as a spreadsheet. The value is the only thing with weight.
  */
 export function DigitPad({
   value,
@@ -43,13 +46,13 @@ export function DigitPad({
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2 rounded-2xl border-2 border-ink/15 bg-white px-4 py-3">
+      <div className="mb-3 flex items-center gap-2 rounded-control border border-ink/[0.08] bg-raised px-4 py-3">
         <output
           aria-live="polite"
-          className="num min-h-8 flex-1 text-2xl font-bold tracking-wider text-ink"
+          className="num min-h-8 flex-1 font-mono text-title-lg font-medium text-ink"
           dir="ltr"
         >
-          {display || <span className="text-ink/25">—</span>}
+          {display || <span className="text-ink-3">—</span>}
         </output>
         <AudioButton audioKey={audioKey} text={audioText} />
       </div>
@@ -60,7 +63,7 @@ export function DigitPad({
             key={digit}
             type="button"
             onClick={() => press(digit)}
-            className="num min-h-primary rounded-2xl border-2 border-ink/15 bg-white text-2xl font-bold text-ink active:bg-teal-50"
+            className="press num min-h-primary rounded-control border border-ink/[0.10] bg-card font-mono text-title-lg font-medium text-ink hover:bg-raised active:bg-raised"
           >
             {digit}
           </button>
@@ -68,15 +71,15 @@ export function DigitPad({
         <button
           type="button"
           onClick={() => onChange(value.slice(0, -1))}
-          aria-label={t('common.back')}
-          className="grid min-h-primary place-items-center rounded-2xl border-2 border-ink/15 bg-ink/5 text-ink active:bg-ink/10"
+          aria-label={t('common.delete')}
+          className="press grid min-h-primary place-items-center rounded-control border border-ink/[0.10] bg-raised text-ink-2 hover:text-ink"
         >
-          <IconArrowLeft size={24} className="rtl:rotate-180" />
+          <IconBackspace size={24} />
         </button>
         <button
           type="button"
           onClick={() => press('0')}
-          className="num min-h-primary rounded-2xl border-2 border-ink/15 bg-white text-2xl font-bold text-ink active:bg-teal-50"
+          className="press num min-h-primary rounded-control border border-ink/[0.10] bg-card font-mono text-title-lg font-medium text-ink hover:bg-raised active:bg-raised"
         >
           0
         </button>
@@ -84,9 +87,9 @@ export function DigitPad({
           type="button"
           onClick={() => onChange('')}
           aria-label={t('common.cancel')}
-          className="grid min-h-primary place-items-center rounded-2xl border-2 border-ink/15 bg-ink/5 text-ink active:bg-ink/10"
+          className="press grid min-h-primary place-items-center rounded-control border border-ink/[0.10] bg-raised text-ink-2 hover:text-ink"
         >
-          <IconCross size={22} />
+          <IconCross size={20} />
         </button>
       </div>
 
@@ -95,11 +98,13 @@ export function DigitPad({
           type="button"
           onClick={onUnknown}
           aria-pressed={unknown}
-          className={`mt-3 flex min-h-primary w-full items-center justify-center gap-2 rounded-2xl border-2 text-base font-bold ${
-            unknown ? 'border-amber-500 bg-amber-100 text-[#3B2A00]' : 'border-amber-500 bg-white text-[#8A5A00]'
+          className={`press mt-3 flex min-h-primary w-full items-center justify-center gap-2 rounded-control border text-body font-medium ${
+            unknown
+              ? 'border-warn/40 bg-warn-wash text-warn'
+              : 'border-ink/[0.14] bg-card text-ink-2 hover:bg-raised'
           }`}
         >
-          <IconQuestion size={22} />
+          <IconQuestion size={20} />
           {t('common.dontKnow')}
         </button>
       )}
@@ -120,9 +125,9 @@ interface CounterProps {
 
 /** Giant − [ n ] + counter (docs/11 §3.2 steps 8–9). */
 export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioText }: CounterProps) {
-  const { lang } = useI18n();
-  const lessLabel = lang === 'ur' ? 'ایک کم کریں' : 'One less';
-  const moreLabel = lang === 'ur' ? 'ایک زیادہ کریں' : 'One more';
+  const { t } = useI18n();
+  const lessLabel = t('wizard.counter.less');
+  const moreLabel = t('wizard.counter.more');
   return (
     <div className="flex items-center justify-center gap-3">
       <button
@@ -130,13 +135,13 @@ export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioTex
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
         aria-label={lessLabel}
-        className="grid h-20 w-20 place-items-center rounded-3xl border-2 border-ink/15 bg-white text-ink active:bg-teal-50 disabled:opacity-40"
+        className="press grid h-20 w-20 place-items-center rounded-panel border border-ink/[0.10] bg-card text-ink hover:bg-raised disabled:opacity-40"
       >
-        <IconMinus size={34} />
+        <IconMinus size={28} />
       </button>
       <output
         aria-live="polite"
-        className="num grid h-20 min-w-24 place-items-center rounded-3xl border-2 border-teal-600 bg-teal-50 px-4 text-4xl font-bold text-teal-800"
+        className="num grid h-20 min-w-24 place-items-center rounded-panel border border-ink/[0.08] bg-raised px-4 font-mono text-display-lg font-medium text-ink"
       >
         {value}
       </output>
@@ -145,9 +150,9 @@ export function Counter({ value, onChange, min = 0, max = 20, audioKey, audioTex
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
         aria-label={moreLabel}
-        className="grid h-20 w-20 place-items-center rounded-3xl border-2 border-ink/15 bg-white text-ink active:bg-teal-50 disabled:opacity-40"
+        className="press grid h-20 w-20 place-items-center rounded-panel border border-ink/[0.10] bg-card text-ink hover:bg-raised disabled:opacity-40"
       >
-        <IconPlus size={34} />
+        <IconPlus size={28} />
       </button>
       <AudioButton audioKey={audioKey} text={audioText} size="lg" />
     </div>
@@ -189,11 +194,17 @@ export function IncomeBands({ value, onChange, exact, onExactChange, exactDigits
                 onChange(band.value);
               }}
               aria-pressed={selected}
-              className={`num flex min-h-primary items-center justify-center rounded-2xl border-2 px-2 text-sm font-bold ${
-                selected ? 'border-teal-700 bg-teal-600 text-white' : 'border-ink/15 bg-white text-ink'
+              className={`press flex min-h-primary items-center justify-center gap-1.5 rounded-control border px-2 text-body font-medium ${
+                selected
+                  ? 'border-accent/40 bg-accent-wash text-accent-ink'
+                  : 'border-ink/[0.10] bg-card text-ink hover:bg-raised'
               }`}
             >
-              {t(band.key)}
+              {selected && <IconCheck size={16} className="shrink-0" />}
+              {/* The band label is Urdu prose with a number in it, so it takes
+                  tabular figures but not `.num` — that would set an LTR base
+                  direction and read "کم سے 20,000". */}
+              <span className="tabular-nums">{t(band.key)}</span>
             </button>
           );
         })}
@@ -203,15 +214,17 @@ export function IncomeBands({ value, onChange, exact, onExactChange, exactDigits
         type="button"
         onClick={() => onExactChange(!exact)}
         aria-pressed={exact}
-        className={`mt-2 min-h-tap w-full rounded-2xl border-2 text-sm font-bold ${
-          exact ? 'border-teal-700 bg-teal-50 text-teal-800' : 'border-ink/15 bg-white text-ink-soft'
+        className={`press mt-2 min-h-tap w-full rounded-control border text-caption font-medium ${
+          exact
+            ? 'border-accent/40 bg-accent-wash text-accent-ink'
+            : 'border-ink/[0.10] bg-card text-ink-2 hover:bg-raised'
         }`}
       >
         {t('wizard.income.exact')}
       </button>
 
       {exact && (
-        <div className="mt-2">
+        <div className="mt-3">
           <DigitPad
             value={exactDigits}
             onChange={(next) => {
@@ -250,20 +263,14 @@ export function DistrictList({ value, onChange }: DistrictProps) {
               type="button"
               onClick={() => onChange(district)}
               aria-pressed={selected}
-              className={`flex min-h-primary w-full items-center gap-2 rounded-2xl border-2 px-3 text-start text-sm font-bold ${
-                selected ? 'border-teal-700 bg-teal-600 text-white' : 'border-ink/15 bg-white text-ink'
+              className={`press flex min-h-primary w-full items-center gap-2 rounded-control border px-3 text-start text-body font-medium ${
+                selected
+                  ? 'border-accent/40 bg-accent-wash text-accent-ink'
+                  : 'border-ink/[0.10] bg-card text-ink hover:bg-raised'
               }`}
             >
-              <span
-                aria-hidden
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-bold ${
-                  selected ? 'bg-white/20 text-white' : 'bg-teal-600/10 text-teal-700'
-                }`}
-              >
-                {district.slice(0, 2).toUpperCase()}
-              </span>
               <span className="min-w-0 flex-1 truncate">{label}</span>
-              {selected && <IconCheck size={18} className="shrink-0" />}
+              {selected && <IconCheck size={16} className="shrink-0" />}
             </button>
           </li>
         );
@@ -289,7 +296,7 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
   }, []);
 
   return (
-    <div className="max-h-[46vh] overflow-y-auto rounded-2xl border-2 border-ink/10 bg-white p-2">
+    <div className="max-h-[46vh] overflow-y-auto rounded-control border border-ink/[0.08] bg-card p-2">
       <ul className="grid grid-cols-3 gap-2">
         {years.map((year) => {
           const selected = value === String(year);
@@ -299,8 +306,10 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
                 type="button"
                 onClick={() => onChange(String(year))}
                 aria-pressed={selected}
-                className={`num min-h-tap w-full rounded-xl border-2 text-base font-bold ${
-                  selected ? 'border-teal-700 bg-teal-600 text-white' : 'border-ink/10 bg-white text-ink'
+                className={`press num min-h-tap w-full rounded-[7px] border font-mono text-body font-medium ${
+                  selected
+                    ? 'border-accent/40 bg-accent-wash text-accent-ink'
+                    : 'border-transparent bg-raised text-ink hover:border-ink/[0.10]'
                 }`}
               >
                 {year}
@@ -317,7 +326,7 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
 
 export function CnicDisplay({ digits }: { digits: string }) {
   return (
-    <span className="num" dir="ltr">
+    <span className="num font-mono" dir="ltr">
       {formatCnic(digits)}
     </span>
   );

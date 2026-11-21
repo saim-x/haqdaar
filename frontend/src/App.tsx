@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './shared/auth/AuthProvider';
 import { RedirectIfAuthed, RequireRole } from './shared/auth/guards';
 import { LoginPage } from './shared/auth/LoginPage';
@@ -25,7 +25,10 @@ const StaffRoutes = lazy(() => import('./staff/StaffApp').then((m) => ({ default
 function RouteFallback() {
   const { t } = useI18n();
   return (
-    <div className="grid min-h-[50dvh] place-items-center px-6 text-center text-sm text-ink-soft" role="status">
+    <div
+      className="grid min-h-[50dvh] place-items-center px-6 text-center text-caption text-ink-3"
+      role="status"
+    >
       {t('common.loading')}
     </div>
   );
@@ -39,17 +42,19 @@ function RootRedirect() {
 }
 
 function NotFound() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   return (
-    <div className="screen">
-      <div className="card mt-8 p-6 text-center">
-        <p className="num text-4xl font-bold text-ink-soft">404</p>
-        <p className="mt-2 text-sm text-ink-soft">
-          {lang === 'ur' ? 'یہ صفحہ موجود نہیں۔' : 'This page does not exist.'}
-        </p>
-        <a href="/" className="mt-4 inline-flex min-h-primary items-center rounded-2xl bg-teal-600 px-5 text-sm font-bold text-white">
-          {t('app.name')}
-        </a>
+    <div className="grid min-h-[calc(100dvh-var(--banner-h))] place-items-center px-5">
+      <div className="card enter w-full max-w-[420px] px-6 py-8 text-center">
+        <p className="num font-mono text-meta text-ink-3">404</p>
+        <h1 className="mt-2 text-title font-medium leading-[1.4] text-ink">{t('notFound.title')}</h1>
+        <p className="mt-2 text-body leading-[1.7] text-ink-2">{t('notFound.hint')}</p>
+        <Link
+          to="/"
+          className="press mt-6 inline-flex min-h-primary items-center rounded-control bg-accent px-6 text-body-lg font-medium text-white hover:bg-accent-ink"
+        >
+          {t('common.goHome')}
+        </Link>
       </div>
     </div>
   );
@@ -58,7 +63,7 @@ function NotFound() {
 /** Helper shell — the roster and add-family screens own their own layout. */
 function HelperLayout() {
   return (
-    <div className="mx-auto w-full max-w-[520px] px-3 pb-8">
+    <div className="mx-auto w-full max-w-[560px]">
       <Outlet />
     </div>
   );

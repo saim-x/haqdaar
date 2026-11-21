@@ -2,20 +2,56 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { DecisionTrace } from '../../shared/api/types';
-import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import {
+  Card,
+  CardTitle,
+  Chip,
+  enteredByWord,
+  ErrorState,
+  factLabel,
+  humanize,
+  Loading,
+  PageHeader,
+  routeWord,
+  sourceWord,
+  statusWord,
+} from '../ui';
+import { stamp } from '../../shared/lib/dates';
+import { pkr } from '../../shared/lib/money';
+import { formatFactValue } from '../pages/CaseEvidence';
 
+/**
+ * One confidence pillar. The number is the fact and the track is the glance;
+ * a 2px rule reads at a distance without turning the panel into a bar chart.
+ */
 function Pillar({ label, value }: { label: string; value: number }) {
   const pct = Math.round(value * 100);
-  const tone = value >= 0.9 ? 'bg-[#0F7B3F]' : value >= 0.7 ? 'bg-amber-400' : 'bg-[#B42318]';
+  const tone = value >= 0.9 ? 'bg-positive' : value >= 0.7 ? 'bg-warn' : 'bg-negative';
   return (
     <div>
-      <div className="flex items-baseline justify-between text-[11px]">
-        <span className="font-semibold text-ink-soft">{label}</span>
-        <span className="num font-bold text-ink">{value.toFixed(3)}</span>
+      <div className="flex items-baseline justify-between">
+        <span className="text-meta text-ink-2">{label}</span>
+        <span className="num font-mono text-meta font-medium text-ink">{value.toFixed(3)}</span>
       </div>
-      <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-ink/10">
+      <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-ink/[0.10]">
         <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  );
+}
+
+/** The three models a decision can cite, named the way the console names them. */
+const MODEL_LABEL: Record<string, string> = {
+  router: 'Router',
+  scam: 'Scam model',
+  doc: 'Document model',
+};
+
+function Hash({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-b border-ink/[0.06] py-2 last:border-b-0">
+      <dt className="text-meta text-ink-3">{label}</dt>
+      <dd className="mt-0.5 break-all font-mono text-meta text-ink-2">{value}</dd>
     </div>
   );
 }
@@ -42,95 +78,106 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
     <div className="space-y-4">
       <PageHeader
         title="Decision trace"
-        subtitle={`${trace.case.reference_code} · ${trace.case.status} · ${trace.case.citizen?.full_name ?? 'unknown citizen'}`}
+        subtitle={`${trace.case.reference_code} · ${statusWord(trace.case.status)} · ${trace.case.citizen?.full_name ?? 'unknown citizen'}`}
       />
 
       {trace.decisions.length === 0 && (
         <Card>
-          <p className="text-xs text-ink-soft">No decisions recorded for this case yet.</p>
+          <p className="text-caption text-ink-3">No decisions recorded for this case yet.</p>
         </Card>
       )}
 
       {trace.decisions.map((decision) => (
         <div key={decision.id} className="space-y-3">
           <Card>
-            <CardTitle hint={new Date(decision.created_at).toLocaleString()}>
-              {decision.decision_source} · {trace.case.reference_code}
+            <CardTitle hint={stamp(decision.created_at, 'en')}>
+              {humanize(decision.decision_source)} · {trace.case.reference_code}
             </CardTitle>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase text-ink-soft">Route</p>
-                <Chip
-                  tone={
-                    decision.route_action === 'AUTO_APPROVE'
-                      ? 'ok'
-                      : decision.route_action === 'HUMAN_REVIEW'
-                        ? 'warn'
-                        : 'info'
-                  }
-                >
-                  {decision.route_action}
-                </Chip>
+
+            <dl className="grid grid-cols-3 divide-x divide-ink/[0.08] border-y border-ink/[0.08]">
+              <div className="py-2 pe-4">
+                <dt className="text-meta text-ink-3">Engine proposed</dt>
+                <dd className="mt-1">
+                  <Chip
+                    tone={
+                      decision.route_action === 'AUTO_APPROVE'
+                        ? 'ok'
+                        : decision.route_action === 'HUMAN_REVIEW'
+                          ? 'warn'
+                          : 'info'
+                    }
+                  >
+                    {routeWord(decision.route_action)}
+                  </Chip>
+                </dd>
               </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase text-ink-soft">Outcome</p>
-                <p className="text-xs font-bold text-ink">{decision.outcome_status}</p>
+              <div className="px-4 py-2">
+                <dt className="text-meta text-ink-3">Case outcome</dt>
+                <dd className="mt-1 text-caption font-medium text-ink">
+                  {statusWord(decision.outcome_status)}
+                </dd>
               </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase text-ink-soft">Amount</p>
-                <p className="num text-xs font-bold text-ink">
+              <div className="py-2 ps-4">
+                <dt className="text-meta text-ink-3">Amount</dt>
+                <dd className="num mt-1 font-mono text-caption font-medium text-ink">
                   {decision.computed_amount_pkr !== null
-                    ? `PKR ${decision.computed_amount_pkr.toLocaleString()}`
+                    ? `PKR ${pkr(decision.computed_amount_pkr)}`
                     : '—'}
-                </p>
+                </dd>
               </div>
-            </div>
+            </dl>
+
             {decision.is_override && (
-              <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">
+              <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta text-warn">
                 Officer override — counted in the evaluation dashboard.
               </p>
             )}
+
             {decision.escalation_reasons.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
+              <div className="mt-3 flex flex-wrap gap-1">
                 {decision.escalation_reasons.map((code) => (
                   <Chip key={code} tone="danger">
-                    {code}
+                    {humanize(code)}
                   </Chip>
                 ))}
               </div>
             )}
           </Card>
 
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid items-start gap-3 lg:grid-cols-2">
             <Card>
               <CardTitle hint="weakest link">Confidence pillars</CardTitle>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Pillar label="Identity" value={decision.confidence_components.identity} />
                 <Pillar label="Documents" value={decision.confidence_components.documents} />
-                <Pillar label="Data consistency" value={decision.confidence_components.data_consistency} />
-                <Pillar label="Consent assurance" value={decision.confidence_components.consent_assurance} />
+                <Pillar
+                  label="Data consistency"
+                  value={decision.confidence_components.data_consistency}
+                />
+                <Pillar
+                  label="Consent assurance"
+                  value={decision.confidence_components.consent_assurance}
+                />
                 <Pillar label="Overall" value={decision.confidence_components.overall} />
               </div>
             </Card>
 
             <Card>
               <CardTitle hint="self-contained proof">Hashes & versions</CardTitle>
-              <dl className="space-y-1 text-[11px]">
-                <div>
-                  <dt className="text-ink-soft">Rule version id</dt>
-                  <dd className="break-all font-mono">{decision.rule_version_id}</dd>
-                </div>
-                <div>
-                  <dt className="text-ink-soft">Rule hash</dt>
-                  <dd className="break-all font-mono">{decision.rule_content_hash}</dd>
-                </div>
-                <div>
-                  <dt className="text-ink-soft">Input snapshot hash</dt>
-                  <dd className="break-all font-mono">{decision.input_snapshot_hash}</dd>
-                </div>
-                <div>
-                  <dt className="text-ink-soft">Model versions</dt>
-                  <dd className="font-mono">{JSON.stringify(decision.model_versions)}</dd>
+              <dl>
+                <Hash label="Rule version id" value={decision.rule_version_id} />
+                <Hash label="Rule hash" value={decision.rule_content_hash} />
+                <Hash label="Input snapshot hash" value={decision.input_snapshot_hash} />
+                <div className="border-b border-ink/[0.06] py-2 last:border-b-0">
+                  <dt className="text-meta text-ink-3">Model versions</dt>
+                  <dd className="mt-0.5 space-y-0.5">
+                    {Object.entries(decision.model_versions).map(([name, version]) => (
+                      <p key={name} className="flex items-baseline justify-between gap-3 text-meta">
+                        <span className="text-ink-2">{MODEL_LABEL[name] ?? humanize(name)}</span>
+                        <span className="font-mono text-ink-3">{version}</span>
+                      </p>
+                    ))}
+                  </dd>
                 </div>
               </dl>
             </Card>
@@ -139,13 +186,17 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
           {decision.citizen_explanation && (
             <Card>
               <CardTitle hint="what the citizen saw">Citizen explanation</CardTitle>
-              <p className="text-sm font-semibold text-ink" dir="rtl">
+              <p className="text-lead font-medium leading-[1.8] text-ink" dir="rtl">
                 {decision.citizen_explanation.headline_ur}
               </p>
-              <p className="mt-1 text-xs text-ink-soft">{decision.citizen_explanation.headline_en}</p>
-              <ul className="mt-2 space-y-0.5 text-[11px] text-ink-soft">
+              <p className="mt-1 text-caption text-ink-2">
+                {decision.citizen_explanation.headline_en}
+              </p>
+              <ul className="mt-3 space-y-1 border-t border-ink/[0.08] pt-3">
                 {decision.citizen_explanation.reasons_en.map((reason) => (
-                  <li key={reason}>• {reason}</li>
+                  <li key={reason} className="text-meta leading-[1.7] text-ink-2">
+                    {reason}
+                  </li>
                 ))}
               </ul>
             </Card>
@@ -153,47 +204,77 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
         </div>
       ))}
 
-      <Card className="overflow-x-auto">
-        <CardTitle hint={`${facts.length} facts`}>Input snapshot (facts + sources)</CardTitle>
-        <table className="w-full min-w-[520px] text-left text-[11px]">
+      <Card className="overflow-x-auto p-0">
+        <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
+          <h2 className="text-body font-medium text-ink">Input snapshot (facts + sources)</h2>
+          <p className="num text-meta text-ink-3">
+            {facts.length} {facts.length === 1 ? 'fact' : 'facts'}
+          </p>
+        </div>
+        <table className="ledger min-w-[560px]">
           <thead>
-            <tr className="border-b border-ink/10 text-[10px] uppercase text-ink-soft">
-              <th className="py-1">Fact</th>
-              <th className="py-1">Value</th>
-              <th className="py-1">Source</th>
-              <th className="py-1">Entered by</th>
+            <tr>
+              <th>Fact</th>
+              <th>Value</th>
+              <th>Source</th>
+              <th>Entered by</th>
             </tr>
           </thead>
           <tbody>
             {facts.map(([key, fact]) => (
-              <tr key={key} className="border-b border-ink/5">
-                <td className="py-1 font-mono">{key}</td>
-                <td className="py-1 font-semibold">
+              <tr key={key}>
+                <td className="text-meta text-ink-2">{factLabel(key)}</td>
+                <td>
                   {fact.value === null ? (
-                    <span className="text-ink-soft">UNKNOWN{fact.missing_reason ? ` (${fact.missing_reason})` : ''}</span>
+                    <span className="inline-flex flex-wrap items-baseline gap-2">
+                      <span className="text-caption text-ink-3">—</span>
+                      {fact.missing_reason && (
+                        <span className="text-meta text-ink-3">
+                          {humanize(fact.missing_reason)}
+                        </span>
+                      )}
+                    </span>
                   ) : (
-                    String(fact.value)
+                    <span className="tabular-nums text-caption font-medium text-ink">
+                      {formatFactValue(key, fact.value)}
+                    </span>
                   )}
                 </td>
-                <td className="py-1 text-ink-soft">{fact.source ?? '—'}</td>
-                <td className="py-1 text-ink-soft">{fact.entered_by ?? '—'}</td>
+                <td className="text-meta text-ink-3">
+                  {fact.source ? sourceWord(fact.source) : '—'}
+                </td>
+                <td className="text-meta text-ink-3">
+                  {fact.entered_by ? enteredByWord(fact.entered_by) : '—'}
+                </td>
               </tr>
             ))}
+            {facts.length === 0 && (
+              <tr>
+                <td colSpan={4} className="text-caption text-ink-3">
+                  No facts in this snapshot.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Card>
 
       {trace.notes.length > 0 && (
         <Card>
-          <CardTitle hint={`${trace.notes.length} notes`}>Notes</CardTitle>
-          <ul className="space-y-1.5">
+          <CardTitle hint={`${trace.notes.length} ${trace.notes.length === 1 ? 'note' : 'notes'}`}>
+            Notes
+          </CardTitle>
+          <ul className="space-y-2">
             {trace.notes.map((note) => (
-              <li key={note.id} className="rounded border border-ink/10 p-2 text-[11px]">
-                <div className="flex items-center gap-1.5">
-                  <Chip tone="neutral">{note.note_type}</Chip>
-                  <span className="text-ink-soft">{new Date(note.created_at).toLocaleString()}</span>
+              <li
+                key={note.id}
+                className="rounded-control border border-ink/[0.10] px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Chip tone="neutral">{humanize(note.note_type)}</Chip>
+                  <span className="num text-meta text-ink-3">{stamp(note.created_at, 'en')}</span>
                 </div>
-                <p className="mt-1 text-ink">{note.body}</p>
+                <p className="mt-1 text-caption leading-[1.7] text-ink">{note.body}</p>
               </li>
             ))}
           </ul>
@@ -202,7 +283,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
       <Card>
         <CardTitle hint="read-only">Raw trace</CardTitle>
-        <pre className="max-h-72 overflow-auto rounded bg-[#1B1B1B] p-2 text-[10px] leading-relaxed text-[#E7E5E4]">
+        <pre className="max-h-72 overflow-auto rounded-control border border-ink/[0.08] bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
           {JSON.stringify({ case: trace.case, decisions: trace.decisions }, null, 2)}
         </pre>
       </Card>

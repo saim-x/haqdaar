@@ -3,21 +3,39 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { MocksResponse, MockMode, MockServiceConfig } from '../../shared/api/types';
-import { Card, CardTitle, ErrorState, Loading, PageHeader } from '../ui';
+import { Card, ErrorState, Loading, mockModeWord, PageHeader } from '../ui';
 
 const MODES: MockMode[] = ['NORMAL', 'SLOW', 'FLAKY', 'DOWN'];
 
-const MODE_TONE: Record<MockMode, string> = {
-  NORMAL: 'bg-[#0F7B3F] text-white',
-  SLOW: 'bg-amber-400 text-[#3B2A00]',
-  FLAKY: 'bg-[#B4740A] text-white',
-  DOWN: 'bg-[#B42318] text-white',
+/** Acronyms the generic title-caser would mangle. */
+const SERVICE_LABEL: Record<string, string> = {
+  sms: 'SMS',
+  raast: 'Raast',
+  identity: 'Identity',
+  civil_registry: 'Civil Registry',
+  household_survey: 'Household Survey',
+  benefits: 'Benefits',
+  complaints: 'Complaints',
+};
+
+const serviceWord = (name: string) =>
+  SERVICE_LABEL[name] ?? name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
+
+const MODE_TONE: Record<MockMode, { dot: string; text: string; on: string }> = {
+  NORMAL: { dot: 'bg-positive', text: 'text-positive', on: 'border-positive/40 bg-positive-wash text-positive' },
+  SLOW: { dot: 'bg-warn', text: 'text-warn', on: 'border-warn/40 bg-warn-wash text-warn' },
+  FLAKY: { dot: 'bg-warn', text: 'text-warn', on: 'border-warn/40 bg-warn-wash text-warn' },
+  DOWN: { dot: 'bg-negative', text: 'text-negative', on: 'border-negative/40 bg-negative-wash text-negative' },
 };
 
 /**
  * Mock chaos controls — docs/11 §6.2.4, AC-17.2.
  * Platform admin only. Setting a service to DOWN must produce WAITING_EXTERNAL,
  * never a guess.
+ *
+ * Each service is a small instrument panel: the current mode is a dot and a
+ * word, the four modes are a segmented row, and the two dials are native range
+ * inputs with the value printed in tabular figures beside the label.
  */
 export default function MocksPage() {
   const queryClient = useQueryClient();
@@ -61,11 +79,15 @@ export default function MocksPage() {
                 type="button"
                 onClick={() => reset.mutate()}
                 disabled={reset.isPending}
-                className="min-h-tap rounded-lg bg-[#B42318] px-3 text-xs font-bold text-white"
+                className="press min-h-[36px] rounded-control bg-negative px-3 text-caption font-medium text-white hover:bg-[#9A1D14] disabled:opacity-50"
               >
                 Confirm reset
               </button>
-              <button type="button" onClick={() => setConfirmReset(false)} className="min-h-tap rounded-lg px-3 text-xs font-semibold text-ink-soft">
+              <button
+                type="button"
+                onClick={() => setConfirmReset(false)}
+                className="press min-h-[36px] rounded-control px-3 text-caption text-ink-2 hover:bg-raised hover:text-ink"
+              >
                 Cancel
               </button>
             </>
@@ -73,7 +95,7 @@ export default function MocksPage() {
             <button
               type="button"
               onClick={() => setConfirmReset(true)}
-              className="min-h-tap rounded-lg border border-[#B42318]/40 px-3 text-xs font-bold text-[#B42318] hover:bg-[#B42318]/5"
+              className="press min-h-[36px] rounded-control border border-negative/30 px-3 text-caption text-negative hover:bg-negative-wash"
             >
               Demo reset
             </button>
@@ -81,56 +103,96 @@ export default function MocksPage() {
         }
       />
 
-      {message && <div className="rounded-lg border border-ink/15 bg-white px-3 py-2 text-xs font-semibold text-ink">{message}</div>}
+      {message && (
+        <div className="rounded-control border border-ink/[0.12] bg-card px-4 py-2.5 text-caption text-ink">
+          {message}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {query.data?.services.map((service) => (
-          <Card key={service.service_name}>
-            <CardTitle hint={service.service_name}>{service.service_name.replace(/_/g, ' ')}</CardTitle>
-            <div className="mb-2 flex flex-wrap gap-1">
-              {MODES.map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => update.mutate({ service: service.service_name, patch: { mode } })}
-                  className={`rounded px-2 py-1 text-[10px] font-bold ${
-                    service.mode === mode ? MODE_TONE[mode] : 'bg-ink/5 text-ink-soft'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-            <label className="block text-[10px] font-bold uppercase text-ink-soft">
-              Latency {service.latency_ms}ms
-              <input
-                type="range"
-                min={0}
-                max={8000}
-                step={100}
-                value={service.latency_ms}
-                onChange={(e) =>
-                  update.mutate({ service: service.service_name, patch: { latency_ms: Number(e.target.value) } })
-                }
-                className="mt-1 w-full"
-              />
-            </label>
-            <label className="mt-1 block text-[10px] font-bold uppercase text-ink-soft">
-              Failure rate {(service.failure_rate * 100).toFixed(0)}%
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={service.failure_rate}
-                onChange={(e) =>
-                  update.mutate({ service: service.service_name, patch: { failure_rate: Number(e.target.value) } })
-                }
-                className="mt-1 w-full"
-              />
-            </label>
-          </Card>
-        ))}
+        {query.data?.services.map((service) => {
+          const tone = MODE_TONE[service.mode];
+          return (
+            <Card key={service.service_name}>
+              <div className="mb-3 flex items-baseline justify-between gap-2">
+                <h2 className="text-body font-medium text-ink">
+                  {serviceWord(service.service_name)}
+                </h2>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`live-dot ${tone.dot}`} aria-hidden />
+                  <span className={`text-meta ${tone.text}`}>{mockModeWord(service.mode)}</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1">
+                {MODES.map((mode) => {
+                  const selected = service.mode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() =>
+                        update.mutate({ service: service.service_name, patch: { mode } })
+                      }
+                      aria-pressed={selected}
+                      className={`press min-h-[30px] rounded-[7px] border text-meta ${
+                        selected
+                          ? `${MODE_TONE[mode].on} font-medium`
+                          : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
+                      }`}
+                    >
+                      {mockModeWord(mode)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label className="mt-4 block">
+                <span className="flex items-baseline justify-between text-meta text-ink-3">
+                  Latency
+                  <span className="num font-mono text-ink-2">{service.latency_ms}ms</span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={8000}
+                  step={100}
+                  value={service.latency_ms}
+                  onChange={(e) =>
+                    update.mutate({
+                      service: service.service_name,
+                      patch: { latency_ms: Number(e.target.value) },
+                    })
+                  }
+                  className="mt-1.5 w-full accent-[#0F766E]"
+                />
+              </label>
+
+              <label className="mt-2 block">
+                <span className="flex items-baseline justify-between text-meta text-ink-3">
+                  Failure rate
+                  <span className="num font-mono text-ink-2">
+                    {(service.failure_rate * 100).toFixed(0)}%
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={service.failure_rate}
+                  onChange={(e) =>
+                    update.mutate({
+                      service: service.service_name,
+                      patch: { failure_rate: Number(e.target.value) },
+                    })
+                  }
+                  className="mt-1.5 w-full accent-[#0F766E]"
+                />
+              </label>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
