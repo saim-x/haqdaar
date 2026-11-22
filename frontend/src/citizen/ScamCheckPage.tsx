@@ -43,6 +43,14 @@ const VERDICT: Record<
 
 const SAMPLE_MESSAGES = [
   {
+    label: ['Scam: fee and PIN request', 'فراڈ: فیس اور PIN کی درخواست', 'فريب: فيس ۽ PIN جي گهر'],
+    text: [
+      'MOCK SAMPLE: Your 15,000 relief grant is approved. Pay a 500 processing fee now and send your PIN to release the money.',
+      'نمونہ پیغام: آپ کی 15,000 روپے امداد منظور ہو گئی۔ رقم جاری کروانے کے لیے ابھی 500 روپے فیس دیں اور اپنا PIN بھیجیں۔',
+      'نموني پيغام: توهان جي 15,000 رپين جي امداد منظور ٿي. رقم وٺڻ لاءِ هاڻي 500 رپيا فيس ڏيو ۽ پنهنجو PIN موڪليو.',
+    ],
+  },
+  {
     label: ['Grant update with a condition', 'رقم کی اطلاع اور شرط', 'امداد جي خبر ۽ شرط'],
     text: [
       'MOCK SAMPLE: Your 15,000 relief payment is being processed. If it does not arrive by Friday, call the number in this message. No fee is required.',
