@@ -5,6 +5,7 @@ import { errorMessage } from '../../shared/api/errors';
 import { useDemoMode } from '../../shared/auth/useDemoMode';
 import type { MocksResponse, MockMode, MockServiceConfig } from '../../shared/api/types';
 import { Card, ErrorState, Loading, mockModeWord, PageHeader } from '../ui';
+import { staffText } from '../staffI18n';
 
 const MODES: MockMode[] = ['NORMAL', 'SLOW', 'FLAKY', 'DOWN'];
 
@@ -75,8 +76,8 @@ export default function MocksPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Mock services"
-        subtitle="Simulated DPI rails. Chaos here proves the platform never guesses when a registry is down."
+        title={staffText("Mock services")}
+        subtitle={staffText("Simulated DPI rails. Chaos here proves the platform never guesses when a registry is down.")}
         actions={
           !demoMode.data ? null : confirmReset ? (
             <>
@@ -86,15 +87,13 @@ export default function MocksPage() {
                 disabled={reset.isPending}
                 className="press min-h-[36px] rounded-control bg-negative px-3 text-caption font-medium text-white hover:bg-negative-ink disabled:opacity-50"
               >
-                Confirm reset
-              </button>
+                {staffText("\r\n                Confirm reset\r\n              ")}</button>
               <button
                 type="button"
                 onClick={() => setConfirmReset(false)}
                 className="press min-h-[36px] rounded-control px-3 text-caption text-ink-2 hover:bg-raised hover:text-ink"
               >
-                Cancel
-              </button>
+                {staffText("\r\n                Cancel\r\n              ")}</button>
             </>
           ) : (
             <button
@@ -102,8 +101,7 @@ export default function MocksPage() {
               onClick={() => setConfirmReset(true)}
               className="press min-h-[36px] rounded-control border border-negative/30 px-3 text-caption text-negative hover:bg-negative-wash"
             >
-              Demo reset
-            </button>
+              {staffText("\r\n              Demo reset\r\n            ")}</button>
           )
         }
       />
@@ -154,8 +152,7 @@ export default function MocksPage() {
 
               <label className="mt-4 block">
                 <span className="flex items-baseline justify-between text-meta text-ink-3">
-                  Latency
-                  <span className="num font-mono text-ink-2">{service.latency_ms}ms</span>
+                  {staffText("\r\n                  Latency\r\n                  ")}<span className="num font-mono text-ink-2">{service.latency_ms}{staffText("ms")}</span>
                 </span>
                 <input
                   type="range"
@@ -175,10 +172,8 @@ export default function MocksPage() {
 
               <label className="mt-2 block">
                 <span className="flex items-baseline justify-between text-meta text-ink-3">
-                  Failure rate
-                  <span className="num font-mono text-ink-2">
-                    {(service.failure_rate * 100).toFixed(0)}%
-                  </span>
+                  {staffText("\r\n                  Failure rate\r\n                  ")}<span className="num font-mono text-ink-2">
+                    {(service.failure_rate * 100).toFixed(0)}{staffText("%\r\n                  ")}</span>
                 </span>
                 <input
                   type="range"

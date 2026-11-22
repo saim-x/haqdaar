@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import { pkr } from '../../shared/lib/money';
+import { staffText } from '../staffI18n';
 import type {
   Program,
   RuleCondition,
@@ -308,7 +309,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
           <>
             <select
               value={programId}
-              aria-label="Program"
+              aria-label={staffText("Program")}
               onChange={(e) => {
                 setProgramId(e.target.value);
                 setSelectedId('');
@@ -330,8 +331,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
               disabled={createDraft.isPending || !programId}
               className="press min-h-[36px] rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
-              New draft
-            </button>}
+              {staffText("\r\n              New draft\r\n            ")}</button>}
           </>
         }
       />
@@ -348,7 +348,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
       <div className="grid gap-4 xl:grid-cols-[264px_minmax(0,1fr)]">
         <Card className="h-fit p-0">
           <div className="flex items-baseline justify-between gap-2 border-b border-ink/[0.08] px-4 py-3">
-            <h2 className="text-body font-medium text-ink">Version history</h2>
+            <h2 className="text-body font-medium text-ink">{staffText("Version history")}</h2>
             <span className="num text-meta text-ink-3">
               {versions.data?.versions.length ?? 0}
             </span>
@@ -372,7 +372,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                   >
                     <span className="flex items-center gap-2">
                       <span className="num font-mono text-caption font-medium text-ink">
-                        v{v.version_number}
+                        {staffText("\r\n                        v")}{v.version_number}
                       </span>
                       <Chip
                         tone={
@@ -381,11 +381,10 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       >
                         {ruleStatusWord(v.status)}
                       </Chip>
-                      {v.id === activeId && <Chip tone="ok">active</Chip>}
+                      {v.id === activeId && <Chip tone="ok">{staffText("active")}</Chip>}
                     </span>
                     <span className="mt-1 block truncate font-mono text-meta text-ink-3">
-                      {v.content_hash.replace(/^sha256:/, '').slice(0, 12)}…
-                    </span>
+                      {v.content_hash.replace(/^sha256:/, '').slice(0, 12)}{staffText("…\r\n                    ")}</span>
                     {v.change_note && (
                       <span className="mt-0.5 block truncate text-meta text-ink-2">
                         {v.change_note}
@@ -400,7 +399,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
 
         <div className="space-y-4">
           {versions.error && <ErrorState error={versions.error} />}
-          {programId && versions.isLoading && <Loading label="Loading rule versions…" />}
+          {programId && versions.isLoading && <Loading label={staffText("Loading rule versions…")} />}
           {!draft && !versions.error && !versions.isLoading && (
             <Card>
               <p className="text-caption text-ink-3">
@@ -415,8 +414,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                 <CardTitle
                   hint={readOnly ? 'Read only' : 'Form editor'}
                 >
-                  Eligibility rules
-                </CardTitle>
+                  {staffText("\r\n                  Eligibility rules\r\n                ")}</CardTitle>
 
                 <div className="space-y-3">
                   {draft.eligibility_rules.map((rule, index) => (
@@ -429,7 +427,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                           {rule.id}
                         </span>
                         {rule.required_for_auto && (
-                          <span className="text-meta text-ink-3">required for auto</span>
+                          <span className="text-meta text-ink-3">{staffText("required for auto")}</span>
                         )}
                         {!readOnly && (
                           <button
@@ -437,13 +435,12 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             onClick={() => removeRule(index)}
                             className="press ms-auto rounded-[6px] px-1.5 py-0.5 text-meta text-negative hover:bg-negative-wash"
                           >
-                            Remove
-                          </button>
+                            {staffText("\r\n                            Remove\r\n                          ")}</button>
                         )}
                       </div>
 
                       <div className="grid gap-2 sm:grid-cols-[minmax(0,1.9fr)_auto_minmax(0,1.2fr)_minmax(0,0.75fr)_minmax(0,0.75fr)]">
-                        <Field label="Fact">
+                        <Field label={staffText("Fact")}>
                           <select
                             value={rule.fact}
                             disabled={readOnly}
@@ -458,7 +455,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             ))}
                           </select>
                         </Field>
-                        <Field label="Operator">
+                        <Field label={staffText("Operator")}>
                           <select
                             value={rule.op}
                             disabled={readOnly}
@@ -473,7 +470,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             ))}
                           </select>
                         </Field>
-                        <Field label="Value">
+                        <Field label={staffText("Value")}>
                           <input
                             value={formatRuleValue(rule.value)}
                             title={formatRuleValue(rule.value)}
@@ -486,7 +483,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             className="field num w-full font-mono"
                           />
                         </Field>
-                        <Field label="On fail">
+                        <Field label={staffText("On fail")}>
                             <select
                               value={rule.on_fail}
                               disabled={readOnly}
@@ -500,7 +497,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                               ))}
                             </select>
                         </Field>
-                        <Field label="On unknown">
+                        <Field label={staffText("On unknown")}>
                             <select
                               value={rule.on_unknown}
                               disabled={readOnly}
@@ -517,7 +514,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       </div>
 
                       <div className="mt-2 grid gap-2 border-t border-ink/[0.06] pt-2 sm:grid-cols-2">
-                        <Field label="Label (English)">
+                        <Field label={staffText("Label (English)")}>
                           <input
                             value={rule.label_en}
                             disabled={readOnly}
@@ -525,7 +522,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             className="field w-full"
                           />
                         </Field>
-                        <Field label="Label (اردو)">
+                        <Field label={staffText("Label (اردو)")}>
                           <input
                             dir="rtl"
                             value={rule.label_ur}
@@ -534,7 +531,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             className="field w-full"
                           />
                         </Field>
-                        <Field label="Fail reason (English)">
+                        <Field label={staffText("Fail reason (English)")}>
                           <input
                             value={rule.fail_reason_en}
                             disabled={readOnly}
@@ -542,7 +539,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             className="field w-full"
                           />
                         </Field>
-                        <Field label="Fail reason (اردو)">
+                        <Field label={staffText("Fail reason (اردو)")}>
                           <input
                             dir="rtl"
                             value={rule.fail_reason_ur}
@@ -551,7 +548,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             className="field w-full"
                           />
                         </Field>
-                        <Field label="Pass reason (English)">
+                        <Field label={staffText("Pass reason (English)")}>
                           <input
                             value={rule.pass_reason_en ?? ''}
                             disabled={readOnly}
@@ -559,7 +556,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             className="field w-full"
                           />
                         </Field>
-                        <Field label="Pass reason (اردو)">
+                        <Field label={staffText("Pass reason (اردو)")}>
                           <input
                             dir="rtl"
                             value={rule.pass_reason_ur ?? ''}
@@ -570,7 +567,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                         </Field>
                         {rule.on_unknown === 'ASK' && (
                           <>
-                            <Field label="Ask prompt (English)">
+                            <Field label={staffText("Ask prompt (English)")}>
                               <input
                                 value={rule.ask_prompt_en ?? ''}
                                 disabled={readOnly}
@@ -578,7 +575,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                                 className="field w-full"
                               />
                             </Field>
-                            <Field label="Ask prompt (اردو)">
+                            <Field label={staffText("Ask prompt (اردو)")}>
                               <input
                                 dir="rtl"
                                 value={rule.ask_prompt_ur ?? ''}
@@ -600,13 +597,12 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                     onClick={addRule}
                     className="press mt-3 min-h-[32px] rounded-[7px] border border-dashed border-ink/[0.18] px-3 text-meta text-ink-2 hover:border-accent/40 hover:bg-accent-wash hover:text-accent-ink"
                   >
-                    Add rule
-                  </button>
+                    {staffText("\r\n                    Add rule\r\n                  ")}</button>
                 )}
               </Card>
 
               <Card>
-                <CardTitle>Benefit formula & threshold</CardTitle>
+                <CardTitle>{staffText("Benefit formula & threshold")}</CardTitle>
                 <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   {(
                     [
@@ -638,7 +634,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       />
                     </Field>
                   ))}
-                  <Field label="Auto-approve threshold">
+                  <Field label={staffText("Auto-approve threshold")}>
                     <input
                       type="number"
                       step="0.01"
@@ -662,7 +658,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       className="field num w-full font-mono"
                     />
                   </Field>
-                  <Field label="Auto-approve max PKR">
+                  <Field label={staffText("Auto-approve max PKR")}>
                     <input
                       type="number"
                       value={draft.policy.auto_approve_max_amount_pkr}
@@ -687,7 +683,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
               </Card>
 
               <Card>
-                <CardTitle hint="read-only">JSON preview</CardTitle>
+                <CardTitle hint={staffText("read-only")}>{staffText("JSON preview")}</CardTitle>
                 <pre className="max-h-64 overflow-auto rounded-control border border-ink/[0.08] bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
                   {JSON.stringify(draft, null, 2)}
                 </pre>
@@ -695,12 +691,12 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
 
               {validation && !validation.valid && (
                 <Card className="border-negative/25 bg-negative-wash">
-                  <CardTitle>Validation errors</CardTitle>
+                  <CardTitle>{staffText("Validation errors")}</CardTitle>
                   <ul className="space-y-1">
                     {validation.errors.map((err) => (
                       <li key={`${err.field}-${err.message_en}`} className="text-caption">
                         <span className="font-mono text-negative">{err.field}</span>
-                        <span className="text-ink">: {err.message_en}</span>
+                        <span className="text-ink">{staffText(": ")}{err.message_en}</span>
                       </li>
                     ))}
                   </ul>
@@ -710,8 +706,8 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
               {twin && (
                 <Card className="p-0">
                   <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-                    <h2 className="text-body font-medium text-ink">Digital Twin result</h2>
-                    <p className="num text-meta text-ink-3">{twin.sample_size} cases replayed</p>
+                    <h2 className="text-body font-medium text-ink">{staffText("Digital Twin result")}</h2>
+                    <p className="num text-meta text-ink-3">{twin.sample_size} {staffText(" cases replayed")}</p>
                   </div>
 
                   <dl className="grid grid-cols-3 divide-x divide-ink/[0.08] border-b border-ink/[0.08]">
@@ -735,7 +731,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                   {/* Before vs After route distribution + transition matrix */}
                   <div className="grid gap-4 border-b border-ink/[0.08] px-4 py-3 md:grid-cols-2">
                     <div>
-                      <p className="mb-2 text-meta font-medium text-ink-2">Route shift (Before → After)</p>
+                      <p className="mb-2 text-meta font-medium text-ink-2">{staffText("Route shift (Before → After)")}</p>
                       <div className="space-y-1.5">
                         {Array.from(
                           new Set([
@@ -750,11 +746,10 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                             <div key={route} className="flex items-center justify-between text-meta">
                               <span className="font-mono text-ink-2">{route}</span>
                               <span className="num font-mono text-ink">
-                                {before} → <strong>{after}</strong>{' '}
+                                {before} {staffText(" → ")}<strong>{after}</strong>{' '}
                                 {delta !== 0 && (
                                   <span className={delta > 0 ? 'text-positive' : 'text-negative'}>
-                                    ({delta > 0 ? `+${delta}` : delta})
-                                  </span>
+                                    {staffText("\r\n                                    (")}{delta > 0 ? `+${delta}` : delta}{staffText(")\r\n                                  ")}</span>
                                 )}
                               </span>
                             </div>
@@ -764,11 +759,11 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                     </div>
                     {twin.transition_matrix && Object.keys(twin.transition_matrix).length > 0 && (
                       <div>
-                        <p className="mb-2 text-meta font-medium text-ink-2">Transition matrix</p>
+                        <p className="mb-2 text-meta font-medium text-ink-2">{staffText("Transition matrix")}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {Object.entries(twin.transition_matrix).map(([edge, count]) => (
                             <Chip key={edge} tone="info">
-                              {edge}: {count}
+                              {edge}{staffText(": ")}{count}
                             </Chip>
                           ))}
                         </div>
@@ -779,11 +774,11 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                   <table className="ledger">
                     <thead>
                       <tr>
-                        <th>Case</th>
-                        <th>Before</th>
-                        <th>After</th>
-                        <th>Amount Δ</th>
-                        <th>Why</th>
+                        <th>{staffText("Case")}</th>
+                        <th>{staffText("Before")}</th>
+                        <th>{staffText("After")}</th>
+                        <th>{staffText("Amount Δ")}</th>
+                        <th>{staffText("Why")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -810,8 +805,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       {twin.flipped_cases.length === 0 && (
                         <tr>
                           <td colSpan={5} className="text-caption text-ink-3">
-                            No case changes outcome under this draft.
-                          </td>
+                            {staffText("\r\n                            No case changes outcome under this draft.\r\n                          ")}</td>
                         </tr>
                       )}
                     </tbody>
@@ -821,7 +815,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
 
               {!readOnly && (
                 <Card>
-                  <CardTitle hint="validate, simulate, then publish">Publish</CardTitle>
+                  <CardTitle hint={staffText("validate, simulate, then publish")}>{staffText("Publish")}</CardTitle>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
@@ -829,29 +823,26 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       disabled={saveDraft.isPending}
                       className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
                     >
-                      Save draft
-                    </button>
+                      {staffText("\r\n                      Save draft\r\n                    ")}</button>
                     <button
                       type="button"
                       onClick={() => validate.mutate()}
                       disabled={validate.isPending}
                       className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
                     >
-                      Validate
-                    </button>
+                      {staffText("\r\n                      Validate\r\n                    ")}</button>
                     <button
                       type="button"
                       onClick={() => simulate.mutate()}
                       disabled={simulate.isPending}
                       className="press min-h-[36px] rounded-control border border-ink/[0.14] bg-card px-3 text-caption text-ink hover:bg-raised disabled:opacity-50"
                     >
-                      Simulate (Digital Twin)
-                    </button>
+                      {staffText("\r\n                      Simulate (Digital Twin)\r\n                    ")}</button>
                     <input
                       value={changeNote}
                       onChange={(e) => setChangeNote(e.target.value)}
-                      placeholder="Change note (required)"
-                      aria-label="Change note"
+                      placeholder={staffText("Change note (required)")}
+                      aria-label={staffText("Change note")}
                       className="field min-w-[200px] flex-1"
                     />
                     <button
@@ -860,8 +851,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
                       disabled={publish.isPending || changeNote.trim().length === 0}
                       className="press min-h-[36px] rounded-control bg-accent px-4 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
                     >
-                      Publish
-                    </button>
+                      {staffText("\r\n                      Publish\r\n                    ")}</button>
                   </div>
                 </Card>
               )}

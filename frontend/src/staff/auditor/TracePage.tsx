@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { DecisionTrace } from '../../shared/api/types';
+import { staffText } from '../staffI18n';
 import {
   Card,
   CardTitle,
@@ -66,7 +67,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
     enabled: id.length > 0,
   });
 
-  if (query.isLoading) return <Loading label="Loading trace…" />;
+  if (query.isLoading) return <Loading label={staffText("Loading trace…")} />;
   if (query.error) return <ErrorState error={query.error} />;
 
   const trace = query.data;
@@ -77,13 +78,13 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Decision trace"
+        title={staffText("Decision trace")}
         subtitle={`${trace.case.reference_code} · ${statusWord(trace.case.status)} · ${trace.case.citizen?.full_name ?? 'unknown citizen'}`}
       />
 
       {trace.decisions.length === 0 && (
         <Card>
-          <p className="text-caption text-ink-3">No decisions recorded for this case yet.</p>
+          <p className="text-caption text-ink-3">{staffText("No decisions recorded for this case yet.")}</p>
         </Card>
       )}
 
@@ -91,12 +92,12 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
         <div key={decision.id} className="space-y-3">
           <Card>
             <CardTitle hint={stamp(decision.created_at, 'en')}>
-              {humanize(decision.decision_source)} · {trace.case.reference_code}
+              {humanize(decision.decision_source)} {staffText(" · ")}{trace.case.reference_code}
             </CardTitle>
 
             <dl className="grid grid-cols-3 divide-x divide-ink/[0.08] border-y border-ink/[0.08]">
               <div className="py-2 pe-4">
-                <dt className="text-meta text-ink-3">Engine proposed</dt>
+                <dt className="text-meta text-ink-3">{staffText("Engine proposed")}</dt>
                 <dd className="mt-1">
                   <Chip
                     tone={
@@ -112,13 +113,13 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 </dd>
               </div>
               <div className="px-4 py-2">
-                <dt className="text-meta text-ink-3">Case outcome</dt>
+                <dt className="text-meta text-ink-3">{staffText("Case outcome")}</dt>
                 <dd className="mt-1 text-caption font-medium text-ink">
                   {statusWord(decision.outcome_status)}
                 </dd>
               </div>
               <div className="py-2 ps-4">
-                <dt className="text-meta text-ink-3">Amount</dt>
+                <dt className="text-meta text-ink-3">{staffText("Amount")}</dt>
                 <dd className="num mt-1 font-mono text-caption font-medium text-ink">
                   {decision.computed_amount_pkr !== null
                     ? `PKR ${pkr(decision.computed_amount_pkr)}`
@@ -129,8 +130,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
             {decision.is_override && (
               <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta text-warn">
-                Officer override - counted in the evaluation dashboard.
-              </p>
+                {staffText("\r\n                Officer override - counted in the evaluation dashboard.\r\n              ")}</p>
             )}
 
             {decision.escalation_reasons.length > 0 && (
@@ -146,30 +146,30 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
           <div className="grid items-start gap-3 lg:grid-cols-2">
             <Card>
-              <CardTitle hint="weakest link">Confidence pillars</CardTitle>
+              <CardTitle hint={staffText("weakest link")}>{staffText("Confidence pillars")}</CardTitle>
               <div className="space-y-3">
-                <Pillar label="Identity" value={decision.confidence_components.identity} />
-                <Pillar label="Documents" value={decision.confidence_components.documents} />
+                <Pillar label={staffText("Identity")} value={decision.confidence_components.identity} />
+                <Pillar label={staffText("Documents")} value={decision.confidence_components.documents} />
                 <Pillar
-                  label="Data consistency"
+                  label={staffText("Data consistency")}
                   value={decision.confidence_components.data_consistency}
                 />
                 <Pillar
-                  label="Consent assurance"
+                  label={staffText("Consent assurance")}
                   value={decision.confidence_components.consent_assurance}
                 />
-                <Pillar label="Overall" value={decision.confidence_components.overall} />
+                <Pillar label={staffText("Overall")} value={decision.confidence_components.overall} />
               </div>
             </Card>
 
             <Card>
-              <CardTitle hint="self-contained proof">Hashes & versions</CardTitle>
+              <CardTitle hint={staffText("self-contained proof")}>{staffText("Hashes & versions")}</CardTitle>
               <dl>
-                <Hash label="Rule version id" value={decision.rule_version_id} />
-                <Hash label="Rule hash" value={decision.rule_content_hash} />
-                <Hash label="Input snapshot hash" value={decision.input_snapshot_hash} />
+                <Hash label={staffText("Rule version id")} value={decision.rule_version_id} />
+                <Hash label={staffText("Rule hash")} value={decision.rule_content_hash} />
+                <Hash label={staffText("Input snapshot hash")} value={decision.input_snapshot_hash} />
                 <div className="border-b border-ink/[0.06] py-2 last:border-b-0">
-                  <dt className="text-meta text-ink-3">Model versions</dt>
+                  <dt className="text-meta text-ink-3">{staffText("Model versions")}</dt>
                   <dd className="mt-0.5 space-y-0.5">
                     {Object.entries(decision.model_versions).map(([name, version]) => (
                       <p key={name} className="flex items-baseline justify-between gap-3 text-meta">
@@ -189,7 +189,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
           {decision.citizen_explanation && (
             <Card>
-              <CardTitle hint="what the citizen saw">Citizen explanation</CardTitle>
+              <CardTitle hint={staffText("what the citizen saw")}>{staffText("Citizen explanation")}</CardTitle>
               <p className="text-lead font-medium leading-[1.8] text-ink" dir="rtl">
                 {decision.citizen_explanation.headline_ur}
               </p>
@@ -210,7 +210,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
 
       <Card className="overflow-x-auto p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-          <h2 className="text-body font-medium text-ink">Input snapshot (facts + sources)</h2>
+          <h2 className="text-body font-medium text-ink">{staffText("Input snapshot (facts + sources)")}</h2>
           <p className="num text-meta text-ink-3">
             {facts.length} {facts.length === 1 ? 'fact' : 'facts'}
           </p>
@@ -218,10 +218,10 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
         <table className="ledger min-w-[560px]">
           <thead>
             <tr>
-              <th>Fact</th>
-              <th>Value</th>
-              <th>Source</th>
-              <th>Entered by</th>
+              <th>{staffText("Fact")}</th>
+              <th>{staffText("Value")}</th>
+              <th>{staffText("Source")}</th>
+              <th>{staffText("Entered by")}</th>
             </tr>
           </thead>
           <tbody>
@@ -231,7 +231,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
                 <td>
                   {fact.value === null ? (
                     <span className="inline-flex flex-wrap items-baseline gap-2">
-                      <span className="text-caption text-ink-3">-</span>
+                      <span className="text-caption text-ink-3">{staffText("-")}</span>
                       {fact.missing_reason && (
                         <span className="text-meta text-ink-3">
                           {humanize(fact.missing_reason)}
@@ -255,8 +255,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
             {facts.length === 0 && (
               <tr>
                 <td colSpan={4} className="text-caption text-ink-3">
-                  No facts in this snapshot.
-                </td>
+                  {staffText("\r\n                  No facts in this snapshot.\r\n                ")}</td>
               </tr>
             )}
           </tbody>
@@ -266,8 +265,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
       {trace.notes.length > 0 && (
         <Card>
           <CardTitle hint={`${trace.notes.length} ${trace.notes.length === 1 ? 'note' : 'notes'}`}>
-            Notes
-          </CardTitle>
+            {staffText("\r\n            Notes\r\n          ")}</CardTitle>
           <ul className="space-y-2">
             {trace.notes.map((note) => (
               <li
@@ -286,7 +284,7 @@ export default function TracePage({ caseId }: { caseId?: string } = {}) {
       )}
 
       <Card>
-        <CardTitle hint="read-only">Raw trace</CardTitle>
+        <CardTitle hint={staffText("read-only")}>{staffText("Raw trace")}</CardTitle>
         <pre className="max-h-72 overflow-auto rounded-control border border-ink/[0.08] bg-raised p-3 font-mono text-meta leading-[1.6] text-ink-2">
           {JSON.stringify({ case: trace.case, decisions: trace.decisions }, null, 2)}
         </pre>

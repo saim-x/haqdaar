@@ -4,6 +4,7 @@ import { api, request } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { JobListResponse, JobStatus } from '../../shared/api/types';
 import { Card, ErrorState, humanize, jobWord, Kpi, Loading, PageHeader } from '../ui';
+import { staffText } from '../staffI18n';
 
 interface HealthPayload {
   status: string;
@@ -90,12 +91,12 @@ export default function JobsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Jobs"
-        subtitle="Postgres SKIP LOCKED queue - no Redis, no Celery."
+        title={staffText("Jobs")}
+        subtitle={staffText("Postgres SKIP LOCKED queue - no Redis, no Celery.")}
         actions={
           <select
             value={status}
-            aria-label="Filter by job status"
+            aria-label={staffText("Filter by job status")}
             onChange={(e) => setStatus(e.target.value as JobStatus | '')}
             className="field w-auto"
           >
@@ -117,23 +118,23 @@ export default function JobsPage() {
       {health.data && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Kpi
-            label="System status"
+            label={staffText("System status")}
             value={health.data.status}
             hint={`AI: ${health.data.detail?.ai_provider ?? 'fake'}`}
           />
-          <Kpi label="Database" value={health.data.database} />
+          <Kpi label={staffText("Database")} value={health.data.database} />
           <Kpi
-            label="Worker heartbeat"
+            label={staffText("Worker heartbeat")}
             value={health.data.detail?.worker_heartbeat_stale ? 'Stale' : 'Fresh'}
             hint={health.data.worker}
           />
           <Kpi
-            label="Pending / Running"
+            label={staffText("Pending / Running")}
             value={`${query.data?.queue_depth?.PENDING ?? 0} / ${query.data?.queue_depth?.RUNNING ?? 0}`}
-            hint="Postgres SKIP LOCKED"
+            hint={staffText("Postgres SKIP LOCKED")}
           />
           <Kpi
-            label="Completed / Dead"
+            label={staffText("Completed / Dead")}
             value={`${query.data?.queue_depth?.COMPLETED ?? 0} / ${query.data?.queue_depth?.DEAD ?? 0}`}
             hint={`Retry: ${query.data?.queue_depth?.FAILED_RETRY ?? 0}`}
           />
@@ -144,11 +145,11 @@ export default function JobsPage() {
         <table className="ledger min-w-[820px]">
           <thead>
             <tr>
-              <th>Task</th>
-              <th>Status</th>
-              <th className="text-end">Attempts</th>
-              <th>Next run</th>
-              <th>Issue</th>
+              <th>{staffText("Task")}</th>
+              <th>{staffText("Status")}</th>
+              <th className="text-end">{staffText("Attempts")}</th>
+              <th>{staffText("Next run")}</th>
+              <th>{staffText("Issue")}</th>
               <th />
             </tr>
           </thead>
@@ -168,7 +169,7 @@ export default function JobsPage() {
                     </span>
                   </td>
                   <td className="num text-end font-mono text-meta text-ink-2">
-                    {job.attempts}/{job.max_attempts}
+                    {job.attempts}{staffText("/")}{job.max_attempts}
                   </td>
                   <td className="num text-meta text-ink-3">
                     {new Date(job.run_after).toLocaleString('en-GB', {
@@ -198,26 +199,25 @@ export default function JobsPage() {
                   <td colSpan={6} className="py-0">
                     <details className="px-3 pb-2">
                       <summary className="min-h-9 cursor-pointer py-2 text-meta font-medium text-accent-ink">
-                        Show details
-                      </summary>
+                        {staffText("\r\n                        Show details\r\n                      ")}</summary>
                       <dl className="grid gap-x-5 gap-y-2 rounded-control bg-raised/60 p-3 text-meta sm:grid-cols-2">
                         <div>
-                          <dt className="text-ink-3">Created</dt>
+                          <dt className="text-ink-3">{staffText("Created")}</dt>
                           <dd className="text-ink">{new Date(job.created_at).toLocaleString()}</dd>
                         </div>
                         <div>
-                          <dt className="text-ink-3">Last updated</dt>
+                          <dt className="text-ink-3">{staffText("Last updated")}</dt>
                           <dd className="text-ink">{new Date(job.updated_at).toLocaleString()}</dd>
                         </div>
                         {job.locked_at && (
                           <div>
-                            <dt className="text-ink-3">Picked up by worker</dt>
+                            <dt className="text-ink-3">{staffText("Picked up by worker")}</dt>
                             <dd className="text-ink">{new Date(job.locked_at).toLocaleString()}</dd>
                           </div>
                         )}
                         <div>
-                          <dt className="text-ink-3">Attempts</dt>
-                          <dd className="text-ink">{job.attempts} of {job.max_attempts}</dd>
+                          <dt className="text-ink-3">{staffText("Attempts")}</dt>
+                          <dd className="text-ink">{job.attempts} {staffText(" of ")}{job.max_attempts}</dd>
                         </div>
                         {payloadDetails(job.payload ?? {}).map(([key, value]) => (
                           <div key={key} className="min-w-0">
@@ -227,7 +227,7 @@ export default function JobsPage() {
                         ))}
                         {job.last_error && (
                           <div className="sm:col-span-2">
-                            <dt className="text-ink-3">Technical error</dt>
+                            <dt className="text-ink-3">{staffText("Technical error")}</dt>
                             <dd className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-control bg-card p-2 font-mono text-meta text-ink">
                               {job.last_error}
                             </dd>
@@ -243,8 +243,7 @@ export default function JobsPage() {
             {query.data?.items.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-caption text-ink-3">
-                  No jobs in this state.
-                </td>
+                  {staffText("\r\n                  No jobs in this state.\r\n                ")}</td>
               </tr>
             )}
           </tbody>

@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { ApiError } from '../shared/api/errors';
+import { staffText } from './staffI18n';
 
 /**
  * Staff console kit. English LTR, dense, keyboard-friendly.
@@ -232,7 +233,7 @@ const STEP_WORD: Record<string, string> = {
   OFFICER_DECISION: 'Officer decision',
 };
 
-const word = (map: Record<string, string>, value: string) => map[value] ?? humanize(value);
+const word = (map: Record<string, string>, value: string) => staffText(map[value] ?? humanize(value));
 
 export const statusWord = (value: string) => word(STATUS_WORD, value);
 export const routeWord = (value: string) => word(ROUTE_WORD, value);
@@ -315,7 +316,7 @@ export function ErrorState({ error }: { error: unknown }) {
       <p className="font-mono text-meta font-medium text-negative">{api?.code ?? 'ERROR'}</p>
       <p className="mt-1 text-caption text-ink">{api?.messageEn ?? String(error)}</p>
       {api?.requestId && (
-        <p className="mt-1 font-mono text-meta text-ink-3">request {api.requestId}</p>
+        <p className="mt-1 font-mono text-meta text-ink-3">{staffText("request ")}{api.requestId}</p>
       )}
     </div>
   );
@@ -383,7 +384,7 @@ export function Chip({
  * read as "confidently wrong".
  */
 export function ConfidenceBar({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-meta text-ink-3">-</span>;
+  if (value === null) return <span className="text-meta text-ink-3">{staffText("-")}</span>;
   const pct = Math.round(value * 100);
   const tone = value >= 0.9 ? 'bg-positive' : value >= 0.7 ? 'bg-warn' : 'bg-negative';
   return (

@@ -5,6 +5,7 @@ import type { ConsentAccessLog, ConsentGrant } from '../../shared/api/types';
 import { grantRecipientLabel } from '../../shared/lib/consent';
 import { dayMonth, stamp } from '../../shared/lib/dates';
 import { Card, ErrorState, humanize, Loading, PageHeader } from '../ui';
+import { staffText } from '../staffI18n';
 
 /**
  * Consent audit - docs/11 §6.3.4. Grants, withdrawals, and allowed/denied access.
@@ -35,12 +36,12 @@ export default function ConsentsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Consent audit"
-        subtitle="Every grant, withdrawal, and blocked access attempt - including the ones that returned 403."
+        title={staffText("Consent audit")}
+        subtitle={staffText("Every grant, withdrawal, and blocked access attempt - including the ones that returned 403.")}
         actions={
           <input
-            placeholder="Filter by citizen id"
-            aria-label="Filter by citizen id"
+            placeholder={staffText("Filter by citizen id")}
+            aria-label={staffText("Filter by citizen id")}
             value={citizenId}
             onChange={(e) => setCitizenId(e.target.value)}
             className="field min-w-[260px] font-mono"
@@ -50,7 +51,7 @@ export default function ConsentsPage() {
 
       <Card className="overflow-x-auto p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-          <h2 className="text-body font-medium text-ink">Grants</h2>
+          <h2 className="text-body font-medium text-ink">{staffText("Grants")}</h2>
           <p className="num text-meta text-ink-3">
             {query.data?.grants.length ?? 0}{' '}
             {(query.data?.grants.length ?? 0) === 1 ? 'grant' : 'grants'}
@@ -59,13 +60,13 @@ export default function ConsentsPage() {
         <table className="ledger min-w-[820px]">
           <thead>
             <tr>
-              <th>Recipient</th>
-              <th>Kind</th>
-              <th>Categories</th>
-              <th>Assurance</th>
-              <th>Status</th>
-              <th>Granted</th>
-              <th>Expires</th>
+              <th>{staffText("Recipient")}</th>
+              <th>{staffText("Kind")}</th>
+              <th>{staffText("Categories")}</th>
+              <th>{staffText("Assurance")}</th>
+              <th>{staffText("Status")}</th>
+              <th>{staffText("Granted")}</th>
+              <th>{staffText("Expires")}</th>
             </tr>
           </thead>
           <tbody>
@@ -103,8 +104,7 @@ export default function ConsentsPage() {
             {query.data?.grants.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-caption text-ink-3">
-                  No grants recorded.
-                </td>
+                  {staffText("\r\n                  No grants recorded.\r\n                ")}</td>
               </tr>
             )}
           </tbody>
@@ -113,7 +113,7 @@ export default function ConsentsPage() {
 
       <Card className="overflow-x-auto p-0">
         <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-          <h2 className="text-body font-medium text-ink">Access log</h2>
+          <h2 className="text-body font-medium text-ink">{staffText("Access log")}</h2>
           <p className="num text-meta text-ink-3">
             {query.data?.access_logs.length ?? 0}{' '}
             {(query.data?.access_logs.length ?? 0) === 1 ? 'attempt' : 'attempts'}
@@ -122,11 +122,11 @@ export default function ConsentsPage() {
         <table className="ledger min-w-[820px]">
           <thead>
             <tr>
-              <th>When</th>
-              <th>Actor</th>
-              <th>Category</th>
-              <th>Resource</th>
-              <th>Result</th>
+              <th>{staffText("When")}</th>
+              <th>{staffText("Actor")}</th>
+              <th>{staffText("Category")}</th>
+              <th>{staffText("Resource")}</th>
+              <th>{staffText("Result")}</th>
             </tr>
           </thead>
           <tbody>
@@ -149,7 +149,7 @@ export default function ConsentsPage() {
                     </span>
                     {!log.allowed && log.denial_reason && (
                       <span className="text-meta text-ink-3">
-                        · {humanize(log.denial_reason)}
+                        {staffText("\r\n                        · ")}{humanize(log.denial_reason)}
                       </span>
                     )}
                   </span>
@@ -159,8 +159,7 @@ export default function ConsentsPage() {
             {query.data?.access_logs.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-caption text-ink-3">
-                  No access attempts recorded.
-                </td>
+                  {staffText("\r\n                  No access attempts recorded.\r\n                ")}</td>
               </tr>
             )}
           </tbody>

@@ -1,4 +1,5 @@
 import type { DraftAnswer, FactObject, FactState, RuleTraceEntry } from '../../shared/api/types';
+import { staffText } from '../staffI18n';
 import {
   bandWord,
   Card,
@@ -136,7 +137,7 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
       <td>
         {unknown ? (
           <span className="inline-flex flex-wrap items-baseline gap-2">
-            <span className="text-caption text-ink-3">Unknown</span>
+            <span className="text-caption text-ink-3">{staffText("Unknown")}</span>
             {fact.missing_reason && (
               <span className="text-meta leading-[1.6] text-ink-3">{fact.missing_reason.replaceAll('_', ' ').toLowerCase()}</span>
             )}
@@ -148,14 +149,14 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
         )}
         {fact.conflict && (
           <p className="mt-1">
-            <Chip tone="danger">Sources disagree</Chip>
+            <Chip tone="danger">{staffText("Sources disagree")}</Chip>
           </p>
         )}
         {alternatives.length > 0 && (
           <ul className="mt-1 space-y-0.5">
             {alternatives.map((alt, i) => (
               <li key={`${alt.source}-${i}`} className="text-meta text-ink-3">
-                also {formatFactValue(factKey, alt.value)} · {sourceWord(alt.source ?? '')} ·{' '}
+                {staffText("\r\n                also ")}{formatFactValue(factKey, alt.value)} {staffText(" · ")}{sourceWord(alt.source ?? '')} {staffText(" ·")}{' '}
                 {enteredByWord(alt.entered_by)}
               </li>
             ))}
@@ -166,11 +167,11 @@ function FactRow({ factKey, fact }: { factKey: string; fact: FactLike }) {
         {fact.source ? (
           <Chip tone={sourceTone(fact.source)}>{sourceWord(fact.source)}</Chip>
         ) : (
-          <span className="text-caption text-ink-3">-</span>
+          <span className="text-caption text-ink-3">{staffText("-")}</span>
         )}
         <p className="mt-1 text-meta text-ink-3">
           {fact.entered_by ? enteredByWord(fact.entered_by) : '-'}
-          {confidence && <span className="num"> · {confidence}</span>}
+          {confidence && <span className="num"> {staffText(" · ")}{confidence}</span>}
         </p>
       </td>
     </tr>
@@ -193,18 +194,17 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
   return (
     <Card className="p-0">
       <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-        <h2 className="text-body font-medium text-ink">Application details</h2>
+        <h2 className="text-body font-medium text-ink">{staffText("Application details")}</h2>
         <p className="num text-meta text-ink-3">
-          {entries.length} facts · {unknowns} unknown · {conflicts} conflict
-          {conflicts === 1 ? '' : 's'}
+          {entries.length} {staffText(" facts · ")}{unknowns} {staffText(" unknown · ")}{conflicts} {staffText(" conflict\r\n          ")}{conflicts === 1 ? '' : 's'}
         </p>
       </div>
       <table className="ledger" data-testid="facts-table">
         <thead>
           <tr>
-            <th className="w-[34%]">Information</th>
-            <th>Value</th>
-            <th className="w-[30%]">Source</th>
+            <th className="w-[34%]">{staffText("Information")}</th>
+            <th>{staffText("Value")}</th>
+            <th className="w-[30%]">{staffText("Source")}</th>
           </tr>
         </thead>
         <tbody>
@@ -214,8 +214,7 @@ export function FactTable({ facts }: { facts: Record<string, FactLike> }) {
           {entries.length === 0 && (
             <tr>
               <td colSpan={3} className="text-caption text-ink-3">
-                No facts recorded on this case yet.
-              </td>
+                {staffText("\r\n                No facts recorded on this case yet.\r\n              ")}</td>
             </tr>
           )}
         </tbody>
@@ -271,7 +270,7 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
 
       <p className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-0.5 text-meta text-ink-2">
         <span>
-          actual{' '}
+          {staffText("\r\n          actual")}{' '}
           <span className={`${valueClass(entry.actual)} font-medium text-ink`}>
             {formatFactValue(entry.fact, entry.actual)}
           </span>
@@ -279,13 +278,13 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
         {/* On a pass the actual already equals the expected; printing both is noise. */}
         {entry.result !== 'PASS' && (
           <span>
-            expected{' '}
+            {staffText("\r\n            expected")}{' '}
             <span className={`${valueClass(entry.expected)} font-medium text-ink`}>
               {formatFactValue(entry.fact, entry.expected)}
             </span>
           </span>
         )}
-        {entry.required_for_auto && <span className="text-ink-3">required for auto</span>}
+        {entry.required_for_auto && <span className="text-ink-3">{staffText("required for auto")}</span>}
       </p>
 
       {reasonEn && <p className="mt-1.5 text-caption leading-[1.6] text-ink">{reasonEn}</p>}
@@ -294,7 +293,7 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
           {reasonUr}
         </p>
       )}
-      {askEn && <p className="mt-1.5 text-meta leading-[1.6] text-warn">Asks: {askEn}</p>}
+      {askEn && <p className="mt-1.5 text-meta leading-[1.6] text-warn">{staffText("Asks: ")}{askEn}</p>}
       {askUr && (
         <p className="text-meta leading-[1.7] text-warn" dir="rtl" lang="ur">
           {askUr}
@@ -303,8 +302,8 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
 
       {(entry.on_fail || entry.on_unknown) && (
         <p className="mt-1.5 flex flex-wrap gap-x-4 text-meta text-ink-3">
-          {entry.on_fail && <span>on fail → {routeWord(entry.on_fail)}</span>}
-          {entry.on_unknown && <span>on unknown → {routeWord(entry.on_unknown)}</span>}
+          {entry.on_fail && <span>{staffText("on fail → ")}{routeWord(entry.on_fail)}</span>}
+          {entry.on_unknown && <span>{staffText("on unknown → ")}{routeWord(entry.on_unknown)}</span>}
         </p>
       )}
     </li>
@@ -328,10 +327,9 @@ export function RuleTraceTable({ trace }: { trace: RuleTraceEntry[] }) {
   return (
     <Card className="p-0" data-testid="rule-trace">
       <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-        <h2 className="text-body font-medium text-ink">Rule trace</h2>
+        <h2 className="text-body font-medium text-ink">{staffText("Rule trace")}</h2>
         <p className="num text-meta text-ink-3">
-          {pass} pass · {fail} fail · {unknown} unknown
-        </p>
+          {pass} {staffText(" pass · ")}{fail} {staffText(" fail · ")}{unknown} {staffText(" unknown\r\n        ")}</p>
       </div>
       <ul>
         {trace.map((entry, i) => (
@@ -361,11 +359,11 @@ export function WhyThisRoute({
 }) {
   return (
     <Card data-testid="rule-trace-fallback">
-      <h2 className="text-body font-medium text-ink">Why this route</h2>
+      <h2 className="text-body font-medium text-ink">{staffText("Why this route")}</h2>
 
       <dl className="mt-3 grid grid-cols-2 gap-x-6 border-t border-ink/[0.08] sm:grid-cols-3">
         <div className="border-b border-ink/[0.06] py-2">
-          <dt className="text-meta text-ink-3">Route</dt>
+          <dt className="text-meta text-ink-3">{staffText("Route")}</dt>
           <dd className="mt-0.5">
             <Chip
               tone={route === 'AUTO_APPROVE' ? 'ok' : route === 'HUMAN_REVIEW' ? 'warn' : 'info'}
@@ -375,16 +373,16 @@ export function WhyThisRoute({
           </dd>
         </div>
         <div className="border-b border-ink/[0.06] py-2">
-          <dt className="text-meta text-ink-3">Confidence</dt>
+          <dt className="text-meta text-ink-3">{staffText("Confidence")}</dt>
           <dd className="num mt-0.5 font-mono text-caption font-medium text-ink">
             {confidence !== null && confidence !== undefined ? confidence.toFixed(3) : '-'}
           </dd>
         </div>
         <div className="border-b border-ink/[0.06] py-2">
-          <dt className="text-meta text-ink-3">Priority</dt>
+          <dt className="text-meta text-ink-3">{staffText("Priority")}</dt>
           <dd className="mt-0.5 text-caption font-medium text-ink">
             {priorityBand ? bandWord(priorityBand) : '-'}{' '}
-            <span className="num font-mono text-meta text-ink-3">({priorityScore ?? '-'})</span>
+            <span className="num font-mono text-meta text-ink-3">{staffText("(")}{priorityScore ?? '-'}{staffText(")")}</span>
           </dd>
         </div>
       </dl>
@@ -394,7 +392,7 @@ export function WhyThisRoute({
           {flags.map((flag) => (
             <li key={flag.code} className="text-meta text-ink">
               <span className="font-medium">{flagWord(flag.code)}</span>
-              {flag.detail && <span className="text-ink-3"> - {flag.detail}</span>}
+              {flag.detail && <span className="text-ink-3"> {staffText(" - ")}{flag.detail}</span>}
             </li>
           ))}
         </ul>
@@ -402,9 +400,7 @@ export function WhyThisRoute({
 
       <p className="mt-3 flex items-start gap-2 text-meta leading-[1.7] text-ink-3">
         <IconWarning size={13} className="mt-1 shrink-0" />
-        Per-rule PASS/FAIL/UNKNOWN is recorded on the decision and is available to auditors in the
-        decision-trace inspector.
-      </p>
+        {staffText("\r\n        Per-rule PASS/FAIL/UNKNOWN is recorded on the decision and is available to auditors in the\r\n        decision-trace inspector.\r\n      ")}</p>
     </Card>
   );
 }

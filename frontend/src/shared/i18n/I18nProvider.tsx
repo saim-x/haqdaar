@@ -51,7 +51,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
   }, [lang]);
 
-  const setLang = useCallback((next: Lang) => setLangState(next), []);
+  const setLang = useCallback((next: Lang) => {
+    // Update synchronously so localized staff copy rerenders in the newly
+    // selected language before React's persistence effect runs.
+    document.documentElement.lang = next;
+    document.documentElement.dir = next === 'en' ? 'ltr' : 'rtl';
+    setLangState(next);
+  }, []);
   const toggleLang = useCallback(
     () => setLangState((prev) => (prev === 'ur' ? 'sd' : prev === 'sd' ? 'en' : 'ur')),
     [],

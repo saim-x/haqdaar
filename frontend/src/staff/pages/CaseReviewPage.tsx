@@ -7,6 +7,7 @@ import { useAuth } from '../../shared/auth/AuthProvider';
 import type { CaseStatus, OfficerCaseReview } from '../../shared/api/types';
 import { getAccessToken } from '../../shared/auth/session';
 import { API_BASE } from '../../shared/config';
+import { staffText } from '../staffI18n';
 import {
   Card,
   CardTitle,
@@ -103,8 +104,7 @@ function BackToCases() {
       to="/staff/queue"
       className="press mb-2 inline-flex min-h-[36px] items-center rounded-control px-3 text-caption font-medium text-accent-ink hover:bg-raised"
     >
-      Back to cases
-    </Link>
+      {staffText("\r\n      Back to cases\r\n    ")}</Link>
   );
 }
 
@@ -232,7 +232,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
   const needsSecondApproval = caseData?.priority_band === 'HIGH' || caseData?.priority_band === 'URGENT';
   const ruleStale = caseData?.rule_stale === true;
 
-  if (query.isLoading) return <Loading label="Loading case…" />;
+  if (query.isLoading) return <Loading label={staffText("Loading case…")} />;
 
   if (consentRevoked) {
     return (
@@ -241,13 +241,11 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-paused text-white">
             <IconLock size={24} />
           </div>
-          <h1 className="text-title font-medium text-paused">Citizen withdrew consent</h1>
+          <h1 className="text-title font-medium text-paused">{staffText("Citizen withdrew consent")}</h1>
           <p className="mt-2 text-caption leading-[1.7] text-ink">
-            This case is on hold until the applicant gives permission again. The access attempt was recorded.
-          </p>
+            {staffText("\r\n            This case is on hold until the applicant gives permission again. The access attempt was recorded.\r\n          ")}</p>
           <p className="mt-3 text-meta leading-[1.7] text-ink-3">
-            You can return to your list of cases.
-          </p>
+            {staffText("\r\n            You can return to your list of cases.\r\n          ")}</p>
           <BackToCases />
         </Card>
       </div>
@@ -287,7 +285,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     : 'The application has been approved. You can check its payment progress from the case list.'
                   : `This case is ${statusWord(caseData.status).toLowerCase()}.`}
               </p>
-              <p className="mt-2 text-caption text-ink-3">Current status: {statusWord(caseData.status)}</p>
+              <p className="mt-2 text-caption text-ink-3">{staffText("Current status: ")}{statusWord(caseData.status)}</p>
             </div>
           </div>
           <div className="mt-5 border-t border-ink/[0.10] pt-4">
@@ -346,8 +344,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-control border border-warn/25 bg-warn-wash px-4 py-2.5">
           <IconWarning size={14} className="shrink-0 text-warn" />
           <p className="flex-1 text-caption leading-[1.7] text-warn">
-            The program rules have changed. Check the case again before making a decision.
-          </p>
+            {staffText("\r\n            The program rules have changed. Check the case again before making a decision.\r\n          ")}</p>
           <button
             type="button"
             onClick={() => reevaluate.mutate()}
@@ -361,18 +358,17 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
 
       {(canAssign || canDecide) && (
         <a href="#case-decision" className="mb-3 inline-flex min-h-tap items-center text-caption font-medium text-accent-ink underline xl:hidden">
-          Go to case decision
-        </a>
+          {staffText("\r\n          Go to case decision\r\n        ")}</a>
       )}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
           {reviewInProgress && (
             <Card className="border-accent/25 bg-accent-wash">
-              <CardTitle>What happens next?</CardTitle>
+              <CardTitle>{staffText("What happens next?")}</CardTitle>
               {caseData.status === 'NEEDS_INFO' ? (
-                <p className="text-body text-ink-2">The case is waiting for the information already requested from the citizen.</p>
+                <p className="text-body text-ink-2">{staffText("The case is waiting for the information already requested from the citizen.")}</p>
               ) : caseData.status === 'PENDING_SECOND_APPROVAL' ? (
-                <p className="text-body text-ink-2">A different officer needs to review the case and record the second decision.</p>
+                <p className="text-body text-ink-2">{staffText("A different officer needs to review the case and record the second decision.")}</p>
               ) : (
                 <p className="text-body text-ink-2">
                   {conflictingFacts > 0
@@ -387,7 +383,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                       {entry.reason_en || entry.label_en || 'This check needs a closer look.'}
                       {entry.fact && Object.hasOwn(facts, entry.fact) && (
                         <> <a href={`#case-fact-${entry.fact}`} className="font-medium text-accent-ink underline">
-                          See {factLabel(entry.fact)}
+                          {staffText("\r\n                          See ")}{factLabel(entry.fact)}
                         </a></>
                       )}
                     </li>
@@ -395,12 +391,11 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 </ul>
               )}
               <a href="#case-review-evidence" className="mt-2 inline-flex min-h-tap items-center text-caption font-medium text-accent-ink underline">
-                See application details
-              </a>
+                {staffText("\r\n                See application details\r\n              ")}</a>
             </Card>
           )}
           <Card>
-            <CardTitle>Case summary</CardTitle>
+            <CardTitle>{staffText("Case summary")}</CardTitle>
             {caseData.ai_case_note ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
@@ -464,12 +459,11 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                               <div className="flex flex-wrap gap-x-4">
                                 {document && (
                                   <a href={`#case-document-${document.id}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
-                                    See CNIC document
-                                  </a>
+                                    {staffText("\r\n                                    See CNIC document\r\n                                  ")}</a>
                                 )}
                                 {visibleFields.map((key) => (
                                   <a key={key} href={`#case-fact-${key}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
-                                    See {factLabel(key)}
+                                    {staffText("\r\n                                    See ")}{factLabel(key)}
                                   </a>
                                 ))}
                               </div>
@@ -482,7 +476,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 ))}
               </div>
             ) : (
-              <p className="text-caption text-ink-2">A case summary is not available yet. <a href="#case-review-evidence" className="font-medium text-accent-ink underline">See application details</a></p>
+              <p className="text-caption text-ink-2">{staffText("A case summary is not available yet. ")}<a href="#case-review-evidence" className="font-medium text-accent-ink underline">{staffText("See application details")}</a></p>
             )}
           </Card>
 
@@ -493,8 +487,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
 
           <Card className="p-0">
             <div className="flex items-baseline justify-between gap-3 border-b border-ink/[0.08] px-4 py-3">
-              <h2 className="text-body font-medium text-ink">Documents</h2>
-              <p className="text-meta text-ink-3">Blur · QR HMAC · OCR vs QR</p>
+              <h2 className="text-body font-medium text-ink">{staffText("Documents")}</h2>
+              <p className="text-meta text-ink-3">{staffText("Blur · QR HMAC · OCR vs QR")}</p>
             </div>
             <ul>
               {caseData.documents.map((doc) => (
@@ -519,12 +513,11 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                       onClick={() => void openDocumentFile(doc.id)}
                       className="press ms-auto text-meta font-medium text-accent-ink hover:underline"
                     >
-                      Open file
-                    </button>
+                      {staffText("\r\n                      Open file\r\n                    ")}</button>
                   </div>
                   {doc.verify_checks && doc.verify_checks.length > 0 && (
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-meta text-ink-2">Document checks</summary>
+                      <summary className="cursor-pointer text-meta text-ink-2">{staffText("Document checks")}</summary>
                       <ul className="mt-2 space-y-1">
                         {doc.verify_checks.map((check) => (
                           <li
@@ -548,13 +541,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 </li>
               ))}
               {caseData.documents.length === 0 && (
-                <li className="px-4 py-3 text-caption text-ink-3">No documents attached.</li>
+                <li className="px-4 py-3 text-caption text-ink-3">{staffText("No documents attached.")}</li>
               )}
             </ul>
           </Card>
 
           <Card>
-              <CardTitle>Things to check</CardTitle>
+              <CardTitle>{staffText("Things to check")}</CardTitle>
               <ul className="space-y-1.5">
                 {(caseData.flags ?? []).map((flag) => (
                   <li key={flag.code} className="flex items-center gap-2">
@@ -573,12 +566,12 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   </li>
                 ))}
                 {(caseData.flags?.length ?? 0) === 0 && (
-                  <li className="text-caption text-ink-3">Nothing extra to check.</li>
+                  <li className="text-caption text-ink-3">{staffText("Nothing extra to check.")}</li>
                 )}
               </ul>
           </Card>
           <details className="rounded-panel border border-ink/[0.10] bg-card px-4 py-3">
-            <summary className="cursor-pointer font-medium text-ink">System checks and history</summary>
+            <summary className="cursor-pointer font-medium text-ink">{staffText("System checks and history")}</summary>
             <div className="mt-3 space-y-4">
               {ruleTrace.length > 0 ? (
                 <RuleTraceTable trace={ruleTrace} />
@@ -592,7 +585,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 />
               )}
               <Card>
-                <CardTitle>System activity</CardTitle>
+                <CardTitle>{staffText("System activity")}</CardTitle>
                 <ol className="space-y-1.5">
                   {(caseData.agent_steps ?? []).map((step, idx) => {
                     const ms = step.latency_ms ?? step.duration_ms;
@@ -619,18 +612,18 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                           {stepWord(step.step)}
                         </span>
                         {ms !== null && ms !== undefined && (
-                          <span className="num ms-auto font-mono text-meta text-ink-3">{ms}ms</span>
+                          <span className="num ms-auto font-mono text-meta text-ink-3">{ms}{staffText("ms")}</span>
                         )}
                       </li>
                     );
                   })}
                   {(caseData.agent_steps?.length ?? 0) === 0 && (
-                    <li className="text-caption text-ink-3">No agent steps yet.</li>
+                    <li className="text-caption text-ink-3">{staffText("No agent steps yet.")}</li>
                   )}
                 </ol>
               </Card>
               <div className="flex items-center justify-between border-y border-ink/[0.08] py-2">
-                <span className="text-meta text-ink-3">Confidence in the records</span>
+                <span className="text-meta text-ink-3">{staffText("Confidence in the records")}</span>
                 <ConfidenceBar value={caseData.latest_confidence ?? null} />
               </div>
 
@@ -654,7 +647,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                               {p.label}
                               {isWeakest ? ' (needs checking)' : ''}
                             </span>
-                            <span className="num font-mono text-ink">{(p.val * 100).toFixed(0)}%</span>
+                            <span className="num font-mono text-ink">{(p.val * 100).toFixed(0)}{staffText("%")}</span>
                           </div>
                           <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-ink/[0.08]">
                             <div
@@ -677,13 +670,12 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
 
         <aside id="case-decision" className="scroll-mt-24 space-y-4 xl:sticky xl:top-4 xl:self-start">
           <Card>
-            <CardTitle>Case decision</CardTitle>
+            <CardTitle>{staffText("Case decision")}</CardTitle>
 
             {canAssign ? (
               <>
                 <p className="text-caption leading-[1.7] text-ink-2">
-                  Start the review to add this case to My cases and open the decision form.
-                </p>
+                  {staffText("\r\n                  Start the review to add this case to My cases and open the decision form.\r\n                ")}</p>
                 <button
                   type="button"
                   onClick={() => assign.mutate()}
@@ -695,14 +687,14 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               </>
             ) : !canDecide ? (
               <div className="space-y-2">
-                <p className="text-caption text-ink-2">Current status: {statusWord(caseData.status)}.</p>
+                <p className="text-caption text-ink-2">{staffText("Current status: ")}{statusWord(caseData.status)}{staffText(".")}</p>
                 <BackToCases />
               </div>
             ) : <>
               {firstApprover && (
-                <p className="mt-3 text-caption text-ink-2">You recorded the first approval. A different officer can record the second.</p>
+                <p className="mt-3 text-caption text-ink-2">{staffText("You recorded the first approval. A different officer can record the second.")}</p>
               )}
-              <p className="mt-2 text-caption text-ink-2">Choose what should happen to this application.</p>
+              <p className="mt-2 text-caption text-ink-2">{staffText("Choose what should happen to this application.")}</p>
               <div className="mt-3 grid grid-cols-2 gap-1.5">
                 {availableActions.map(({ key, label, on }) => (
                   <button
@@ -725,7 +717,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               {action && <>
                 {needsReason && <>
                 <p className="mt-4 text-meta text-ink-3">
-                  Reason for decision {needsReason && <span className="text-negative">*</span>}
+                  {staffText("\r\n                  Reason for decision ")}{needsReason && <span className="text-negative">{staffText("*")}</span>}
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {Object.entries(REASON_CODES).map(([code, label]) => {
@@ -756,7 +748,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 {action === 'REQUEST_INFO' && (
                   <>
                     <p className="mt-4 text-meta text-ink-3">
-                      What should the applicant provide? <span className="text-negative">*</span>
+                      {staffText("\r\n                      What should the applicant provide? ")}<span className="text-negative">{staffText("*")}</span>
                     </p>
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {Array.from(
@@ -789,7 +781,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
 
                 {action !== 'APPROVE' && <>
                   <label htmlFor="note" className="mt-4 block text-meta text-ink-3">
-                    Explanation {needsExplanation && <span className="text-negative">*</span>}
+                    {staffText("\r\n                    Explanation ")}{needsExplanation && <span className="text-negative">{staffText("*")}</span>}
                   </label>
                   <textarea
                     id="note"
@@ -799,14 +791,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     className="mt-1.5 text-caption"
-                    placeholder="Write a short explanation."
+                    placeholder={staffText("Write a short explanation.")}
                   />
                 </>}
 
                 {needsSecondApproval && !secondReview && action === 'APPROVE' && (
                   <p className="mt-3 rounded-control border border-warn/25 bg-warn-wash px-3 py-2 text-meta leading-[1.7] text-warn">
-                    If you approve this case, a second officer must also approve it before payment.
-                  </p>
+                    {staffText("\r\n                    If you approve this case, a second officer must also approve it before payment.\r\n                  ")}</p>
                 )}
 
                 <button

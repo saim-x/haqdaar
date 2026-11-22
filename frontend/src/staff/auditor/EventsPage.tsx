@@ -6,6 +6,7 @@ import { errorMessage } from '../../shared/api/errors';
 import type { AuditEventList, ChainVerifyResult } from '../../shared/api/types';
 import { Card, CardTitle, Chip, ErrorState, humanize, Loading, PageHeader } from '../ui';
 import { IconShield } from '../../shared/ui/Icons';
+import { staffText } from '../staffI18n';
 
 const ACTOR_TYPES = ['', 'USER', 'AI', 'AGENT', 'SYSTEM', 'API_KEY'];
 
@@ -48,8 +49,8 @@ export default function EventsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Audit events"
-        subtitle="Append-only, SHA-256 hash-chained. Read-only console."
+        title={staffText("Audit events")}
+        subtitle={staffText("Append-only, SHA-256 hash-chained. Read-only console.")}
         actions={
           <button
             type="button"
@@ -97,7 +98,7 @@ export default function EventsPage() {
           value={actorType}
           onChange={(e) => setActorType(e.target.value)}
           className="field w-auto"
-          aria-label="Actor type"
+          aria-label={staffText("Actor type")}
         >
           {ACTOR_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -106,15 +107,15 @@ export default function EventsPage() {
           ))}
         </select>
         <input
-          placeholder="Action (e.g. case.submitted)"
-          aria-label="Action"
+          placeholder={staffText("Action (e.g. case.submitted)")}
+          aria-label={staffText("Action")}
           value={action}
           onChange={(e) => setAction(e.target.value)}
           className="field min-w-[220px] flex-1 font-mono"
         />
         <input
-          placeholder="Case id"
-          aria-label="Case id"
+          placeholder={staffText("Case id")}
+          aria-label={staffText("Case id")}
           value={caseId}
           onChange={(e) => setCaseId(e.target.value)}
           className="field min-w-[220px] flex-1 font-mono"
@@ -129,12 +130,12 @@ export default function EventsPage() {
           <table className="ledger min-w-[940px]">
             <thead>
               <tr>
-                <th className="text-end">Seq</th>
-                <th>When</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Resource</th>
-                <th>Hash</th>
+                <th className="text-end">{staffText("Seq")}</th>
+                <th>{staffText("When")}</th>
+                <th>{staffText("Actor")}</th>
+                <th>{staffText("Action")}</th>
+                <th>{staffText("Resource")}</th>
+                <th>{staffText("Hash")}</th>
               </tr>
             </thead>
             <tbody>
@@ -169,7 +170,7 @@ export default function EventsPage() {
                         to={`/auditor/cases/${event.resource_id}`}
                         className="text-accent-ink hover:underline"
                       >
-                        {event.resource_type}:{event.resource_id.slice(0, 8)}
+                        {event.resource_type}{staffText(":")}{event.resource_id.slice(0, 8)}
                       </Link>
                     ) : (
                       `${event.resource_type}${event.resource_id ? `:${event.resource_id.slice(0, 8)}` : ''}`
@@ -177,7 +178,7 @@ export default function EventsPage() {
                   </td>
                   <td className="font-mono text-[11px] text-ink-3" title={`${event.prev_hash} → ${event.event_hash}`}>
                     <span>{event.prev_hash.replace(/^sha256:/, '').slice(0, 6)}</span>
-                    <span className="mx-1 text-accent-ink">→</span>
+                    <span className="mx-1 text-accent-ink">{staffText("→")}</span>
                     <span className="text-ink-2">{event.event_hash.replace(/^sha256:/, '').slice(0, 10)}</span>
                   </td>
                 </tr>
@@ -185,8 +186,7 @@ export default function EventsPage() {
               {query.data.items.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-caption text-ink-3">
-                    No events match these filters.
-                  </td>
+                    {staffText("\r\n                    No events match these filters.\r\n                  ")}</td>
                 </tr>
               )}
             </tbody>
@@ -195,15 +195,12 @@ export default function EventsPage() {
       )}
 
       <Card>
-        <CardTitle hint="how it works">Tamper evidence</CardTitle>
+        <CardTitle hint={staffText("how it works")}>{staffText("Tamper evidence")}</CardTitle>
         <p className="text-caption leading-[1.8] text-ink-2">
-          Each event stores <code className="font-mono text-ink">prev_hash</code> and{' '}
+          {staffText("\r\n          Each event stores ")}<code className="font-mono text-ink">{staffText("prev_hash")}</code> {staffText(" and")}{' '}
           <code className="font-mono text-ink">
-            event_hash = SHA256(prev_hash | seq | created_at | action | resource | payload)
-          </code>
-          . Editing any historical row breaks every hash after it, and Verify reports the exact
-          first broken sequence number.
-        </p>
+            {staffText("\r\n            event_hash = SHA256(prev_hash | seq | created_at | action | resource | payload)\r\n          ")}</code>
+          {staffText("\r\n          . Editing any historical row breaks every hash after it, and Verify reports the exact\r\n          first broken sequence number.\r\n        ")}</p>
       </Card>
     </div>
   );

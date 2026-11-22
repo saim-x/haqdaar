@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import type { EvalDashboard } from '../../shared/api/types';
 import { Card, CardTitle, Chip, ErrorState, Kpi, Loading, PageHeader, routeWord } from '../ui';
+import { staffText } from '../staffI18n';
 
 function pct(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
@@ -34,7 +35,7 @@ function ThresholdSweep({
   const padL = 36;
   const padR = 44;
   const padY = 26;
-  if (data.length === 0) return <p className="text-caption text-ink-3">No sweep data yet.</p>;
+  if (data.length === 0) return <p className="text-caption text-ink-3">{staffText("No sweep data yet.")}</p>;
 
   const xs = data.map((d) => d.threshold);
   const minX = Math.min(...xs);
@@ -55,14 +56,13 @@ function ThresholdSweep({
         viewBox={`0 0 ${w} ${h}`}
         className="w-full"
         role="img"
-        aria-label="Threshold sweep and expected cost curve"
+        aria-label={staffText("Threshold sweep and expected cost curve")}
       >
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
           <g key={tick}>
             <line x1={padL} y1={y(tick)} x2={w - padR} y2={y(tick)} stroke="var(--rule)" />
             <text x={padL - 6} y={y(tick) + 3} textAnchor="end" fontSize={9} fill="var(--ink-3)">
-              {Math.round(tick * 100)}%
-            </text>
+              {Math.round(tick * 100)}{staffText("%\r\n            ")}</text>
             <text x={w - padR + 6} y={y(tick) + 3} textAnchor="start" fontSize={9} fill="var(--warn)">
               {Math.round(tick * maxCost)}
             </text>
@@ -102,7 +102,7 @@ function ThresholdSweep({
           strokeWidth={1.5}
         />
         <text x={x(active) - 4} y={padY - 7} textAnchor="end" fontSize={9} fill="var(--accent)">
-          active τ={active.toFixed(2)}{knee && Math.abs(knee - active) < 0.001 ? ' (knee)' : ''}
+          {staffText("\r\n          active τ=")}{active.toFixed(2)}{knee && Math.abs(knee - active) < 0.001 ? ' (knee)' : ''}
         </text>
 
         {/* Interactive clickable threshold nodes */}
@@ -148,30 +148,29 @@ function ThresholdSweep({
           ))}
           <span className="inline-flex items-center gap-1.5 text-meta text-warn">
             <span className="h-0.5 w-3 border-t-2 border-dashed border-warn" aria-hidden />
-            expected cost (right axis)
-          </span>
+            {staffText("\r\n            expected cost (right axis)\r\n          ")}</span>
         </div>
       </div>
 
       {inspected && (
         <div className="mt-3 grid gap-2 rounded-control border border-ink/[0.08] bg-raised/60 p-3 sm:grid-cols-5">
           <div>
-            <p className="text-meta text-ink-3">Inspected τ</p>
+            <p className="text-meta text-ink-3">{staffText("Inspected τ")}</p>
             <p className="num font-mono text-body font-medium text-ink">
               {inspected.threshold.toFixed(2)}
               {Math.abs(inspected.threshold - active) < 0.001 && (
-                <span className="ms-1.5 text-meta text-accent-ink">(active)</span>
+                <span className="ms-1.5 text-meta text-accent-ink">{staffText("(active)")}</span>
               )}
             </p>
           </div>
           <div>
-            <p className="text-meta text-ink-3">Auto-approved</p>
+            <p className="text-meta text-ink-3">{staffText("Auto-approved")}</p>
             <p className="num font-mono text-body font-medium text-accent-ink">
               {pct(inspected.auto_approve_rate)}
             </p>
           </div>
           <div>
-            <p className="text-meta text-ink-3">False approvals</p>
+            <p className="text-meta text-ink-3">{staffText("False approvals")}</p>
             <p
               className={`num font-mono text-body font-medium ${
                 inspected.false_approval_rate === 0 ? 'text-positive' : 'text-negative'
@@ -181,13 +180,13 @@ function ThresholdSweep({
             </p>
           </div>
           <div>
-            <p className="text-meta text-ink-3">Human review</p>
+            <p className="text-meta text-ink-3">{staffText("Human review")}</p>
             <p className="num font-mono text-body font-medium text-info">
               {pct(inspected.human_review_rate)}
             </p>
           </div>
           <div>
-            <p className="text-meta text-ink-3">Expected cost</p>
+            <p className="text-meta text-ink-3">{staffText("Expected cost")}</p>
             <p className="num font-mono text-body font-medium text-warn">
               {Math.round(inspected.expected_cost)}
             </p>
@@ -233,61 +232,60 @@ export default function EvalPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Evaluation"
-        subtitle="Review results from synthetic cases and recent system activity."
+        title={staffText("Evaluation")}
+        subtitle={staffText("Review results from synthetic cases and recent system activity.")}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi
-          label="Active threshold"
+          label={staffText("Active threshold")}
           value={active_threshold.toFixed(2)}
-          hint="Router confidence floor"
+          hint={staffText("Router confidence floor")}
         />
         <Kpi
-          label="False approvals"
+          label={staffText("False approvals")}
           value={pct(
             decision_router_sweep.find((d) => Math.abs(d.threshold - active_threshold) < 0.001)
               ?.false_approval_rate ?? 0,
           )}
-          hint="At the active threshold"
+          hint={staffText("At the active threshold")}
         />
         <Kpi
-          label="Scam hard-negative FPR"
+          label={staffText("Scam hard-negative FPR")}
           value={pct(scam_classifier.hard_negative_fpr)}
-          hint="Benign money messages"
+          hint={staffText("Benign money messages")}
         />
         <Kpi
-          label="Doc false-tamper"
+          label={staffText("Doc false-tamper")}
           value={pct(document_verifier.false_tamper_rate)}
-          hint="Genuine compressed docs"
+          hint={staffText("Genuine compressed docs")}
         />
       </div>
 
       <Card>
-        <CardTitle>How to read the results</CardTitle>
+        <CardTitle>{staffText("How to read the results")}</CardTitle>
         <dl className="grid gap-4 text-caption text-ink-2 sm:grid-cols-3">
           <div>
-            <dt className="font-medium text-ink">False approval</dt>
-            <dd>A synthetic case labelled ineligible is automatically approved.</dd>
-            <dd>At the active threshold: {activeResult ? pct(activeResult.false_approval_rate) : 'No result'}</dd>
+            <dt className="font-medium text-ink">{staffText("False approval")}</dt>
+            <dd>{staffText("A synthetic case labelled ineligible is automatically approved.")}</dd>
+            <dd>{staffText("At the active threshold: ")}{activeResult ? pct(activeResult.false_approval_rate) : 'No result'}</dd>
           </div>
           <div>
-            <dt className="font-medium text-ink">Unnecessary review</dt>
-            <dd>For example, a safe, eligible synthetic case goes to an officer because confidence is too low.</dd>
-            <dd>All review referrals: {activeResult ? pct(activeResult.human_review_rate) : 'No result'}</dd>
+            <dt className="font-medium text-ink">{staffText("Unnecessary review")}</dt>
+            <dd>{staffText("For example, a safe, eligible synthetic case goes to an officer because confidence is too low.")}</dd>
+            <dd>{staffText("All review referrals: ")}{activeResult ? pct(activeResult.human_review_rate) : 'No result'}</dd>
           </div>
           <div>
-            <dt className="font-medium text-ink">Speech transcription error</dt>
-            <dd>For example, a spoken zero is skipped and the resulting phone number needs correction.</dd>
-            <dd>Recent speech requests: {speech?.calls ?? 'No data'}. Accuracy needs recordings with reference transcripts.</dd>
+            <dt className="font-medium text-ink">{staffText("Speech transcription error")}</dt>
+            <dd>{staffText("For example, a spoken zero is skipped and the resulting phone number needs correction.")}</dd>
+            <dd>{staffText("Recent speech requests: ")}{speech?.calls ?? 'No data'}{staffText(". Accuracy needs recordings with reference transcripts.")}</dd>
           </div>
         </dl>
       </Card>
 
       <Card>
-        <CardTitle hint="Click any τ point · wrong approval = 100, review = 8, ask = 5">
-          Threshold sweep &amp; expected cost curve
-        </CardTitle>
+        <CardTitle hint={staffText("Click any τ point · wrong approval = 100, review = 8, ask = 5")}>
+          {staffText("\r\n          Threshold sweep &amp; expected cost curve\r\n        ")}</CardTitle>
         <ThresholdSweep
           data={decision_router_sweep}
           active={active_threshold}
@@ -297,23 +295,23 @@ export default function EvalPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card>
-          <CardTitle hint={`${scam_classifier.test_size} held-out`}>Scam classifier</CardTitle>
+          <CardTitle hint={`${scam_classifier.test_size} held-out`}>{staffText("Scam classifier")}</CardTitle>
           <dl className="grid grid-cols-2 gap-x-6 border-t border-ink/[0.08]">
-            <Metric label="Precision" value={pct(scam_classifier.precision)} />
-            <Metric label="Recall" value={pct(scam_classifier.recall)} />
-            <Metric label="F1" value={scam_classifier.f1.toFixed(3)} />
-            <Metric label="FPR" value={pct(scam_classifier.false_positive_rate)} />
-            <Metric label="Live checks" value={String(scam_classifier.live_checks_count)} />
-            <Metric label="User disputed" value={String(scam_classifier.user_disputed_count)} />
+            <Metric label={staffText("Precision")} value={pct(scam_classifier.precision)} />
+            <Metric label={staffText("Recall")} value={pct(scam_classifier.recall)} />
+            <Metric label={staffText("F1")} value={scam_classifier.f1.toFixed(3)} />
+            <Metric label={staffText("FPR")} value={pct(scam_classifier.false_positive_rate)} />
+            <Metric label={staffText("Live checks")} value={String(scam_classifier.live_checks_count)} />
+            <Metric label={staffText("User disputed")} value={String(scam_classifier.user_disputed_count)} />
           </dl>
 
           {/* confusion_matrix(labels=[0, 1]) → row/col 0 = benign, row/col 1 = scam */}
           <table className="ledger mt-4 text-center">
             <thead>
               <tr>
-                <th className="text-start">actual \ predicted</th>
-                <th>predicted benign</th>
-                <th>predicted scam</th>
+                <th className="text-start">{staffText("actual \\ predicted")}</th>
+                <th>{staffText("predicted benign")}</th>
+                <th>{staffText("predicted scam")}</th>
               </tr>
             </thead>
             <tbody>
@@ -327,7 +325,7 @@ export default function EvalPage() {
                     return (
                       <td key={j} className="num font-mono font-medium">
                         {cell}{' '}
-                        <span className="text-[11px] font-normal text-ink-3">({tag})</span>
+                        <span className="text-[11px] font-normal text-ink-3">{staffText("(")}{tag}{staffText(")")}</span>
                       </td>
                     );
                   })}
@@ -338,30 +336,30 @@ export default function EvalPage() {
         </Card>
 
         <Card>
-          <CardTitle hint={`${document_verifier.test_size} images`}>Document verifier</CardTitle>
+          <CardTitle hint={`${document_verifier.test_size} images`}>{staffText("Document verifier")}</CardTitle>
           <dl className="grid grid-cols-2 gap-x-6 border-t border-ink/[0.08]">
-            <Metric label="Genuine verified" value={pct(document_verifier.genuine_verified_rate)} />
-            <Metric label="Tamper caught" value={pct(document_verifier.tampered_caught_rate)} />
-            <Metric label="False tamper" value={pct(document_verifier.false_tamper_rate)} />
-            <Metric label="Blurry retake" value={pct(document_verifier.blurry_retake_rate)} />
+            <Metric label={staffText("Genuine verified")} value={pct(document_verifier.genuine_verified_rate)} />
+            <Metric label={staffText("Tamper caught")} value={pct(document_verifier.tampered_caught_rate)} />
+            <Metric label={staffText("False tamper")} value={pct(document_verifier.false_tamper_rate)} />
+            <Metric label={staffText("Blurry retake")} value={pct(document_verifier.blurry_retake_rate)} />
           </dl>
         </Card>
       </div>
 
       <Card>
-        <CardTitle hint="last 24h">Live operations</CardTitle>
+        <CardTitle hint={staffText("last 24h")}>{staffText("Live operations")}</CardTitle>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Kpi bare label="Decisions" value={String(live_operations.total_decisions)} />
-          <Kpi bare label="Override rate" value={pct(live_operations.officer_override_rate)} />
-          <Kpi bare label="p50" value={`${live_operations.latency_p50_ms}ms`} />
-          <Kpi bare label="p95" value={`${live_operations.latency_p95_ms}ms`} />
+          <Kpi bare label={staffText("Decisions")} value={String(live_operations.total_decisions)} />
+          <Kpi bare label={staffText("Override rate")} value={pct(live_operations.officer_override_rate)} />
+          <Kpi bare label={staffText("p50")} value={`${live_operations.latency_p50_ms}ms`} />
+          <Kpi bare label={staffText("p95")} value={`${live_operations.latency_p95_ms}ms`} />
           <Kpi
             bare
-            label="LLM calls"
+            label={staffText("LLM calls")}
             value={String(live_operations.llm_calls_24h)}
             hint={`$${live_operations.llm_cost_usd_24h.toFixed(4)}`}
           />
-          <Kpi bare label="LLM failures" value={pct(live_operations.llm_failure_rate)} />
+          <Kpi bare label={staffText("LLM failures")} value={pct(live_operations.llm_failure_rate)} />
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-ink/[0.08] pt-3">
@@ -373,26 +371,26 @@ export default function EvalPage() {
           ))}
           {live_operations.active_provider && (
             <Chip tone={live_operations.active_provider === 'live' ? 'ok' : 'neutral'}>
-              AI_PROVIDER={live_operations.active_provider}
+              {staffText("\r\n              AI_PROVIDER=")}{live_operations.active_provider}
             </Chip>
           )}
           {typeof live_operations.guardrail_triggers_24h === 'number' && (
             <Chip tone={live_operations.guardrail_triggers_24h > 0 ? 'warn' : 'ok'}>
-              Guardrails (24h): {live_operations.guardrail_triggers_24h}
+              {staffText("\r\n              Guardrails (24h): ")}{live_operations.guardrail_triggers_24h}
             </Chip>
           )}
         </div>
 
         {live_operations.ai_telemetry_by_task && live_operations.ai_telemetry_by_task.length > 0 && (
           <div className="mt-3 border-t border-ink/[0.08] pt-3">
-            <p className="mb-2 text-meta font-medium text-ink-2">AI telemetry by task (24h)</p>
+            <p className="mb-2 text-meta font-medium text-ink-2">{staffText("AI telemetry by task (24h)")}</p>
             <table className="ledger">
               <thead>
                 <tr>
-                  <th>Task</th>
-                  <th className="text-end">Calls</th>
-                  <th className="text-end">Avg latency</th>
-                  <th className="text-end">Est. cost</th>
+                  <th>{staffText("Task")}</th>
+                  <th className="text-end">{staffText("Calls")}</th>
+                  <th className="text-end">{staffText("Avg latency")}</th>
+                  <th className="text-end">{staffText("Est. cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -401,10 +399,9 @@ export default function EvalPage() {
                     <td className="font-mono text-meta text-ink">{row.task_type}</td>
                     <td className="num text-end font-mono text-meta text-ink-2">{row.calls}</td>
                     <td className="num text-end font-mono text-meta text-ink-2">
-                      {row.avg_latency_ms}ms
-                    </td>
+                      {row.avg_latency_ms}{staffText("ms\r\n                    ")}</td>
                     <td className="num text-end font-mono text-meta text-ink-2">
-                      ${row.cost_usd.toFixed(5)}
+                      {staffText("\r\n                      $")}{row.cost_usd.toFixed(5)}
                     </td>
                   </tr>
                 ))}

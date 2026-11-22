@@ -5,6 +5,7 @@ import { errorMessage } from '../../shared/api/errors';
 import type { ApiKeyCreated, ApiKeyRecord } from '../../shared/api/types';
 import { CopyCode } from '../../shared/ui/CopyCode';
 import { Card, CardTitle, Chip, ErrorState, Loading, PageHeader } from '../ui';
+import { staffText } from '../staffI18n';
 
 const SCOPES = ['cases:read', 'scam:check', 'rules:read'];
 
@@ -55,8 +56,8 @@ export default function ApiKeysPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="API keys"
-        subtitle="Public REST API access. A revoked key fails on the next call with 401."
+        title={staffText("API keys")}
+        subtitle={staffText("Public REST API access. A revoked key fails on the next call with 401.")}
       />
 
       {error && (
@@ -71,34 +72,32 @@ export default function ApiKeysPage() {
       {created && (
         <Card className="border-accent/30 bg-accent-wash">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <h2 className="text-body font-medium text-ink">New API key</h2>
-            <span className="stamp">shown once</span>
+            <h2 className="text-body font-medium text-ink">{staffText("New API key")}</h2>
+            <span className="stamp">{staffText("shown once")}</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <code className="num min-w-0 flex-1 overflow-x-auto rounded-control border border-ink/[0.10] bg-card px-3 py-2 font-mono text-caption text-ink">
               {created.api_key}
             </code>
-            <CopyCode value={created.api_key} label="Key" tone="ink" size="md" />
+            <CopyCode value={created.api_key} label={staffText("Key")} tone="ink" size="md" />
             <button
               type="button"
               onClick={() => setCreated(null)}
               className="press min-h-[36px] rounded-control px-2.5 text-meta text-ink-2 hover:bg-card hover:text-ink"
             >
-              Dismiss
-            </button>
+              {staffText("\r\n              Dismiss\r\n            ")}</button>
           </div>
           <p className="mt-2 text-meta text-ink-2">
-            Copy it now. The server stores only a hash, so this value cannot be shown again.
-          </p>
+            {staffText("\r\n            Copy it now. The server stores only a hash, so this value cannot be shown again.\r\n          ")}</p>
         </Card>
       )}
 
       <Card>
-        <CardTitle>Create key</CardTitle>
+        <CardTitle>{staffText("Create key")}</CardTitle>
         <div className="flex flex-wrap items-center gap-2">
           <input
-            placeholder="Key name"
-            aria-label="Key name"
+            placeholder={staffText("Key name")}
+            aria-label={staffText("Key name")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="field min-w-[200px] flex-1"
@@ -129,8 +128,8 @@ export default function ApiKeysPage() {
             max={600}
             value={rateLimit}
             onChange={(e) => setRateLimit(Math.max(5, Number(e.target.value) || 60))}
-            aria-label="Rate limit per minute"
-            title="Requests per minute"
+            aria-label={staffText("Rate limit per minute")}
+            title={staffText("Requests per minute")}
             className="field num w-24 font-mono"
           />
           <button
@@ -139,8 +138,7 @@ export default function ApiKeysPage() {
             disabled={create.isPending || !name || scopes.length === 0}
             className="press min-h-[36px] rounded-control bg-accent px-4 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
           >
-            Create
-          </button>
+            {staffText("\r\n            Create\r\n          ")}</button>
         </div>
       </Card>
 
@@ -148,12 +146,12 @@ export default function ApiKeysPage() {
         <table className="ledger min-w-[720px]">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Prefix</th>
-              <th>Scopes</th>
-              <th className="text-end">Rate</th>
-              <th>Last used</th>
-              <th>Status</th>
+              <th>{staffText("Name")}</th>
+              <th>{staffText("Prefix")}</th>
+              <th>{staffText("Scopes")}</th>
+              <th className="text-end">{staffText("Rate")}</th>
+              <th>{staffText("Last used")}</th>
+              <th>{staffText("Status")}</th>
               <th />
             </tr>
           </thead>
@@ -161,7 +159,7 @@ export default function ApiKeysPage() {
             {query.data?.items.map((key) => (
               <tr key={key.id} className={key.is_active ? undefined : 'opacity-60'}>
                 <td className="font-medium text-ink">{key.name}</td>
-                <td className="font-mono text-meta text-ink-2">{key.key_prefix}…</td>
+                <td className="font-mono text-meta text-ink-2">{key.key_prefix}{staffText("…")}</td>
                 <td>
                   <div className="flex flex-wrap gap-1">
                     {key.scopes.map((s) => (
@@ -170,8 +168,7 @@ export default function ApiKeysPage() {
                   </div>
                 </td>
                 <td className="num text-end font-mono text-meta text-ink-2">
-                  {key.rate_limit_per_min}/min
-                </td>
+                  {key.rate_limit_per_min}{staffText("/min\r\n                ")}</td>
                 <td className="num text-meta text-ink-3">
                   {key.last_used_at
                     ? new Date(key.last_used_at).toLocaleString('en-GB', {
@@ -200,8 +197,7 @@ export default function ApiKeysPage() {
                       onClick={() => revoke.mutate(key.id)}
                       className="press min-h-[30px] rounded-[7px] border border-negative/30 px-2 text-meta text-negative hover:bg-negative-wash"
                     >
-                      Revoke
-                    </button>
+                      {staffText("\r\n                      Revoke\r\n                    ")}</button>
                   )}
                 </td>
               </tr>
@@ -209,8 +205,7 @@ export default function ApiKeysPage() {
             {query.data?.items.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-caption text-ink-3">
-                  No keys issued yet.
-                </td>
+                  {staffText("\r\n                  No keys issued yet.\r\n                ")}</td>
               </tr>
             )}
           </tbody>

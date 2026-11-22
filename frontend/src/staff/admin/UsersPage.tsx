@@ -4,6 +4,7 @@ import { api } from '../../shared/api/client';
 import { errorMessage } from '../../shared/api/errors';
 import type { Role, User } from '../../shared/api/types';
 import { Card, CardTitle, ErrorState, Loading, PageHeader, roleWord } from '../ui';
+import { staffText } from '../staffI18n';
 
 const ROLES: Role[] = ['HELPER', 'OFFICER', 'ADMIN', 'AUDITOR'];
 
@@ -67,8 +68,8 @@ export default function UsersPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Users"
-        subtitle="Create accounts, change roles, disable access. Every change is audited."
+        title={staffText("Users")}
+        subtitle={staffText("Create accounts, change roles, disable access. Every change is audited.")}
       />
 
       {message && (
@@ -81,25 +82,25 @@ export default function UsersPage() {
       )}
 
       <Card>
-        <CardTitle>Create user</CardTitle>
+        <CardTitle>{staffText("Create user")}</CardTitle>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_140px_1fr_auto]">
           <input
-            placeholder="Full name"
-            aria-label="Full name"
+            placeholder={staffText("Full name")}
+            aria-label={staffText("Full name")}
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             className="field"
           />
           <input
-            placeholder="Email"
-            aria-label="Email"
+            placeholder={staffText("Email")}
+            aria-label={staffText("Email")}
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="field"
           />
           <select
             value={form.role}
-            aria-label="Role"
+            aria-label={staffText("Role")}
             onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
             className="field"
           >
@@ -111,8 +112,8 @@ export default function UsersPage() {
           </select>
           <input
             type="password"
-            placeholder="Password"
-            aria-label="Password"
+            placeholder={staffText("Password")}
+            aria-label={staffText("Password")}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="field"
@@ -123,8 +124,7 @@ export default function UsersPage() {
             disabled={create.isPending || !form.full_name || !form.email}
             className="press min-h-[36px] rounded-control bg-accent px-4 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
           >
-            Create
-          </button>
+            {staffText("\r\n            Create\r\n          ")}</button>
         </div>
       </Card>
 
@@ -132,10 +132,10 @@ export default function UsersPage() {
         <table className="ledger min-w-[760px]">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email / phone</th>
-              <th>Role</th>
-              <th>Status</th>
+              <th>{staffText("Name")}</th>
+              <th>{staffText("Email / phone")}</th>
+              <th>{staffText("Role")}</th>
+              <th>{staffText("Status")}</th>
               <th />
             </tr>
           </thead>
@@ -187,8 +187,7 @@ export default function UsersPage() {
             {query.data?.items.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-caption text-ink-3">
-                  No accounts in this tenant yet.
-                </td>
+                  {staffText("\r\n                  No accounts in this tenant yet.\r\n                ")}</td>
               </tr>
             )}
           </tbody>

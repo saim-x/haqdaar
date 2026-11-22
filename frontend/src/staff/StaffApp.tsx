@@ -1,4 +1,4 @@
-import { Suspense, lazy, useRef, useState } from 'react';
+import { cloneElement, isValidElement, Suspense, lazy, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Navigate, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/auth/AuthProvider';
@@ -9,6 +9,7 @@ import { BrandLockup } from '../shared/ui/Brand';
 import { LanguageSelector } from '../shared/ui/LanguageSelector';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import type { Role } from '../shared/api/types';
+import { staffText } from './staffI18n';
 import {
   IconChart,
   IconGavel,
@@ -108,7 +109,7 @@ function staffLabel(label: string, lang: 'ur' | 'sd' | 'en') {
 
 function PageFallback() {
   return (
-    <div className="py-10" role="status" aria-label="Loading console">
+    <div className="py-10" role="status" aria-label={staffText("Loading console")}>
       <div className="space-y-2">
         {[0, 1, 2, 3].map((row) => (
           <div key={row} className="h-9 rounded-control bg-raised" />
@@ -125,7 +126,7 @@ function StaffNavigation({ groups, current, onNavigate }: {
 }) {
   const { lang } = useI18n();
   return (
-    <nav aria-label="Workspace" className="space-y-5 px-3 py-4">
+    <nav aria-label={staffText("Workspace")} className="space-y-5 px-3 py-4">
       {groups.map(({ title, items }) => (
         <div key={title}>
           <p className="mb-1 px-3 text-meta font-medium text-ink-3">{staffLabel(title, lang)}</p>
@@ -188,7 +189,7 @@ function StaffApp({ children, session, groups, current }: {
         <div className="border-t border-ink/[0.08] px-5 py-3">
           <p className="truncate text-caption text-ink">{session.user.full_name}</p>
           <p className="mt-0.5 text-meta text-ink-3">
-            {roleWord(role)} · {session.tenant?.code ?? 'Platform scope'}
+            {roleWord(role)} {staffText(" · ")}{session.tenant?.code ?? 'Platform scope'}
           </p>
         </div>
       </aside>
@@ -205,8 +206,7 @@ function StaffApp({ children, session, groups, current }: {
               className="press flex min-h-tap shrink-0 items-center gap-2 rounded-control px-2 text-caption font-medium text-ink-2 hover:bg-raised md:hidden"
             >
               <IconMenu size={18} />
-              Menu
-            </button>
+              {staffText("\r\n              Menu\r\n            ")}</button>
             <div className="min-w-0 flex-1">
               <p className="truncate text-caption font-semibold text-ink">{staffLabel(current.label, lang)}</p>
               <p className="truncate text-meta text-ink-3">{session.tenant?.name ?? 'Platform scope'}</p>
@@ -243,7 +243,11 @@ function StaffApp({ children, session, groups, current }: {
 
         <main className="min-w-0 flex-1">
           <div className="console-page">
-            <Suspense fallback={<PageFallback />}>{children}</Suspense>
+            <Suspense fallback={<PageFallback />}>
+              {isValidElement(children)
+                ? cloneElement(children as React.ReactElement<{ staffLocale?: string }>, { staffLocale: lang })
+                : children}
+            </Suspense>
           </div>
         </main>
       </div>

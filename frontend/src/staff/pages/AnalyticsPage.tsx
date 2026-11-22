@@ -3,6 +3,7 @@ import { api } from '../../shared/api/client';
 import { pkr } from '../../shared/lib/money';
 import type { TenantAnalytics } from '../../shared/api/types';
 import { Card, ErrorState, flagWord, Kpi, Loading, PageHeader, statusWord } from '../ui';
+import { staffText } from '../staffI18n';
 
 /**
  * Tenant analytics - docs/11 §6.4. Always tenant-filtered server-side (AC-02.2).
@@ -31,15 +32,15 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Tenant analytics"
+        title={staffText("Tenant analytics")}
         subtitle={`${data.total_cases} cases · ${data.decided_cases} decided`}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Disbursed" value={`PKR ${pkr(data.disbursed_pkr)}`} />
-        <Kpi label="Auto-approve" value={`${data.auto_approve_pct.toFixed(1)}%`} />
+        <Kpi label={staffText("Disbursed")} value={`PKR ${pkr(data.disbursed_pkr)}`} />
+        <Kpi label={staffText("Auto-approve")} value={`${data.auto_approve_pct.toFixed(1)}%`} />
         <Kpi
-          label="Avg time to decision"
+          label={staffText("Avg time to decision")}
           value={
             !data.avg_time_to_decision_seconds
               ? '-'
@@ -50,13 +51,13 @@ export default function AnalyticsPage() {
                   : `${(data.avg_time_to_decision_seconds / 3600).toFixed(1)}h`
           }
         />
-        <Kpi label="Open cases" value={String(data.open_cases)} />
+        <Kpi label={staffText("Open cases")} value={String(data.open_cases)} />
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Card className="p-0">
           <div className="border-b border-ink/[0.08] px-4 py-3">
-            <h2 className="text-body font-medium text-ink">Cases by status</h2>
+            <h2 className="text-body font-medium text-ink">{staffText("Cases by status")}</h2>
           </div>
           <table className="ledger">
             <tbody>
@@ -76,7 +77,7 @@ export default function AnalyticsPage() {
               ))}
               {statusRows.length === 0 && (
                 <tr>
-                  <td className="text-caption text-ink-3">No cases yet.</td>
+                  <td className="text-caption text-ink-3">{staffText("No cases yet.")}</td>
                 </tr>
               )}
             </tbody>
@@ -85,7 +86,7 @@ export default function AnalyticsPage() {
 
         <Card className="p-0">
           <div className="border-b border-ink/[0.08] px-4 py-3">
-            <h2 className="text-body font-medium text-ink">Top risk flags</h2>
+            <h2 className="text-body font-medium text-ink">{staffText("Top risk flags")}</h2>
           </div>
           <table className="ledger">
             <tbody>
@@ -105,7 +106,7 @@ export default function AnalyticsPage() {
               ))}
               {flagRows.length === 0 && (
                 <tr>
-                  <td className="text-caption text-ink-3">No flags recorded.</td>
+                  <td className="text-caption text-ink-3">{staffText("No flags recorded.")}</td>
                 </tr>
               )}
             </tbody>
