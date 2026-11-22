@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     google_cloud_project: str = ""
     google_tts_access_token: str = ""
     gemini_api_key: str = ""
+    gemini_allow_live_in_fake_ai: bool = False
     openai_chat_model: str = "gpt-4o-mini"
     openai_embed_model: str = "text-embedding-3-small"
     openai_stt_model: str = "whisper-1"

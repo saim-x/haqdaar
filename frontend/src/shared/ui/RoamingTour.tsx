@@ -105,7 +105,6 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   const sindhiCopy = page && lang === 'sd' ? sindhiTour[page.audioId] : undefined;
   const topic = sindhiCopy?.[0] ?? (page ? pick(page.title[1], page.title[0]) : '');
   const instruction = sindhiCopy?.[1] ?? (page ? pick(page.text[1], page.text[0]) : '');
-  const audioBase = page && lang === 'sd' ? `tour_${page.audioId}` : null;
   useEffect(() => {
     const modal = dialog.current;
     if (running && modal && !modal.open) {
@@ -121,13 +120,13 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   useEffect(() => {
     if (!running || !page || route !== page.to) return;
     const timer = window.setTimeout(() => {
-      void play(audioBase, `${topic}. ${instruction}`);
+      void play(null, `${topic}. ${instruction}`);
     }, 450);
     return () => {
       window.clearTimeout(timer);
       stop();
     };
-  }, [running, page, route, audioBase, topic, instruction, play, stop]);
+  }, [running, page, route, topic, instruction, play, stop]);
 
   function markSeen() {
     setSeen(true);
@@ -264,11 +263,11 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
                   <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
                     <div className="flex items-center gap-1">
                       <h2 id={titleId} className="min-w-0 flex-1 text-title font-semibold leading-[1.35]">{topic}</h2>
-                      <AudioButton audioKey={audioBase ? `${audioBase}_title` : null} text={topic} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
+                      <AudioButton text={topic} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
                     </div>
                     <div className="flex items-start gap-1">
                       <p className="min-w-0 flex-1 pt-1 text-caption leading-[1.65] text-ink-2">{instruction}</p>
-                      <AudioButton audioKey={audioBase ? `${audioBase}_body` : null} text={instruction} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
+                      <AudioButton text={instruction} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
                     </div>
                   </div>
                 </div>

@@ -19,7 +19,7 @@ Five distinct AI features, each with its own model, its own failure mode, and it
 | 1 | **Scam classifier** | Verdict on a suspicious SMS/WhatsApp message (text, screenshot OCR, or voice): `LIKELY_SCAM` / `CANNOT_TELL` / `LIKELY_SAFE` / `VERIFIED_OFFICIAL` | `app/ai/scam_classifier.py` - hybrid word + char_wb `FeatureUnion` TF-IDF + calibrated logistic regression, `scam-tfidf-lr-v1.0.0`, plus Stage-1 cryptographic `HQ-*` / `body_sha256` verification | 172 train / 43 test. Precision **0.9444**, recall **0.9444**, F1 **0.9444**, FPR **0.04**, hard-negative FPR **0.00**, confusion `[[24,1],[1,17]]` |
 | 2 | **Document verifier** | Genuine / forged / blurry verdict on a CNIC photo, cross-checking the printed text against an HMAC-signed QR | `app/ai/doc_verify.py` - OpenCV preprocess + QR decode + RapidFuzz name match + `OCR_VS_QR` tamper propagation to four-eyes review | 30 images. Genuine verified **100 %**, forged caught **100 %**, false-tamper **0.00 %**, blurry→retake **100 %** |
 | 3 | **Policy Q&A** | Accepts text and optional dictation, answers from the Urdu and English policy corpus, cites retrieved sections, and abstains below its relevance gates | `app/ai/rag.py`, hybrid Postgres `tsvector` and NumPy cosine with live and extractive synthesis modes | Ask about a missing CNIC, then ask about tomorrow's weather in Karachi. Check the citation and abstention. |
-| 4 | **Urdu and Sindhi voice** | Dictation on supported wizard fields and in Ask, editable readback, saved prompts, and Auto-Read | Deepgram Nova-3 with explicit `ur` or `sd`. Live playback uses Deepgram Flux for Urdu and Gemini for Sindhi | `tests/ai/test_voice.py`, including rejection of unexpected Devanagari text in Sindhi dictation. 138 Sindhi clips ship with the app. |
+| 4 | **Urdu and Sindhi voice** | Dictation on supported wizard fields and in Ask, editable readback, saved prompts, and Auto-Read | Deepgram Nova-3 with explicit `ur` or `sd`. Live playback uses Deepgram Flux for Urdu and Gemini for Sindhi | `tests/ai/test_voice.py`, including rejection of unexpected Devanagari text in Sindhi dictation. Sindhi playback uses Gemini. |
 | 5 | **Case agent** | Reads the case, calls the mock DPI services, assembles facts, proposes a route - and is structurally unable to decide | `app/agent/case_agent.py`, `assemble.py` | `tests/engine/test_pipeline.py`, `tests/integration/test_golden_path_and_rules.py` |
 
 **Reproduce:** `GET /api/v1/eval/dashboard` returns 1–3 in one payload.
@@ -62,7 +62,7 @@ See `docs/07-ai-components.md §9` for the full rationale. Summary:
 | Scam classification | Word + char n-gram `FeatureUnion` TF-IDF + calibrated LR | A fine-tuned transformer | 172 labelled examples. A transformer would memorise them; a hybrid word/subword linear model generalises cleanly (**0.9444 F1**, **0.04 FPR**, **0.00 hard-negative FPR**) and stays auditable per-feature |
 | Document check | OpenCV + HMAC QR + OCR cross-check | A vision LLM alone | The QR is a cryptographic fact, not a judgement; `ocr_vs_qr` cross-check catches Photoshopped cards and propagates `TAMPER_SUSPECTED` (HIGH) to four-eyes approval |
 | Speech→text | Deepgram Nova-3 with explicit Urdu and Sindhi language selection | Browser recognition | Server requests pin the language and the wizard keeps editable confirmation for recognized fields |
-| Text→speech | Saved Urdu and Sindhi clips, Deepgram Flux and Gemini for dynamic text | Live TTS for every prompt | Core prompts are precached and other recordings load on demand. Dynamic playback is available in the configured live profile. |
+| Text→speech | Saved Urdu clips, Deepgram Flux and Gemini for dynamic text | Live TTS for every prompt | Core prompts are precached and other recordings load on demand. Dynamic playback is available in the configured live profile. |
 | Embeddings | `text-embedding-3-small` (live) / hashed TF-IDF (fake) | `text-embedding-3-large` | 1536 dims is ample for 30 chunks; the fake path is deterministic so tests are reproducible |
 
 ---
@@ -165,7 +165,7 @@ At the measured operating point (`τ = 0.90`, n = 133) the router auto-approves 
 ### 4.1 Voice & Regional Language - 4 pts
 
 - **Urdu (`ur`) is the default + full Sindhi (`sd`, سنڌي) regional language support** (lazy-split into its own 4.3 KB chunk so it adds 0 KB to the initial bundle), both RTL with self-hosted `Noto Sans Arabic` (covering Urdu & Sindhi codepoints) and `Instrument Sans` (ADR-023).
-- **Saved Urdu and Sindhi prompts** include wizard, status, safety, and tour narration. Core prompts are precached. The Sindhi files use app asset URLs and play inside the page.
+- **Urdu prompts** are available as saved audio. Sindhi narration is generated through Gemini when requested.
 - **Speech input** on supported wizard fields and Ask uses Deepgram Nova-3 when live credentials are configured. The wizard shows a transcript and asks the user to confirm or correct the field.
 - **Dynamic audio** uses `POST /voice/tts` with Deepgram Flux for Urdu and Gemini for Sindhi. The citizen header includes **Auto-Read**.
 - **One 56×56 audio button per citizen screen**: the same position, every time.
