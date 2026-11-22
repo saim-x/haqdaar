@@ -149,15 +149,22 @@ export function CitizenLayout() {
       </main>
 
       {!focused && (
-        <nav aria-label={t('nav.main')} className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/[0.08] bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm">
-          <ul className="mx-auto flex w-full max-w-[560px]">
+        <nav
+          aria-label={t('nav.main')}
+          className="fixed inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)] sm:px-4 sm:pb-4"
+        >
+          {/* Docked edge-to-edge on a phone, where the thumb expects it. On a
+              desktop the same bar floats as a pill above the bottom edge: a
+              full-bleed strip pinned to a 1440px window reads as a browser
+              chrome artefact, not as navigation. */}
+          <ul className="mx-auto flex w-full max-w-[560px] border-t border-ink/[0.08] bg-card/95 backdrop-blur-sm sm:rounded-full sm:border sm:p-1 sm:shadow-lift sm:backdrop-blur-md">
             {navItems.map(({ to, label, Icon, end }) => (
               <li key={to} className="min-w-0 flex-1">
                 <NavLink
                   to={to}
                   end={end}
                   className={({ isActive }) =>
-                    `relative flex min-h-primary flex-col items-center justify-center gap-1 px-1 py-2 text-meta font-medium leading-[1.4] ${
+                    `relative flex min-h-primary flex-col items-center justify-center gap-1 px-1 py-2 text-meta font-medium leading-[1.4] sm:rounded-full ${
                       isActive ? 'bg-accent-wash text-accent-ink' : 'text-ink-2 hover:bg-raised'
                     }`
                   }
@@ -166,7 +173,7 @@ export function CitizenLayout() {
                     <>
                       <span
                         aria-hidden
-                        className={`absolute inset-x-3 top-0 h-px ${isActive ? 'bg-accent' : 'bg-transparent'}`}
+                        className={`absolute inset-x-3 top-0 h-px sm:hidden ${isActive ? 'bg-accent' : 'bg-transparent'}`}
                       />
                       <Icon size={20} />
                       <span className="line-clamp-2 text-center">{label}</span>
