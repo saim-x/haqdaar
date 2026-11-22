@@ -745,4 +745,6 @@ export const en: Record<DictKey, string> = {
   'avatar.youSaid': 'You said',
   'avatar.liveConversation': 'Live Urdu conversation',
   'avatar.greeting':
-    'Peace be upon you, I a
+    'Peace be upon you, I am Saima. I am here to help you with Haqdaar. You can ask your question in Urdu.',
+  'avatar.thinking': 'Thinking…',
+};

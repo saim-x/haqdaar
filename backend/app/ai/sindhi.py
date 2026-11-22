@@ -71,7 +71,7 @@ _WORDS = {
     "ڊسمبر": "December",
 }
 _MODEL = "gemini-3.1-flash-tts-preview"
-RETRY = "مهرباني ڪري وري ڳالهايو يا ڪي پيڊ استعمال ڪريو."
+RETRY = "مهرباني ڪري وري ڳالهايو يا مٿي جواب ڏيو."
 
 
 def normalize_field(field: str, transcript: str) -> str:
