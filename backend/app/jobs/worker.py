@@ -34,6 +34,16 @@ from app.security.context import configure_logging, log_event
 
 logger = logging.getLogger("app.jobs.worker")
 
+#: Why the last heartbeat write failed, or ``None`` after a clean one.
+#: ``/health`` reports this so a worker that is alive but cannot write is
+#: distinguishable from one that never started - the two look identical from
+#: the outside, and both leave every case stuck in ``PROCESSING``.
+_last_heartbeat_error: str | None = None
+
+
+def last_heartbeat_error() -> str | None:
+    return _last_heartbeat_error
+
 
 def _now() -> datetime:
     return datetime.now(UTC)
@@ -67,6 +77,7 @@ class Worker:
         self._stop.set()
 
     def heartbeat(self, *, force: bool = False) -> None:
+        global _last_heartbeat_error
         now_monotonic = time.monotonic()
         if not force and now_monotonic - self._last_heartbeat < settings.worker_heartbeat_seconds:
             return
@@ -87,8 +98,13 @@ class Worker:
             )
             db.execute(stmt)
             db.commit()
-        except Exception:  # noqa: BLE001 - a missed heartbeat must not kill the worker
-            db.rollback()
+            _last_heartbeat_error = None
+        except Exception as exc:  # noqa: BLE001 - a missed heartbeat must not kill the worker
+            _last_heartbeat_error = f"{type(exc).__name__}: {exc}"[:300]
+            try:
+                db.rollback()
+            except Exception:  # noqa: BLE001 - a dead connection must not kill the thread
+                logger.exception("worker heartbeat rollback failed")
             logger.exception("worker heartbeat failed")
         finally:
             db.close()
@@ -207,6 +223,16 @@ def stop_embedded_worker() -> None:
             _embedded_thread.join(timeout=10)
     _embedded = None
     _embedded_thread = None
+
+
+def embedded_worker_alive() -> bool:
+    """True while the embedded worker thread is running.
+
+    A thread that died on startup and a thread that is polling but cannot write
+    a heartbeat both leave ``worker_heartbeats`` empty. ``/health`` needs to
+    tell them apart, because the fixes are different.
+    """
+    return _embedded_thread is not None and _embedded_thread.is_alive()
 
 
 def worker_is_stale(db) -> bool:
