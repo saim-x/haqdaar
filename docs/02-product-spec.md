@@ -310,7 +310,7 @@ Conventions: "citizen" includes a helper acting for that citizen unless stated. 
 |---|---|---|
 | NFR-1 Performance | Pipeline decision latency (no LLM in the decision path) | p95 ≤ 8 s incl. mock latency (NORMAL mode) |
 | NFR-2 Bandwidth | Citizen first load ≤ 300 KB total transfer; repeat load ≤ 20 KB; typical API response ≤ 10 KB | |
-| NFR-3 Availability | Demo-time availability; no cold start | Railway always-on; health endpoint |
+| NFR-3 Availability | Demo-time availability; no cold start | Render warm-up request + health endpoint |
 | NFR-4 Security | Server-side RBAC/tenant/consent on every endpoint; hashed passwords/API keys; no PII in logs | Tests per [13](13-testing-and-quality.md) |
 | NFR-5 Auditability | 100 % of state changes and AI calls produce audit events | Chain verification passes |
 | NFR-6 Determinism | Same facts + same rule version → same decision | Engine purity tests |

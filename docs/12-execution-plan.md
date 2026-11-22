@@ -19,7 +19,7 @@ Seven specialized coding agents + one human/coordinating **Integration Lead** (y
 | **A4** | AI Services | `app/ai/` (`AIProvider` live/fake, Urdu Voice STT/TTS + structured parser, OpenCV+QR+OCR document verifier, hybrid scikit-learn Scam Classifier + dataset, hybrid RAG + policy docs, guardrails, telemetry) |
 | **A5** | Citizen & Helper PWA | `frontend/src/shared/` (API client, Dexie offline outbox, i18n ur/en, audio player) + `citizen/` (wizard, status, consent center, my-data, scam checker, policy Q&A) + `helper/` (family roster, safe switcher) |
 | **A6** | Staff Consoles | `frontend/src/staff/` (Officer queue & case review, Admin rule editor + Digital Twin + users/keys/mocks/jobs, Auditor console + chain verify, Eval & Analytics dashboards, Transparency, Device Simulator) |
-| **A7** | QA, DevOps & Integration | `docker-compose.yml`, Railway Dockerfile/deploy, CI/invariant checks, Security/RBAC/Consent/Chaos test suites, Playwright E2E (golden path + offline sync), Demo rehearsal script |
+| **A7** | QA, DevOps & Integration | `docker-compose.yml`, Render Dockerfile/deploy, CI/invariant checks, Security/RBAC/Consent/Chaos test suites, Playwright E2E (golden path + offline sync), Demo rehearsal script |
 
 ---
 
@@ -38,7 +38,7 @@ flowchart LR
     C2 --> Diff["Sat 12:00–22:00\nA2/A6: Digital Twin + Eval Sweep\nA4: Voice + RAG + Live OpenAI\nA5: Offline Outbox + Helper Mode\nA6: Auditor + Device Sim + Mocks UI"]
     Diff --> C3{"Checkpoint C3\nSat 22:00 PKT\nFEATURE FREEZE\n(All P0 + chosen P1 merged)"}
 
-    C3 --> Stab["Sun 00:00–12:00\nSecurity/Chaos/E2E Tests (A7)\nBug fixes only\nCloud Deploy (Railway) + Local Docker"]
+    C3 --> Stab["Sun 00:00–12:00\nSecurity/Chaos/E2E Tests (A7)\nBug fixes only\nCloud Deploy (Render) + Local Docker"]
     Stab --> C4{"Checkpoint C4\nSun 12:00 PKT\nDEPLOYED & VERIFIED\n(Live URL + Local Fallback)"}
 
     C4 --> Ship["Sun 12:00–18:00\nDemo Video Recording\nREADME + Slides\nDry Run Rehearsal"]
@@ -82,14 +82,14 @@ flowchart LR
   - **A4:** Complete RAG Policy Assistant (`/rag/ask` with 4 Markdown policy docs + auto-rule-summary re-index + `NOT_SURE` abstention + guardrails); run live OpenAI verification (`whisper-1`, `gpt-4o-mini`, `text-embedding-3-small`) and benchmark metrics.
   - **A5:** **Helper Mode** (family roster, OTP + verbal witnessed consent, safe ≤ 2-tap switcher with cache wipe & confirmation interstitial), **Offline-First Sync** (Workbox precache + Dexie outbox + `Idempotency-Key` replay + Lite mode toggle), RAG "Ask a Question" UI, My Data UI, verify citizen bundle ≤ 150 KB gzipped.
   - **A6:** **Digital Twin UI** (outcome chart + budget delta + flipped cases table), **Evaluation Dashboard UI** (threshold sweep curve + scam/doc FPR cards + live ops), **Tenant Analytics UI**, Admin Users / API Keys / Mock Chaos Controls / Jobs UI.
-  - **A7:** Chaos tests (`test_mock_outage.py`), Digital Twin & Rule Versioning tests, AI eval tests, Playwright E2E (`golden_path.spec.ts`, `offline_sync.spec.ts`), Railway staging deployment.
+  - **A7:** Chaos tests (`test_mock_outage.py`), Digital Twin & Rule Versioning tests, AI eval tests, Playwright E2E (`golden_path.spec.ts`, `offline_sync.spec.ts`), Render staging deployment.
 - **Checkpoint C3 (`Sat 22:00 PKT` - STRICT FEATURE FREEZE):** No new features started after Sat 22:00. Any incomplete P1/P2 feature is cut cleanly (see §4).
 
 ### Phase 4 - Stabilization, Security Audit & Deployment (`Sun 00:00 – Sun 12:00`, 12 h, incl. sleep)
 - Fix every failing test, UI glitch, RTL alignment issue, and edge case found in Phase 3.
 - Run full Security & RBAC checklist (`13-testing-and-quality.md`), verify `DEMO_MODE=false` hides demo login, verify zero PII in logs, verify audit hash chain integrity after full workflow.
-- Deploy final build to **Railway** (public HTTPS link) AND verify local `docker compose up` fallback on demo laptop.
-- **Checkpoint C4 (`Sun 12:00 PKT`):** Deployed link live, `/health` green, `/api/docs` live, all 8 demo scenes verified on BOTH Railway and local Docker.
+- Deploy final build to **Render** (public HTTPS link) AND verify local `docker compose up` fallback on demo laptop.
+- **Checkpoint C4 (`Sun 12:00 PKT`):** Deployed link live, `/health` green, `/api/docs` live, all 8 demo scenes verified on BOTH Render and local Docker.
 
 ### Phase 5 - Video, README, Slides & Rehearsal (`Sun 12:00 – Sun 18:00`, 6 h)
 - Record crisp 4–5 minute demo video showing live deployed system, upload to public Google Drive (verify incognito access!).

@@ -29,12 +29,12 @@ This architecture is intentionally chosen for a 48-hour, multi-agent hackathon w
 | **Background Jobs** | **Postgres-backed job table (`jobs`) + Python worker** | Custom ~180 LOC | Transactional enqueue in the same DB commit as case submit; zero Redis dependency; admin Jobs UI reads the same table directly. | Celery + Redis (extra infra service, serialization/broker failure modes). |
 | **Frontend & PWA** | **React 18 + Vite + TypeScript + Tailwind CSS + `vite-plugin-pwa`** | React 18, Vite 5, TS 5 | Route-based code splitting keeps Citizen PWA ≤ 150 KB gzipped; Workbox service worker handles true offline app-shell caching without SSR hydration failures. | Next.js App Router (larger client runtime, fragile offline-first caching). |
 | **Offline Storage & State** | **Dexie.js (IndexedDB) + TanStack Query v5 + React Router v6** | Dexie 4, TQ 5 | Structured local drafts + persistent offline mutation outbox with `Idempotency-Key` replay; ETag-friendly polling. | localStorage (5 MB cap, no blobs/photos, synchronous blocking). |
-| **AI - LLM / Voice / Embeddings** | **OpenAI API (`gpt-4o-mini`, `whisper-1`, `text-embedding-3-small`) + Deepgram Flux TTS for pre-cached Urdu MP3s + `edge-tts` for dynamic speech** | SDK v1.50+ | Reliable JSON schema outputs, Urdu Whisper transcription, and pre-generated static Urdu prompts that work offline. | Self-hosted LLMs (GPU/deployment overhead); ElevenLabs (expensive, rate-limited). |
+| **AI - LLM / Voice / Embeddings** | **OpenAI-compatible `AIProvider` (`gpt-4o-mini` + `text-embedding-3-small` by default; the live demo runs Mistral `mistral-small-latest` + `mistral-embed` through the same SDK) + Deepgram Nova-3 STT + Deepgram Flux TTS for pre-cached Urdu MP3s + `edge-tts` for dynamic speech** | SDK v1.50+ | One SDK and one call site for any OpenAI-compatible gateway, so the vendor is a config value (`OPENAI_BASE_URL`), not a code change. Strict JSON-schema outputs, Urdu transcription, and pre-generated static Urdu prompts that work offline. | Self-hosted LLMs (GPU/deployment overhead); ElevenLabs (expensive, rate-limited). |
 | **AI - Scam Classifier** | **scikit-learn (`TfidfVectorizer` + `CalibratedClassifierCV`) + Rule Engine** | sklearn 1.5+ | < 5 ms local inference, genuinely calibrated probabilities, reproducible confusion matrix & false-positive rate on held-out test set. | LLM-only scam classifier (uncalibrated scores, high latency, brittle eval). |
 | **AI - Computer Vision** | **OpenCV (`opencv-python-headless`) + Pillow + `qrcode` + HMAC-SHA256** | OpenCV 4.10+ | Built-in `QRCodeDetector` + Laplacian blur detection without native `libzbar` OS library issues; signed QR enables verifiable forgery detection; vision LLM/fixture OCR compares printed vs QR text. | Tesseract system binary (flaky Docker/Windows setup, noisy on Urdu/angled photos). |
-| **AI - RAG** | **Hybrid Postgres `tsvector` + NumPy cosine similarity over stored `FLOAT8[]` embeddings** | Built-in | Works on any standard PostgreSQL 16 (Railway/Supabase/Docker) without requiring `pgvector` extension; fast (< 15 ms for < 5,000 chunks). | Chroma/Pinecone (extra vector DB service to host and sync). |
+| **AI - RAG** | **Hybrid Postgres `tsvector` + NumPy cosine similarity over stored `FLOAT8[]` embeddings** | Built-in | Works on any standard PostgreSQL 16 (Neon/Supabase/Docker) without requiring `pgvector` extension; fast (< 15 ms for < 5,000 chunks). | Chroma/Pinecone (extra vector DB service to host and sync). |
 | **Entity Resolution** | **RapidFuzz + Custom Urdu/Roman-Urdu Canonicalizer** | RapidFuzz 3.x | C++-accelerated Jaro-Winkler & token-set ratios; deterministic, explainable per-field match breakdown. | Embedding similarity (opaque, hallucinates matches on short names). |
-| **Deployment** | **Docker Compose (local/fallback) + Railway (cloud)** | Docker v2 | Railway provides always-on managed Postgres + 2 container services (no Render free-tier 50 s cold starts). Local Docker Compose guarantees demo immunity to venue Wi-Fi outages. | Render free tier (cold starts kill live demos); Kubernetes (massive overkill). |
+| **Deployment** | **Docker Compose (local/fallback) + Render (cloud) + Neon (managed Postgres)** | Docker v2 | One Render Docker web service built from the same multi-stage Dockerfile, with `RUN_EMBEDDED_WORKER=true` keeping the SKIP LOCKED queue alive without a second service; Neon supplies managed PostgreSQL 16. Local Docker Compose guarantees demo immunity to venue Wi-Fi outages. | Railway (planned, not used); Kubernetes (massive overkill). |
 
 ---
 
@@ -146,14 +146,14 @@ haqdaar/
 > **Why keep `mock_*` tables in the same Postgres instance?** Zero extra DB to manage, transactional demo reset (`POST /api/v1/admin/demo/reset` resets both app and mock state cleanly in < 2 s), while logical isolation is strictly enforced: **application code in `app/api/`, `app/engine/`, and `app/agent/` is forbidden from importing `app/mocks/models.py` or querying `mock_*` tables directly.** All access must go through `httpx` to `MOCK_BASE_URL`.
 
 ### 5.2 File Storage
-- Uploads (compressed CNIC/death certificate JPEGs, witnessed verbal consent audio, scam screenshots) are written to `UPLOAD_DIR` (`/data/uploads`, mounted as a persistent Docker/Railway volume) with UUID filenames (never user-supplied filenames).
+- Uploads (compressed CNIC/death certificate JPEGs, witnessed verbal consent audio, scam screenshots) are written to `UPLOAD_DIR` (`/data/uploads`, a persistent Docker volume locally and a Render disk in the cloud) with UUID filenames (never user-supplied filenames).
 - File download endpoint (`GET /api/v1/documents/{id}/file`) enforces RBAC, tenant isolation, and **active citizen consent** before streaming bytes. No unauthenticated static URL for uploaded PII documents.
 
 ### 5.3 Configuration & Environment Variables
 
 | Variable | Default (Dev) | Production / Demo | Purpose |
 |---|---|---|---|
-| `DATABASE_URL` | `postgresql+psycopg://haqdaar:haqdaar@localhost:5432/haqdaar` | Railway PG URL | Primary DB connection |
+| `DATABASE_URL` | `postgresql+psycopg://haqdaar:haqdaar@localhost:5432/haqdaar` | Neon PG URL (`postgresql://` is rewritten to `postgresql+psycopg://` by `scripts/start.sh`) | Primary DB connection |
 | `JWT_SECRET` | `dev-secret-change-me` | 64-char random hex | HS256 JWT signing |
 | `QR_HMAC_SECRET` | `dev-qr-secret-change-me` | 64-char random hex | Signs mock document QR codes |
 | `MOCK_BASE_URL` | `http://127.0.0.1:8000/mock` | `http://api:8000/mock` | HTTP boundary for simulated DPI |
@@ -194,11 +194,11 @@ In-memory sliding-window limiter (keyed by IP, phone, user_id, or api_key_id; re
 - `GET /api/v1/metrics/summary` (Admin/Auditor): Request error rate, p50/p95 pipeline latency, job queue depths (`PENDING`, `RUNNING`, `DEAD`), LLM call count / estimated USD cost / failure count, mock service health status.
 
 ### 6.5 Deployment Blueprint
-1. **Cloud (Primary Demo):** Railway project with 3 services:
-   - `postgres`: Managed PostgreSQL 16.
-   - `web-api`: Multi-stage Dockerfile (Stage 1 builds `frontend/` with Vite; Stage 2 installs Python backend + copies `frontend/dist` to `/app/static`). Runs `alembic upgrade head && python -m app.mocks.seed --if-empty && uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-   - `worker`: Same backend image, command `python -m app.jobs.worker`.
-   - Shared Railway Volume mounted at `/data/uploads` on both `web-api` and `worker` (or if single volume sharing is unavailable on Railway plan, run the worker as a background thread/subprocess inside `web-api` via `RUN_EMBEDDED_WORKER=true` - **Decision:** Support both `RUN_EMBEDDED_WORKER=true` for simple single-container shared-volume Railway deploy AND separate `worker` service in `docker-compose.yml`!).
+1. **Cloud (Primary Demo):** one Render Docker web service (`render.yaml`) plus a Neon managed PostgreSQL 16 database.
+   - `haqdaar` (Render, `runtime: docker`): the same multi-stage Dockerfile used locally (Stage 1 builds `frontend/` with Vite; Stage 2 installs the Python backend and copies `frontend/dist` to `/app/static`). `scripts/start.sh` runs `alembic upgrade head`, seeds the mock registries, and binds Uvicorn to `$PORT`.
+   - `RUN_EMBEDDED_WORKER=true` runs the SKIP LOCKED job worker inside the API process, so the single-container plan keeps the queue alive without a second service. `docker-compose.yml` still runs `worker` as its own service for local parity.
+   - Neon supplies `DATABASE_URL`; `scripts/start.sh` rewrites the `postgresql://` scheme to `postgresql+psycopg://`. Uploads land on the Render disk at `/data/uploads`.
+   - `JWT_SECRET` and `QR_HMAC_SECRET` are generated by the blueprint (`generateValue: true`) and never committed.
 2. **Local Venue Fallback (Mandatory):** `docker compose up --build` on a team laptop running the exact same image, pre-warmed and tested Sunday night, ready to present locally if FAST-NUCES Karachi Wi-Fi drops.
 
 ---

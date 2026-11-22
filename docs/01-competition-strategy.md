@@ -203,7 +203,7 @@ The brief's own vocabulary ("one wrong approval can cost someone their savings",
 | Venue internet fails on Monday | Medium | High | Local `docker compose` fallback on a laptop + phone hotspot; rehearsed. |
 | Urdu STT quality poor | Medium | Medium | Field-scoped parsing, readback confirmation, keypad fallback; demo uses short, clear answers. |
 | Agents produce incompatible components | High | High | Frozen contracts (04/05), path ownership, AGENTS.md rules, integration checkpoints every ~6 h. |
-| Cold starts on free hosting | Medium | Medium | Railway (no sleep); warm-up request before demo. |
+| Cold starts on free hosting | Medium | Medium | Render free instance sleeps when idle; send a warm-up request before demo. |
 | Over-scoping | High | High | P0/P1/P2 with explicit cut lines and a feature freeze at Sat 22:00. |
 | Judges probe security (IDOR, role bypass) | High | High | RBAC matrix tests per endpoint; tenant + consent tests; 404-not-403 for foreign resources. |
 | Synthetic-data circularity questioned | Medium | Medium | Noise injection independent of pipeline; candid disclosure in Q&A prep ([15-demo-and-submission.md](15-demo-and-submission.md)). |

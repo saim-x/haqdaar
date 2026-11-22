@@ -110,5 +110,5 @@
   2. `test_invariants.py` (enforces pure engine, mock HTTP isolation, RBAC declarations).
   3. Full backend security, consent, audit chain, golden path, rule versioning/twin, idempotency, and mock chaos test suites (`13`).
   4. Playwright E2E suite (`golden_path.spec.ts`, `offline_sync.spec.ts`, `helper_consent.spec.ts`).
-  5. Cloud deployment to Railway (PostgreSQL 16 + `web-api` + persistent volume) + verification of local Docker fallback + final competition `README.md`.
-- **Done Criteria:** All CI gates green; Railway public HTTPS URL and local Docker fallback both pass the 8-scene live demo checklist.
+  5. Cloud deployment to Render (Docker web service + Neon PostgreSQL 16 + persistent disk) + verification of local Docker fallback + final competition `README.md`.
+- **Done Criteria:** All CI gates green; Render public HTTPS URL and local Docker fallback both pass the 8-scene live demo checklist.

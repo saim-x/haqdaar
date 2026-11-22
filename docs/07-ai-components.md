@@ -20,10 +20,10 @@ class AIProvider(Protocol):
 ```
 
 Two implementations ship on day one:
-1. **`LiveOpenAIProvider` (`AI_PROVIDER=live`):** Calls `gpt-4o-mini` (with strict JSON Schema `response_format`), `whisper-1`, `text-embedding-3-small`, and `edge-tts` (free, crisp Urdu neural voices `ur-PK-UzmaNeural` / `ur-PK-AsadNeural`, cached by SHA-256 of text on disk in `/data/uploads/tts_cache/`).
+1. **`LiveOpenAIProvider` (`AI_PROVIDER=live`):** An OpenAI-compatible client, so the vendor is configuration rather than code. It calls a chat model with strict JSON Schema `response_format` (`gpt-4o-mini` by default; the live demo runs Mistral `mistral-small-latest` through `OPENAI_BASE_URL`), `text-embedding-3-small` for embeddings (`mistral-embed` on the demo gateway), **Deepgram Nova-3** for Urdu speech-to-text, and **Deepgram Flux** (`flux-ambreen-ur`) for Urdu speech synthesis, with `edge-tts` retained as the free fallback. Synthesised audio is cached by SHA-256 of the text on disk in `/data/uploads/tts_cache/`.
 2. **`FakeDeterministicProvider` (`AI_PROVIDER=fake`):** Zero network calls, < 20 ms latency, deterministic outputs keyed by fixture hashes/keywords. Used for:
    - Automated unit/integration tests and CI.
-   - Automatic circuit-breaker fallback if OpenAI returns 429/5xx or times out (> 10 s), guaranteeing the live demo never crashes.
+   - Automatic circuit-breaker fallback if the upstream provider returns 429/5xx or times out (> 10 s), guaranteeing the live demo never crashes.
 
 Every call through `AIProvider` writes a row to `ai_telemetry` (model, prompt version, latency, tokens, estimated USD cost, success/error) and an `audit_events` entry (`actor_type='AI'`).
 
@@ -191,19 +191,21 @@ Every choice below is a trade-off made against the actual constraints of this pr
 | A vision LLM | Rejected. Slower, costlier, and *less* certain on the one question that matters - is this signature ours? It would also send a citizen's identity document to a third party, which the consent model forbids. |
 | Perceptual hashing against a reference set | Rejected. It catches only exact reuse, and it fails on the WhatsApp recompression that real citizens produce. |
 
-### 9.4 Speech-to-text - `whisper-1`
+### 9.4 Speech-to-text - Deepgram Nova-3
 
 | Option | Verdict |
 |---|---|
-| **`whisper-1`** | **Chosen.** Handles Urdu and Roman-Urdu code-switching, which is how people actually speak. |
+| **Deepgram Nova-3** | **Chosen.** Handles Urdu and Roman-Urdu code-switching, which is how people actually speak, and returns the confidence the wizard needs for its 0.70 readback gate. `mip_opt_out=true` is sent on every request. |
+| OpenAI `whisper-1` | Retained as the `OPENAI_STT_MODEL` default but not on the live path; Nova-3 was measurably better on Urdu. |
 | Browser Web Speech API | Rejected. Unavailable offline, and Urdu is unsupported on most Android builds - the exact devices this app targets. |
 | A local Whisper build | Rejected for the prototype. It would remove the network dependency but adds a multi-hundred-MB model to a deployment whose whole point is a 131.2 KB client. |
 
-### 9.5 Text-to-speech - `edge-tts` + 73 pre-cached MP3s
+### 9.5 Text-to-speech - Deepgram Flux + 73 pre-cached MP3s
 
 | Option | Verdict |
 |---|---|
-| **`edge-tts` for dynamic text, 73 pre-generated MP3s for fixed prompts** | **Chosen.** A citizen on 2G cannot wait for synthesis before hearing "what is your name?". The fixed prompts ship in the bundle and play offline; only genuinely dynamic text (an explanation of *this* decision) is synthesised. |
+| **Deepgram Flux (`flux-ambreen-ur`) for dynamic text, 73 pre-generated MP3s for fixed prompts** | **Chosen.** A citizen on 2G cannot wait for synthesis before hearing "what is your name?". The fixed prompts ship in the bundle and play offline; only genuinely dynamic text (an explanation of *this* decision) is synthesised. One Urdu voice covers both paths (ADR-021, ADR-023). |
+| `edge-tts` | Retained as the free fallback when no `DEEPGRAM_API_KEY` is configured. |
 | Live TTS for every prompt | Rejected. It makes the first screen of the wizard depend on the network, which is the one thing the offline design exists to avoid. |
 | A commercial TTS vendor | Rejected on cost and on the same third-party-data argument as 9.3. |
 

@@ -89,7 +89,7 @@
 | Item | Implementation | Spec Ref | Owner | Verification |
 |---|---|---|---|---|
 | Postgres + migrations | PostgreSQL 16 + Alembic | `03 §2`, `04` | A1 | `alembic upgrade head` |
-| Deployed link | Railway HTTPS + local Docker fallback | `03 §6.5` | A7 | Live smoke check |
+| Deployed link | Render HTTPS + local Docker fallback | `03 §6.5` | A7 | Live smoke check |
 | Monitoring, logs, tests | `/health`, JSON logs, `/eval`, pytest + Playwright | `03 §6`, `13` | A1, A7 | CI verification |
 | **Bonus: Digital Twin** | Pure replay over 60+ past cases with budget delta | `06 §7`, `11 §6.2` | A2, A6 | `test_rule_versioning_and_twin.py` |
 | **Bonus: Helper Mode** | Shared phone roster, safe switcher + cache wipe, per-family consent | `11 §4`, `05 §3.5` | A1, A5 | `helper_consent.spec.ts` |

@@ -32,7 +32,7 @@
 ## ADR-006: Hybrid Postgres `tsvector` + NumPy Cosine RAG (Over `pgvector`/Chroma)
 - **Context:** Need grounded RAG over ~5–15 policy documents (~150–400 chunks) without deployment fragility.
 - **Decision:** Store embeddings in standard PostgreSQL `DOUBLE PRECISION[]` alongside `TSVECTOR` and compute hybrid ranking in Python/NumPy (< 15 ms).
-- **Rationale:** Works out-of-the-box on every managed Postgres (Railway/Supabase/Docker) with zero custom extensions or external vector DB services.
+- **Rationale:** Works out-of-the-box on every managed Postgres (Neon/Supabase/Docker) with zero custom extensions or external vector DB services.
 
 ## ADR-007: Signed-QR + OpenCV + OCR Document Verification (Over Tesseract-Only)
 - **Context:** Document forgery detection (Challenge 08) must catch edited names without falsely accusing genuine WhatsApp-compressed photos.
@@ -169,6 +169,13 @@
   4. **The four support rows become a 2×2 bento grid.** The guide is promoted out of the list, so the list no longer has to carry it. Every tile keeps its own 48 px listen affordance (docs/11 §2.2), which is why the audio button sits in a footer strip rather than floating over the link.
 - **Rationale:** The guide is the product's accessibility claim, and an accessibility feature that requires reading a menu to find is not one. Promoting it costs one additive enum value and no new dependency; the alternative - reusing `surface: "ask"` from the home screen - would have written a false value into the audit chain, which is the one thing this system does not do.
 - **Contract:** `POST /api/v1/avatar/session` accepts a fifth `surface` value, `home`. Additive only: the four existing values, every response field and every status code are unchanged, so no existing caller or test changes.
+
+## ADR-026: Documentation Tracks What Shipped - Render + Neon, and a Vendor-Neutral AI Provider
+
+- **Context:** Two frozen documents described a system that was never deployed. (a) `03 §2` and `03 §6.5` specified a Railway project with three services and a shared Railway volume, but the shipped deployment is a single Render Docker web service (`render.yaml`) with `RUN_EMBEDDED_WORKER=true` and a Neon managed PostgreSQL 16 database. The same stale reference appeared in `01`, `02`, `12`, `14`, `16` and `17`. (b) `03 §2` and `07 §1` described the live AI layer as calling OpenAI `gpt-4o-mini` / `whisper-1` / `text-embedding-3-small` plus `edge-tts`, but the live path calls Deepgram Nova-3 for speech-to-text and Deepgram Flux for speech synthesis, and the deployed gateway is Mistral (`mistral-small-latest` / `mistral-embed`) through `OPENAI_BASE_URL`. `whisper-1` and `edge-tts` survive only as a config default and a cost-table row. A judge reading the docs and then the repository would find the docs wrong on the two facts most likely to be checked.
+- **Decision (user-approved):** Correct the documents to match the shipped system rather than change the system to match the documents. Deployment is documented as Docker Compose (local) + Render (cloud) + Neon (managed Postgres), with Railway recorded as a planned-but-unused alternative. The AI layer is documented as an OpenAI-compatible `AIProvider` whose vendor is a configuration value, naming the default models and the demo gateway models explicitly, and naming Deepgram Nova-3 / Flux as the actual speech path with `edge-tts` as the fallback. No code, schema, API contract, canonical fact key or routing threshold changes.
+- **Rationale:** The frozen docs were written before deployment was attempted, and the deployment target changed for a real reason: Render's blueprint plus Neon needs one container and no second service, which is what the free plan allows. The AI vendor changed for a different real reason: the provider was built against the OpenAI SDK, so pointing `OPENAI_BASE_URL` at an OpenAI-compatible gateway is a config change, not a rewrite. Both are defensible decisions that read as inconsistencies only because the docs were never updated. A prototype whose central claim is "the audit trail never lies" cannot ship documentation that does.
+- **Contract:** None. Documentation only - `01`, `02`, `03`, `07`, `12`, `14`, `16`, `17`. No migration, no endpoint, no response field, no test changes.
 
 ## Change Control Protocol (During Hackathon)
 1. Minor bug fixes within a single agent's owned files need no ADR.
