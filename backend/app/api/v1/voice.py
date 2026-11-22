@@ -115,6 +115,7 @@ async def transcribe_parse(
         ) from exc
     except Exception as exc:  # pragma: no cover - provider already degrades
         logger.warning("transcribe-parse failed for %s: %s", key, exc)
+        retry_ur, retry_en = voice.retry_prompt(key, lang=language, no_speech=True)
         return JSONResponse(
             status_code=200,
             content={
@@ -123,8 +124,8 @@ async def transcribe_parse(
                 "parsed_value": None,
                 "confidence": 0.0,
                 "missing_reason": "STT_UNAVAILABLE",
-                "readback_ur": "ہم آپ کی آواز نہیں سن سکے۔ براہ کرم کی پیڈ استعمال کریں۔",
-                "readback_en": "We could not process the audio. Please use the keypad.",
+                "readback_ur": retry_ur,
+                "readback_en": retry_en,
                 "needs_retry": True,
                 "provider": "unavailable",
                 "model": "unavailable",

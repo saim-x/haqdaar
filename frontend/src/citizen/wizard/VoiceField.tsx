@@ -5,6 +5,7 @@ import type { VoiceParseResult } from '../../shared/api/types';
 import { useAudio } from '../../shared/audio/AudioProvider';
 import { useVoiceCapture } from '../../shared/audio/useVoiceCapture';
 import { useI18n } from '../../shared/i18n/I18nProvider';
+import { formatCnic, formatPhonePk } from '../../shared/lib/cnic';
 import { AudioButton } from '../../shared/ui/AudioButton';
 import { IconCheck, IconCross, IconMic } from '../../shared/ui/Icons';
 
@@ -113,9 +114,18 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
   }
 
   const isUserUnknown = parsed?.missing_reason === 'USER_UNKNOWN';
-  const canConfirm = Boolean(
-    parsed && !parsed.needs_retry && (parsed.parsed_value !== null || isUserUnknown),
+  const hasParsedValue = Boolean(
+    parsed && parsed.parsed_value !== null && parsed.parsed_value !== '',
   );
+  const canConfirm = Boolean(parsed && (hasParsedValue || isUserUnknown));
+  const readbackText = parsed ? (isRtl ? parsed.readback_ur : parsed.readback_en) : '';
+  const formattedValue = (() => {
+    if (!parsed || !hasParsedValue) return '';
+    const raw = String(parsed.parsed_value);
+    if (fieldKey.endsWith('_cnic')) return formatCnic(raw);
+    if (fieldKey === 'payout_phone') return formatPhonePk(raw);
+    return raw;
+  })();
 
   return (
     <div className="mt-3">
@@ -174,27 +184,41 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
 
       {parsed && (
         <div className="card enter p-4">
-          <p className="text-meta text-ink-3">{t('wizard.readback.question')}</p>
-          <div className="mt-1.5 flex items-center gap-2">
-            <p className="flex-1 text-title-lg font-medium tabular-nums text-ink" dir="auto">
-              {isUserUnknown
-                ? t('common.dontKnow')
-                : parsed.parsed_value === null || parsed.parsed_value === ''
-                  ? t('wizard.voice.notUnderstood')
-                  : String(parsed.parsed_value)}
-            </p>
-            <AudioButton
-              audioKey={parsed.needs_retry ? retryClip : null}
-              text={isRtl ? parsed.readback_ur : parsed.readback_en}
-            />
-          </div>
+          {canConfirm ? (
+            <>
+              <p className="text-meta text-ink-3">{t('wizard.readback.question')}</p>
+              <div className="mt-1.5 flex items-center gap-2">
+                <p
+                  className={`flex-1 text-title-lg font-medium tabular-nums text-ink ${
+                    fieldKey.endsWith('_cnic') || fieldKey === 'payout_phone' ? 'num font-mono' : ''
+                  }`}
+                  dir={fieldKey.endsWith('_cnic') || fieldKey === 'payout_phone' ? 'ltr' : 'auto'}
+                >
+                  {isUserUnknown ? t('common.dontKnow') : formattedValue}
+                </p>
+                <AudioButton audioKey={null} text={readbackText} />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start gap-2">
+              <p className="flex-1 text-body font-medium leading-[1.6] text-ink" dir="auto">
+                {readbackText || t('wizard.voice.notUnderstood')}
+              </p>
+              <AudioButton
+                audioKey={parsed.needs_retry ? retryClip : null}
+                text={readbackText || t('wizard.voice.notUnderstood')}
+              />
+            </div>
+          )}
           {parsed.transcript && (
             <div className="mt-2 rounded-control bg-raised p-2">
               <p className="text-meta font-medium text-ink-2">{t('wizard.voice.preview')}</p>
               <p className="text-meta leading-[1.7] text-ink" dir="auto">{parsed.transcript}</p>
             </div>
           )}
-          {numeric && <p className="mt-1 text-meta text-ink-3">{t('wizard.voice.correct')}</p>}
+          {(numeric || parsed.needs_retry) && canConfirm && (
+            <p className="mt-1 text-meta text-ink-3">{t('wizard.voice.correct')}</p>
+          )}
 
           <div className="mt-4 flex gap-2">
             <button
@@ -206,21 +230,22 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
               className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-ink/[0.14] bg-card text-body font-medium text-ink hover:bg-raised"
             >
               <IconCross size={16} />
-              {t('wizard.readback.no')}
+              {canConfirm ? t('wizard.readback.no') : t('common.tryAgain')}
             </button>
-            <button
-              type="button"
-              disabled={!canConfirm}
-              onClick={() => {
-                onConfirm(parsed.parsed_value, parsed.missing_reason);
-                setParsed(null);
-                capture.reset();
-              }}
-              className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-transparent bg-positive text-body font-medium text-white hover:bg-positive-ink disabled:border-transparent disabled:bg-raised disabled:text-ink-3"
-            >
-              <IconCheck size={16} />
-              {t('wizard.readback.yes')}
-            </button>
+            {canConfirm && (
+              <button
+                type="button"
+                onClick={() => {
+                  onConfirm(parsed.parsed_value, parsed.missing_reason);
+                  setParsed(null);
+                  capture.reset();
+                }}
+                className="press inline-flex min-h-primary flex-1 items-center justify-center gap-1.5 rounded-control border border-transparent bg-positive text-body font-medium text-white hover:bg-positive-ink"
+              >
+                <IconCheck size={16} />
+                {t('wizard.readback.yes')}
+              </button>
+            )}
           </div>
         </div>
       )}

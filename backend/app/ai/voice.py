@@ -288,10 +288,50 @@ _KEYPAD_FIELDS = frozenset({"applicant_cnic", "spouse_cnic", "payout_phone"})
 _TEXT_FIELDS = frozenset({"applicant_full_name", "spouse_full_name"})
 
 
-def _retry_prompt(field_key: str, *, lang: str = "ur", no_speech: bool = False) -> tuple[str, str]:
+def retry_prompt(
+    field_key: str,
+    *,
+    lang: str = "ur",
+    no_speech: bool = False,
+    heard_digits: str | None = None,
+) -> tuple[str, str]:
     """Build a spoken retry prompt that matches the field's actual UI control."""
+    if heard_digits and field_key in {"applicant_cnic", "spouse_cnic"} and len(heard_digits) != 13:
+        en_msg = (
+            f"We heard {len(heard_digits)} digits ({heard_digits}), but a CNIC must be 13 digits. "
+            "Please speak all 13 digits again or use the keypad."
+        )
+        if lang == "sd":
+            return (
+                f"اسان {len(heard_digits)} انگ ٻڌا ({heard_digits})، پر سڃاڻپ ڪارڊ نمبر 13 انگن جو هوندو آهي. "
+                "مهرباني ڪري 13 انگ وري ڳالهايو يا ڪي پيڊ استعمال ڪريو.",
+                en_msg,
+            )
+        return (
+            f"ہم نے {len(heard_digits)} ہندسے سنے ({heard_digits})، لیکن شناختی کارڈ نمبر 13 ہندسوں کا ہوتا ہے۔ "
+            "براہ کرم 13 ہندسے دوبارہ بولیں یا کی پیڈ سے درج کریں۔",
+            en_msg,
+        )
+
+    if heard_digits and field_key == "payout_phone":
+        en_msg = (
+            f"We heard {len(heard_digits)} digits ({heard_digits}), but a mobile number must be "
+            "11 digits starting with 03. Please speak again or use the keypad."
+        )
+        if lang == "sd":
+            return (
+                f"اسان {len(heard_digits)} انگ ٻڌا ({heard_digits})، پر موبائل نمبر 03 سان شروع ٿيندڙ 11 انگن جو هوندو آهي. "
+                "مهرباني ڪري وري ڳالهايو يا ڪي پيڊ استعمال ڪريو.",
+                en_msg,
+            )
+        return (
+            f"ہم نے {len(heard_digits)} ہندسے سنے ({heard_digits})، لیکن موبائل نمبر 03 سے شروع ہونے والے 11 ہندسوں کا ہوتا ہے۔ "
+            "براہ کرم دوبارہ بولیں یا کی پیڈ سے درج کریں۔",
+            en_msg,
+        )
+
     if lang == "sd":
-        return sindhi.RETRY, _retry_prompt(field_key, lang="ur", no_speech=no_speech)[1]
+        return sindhi.RETRY, retry_prompt(field_key, lang="ur", no_speech=no_speech)[1]
 
     lead_ur = "ہم آپ کی آواز نہیں سن سکے۔" if no_speech else "ہم ٹھیک سے سمجھ نہیں سکے۔"
     lead_en = "We could not hear you." if no_speech else "We could not understand that."
@@ -343,7 +383,7 @@ def transcribe_and_parse(
         transcript = guardrails.sanitize(db, stt.transcript or "", resource_type="voice", resource_id=field_key)
 
         if not transcript.strip():
-            retry_ur, retry_en = _retry_prompt(field_key, lang=lang, no_speech=True)
+            retry_ur, retry_en = retry_prompt(field_key, lang=lang, no_speech=True)
             return VoiceParseResult(
                 field_key=field_key,
                 transcript="",
@@ -409,7 +449,14 @@ def transcribe_and_parse(
     if confidence < CONFIDENCE_THRESHOLD and missing_reason != "USER_UNKNOWN":
         needs_retry = True
     if value is None and missing_reason != "USER_UNKNOWN":
-        readback_ur, readback_en = _retry_prompt(field_key, lang=lang, no_speech=False)
+        heard_digits = (
+            urdu_nlp.parse_digit_sequence(normalized)
+            if field_key in _KEYPAD_FIELDS
+            else None
+        )
+        readback_ur, readback_en = retry_prompt(
+            field_key, lang=lang, no_speech=False, heard_digits=heard_digits
+        )
     else:
         readback_ur, readback_en = readback(field_key, value, lang=lang)
         if lang == "sd" and needs_retry:
@@ -468,6 +515,7 @@ __all__ = [
     "VoiceParseResult",
     "cache_key",
     "readback",
+    "retry_prompt",
     "synthesize",
     "transcribe_and_parse",
 ]

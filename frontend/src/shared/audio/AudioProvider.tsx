@@ -203,7 +203,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           if (await playAudioResponse(clip, signal, true) || signal.aborted) return;
         } catch { /* Dynamic speech or a device voice may still be available. */ }
       }
-      if (key && locale !== 'sd') {
+      if (key && locale === 'ur') {
         if (await playClip(key, signal) || signal.aborted) return;
         const manifest = await loadManifest();
         if (signal.aborted) return;
@@ -214,6 +214,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         }
       }
       if (text && !signal.aborted) {
+        if (locale === 'en') {
+          playBrowser(text, fallbackText);
+          return;
+        }
         setLoadingControl(control ?? null);
         if (!await playDynamic(text, signal) && !signal.aborted) playBrowser(text, fallbackText);
         setLoadingControl(null);
@@ -259,11 +263,15 @@ export function useAudio(): AudioContextValue {
  * Never re-plays on re-render, and never blocks the screen.
  */
 export function useAutoReadPrompt(key: string | null | undefined, text?: string | null): void {
-  const { autoRead, play } = useAudio();
+  const { autoRead, play, stop } = useAudio();
+  const { lang } = useI18n();
   const lastPlayedKey = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoRead || !key || lastPlayedKey.current === key) return;
-    lastPlayedKey.current = key;
+    if (!autoRead || !key) return;
+    const token = `${lang}:${key}`;
+    if (lastPlayedKey.current === token) return;
+    lastPlayedKey.current = token;
     void play(key, text ?? null);
-  }, [autoRead, key, text, play]);
+  }, [autoRead, key, lang, text, play]);
+  useEffect(() => () => stop(), [stop]);
 }

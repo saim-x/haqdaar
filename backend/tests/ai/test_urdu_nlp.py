@@ -142,10 +142,20 @@ class TestCnic:
             "99900 1000001 2",
             "۹۹۹۰۰۱۰۰۰۰۰۱۲",
             "میرا شناختی کارڈ 99900-1000001-2 ہے",
+            "نو نو نو صفر صفر ایک صفر صفر صفر صفر صفر ایک دو",
+            "ٹرپل نائن ڈبل زیرو ون زیرو زیرو زیرو زیرو زیرو ون ٹو",
+            "99900 ڈیش 1000001 ڈیش 2",
+            "nine nine nine zero zero dash one zero zero zero zero zero one dash two",
         ],
     )
     def test_cnic_parses_from_any_common_form(self, spoken: str) -> None:
         assert urdu_nlp.parse_cnic(spoken) == "9990010000012"
+
+    def test_cnic_parses_spoken_urdu_and_grouped_digits(self) -> None:
+        spoken = "چار دو دو صفر ایک آٹھ دو دو ایک چار تین دو ایک"
+        assert urdu_nlp.parse_cnic(spoken) == "4220182214321"
+        assert urdu_nlp.parse_cnic("چار بائیس صفر ایک آٹھ بائیس چودہ تین دو ایک") == "4220182214321"
+        assert urdu_nlp.parse_cnic("four twenty two zero one eight twenty two one four three two one") == "4220182214321"
 
     def test_cnic_rejects_the_wrong_length(self) -> None:
         assert urdu_nlp.parse_cnic("999001000001") is None

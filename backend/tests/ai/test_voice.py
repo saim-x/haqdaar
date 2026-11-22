@@ -291,6 +291,19 @@ class TestReadback:
         assert "keypad" in cnic_res.readback_en.lower()
         assert "کی پیڈ" in cnic_res.readback_ur
 
+    def test_spoken_urdu_cnic_parses_and_wrong_length_reports_digit_count(self, db: Any) -> None:
+        valid = _parse(db, "applicant_cnic", "چار دو دو صفر ایک آٹھ دو دو ایک چار تین دو ایک")
+        assert valid.parsed_value == "4220182214321"
+        assert not valid.needs_retry
+        assert "42201-8221432-1" in valid.readback_en
+
+        too_long = _parse(db, "applicant_cnic", "چار دو دو صفر ایک آٹھ دو دو ایک چار تین دو دو ایک")
+        assert too_long.parsed_value is None
+        assert too_long.needs_retry
+        assert "14 digits" in too_long.readback_en
+        assert "42201822143221" in too_long.readback_en
+        assert "14 ہندسے" in too_long.readback_ur
+
 
 # --------------------------------------------------------------------------- #
 # schemas and TTS

@@ -526,15 +526,60 @@ _DIGIT_WORDS_EN = dict(zip(
     range(10),
     strict=True,
 ))
+#: English digits often transcribed in Urdu script by Urdu STT (e.g. "زیرو ون ٹو").
+_DIGIT_WORDS_EXTRA: dict[str, int] = {
+    "oh": 0,
+    "o": 0,
+    "زیرو": 0,
+    "او": 0,
+    "ون": 1,
+    "ٹو": 2,
+    "تھری": 3,
+    "فور": 4,
+    "فائیو": 5,
+    "فائو": 5,
+    "سکس": 6,
+    "سیون": 7,
+    "ایٹ": 8,
+    "نائن": 9,
+}
+_ENGLISH_TENS: dict[str, int] = {
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+}
 _DIGIT_REPEATS = {"double": 2, "ڈبل": 2, "triple": 3, "ٹرپل": 3}
+#: Connectors spoken between CNIC/phone groups ("99900 dash 1000001 dash 2").
+_DIGIT_JOINERS = frozenset({
+    "dash",
+    "hyphen",
+    "ڈیش",
+    "اور",
+    "aur",
+    "and",
+    "پھر",
+    "phir",
+    "then",
+    "space",
+    "اسپیس",
+})
 
 
 def parse_digit_sequence(text: str) -> str | None:
-    """Join numeric groups and spoken single digits, preserving leading zeros."""
+    """Join numeric groups and spoken digits, preserving leading zeros."""
+    tokens = re.findall(r"\w+", normalize_text(text).lower())
     runs: list[list[str]] = []
     current: list[str] = []
     repeat = 1
-    for token in re.findall(r"\w+", normalize_text(text).lower()):
+    idx = 0
+    while idx < len(tokens):
+        token = tokens[idx]
+        idx += 1
         if token in _DIGIT_REPEATS:
             if repeat != 1:
                 return None
@@ -542,14 +587,25 @@ def parse_digit_sequence(text: str) -> str | None:
             continue
         if token.isascii() and token.isdecimal():
             digits = token
+        elif token in _ENGLISH_TENS:
+            tens = _ENGLISH_TENS[token]
+            if idx < len(tokens) and tokens[idx] in _DIGIT_WORDS_EN and _DIGIT_WORDS_EN[tokens[idx]] > 0:
+                digits = str(tens + _DIGIT_WORDS_EN[tokens[idx]])
+                idx += 1
+            else:
+                digits = str(tens)
         else:
-            digit = _DIGIT_WORDS_EN.get(token, _word_value(token))
-            digits = str(digit) if digit is not None and 0 <= digit <= 9 else ""
+            digit = _DIGIT_WORDS_EN.get(
+                token, _DIGIT_WORDS_EXTRA.get(token, _word_value(token))
+            )
+            digits = str(digit) if digit is not None and 0 <= digit <= 99 else ""
         if repeat != 1 and len(digits) != 1:
             return None
         if digits:
             current.append(digits * repeat)
             repeat = 1
+        elif token in _DIGIT_JOINERS and current:
+            continue
         elif current:
             runs.append(current)
             current = []

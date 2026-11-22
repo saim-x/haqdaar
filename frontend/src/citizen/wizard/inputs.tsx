@@ -37,9 +37,7 @@ export function DigitPad({
   const digitWords = isRtl
     ? ['صفر', 'ایک', 'دو', 'تین', 'چار', 'پانچ', 'چھ', 'سات', 'آٹھ', 'نو']
     : ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
-  const spoken = maxDigits === 13 && value.length === 13 && !value.startsWith('99900')
-    ? t('wizard.cnic.invalid')
-    : maxDigits === 6 && value
+  const spoken = maxDigits === 6 && value
     ? String(Number(value))
     : [...value].map((digit) => digitWords[Number(digit)]).join(', ');
 

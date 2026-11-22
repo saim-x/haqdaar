@@ -593,7 +593,7 @@ def _parse_field(field_key: str, text: str) -> ParsedFieldResult:
         if urdu_nlp.is_unknown(text):
             return ParsedFieldResult(key, None, 0.95, "USER_UNKNOWN")
         digits = urdu_nlp.parse_cnic(text)
-        if digits is None or not digits.startswith("99900"):
+        if digits is None:
             return ParsedFieldResult(key, None, 0.0, "PARSE_FAILED")
         return ParsedFieldResult(
             key, digits, 0.97, None, urdu_nlp.format_cnic(digits)

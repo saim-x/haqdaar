@@ -461,7 +461,7 @@ export function ApplyWizard() {
       // mistake, and the tone is what stops a citizen giving up here.
       if (doc.verify_status === 'NEEDS_RETAKE' || doc.verify_status === 'UNVERIFIABLE') {
         const retakeText =
-          lang === 'ur'
+          lang !== 'en'
             ? doc.retake_reason_ur ?? t('wizard.doc.unverifiable')
             : doc.retake_reason_en ?? t('wizard.doc.unverifiable');
         if (guide.active) {
@@ -491,7 +491,7 @@ export function ApplyWizard() {
       const id = await ensureCase();
       if (!id) {
         setError(
-          lang === 'ur'
+          lang !== 'en'
             ? 'انٹرنیٹ نہیں ہے۔ آپ کے جوابات اس فون پر محفوظ ہیں۔ سگنل آنے پر دوبارہ جمع کریں۔'
             : 'No connection. Your answers are saved on this phone. Submit again when the signal returns.',
         );
@@ -584,7 +584,11 @@ export function ApplyWizard() {
     setStepIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
-  useAutoReadPrompt(`wizard_${step}`, t(STEP_TITLE[step]));
+  const stepTitle = t(STEP_TITLE[step]);
+  const stepHintKey = STEP_HINT[step];
+  const stepSpokenText = stepHintKey ? `${stepTitle} ${t(stepHintKey)}` : stepTitle;
+
+  useAutoReadPrompt(`wizard_${step}`, stepSpokenText);
 
   /* ------------------------------------------------------------- video guide */
 
@@ -599,10 +603,15 @@ export function ApplyWizard() {
       lastSpokenStep.current = null;
       return;
     }
-    if (lastSpokenStep.current === step) return;
-    lastSpokenStep.current = step;
-    guide.speak({ text: t(STEP_TITLE[step]), mood: 'listening', clipKey: `wizard_${step}` });
-  }, [guide.active, guide.speak, step, t]);
+    const token = `${lang}:${step}`;
+    if (lastSpokenStep.current === token) return;
+    lastSpokenStep.current = token;
+    guide.speak({
+      text: stepSpokenText,
+      mood: 'listening',
+      clipKey: lang === 'ur' ? `wizard_${step}` : undefined,
+    });
+  }, [guide.active, guide.speak, lang, step, stepSpokenText]);
 
   /** Mandatory readback, spoken face-to-face when the guide is open. */
   const handleReadback = useCallback(
@@ -639,7 +648,7 @@ export function ApplyWizard() {
               <p className="mt-1 text-body leading-[1.7] text-ink-2">
                 {queued
                   ? t('wizard.review.offlineNote')
-                  : lang === 'ur'
+                  : lang !== 'en'
                     ? 'اب ہم آپ کی درخواست جانچیں گے۔ آپ کو پیغام ملے گا۔'
                     : 'We will now check your application. You will get a message.'}
               </p>
@@ -670,8 +679,8 @@ export function ApplyWizard() {
     );
   }
 
-  const title = t(STEP_TITLE[step]);
-  const hintKey = STEP_HINT[step];
+  const title = stepTitle;
+  const hintKey = stepHintKey;
 
   return (
     <div className="screen pb-28" data-testid="wizard" data-step={step}>
@@ -691,7 +700,7 @@ export function ApplyWizard() {
           <h1 className="text-title font-medium leading-[1.35] text-ink">{title}</h1>
           {hintKey && <p className="mt-1 text-body leading-[1.7] text-ink-2">{t(hintKey)}</p>}
         </div>
-        <AudioButton audioKey={`wizard_${step}`} text={title} size="lg" />
+        <AudioButton audioKey={`wizard_${step}`} text={stepSpokenText} size="lg" />
       </header>
 
       {!serverCaseId && (
@@ -728,7 +737,7 @@ export function ApplyWizard() {
               >
                 <IconCheck size={14} className="shrink-0 text-ink-3" />
                 <span className="text-caption text-ink-2">
-                  {lang === 'ur'
+                  {lang !== 'en'
                     ? {
                         IDENTITY: 'شناخت',
                         HOUSEHOLD: 'گھریلو معلومات',
@@ -1101,7 +1110,7 @@ export function ApplyWizard() {
 
                 {!lite && (
                   <p className="mt-2 text-center text-meta leading-[1.7] text-ink-3">
-                    {lang === 'ur'
+                    {lang !== 'en'
                       ? 'تصویر خود بخود چھوٹی کر دی جاتی ہے تاکہ کم سگنل پر بھی بھیجی جا سکے۔'
                       : 'Photos are shrunk automatically so they send even on a weak signal.'}
                   </p>
