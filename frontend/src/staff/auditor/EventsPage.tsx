@@ -60,7 +60,7 @@ export default function EventsPage() {
             className="press inline-flex min-h-[36px] items-center gap-1.5 rounded-control bg-accent px-3 text-caption font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
           >
             <IconShield size={14} />
-            {verify.isPending ? 'Verifying…' : 'Verify hash chain'}
+            {verify.isPending ? staffText('Verifying…') : staffText('Verify hash chain')}
           </button>
         }
       />
@@ -102,7 +102,7 @@ export default function EventsPage() {
         >
           {ACTOR_TYPES.map((t) => (
             <option key={t} value={t}>
-              {t === '' ? 'All actors' : humanize(t)}
+              {t === '' ? staffText('All actors') : humanize(t)}
             </option>
           ))}
         </select>

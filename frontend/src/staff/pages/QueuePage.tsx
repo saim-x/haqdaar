@@ -163,7 +163,7 @@ export default function QueuePage() {
         <ul className="mt-2 space-y-2">
           {workload.data?.map(([officerId, entry]) => (
             <li key={officerId} className="flex flex-wrap items-center justify-between gap-2 text-caption">
-              <span className="font-medium">{!officerId ? 'Unassigned' : officerId === session?.user.id ? 'My cases' : `Officer ${officerId.slice(0, 8)}`}</span>
+              <span className="font-medium">{!officerId ? staffText('Unassigned') : officerId === session?.user.id ? staffText('My cases') : `${staffText('Officer')} ${officerId.slice(0, 8)}`}</span>
               <span>{entry.count} {staffText(" open · oldest submitted ")}{waitingFor(entry.oldest)}</span>
             </li>
           ))}
@@ -184,7 +184,7 @@ export default function QueuePage() {
                   selected ? 'bg-card font-medium text-ink shadow-hair' : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                {label}
+                {staffText(label)}
               </button>
             );
           })}
@@ -198,7 +198,7 @@ export default function QueuePage() {
         >
           {STATUS_FILTERS.map((s) => (
             <option key={s.value} value={s.value}>
-              {s.label}
+              {staffText(s.label)}
             </option>
           ))}
         </select>

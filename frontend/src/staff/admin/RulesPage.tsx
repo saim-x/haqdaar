@@ -303,8 +303,8 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
   return (
     <div className="space-y-4">
       <PageHeader
-        title={canEdit ? 'Rules & Digital Twin' : 'Rule history'}
-        subtitle={canEdit ? 'Review, simulate, and publish eligibility rules.' : 'Inspect eligibility rules and past versions.'}
+        title={canEdit ? staffText('Rules & Digital Twin') : staffText('Rule history')}
+        subtitle={canEdit ? staffText('Review, simulate, and publish eligibility rules.') : staffText('Inspect eligibility rules and past versions.')}
         actions={
           <>
             <select
@@ -403,7 +403,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
           {!draft && !versions.error && !versions.isLoading && (
             <Card>
               <p className="text-caption text-ink-3">
-                {canEdit ? 'Select a version or create a new draft.' : 'Select a version to inspect.'}
+                {canEdit ? staffText('Select a version or create a new draft.') : staffText('Select a version to inspect.')}
               </p>
             </Card>
           )}
@@ -412,7 +412,7 @@ export default function RulesPage({ canEdit }: { canEdit: boolean }) {
             <>
               <Card>
                 <CardTitle
-                  hint={readOnly ? 'Read only' : 'Form editor'}
+                  hint={readOnly ? staffText('Read only') : staffText('Form editor')}
                 >
                   {staffText("\r\n                  Eligibility rules\r\n                ")}</CardTitle>
 

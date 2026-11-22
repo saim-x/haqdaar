@@ -145,7 +145,7 @@ export default function ConsentsPage() {
                       aria-hidden
                     />
                     <span className="text-meta text-ink-2">
-                      {log.allowed ? 'Allowed' : 'Blocked'}
+                      {log.allowed ? staffText('Allowed') : staffText('Blocked')}
                     </span>
                     {!log.allowed && log.denial_reason && (
                       <span className="text-meta text-ink-3">

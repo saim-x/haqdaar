@@ -277,12 +277,12 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           <div className="flex items-start gap-3">
             <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${approved ? 'bg-positive' : 'bg-ink-3'}`} aria-hidden="true" />
             <div className="min-w-0">
-              <h2 className="text-title font-medium text-ink">{approved ? 'Application approved' : 'Decision recorded'}</h2>
+              <h2 className="text-title font-medium text-ink">{approved ? staffText('Application approved') : staffText('Decision recorded')}</h2>
               <p role="status" className="mt-1 text-body text-ink-2">
                 {approved
                   ? caseData.status === 'PAID'
-                    ? 'The payment has been completed.'
-                    : 'The application has been approved. You can check its payment progress from the case list.'
+                    ? staffText('The payment has been completed.')
+                    : staffText('The application has been approved. You can check its payment progress from the case list.')
                   : `This case is ${statusWord(caseData.status).toLowerCase()}.`}
               </p>
               <p className="mt-2 text-caption text-ink-3">{staffText("Current status: ")}{statusWord(caseData.status)}</p>
@@ -351,7 +351,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
             disabled={reevaluate.isPending}
             className="press inline-flex min-h-[32px] items-center rounded-[7px] border border-warn/40 bg-card px-2.5 text-meta font-medium text-warn hover:bg-warn-wash disabled:opacity-50"
           >
-            {reevaluate.isPending ? 'Checking…' : 'Check again'}
+            {reevaluate.isPending ? staffText('Checking…') : staffText('Check again')}
           </button>
         </div>
       )}
@@ -372,8 +372,8 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
               ) : (
                 <p className="text-body text-ink-2">
                   {conflictingFacts > 0
-                    ? 'Compare the conflicting records and their sources before deciding.'
-                    : 'Check the application and documents before you record a decision.'}
+                    ? staffText('Compare the conflicting records and their sources before deciding.')
+                    : staffText('Check the application and documents before you record a decision.')}
                 </p>
               )}
               {unresolvedRules.length > 0 && (
@@ -421,10 +421,10 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     items: caseData.ai_case_note.verified,
                   },
                 ].map(({ label, marker, skin, empty, items }) => (
-                  <section key={label} className={`min-w-0 rounded-control border p-3 sm:p-4 ${skin}`}>
+                  <section key={staffText(label)} className={`min-w-0 rounded-control border p-3 sm:p-4 ${skin}`}>
                     <h3 className="flex items-center gap-2 text-caption font-semibold text-ink">
                       <span className={`live-dot ${marker}`} aria-hidden />
-                      {label}
+                      {staffText(label)}
                     </h3>
                     {items.length === 0 ? (
                       <p className="mt-2 text-caption text-ink-2">{empty}</p>
@@ -641,10 +641,10 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     return pillars.map((p) => {
                       const isWeakest = Math.abs(p.val - minVal) < 0.001 && minVal < 0.9;
                       return (
-                        <div key={p.label}>
+                        <div key={staffText(p.label)}>
                           <div className="flex items-center justify-between text-[11px]">
                             <span className={isWeakest ? 'font-medium text-negative' : 'text-ink-2'}>
-                              {p.label}
+                              {staffText(p.label)}
                               {isWeakest ? ' (needs checking)' : ''}
                             </span>
                             <span className="num font-mono text-ink">{(p.val * 100).toFixed(0)}{staffText("%")}</span>
@@ -682,7 +682,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   disabled={assign.isPending}
                   className="press mt-3 min-h-primary w-full rounded-control bg-accent px-4 text-body font-medium text-white hover:bg-accent-ink disabled:opacity-50"
                 >
-                  {assign.isPending ? 'Starting review…' : 'Start review'}
+                  {assign.isPending ? staffText('Starting review…') : staffText('Start review')}
                 </button>
               </>
             ) : !canDecide ? (
@@ -709,7 +709,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                         : 'border-ink/[0.12] bg-card text-ink-2 hover:bg-raised hover:text-ink'
                     }`}
                   >
-                    {label}
+                    {staffText(label)}
                   </button>
                 ))}
               </div>
@@ -738,7 +738,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                             : 'border-ink/[0.12] text-ink-2 hover:bg-raised hover:text-ink'
                         }`}
                       >
-                        {label}
+                        {staffText(label)}
                       </button>
                     );
                   })}
@@ -806,11 +806,11 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   onClick={() => decide.mutate()}
                   className="press mt-4 min-h-primary w-full rounded-control bg-accent text-body font-medium text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  {decide.isPending ? 'Saving…' : 'Save decision'}
+                  {decide.isPending ? staffText('Saving…') : staffText('Save decision')}
                 </button>
                 {!canSubmit && (
                   <p className="mt-2 text-meta leading-[1.7] text-ink-3">
-                    {needsFields ? 'Choose at least one item to request.' : 'Choose a reason and write a short explanation.'}
+                    {needsFields ? staffText('Choose at least one item to request.') : staffText('Choose a reason and write a short explanation.')}
                   </p>
                 )}
               </>}

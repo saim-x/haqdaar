@@ -295,13 +295,13 @@ export function CardTitle({ children, hint }: { children: ReactNode; hint?: Reac
 /** Three static skeleton rows. Nothing in the console is allowed to pulse. */
 export function Loading({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="py-6" role="status" aria-label={label}>
+    <div className="py-6" role="status" aria-label={staffText(label)}>
       <div className="space-y-2">
         {[0, 1, 2].map((row) => (
           <div key={row} className="h-9 rounded-control bg-raised" />
         ))}
       </div>
-      <p className="mt-3 text-meta text-ink-3">{label}</p>
+      <p className="mt-3 text-meta text-ink-3">{staffText(label)}</p>
     </div>
   );
 }
@@ -414,7 +414,7 @@ export function Kpi({
 }) {
   return (
     <div className={bare ? undefined : 'card p-4'}>
-      <p className="text-meta text-ink-3">{label}</p>
+      <p className="text-meta text-ink-3">{staffText(label)}</p>
       <p className="num mt-1 text-display font-medium leading-[1.2] text-ink">{value}</p>
       {hint && <p className="mt-1 text-meta text-ink-3">{hint}</p>}
     </div>

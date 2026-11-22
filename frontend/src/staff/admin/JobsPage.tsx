@@ -102,7 +102,7 @@ export default function JobsPage() {
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s === '' ? 'All statuses' : jobWord(s)}
+                {s === '' ? staffText('All statuses') : jobWord(s)}
               </option>
             ))}
           </select>
@@ -190,7 +190,7 @@ export default function JobsPage() {
                         disabled={retryingId !== null}
                         className="press min-h-[30px] rounded-[7px] border border-ink/[0.12] px-2 text-meta text-ink-2 hover:bg-raised hover:text-ink"
                       >
-                        {retryingId === job.id ? 'Retrying…' : 'Retry'}
+                        {retryingId === job.id ? staffText('Retrying…') : staffText('Retry')}
                       </button>
                     )}
                   </td>

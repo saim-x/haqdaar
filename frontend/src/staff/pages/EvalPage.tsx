@@ -268,12 +268,12 @@ export default function EvalPage() {
           <div>
             <dt className="font-medium text-ink">{staffText("False approval")}</dt>
             <dd>{staffText("A synthetic case labelled ineligible is automatically approved.")}</dd>
-            <dd>{staffText("At the active threshold: ")}{activeResult ? pct(activeResult.false_approval_rate) : 'No result'}</dd>
+            <dd>{staffText("At the active threshold: ")}{activeResult ? pct(activeResult.false_approval_rate) : staffText('No result')}</dd>
           </div>
           <div>
             <dt className="font-medium text-ink">{staffText("Unnecessary review")}</dt>
             <dd>{staffText("For example, a safe, eligible synthetic case goes to an officer because confidence is too low.")}</dd>
-            <dd>{staffText("All review referrals: ")}{activeResult ? pct(activeResult.human_review_rate) : 'No result'}</dd>
+            <dd>{staffText("All review referrals: ")}{activeResult ? pct(activeResult.human_review_rate) : staffText('No result')}</dd>
           </div>
           <div>
             <dt className="font-medium text-ink">{staffText("Speech transcription error")}</dt>

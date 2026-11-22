@@ -169,7 +169,7 @@ export default function UsersPage() {
                       aria-hidden
                     />
                     <span className="text-meta text-ink-2">
-                      {user.is_active ? 'active' : 'disabled'}
+                      {user.is_active ? staffText('active') : staffText('disabled')}
                     </span>
                   </span>
                 </td>
@@ -179,7 +179,7 @@ export default function UsersPage() {
                     onClick={() => toggle.mutate({ id: user.id, is_active: !user.is_active })}
                     className="press min-h-[30px] rounded-[7px] border border-ink/[0.12] px-2 text-meta text-ink-2 hover:bg-raised hover:text-ink"
                   >
-                    {user.is_active ? 'Disable' : 'Enable'}
+                    {user.is_active ? staffText('Disable') : staffText('Enable')}
                   </button>
                 </td>
               </tr>

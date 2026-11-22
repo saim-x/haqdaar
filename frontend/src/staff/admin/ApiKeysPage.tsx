@@ -177,7 +177,7 @@ export default function ApiKeysPage() {
                         hour: '2-digit',
                         minute: '2-digit',
                       })
-                    : 'Never'}
+                    : staffText('Never')}
                 </td>
                 <td>
                   <span className="inline-flex items-center gap-1.5">
@@ -186,7 +186,7 @@ export default function ApiKeysPage() {
                       aria-hidden
                     />
                     <span className="text-meta text-ink-2">
-                      {key.is_active ? 'active' : 'revoked'}
+                      {key.is_active ? staffText('active') : staffText('revoked')}
                     </span>
                   </span>
                 </td>
