@@ -131,6 +131,12 @@ FLAGS: dict[str, RedFlag] = {
         "سرکاری امداد کے لیے ذاتی موبائل نمبر پر کال کرنے کو کہتا ہے",
         "MEDIUM",
     ),
+    "RF_SCAM_KEYWORDS": RedFlag(
+        "RF_SCAM_KEYWORDS",
+        "Contains explicit scam, lottery, or fake prize phrasing",
+        "اس میں فراڈ، لاٹری یا جعلی انعام کے واضح الفاظ موجود ہیں",
+        "HARD",
+    ),
 }
 
 _FEE_WORDS = re.compile(
@@ -150,8 +156,8 @@ _FEE_EXCLUSIONS = re.compile(
 )
 
 _CREDENTIAL_WORDS = re.compile(
-    r"\b(?:otp|o\.t\.p|pin|mpin|m-pin|password|passcode|bank\s+code|atm\s+pin|"
-    r"verification\s+code|6\s*digit\s+code|4\s*digit\s+code)\b|او\s*ٹی\s*پی|پن\s*کوڈ|پاس\s*ورڈ",
+    r"\b(?:otp|o\.t\.p|pin|mpin|m-pin|password|passcode|bank\s+code|atm\s+pin|cvv|"
+    r"secret\s+code|verification\s+code|6\s*digit\s+code|4\s*digit\s+code)\b|او\s*ٹی\s*پی|پن\s*کوڈ|پاس\s*ورڈ",
     re.IGNORECASE,
 )
 _CREDENTIAL_REQUEST = re.compile(
@@ -191,6 +197,22 @@ _URGENCY = re.compile(
 _MOBILE = re.compile(r"(?<!\d)(?:\+?92[\s-]?|0)3\d{2}[\s-]?\d{7}(?!\d)")
 _CONTACT_VERB = re.compile(
     r"\b(?:call|rabta|contact|whatsapp|phone|dial)\b|کال|رابطہ|واٹس\s*ایپ", re.IGNORECASE
+)
+_SCAM_KEYWORDS = re.compile(
+    r"\b(?:scam\s+message|scam|scammer|phishing|fraudulent|fraud\s+message|lottery|"
+    r"lucky\s+draw|jackpot|prize\s+won|won\s+(?:a\s+)?(?:prize|lottery|cash|money|reward)|"
+    r"free\s+(?:cash|money|grant|prize)|claim\s+(?:your\s+)?(?:prize|reward|lottery))\b|"
+    r"فراڈ|دھوکہ|لاٹری|انعام\s+نکلا|قرعہ\s*اندازی",
+    re.IGNORECASE,
+)
+_SCAM_SAFETY = re.compile(
+    r"\b(?:beware\s+of|avoid|report|never|don'?t|do\s+not|not\s+a\s+scam|"
+    r"protect\s+yourself|warning\s+about|stay\s+safe\s+from)\b|بچیں|رپورٹ|خبردار|اطلاع\s+دیں",
+    re.IGNORECASE,
+)
+_LINK_ACTION = re.compile(
+    r"\b(?:click|open|tap|visit|verify|claim|login|sign\s+in|update)\b|کلک|کھولیں|تصدیق",
+    re.IGNORECASE,
 )
 
 
@@ -233,6 +255,9 @@ def detect_red_flags(text: str) -> list[RedFlag]:
 
     if _MOBILE.search(normalized) and _CONTACT_VERB.search(normalized) and _RELIEF_CONTEXT.search(normalized):
         flags.append(FLAGS["RF_PERSONAL_NUMBER"])
+
+    if _SCAM_KEYWORDS.search(normalized) and not _SCAM_SAFETY.search(normalized):
+        flags.append(FLAGS["RF_SCAM_KEYWORDS"])
 
     return flags
 
@@ -657,24 +682,36 @@ def classify(
         model_available = False
 
     # ---- stage 4: combine and threshold --------------------------------- #
+    has_suspicious_link = any(flag.code == "RF_SUSPICIOUS_LINK" for flag in flags)
+    strong_link_scam = has_suspicious_link and (
+        len(flags) >= 2 or bool(_LINK_ACTION.search(urdu_nlp.normalize_text(cleaned)))
+    )
+    too_short = (
+        len(cleaned) < MIN_MEANINGFUL_CHARS
+        or len(cleaned.split()) < MIN_MEANINGFUL_WORDS
+    )
+
     if not model_available:
         # Without the model we cannot judge a clean message, so we never call it
         # safe. One hard flag is enough to warn, and anything else is "cannot
         # tell" - the citizen is told to check, not told she is fine.
-        if hard_flags:
+        if hard_flags or strong_link_scam:
             verdict = LIKELY_SCAM
-            confidence = 0.80
+            confidence = 0.85
+            probability = max(probability, 0.85)
         else:
             verdict = CANNOT_TELL
             confidence = 0.5
-    elif probability >= SCAM_THRESHOLD or len(hard_flags) >= HARD_FLAG_COUNT_FOR_SCAM:
-        verdict = LIKELY_SCAM
-        confidence = max(probability, 0.80 if hard_flags else 0.0)
     elif (
-        UNSURE_THRESHOLD <= probability < SCAM_THRESHOLD
-        or len(cleaned) < MIN_MEANINGFUL_CHARS
-        or len(cleaned.split()) < MIN_MEANINGFUL_WORDS
+        probability >= SCAM_THRESHOLD
+        or len(hard_flags) >= 1
+        or strong_link_scam
     ):
+        verdict = LIKELY_SCAM
+        floor = 0.90 if len(hard_flags) >= HARD_FLAG_COUNT_FOR_SCAM else 0.85
+        probability = max(probability, floor)
+        confidence = probability
+    elif UNSURE_THRESHOLD <= probability < SCAM_THRESHOLD or too_short:
         verdict = CANNOT_TELL
         confidence = max(probability, 0.5)
     else:
@@ -682,6 +719,20 @@ def classify(
         confidence = 1.0 - probability
 
     explanation_en, explanation_ur = _explain(verdict)
+    if verdict == LIKELY_SCAM and flags:
+        reasons_en = "; ".join(flag.label_en for flag in flags[:2])
+        reasons_ur = "، ".join(flag.label_ur for flag in flags[:2])
+        explanation_en = f"Likely scam: {reasons_en}. Do not send money, share codes, or open links."
+        explanation_ur = f"یہ فراڈ لگتا ہے: {reasons_ur}۔ پیسے نہ بھیجیں، کوڈ شیئر نہ کریں، اور لنک نہ کھولیں۔"
+    elif verdict == CANNOT_TELL and too_short and not flags:
+        explanation_en = (
+            "This message is too short to verify on its own. Paste the full SMS or WhatsApp "
+            "message, or check with a helper before acting."
+        )
+        explanation_ur = (
+            "یہ پیغام تصدیق کے لیے بہت مختصر ہے۔ پورا ایس ایم ایس یا واٹس ایپ پیغام درج کریں، "
+            "یا کچھ کرنے سے پہلے مددگار سے پوچھ لیں۔"
+        )
     return ScamVerdict(
         verdict=verdict,
         confidence=round(min(confidence, 0.99), 3),
@@ -689,7 +740,7 @@ def classify(
         explanation_en=explanation_en,
         explanation_ur=explanation_ur,
         stage="RULES_ML",
-        probability=round(probability, 4),
+        probability=round(min(probability, 0.99), 4),
     )
 
 

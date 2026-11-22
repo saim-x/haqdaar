@@ -324,7 +324,7 @@ export function ScamCheckPage() {
               <AudioButton
                 tone="onDark"
                 audioKey={`scam_${result.verdict.toLowerCase()}`}
-                text={lang === 'ur' ? result.explanation_ur : result.explanation_en}
+                text={lang !== 'en' ? result.explanation_ur : result.explanation_en}
               />
             </div>
 

@@ -153,6 +153,29 @@ class TestRedFlags:
         )
         assert verdict.verdict == sc.LIKELY_SCAM
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Scam message",
+            "Send me your OTP",
+            "Pay Rs 500 fee",
+            "Click https://bit.ly/claim-now",
+            "You won a lottery prize",
+            "فراڈ پیغام",
+        ],
+    )
+    def test_short_explicit_scam_messages_return_likely_scam(self, text: str) -> None:
+        verdict = sc.classify(text)
+        assert verdict.verdict == sc.LIKELY_SCAM, f"{text!r} -> {verdict}"
+        assert verdict.confidence >= 0.85
+        assert verdict.red_flags
+
+    def test_safety_warning_mentioning_scam_is_not_flagged_as_scam(self) -> None:
+        verdict = sc.classify(
+            "Beware of scam messages and never share your OTP or PIN with anyone."
+        )
+        assert verdict.verdict != sc.LIKELY_SCAM
+
     def test_official_domain_is_not_a_suspicious_link(self) -> None:
         flags = sc.detect_red_flags(
             "Check your application status at https://haqdaar.gov.pk/status using your CNIC."
