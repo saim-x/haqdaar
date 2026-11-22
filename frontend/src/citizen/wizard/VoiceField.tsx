@@ -103,7 +103,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
   if (capture.state === 'denied') {
     return (
       <p className="mt-3 rounded-control bg-raised px-3 py-2 text-meta leading-[1.6] text-ink-2">
-        {t('scam.voiceUnavailable')}
+        {t('wizard.voice.unavailable')}
       </p>
     );
   }

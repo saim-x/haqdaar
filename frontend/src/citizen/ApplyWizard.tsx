@@ -783,6 +783,7 @@ export function ApplyWizard() {
           </label>
           <input
             id="full-name"
+            type="text"
             value={textOf(answers, 'applicant_full_name')}
             onChange={(e) => setAnswer('applicant_full_name', e.target.value)}
             autoComplete="name"
@@ -858,6 +859,7 @@ export function ApplyWizard() {
           </label>
           <input
             id="spouse-name"
+            type="text"
             value={textOf(answers, 'spouse_full_name')}
             onChange={(e) => setAnswer('spouse_full_name', e.target.value)}
             placeholder={t('wizard.spouseName.placeholder')}

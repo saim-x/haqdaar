@@ -100,6 +100,38 @@ class TestModeSelection:
 
 
 # --------------------------------------------------------------------------- #
+# gateway configuration
+# --------------------------------------------------------------------------- #
+class TestGatewayConfig:
+    """``get_provider()`` builds the live provider with no arguments.
+
+    That makes the constructor the only place a deployment can steer the model
+    names, so anything it hardcodes is unreachable from the environment. A
+    gateway that rejects the model name 404s every call, the breaker trips, and
+    the demo silently runs on the fake provider - which looks like "the AI key
+    does not work" rather than a misconfiguration.
+    """
+
+    def test_model_names_come_from_the_environment(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_CHAT_MODEL", "mistral-small-latest")
+        monkeypatch.setenv("OPENAI_EMBED_MODEL", "mistral-embed")
+        live = provider_module.LiveOpenAIProvider()
+        assert live.chat_model == "mistral-small-latest"
+        assert live.embed_model == "mistral-embed"
+
+    def test_base_url_is_blank_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        assert provider_module.LiveOpenAIProvider().base_url == ""
+
+    def test_an_explicit_argument_beats_the_environment(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("OPENAI_CHAT_MODEL", "from-env")
+        live = provider_module.LiveOpenAIProvider(chat_model="from-arg")
+        assert live.chat_model == "from-arg"
+
+
+# --------------------------------------------------------------------------- #
 # fake determinism and speed
 # --------------------------------------------------------------------------- #
 class TestFakeDeterminism:

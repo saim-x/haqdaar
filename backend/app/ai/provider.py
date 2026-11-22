@@ -973,8 +973,8 @@ class LiveOpenAIProvider:
         *,
         api_key: str | None = None,
         base_url: str | None = None,
-        chat_model: str = "gpt-4o-mini",
-        embed_model: str = "text-embedding-3-small",
+        chat_model: str | None = None,
+        embed_model: str | None = None,
         timeout_s: float = 10.0,
         tts_voice: str = "flux-ambreen-ur",
     ) -> None:
@@ -985,8 +985,21 @@ class LiveOpenAIProvider:
         self.base_url = (
             base_url or os.environ.get("OPENAI_BASE_URL") or get_settings().openai_base_url
         ).strip()
-        self.chat_model = chat_model
-        self.embed_model = embed_model
+        #: Model names must follow the gateway, not the SDK default: pointing
+        #: ``base_url`` at Mistral while still asking for ``gpt-4o-mini`` fails
+        #: every call with a 404 and silently degrades to the fake provider.
+        self.chat_model = (
+            chat_model
+            or os.environ.get("OPENAI_CHAT_MODEL")
+            or get_settings().openai_chat_model
+            or "gpt-4o-mini"
+        )
+        self.embed_model = (
+            embed_model
+            or os.environ.get("OPENAI_EMBED_MODEL")
+            or get_settings().openai_embed_model
+            or "text-embedding-3-small"
+        )
         self.timeout_s = timeout_s
         self.tts_voice = tts_voice
         self._client: Any = None

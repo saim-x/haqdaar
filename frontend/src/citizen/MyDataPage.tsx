@@ -429,6 +429,7 @@ export function MyDataPage() {
             </label>
             <input
               id="correction-value"
+              type="text"
               value={requested}
               onChange={(e) => setRequested(e.target.value)}
               className="mt-1"
