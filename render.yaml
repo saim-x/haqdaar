@@ -44,10 +44,11 @@ services:
       #   OPENAI_CHAT_MODEL   mistral-small-latest
       #   OPENAI_EMBED_MODEL  mistral-embed
       #   DEEPGRAM_API_KEY    Urdu speech-to-text
+      #   ANAM_API_KEY        live Urdu video guide (Saima)
       - key: AI_PROVIDER
         value: live
       - key: ANAM_ENABLED
-        value: "false"
+        value: "true"
       - key: RUN_EMBEDDED_WORKER
         value: "true"
       - key: RATE_LIMIT_ENABLED
