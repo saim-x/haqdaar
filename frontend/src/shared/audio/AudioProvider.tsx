@@ -165,8 +165,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           const url = json.audio_url ?? json.url;
           return url ? await playAudioResponse(await fetch(url, { signal }), signal) : false;
         }
-        // The fake provider returns a silent WAV. Let the browser speak instead.
-        if (type.includes('audio/wav')) return false;
+        // Sindhi Gemini returns playable WAV. Other locales use MP3 for live
+        // server audio and a silent WAV from the fake provider.
+        if (locale !== 'sd' && type.includes('audio/wav')) return false;
         return await playAudioResponse(res, signal);
       } catch {
         return false;
