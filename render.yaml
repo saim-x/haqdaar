@@ -1,0 +1,66 @@
+# Render blueprint - one free Docker web service.
+#
+#   Render Dashboard -> New -> Blueprint -> pick this repo -> Apply
+#   (it prompts for DATABASE_URL; paste a Neon free Postgres connection string)
+#
+# The image is the same multi-stage Dockerfile used locally: stage 1 builds the
+# Vite PWA, stage 2 installs FastAPI and serves the built assets from /app/static.
+# scripts/start.sh migrates, seeds and binds to $PORT, and RUN_EMBEDDED_WORKER
+# keeps the SKIP LOCKED job queue alive without a second service.
+#
+# Free-tier caveats:
+#   * the service sleeps after 15 min idle and cold-starts in ~40 s;
+#   * 512 MB RAM / 0.1 CPU is enough for this app (measured 186 MB after boot,
+#     seed, a scam check and a document verification) but leaves little headroom;
+#   * no persistent disk, so uploaded files reset on restart. The database and
+#     the seeded specimen cards survive because start.sh re-stages them.
+
+services:
+  - type: web
+    name: haqdaar
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Paste the DIRECT (non-pooler) Neon connection string, e.g.
+      # postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      # start.sh rewrites the scheme to postgresql+psycopg:// for you.
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_ENV
+        value: prod
+      - key: DEMO_MODE
+        value: "true"
+      - key: AI_PROVIDER
+        value: fake
+      - key: ANAM_ENABLED
+        value: "false"
+      - key: RUN_EMBEDDED_WORKER
+        value: "true"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: STATIC_DIR
+        value: /app/static
+      - key: JWT_SECRET
+        generateValue: true
+      - key: QR_HMAC_SECRET
+        generateValue: true
+
+# Render's own free Postgres works too, but it is deleted 30 days after
+# creation. Uncomment this block and replace the DATABASE_URL entry above with
+# the fromDatabase form if you want a one-click deploy that expires.
+#
+# databases:
+#   - name: haqdaar-db
+#     plan: free
+#     databaseName: haqdaar
+#     user: haqdaar
+#     region: singapore

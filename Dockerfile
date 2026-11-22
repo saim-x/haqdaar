@@ -50,6 +50,10 @@ COPY backend/alembic.ini ./alembic.ini
 
 RUN pip install .
 
+# Copied after the dependency layer so editing the entrypoint does not
+# invalidate the ~10 minute pip install.
+COPY backend/scripts ./scripts
+
 COPY --from=frontend /build/frontend/dist ./static
 
 RUN mkdir -p /data/uploads \
@@ -65,6 +69,9 @@ ENV UPLOAD_DIR=/data/uploads \
 EXPOSE 8000
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=25s --retries=5 \
-    CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+    CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/health" || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# scripts/start.sh migrates, seeds, re-stages the specimen cards and binds to
+# $PORT. docker-compose overrides this command for both the api and worker
+# services, so the local stack is unaffected.
+CMD ["sh", "scripts/start.sh"]
