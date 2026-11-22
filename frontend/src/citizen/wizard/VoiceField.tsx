@@ -86,7 +86,9 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
         setParsed(result);
         // Mandatory voice readback (docs/11 §2.6): speak the confirmation immediately.
         const spoken = isRtl ? result.readback_ur : result.readback_en;
-        if (spoken && !readbackRef.current?.(spoken)) void play(null, spoken);
+        if (spoken && !readbackRef.current?.(spoken)) {
+          void play(lang === 'sd' && result.needs_retry ? 'needs_retry' : null, spoken);
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(errorMessage(err, lang));
@@ -143,7 +145,10 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
                 : t('common.speak')}
           </button>
           {valueText !== undefined && !recording && !busy && (
-            <AudioButton text={valueText || t('wizard.input.empty')} />
+            <AudioButton
+              audioKey={lang === 'sd' && !valueText ? 'wizard_input_empty' : null}
+              text={valueText || t('wizard.input.empty')}
+            />
           )}
         </div>
       )}
@@ -176,7 +181,10 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
                   ? t('wizard.voice.notUnderstood')
                   : String(parsed.parsed_value)}
             </p>
-            <AudioButton audioKey={null} text={isRtl ? parsed.readback_ur : parsed.readback_en} />
+            <AudioButton
+              audioKey={lang === 'sd' && parsed.needs_retry ? 'needs_retry' : null}
+              text={isRtl ? parsed.readback_ur : parsed.readback_en}
+            />
           </div>
           {parsed.transcript && (
             <div className="mt-2 rounded-control bg-raised p-2">

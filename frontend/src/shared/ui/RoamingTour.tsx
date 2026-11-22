@@ -5,12 +5,13 @@ import { useAudio } from '../audio/AudioProvider';
 import { useI18n } from '../i18n/I18nProvider';
 import { useLiteMode } from '../lite/LiteModeProvider';
 import { AudioButton } from './AudioButton';
+import sindhiTour from '../audio/sindhiTour.json';
 import { IconCross } from './Icons';
 import { TourQuestion } from './TourQuestion';
 import { positionTour, type TourPosition } from './tourPosition';
 
 type Copy = readonly [en: string, ur: string];
-export type TourStop = { to: string; anchor?: string; title: Copy; text: Copy; question?: Copy };
+export type TourStop = { audioId: keyof typeof sindhiTour; to: string; anchor?: string; title: Copy; text: Copy; question?: Copy };
 type Stops = readonly [TourStop, ...TourStop[]];
 
 export function RoamingTour({ accountId, role, home, pages }: { accountId: string; role: Role; home: string; pages: Stops }) {
@@ -97,6 +98,10 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   }, [page, route]);
 
   const running = step !== null;
+  const sindhiCopy = page && lang === 'sd' ? sindhiTour[page.audioId] : undefined;
+  const topic = sindhiCopy?.[0] ?? (page ? pick(page.title[1], page.title[0]) : '');
+  const instruction = sindhiCopy?.[1] ?? (page ? pick(page.text[1], page.text[0]) : '');
+  const audioBase = page && lang === 'sd' ? `tour_${page.audioId}` : null;
   useEffect(() => {
     const modal = dialog.current;
     if (running && modal && !modal.open) {
@@ -112,13 +117,13 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   useEffect(() => {
     if (!running || !page || route !== page.to) return;
     const timer = window.setTimeout(() => {
-      void play(null, `${pick(page.title[1], page.title[0])}. ${pick(page.text[1], page.text[0])}`);
+      void play(audioBase, `${topic}. ${instruction}`);
     }, 450);
     return () => {
       window.clearTimeout(timer);
       stop();
     };
-  }, [running, page, route, lang, pick, play, stop]);
+  }, [running, page, route, audioBase, topic, instruction, play, stop]);
 
   function markSeen() {
     setSeen(true);
@@ -158,10 +163,11 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   const activePosition = route === page?.to ? position : null;
   const focus = activePosition?.focus;
   const pointer = activePosition?.pointer;
-  const topic = page ? pick(page.title[1], page.title[0]) : '';
-  const starter = page?.question
-    ? pick(page.question[1], page.question[0])
-    : pick('اس کام کے لیے مجھے کیا کرنا ہے؟', 'What do I need to do here?');
+  const starter = lang === 'sd'
+    ? sindhiCopy?.[2] ?? 'هن ڪم لاءِ مون کي ڇا ڪرڻ گهرجي؟'
+    : page?.question
+      ? pick(page.question[1], page.question[0])
+      : pick('اس کام کے لیے مجھے کیا کرنا ہے؟', 'What do I need to do here?');
 
   return (
     <>
@@ -237,11 +243,11 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
                   <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
                     <div className="flex items-center gap-1">
                       <h2 id={titleId} className="min-w-0 flex-1 text-title font-semibold leading-[1.35]">{topic}</h2>
-                      <AudioButton text={pick(page.title[1], page.title[0])} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
+                      <AudioButton audioKey={audioBase ? `${audioBase}_title` : null} text={topic} label={pick('عنوان سنیں', 'Listen to the title')} variant="quiet" />
                     </div>
                     <div className="flex items-start gap-1">
-                      <p className="min-w-0 flex-1 pt-1 text-caption leading-[1.65] text-ink-2">{pick(page.text[1], page.text[0])}</p>
-                      <AudioButton text={pick(page.text[1], page.text[0])} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
+                      <p className="min-w-0 flex-1 pt-1 text-caption leading-[1.65] text-ink-2">{instruction}</p>
+                      <AudioButton audioKey={audioBase ? `${audioBase}_body` : null} text={instruction} label={pick('ہدایات سنیں', 'Listen to the instructions')} variant="quiet" />
                     </div>
                   </div>
                 </div>
