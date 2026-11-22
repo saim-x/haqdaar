@@ -15,6 +15,7 @@ import { audioUrl, loadManifest, resolveAudioKey } from './manifest';
  */
 interface AudioContextValue {
   play(key: string | null | undefined, fallbackText?: string | null, control?: string): Promise<void>;
+  playImmediate(text: string): void;
   stop(): void;
   activeControl: string | null;
   loadingControl: string | null;
@@ -209,6 +210,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     [locale, playAudioResponse, playClip, playDynamic, playBrowser, stop],
   );
 
+  const playImmediate = useCallback((text: string) => {
+    stop();
+    playBrowser(text);
+  }, [playBrowser, stop]);
+
   const setAutoRead = useCallback((next: boolean) => {
     setAutoReadState(next);
     try {
@@ -221,8 +227,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => () => stop(), [stop]);
 
   const value = useMemo<AudioContextValue>(
-    () => ({ play, stop, activeControl, loadingControl, autoRead, setAutoRead, ready }),
-    [play, stop, activeControl, loadingControl, autoRead, setAutoRead, ready],
+    () => ({ play, playImmediate, stop, activeControl, loadingControl, autoRead, setAutoRead, ready }),
+    [play, playImmediate, stop, activeControl, loadingControl, autoRead, setAutoRead, ready],
   );
 
   return <AudioCtx.Provider value={value}>{children}</AudioCtx.Provider>;

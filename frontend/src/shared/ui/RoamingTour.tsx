@@ -17,7 +17,7 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   const storageKey = `haqdaar:welcome-tour:v1:${role}:${accountId}`;
   const { pick, lang } = useI18n();
   const { lite } = useLiteMode();
-  const { stop, play } = useAudio();
+  const { stop, playImmediate } = useAudio();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const route = pathname.replace(/\/$/, '');
@@ -112,14 +112,11 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
 
   useEffect(() => {
     if (!running || !page || route !== page.to) return;
-    const timer = window.setTimeout(() => {
-      void play(null, `${pick(page.title[1], page.title[0])}. ${pick(page.text[1], page.text[0])}`);
-    }, 450);
+    playImmediate(`${pick(page.title[1], page.title[0])}. ${pick(page.text[1], page.text[0])}`);
     return () => {
-      window.clearTimeout(timer);
       stop();
     };
-  }, [running, page, route, lang, pick, play, stop]);
+  }, [running, page, route, lang, pick, playImmediate, stop]);
 
   function markSeen() {
     setSeen(true);
