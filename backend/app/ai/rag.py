@@ -324,11 +324,25 @@ def index_document(
     }
 
 
-def reindex_all(db: Any, *, directory: Path | None = None) -> dict[str, Any]:
-    """Index the whole policy corpus. Called by the seeder and by admins."""
+def reindex_all(
+    db: Any, *, directory: Path | None = None, only_changed: bool = False
+) -> dict[str, Any]:
+    """Index the bundled policy corpus, optionally skipping unchanged content."""
+    from sqlalchemy import select
+
     docs = load_policy_docs(directory)
     indexed: list[dict[str, Any]] = []
     for doc in docs:
+        if only_changed:
+            chunks = _table("rag_chunks")
+            existing = db.execute(
+                select(chunks.c.section_heading, chunks.c.content)
+                .where(chunks.c.document_id == _stable_id(doc.path.stem, doc.version))
+                .order_by(chunks.c.chunk_index)
+            ).all()
+            expected = [(chunk.section_heading, chunk.content) for chunk in chunk_markdown(doc.body)]
+            if list(existing) == expected:
+                continue
         indexed.append(
             index_document(
                 db,
@@ -344,6 +358,15 @@ def reindex_all(db: Any, *, directory: Path | None = None) -> dict[str, Any]:
         "chunks": sum(item["chunks"] for item in indexed),
         "titles": [item["title"] for item in indexed],
     }
+
+
+def _refresh_bundled_policies() -> None:
+    from app.db import SessionLocal
+
+    with SessionLocal() as db:
+        summary = reindex_all(db, only_changed=True)
+        db.commit()
+    print(json.dumps(summary, ensure_ascii=False))
 
 
 # --------------------------------------------------------------------------- #
@@ -871,3 +894,7 @@ __all__ = [
     "render_rule_summary",
     "retrieve",
 ]
+
+
+if __name__ == "__main__":  # pragma: no cover - container entry point
+    _refresh_bundled_policies()

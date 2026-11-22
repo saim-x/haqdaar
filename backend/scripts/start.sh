@@ -11,8 +11,8 @@
 #   2. points MOCK_BASE_URL at this same process, because the app reaches its
 #      simulated DPI services over HTTP (docs/03 invariant 4);
 #   3. rewrites managed-Postgres URLs to the psycopg 3 driver this image ships;
-#   4. re-signs the specimen cards when QR_HMAC_SECRET is not the dev default;
-#   5. migrates, seeds, and re-stages the cards before serving.
+#   4. regenerates the demo and benchmark cards with the runtime QR key;
+#   5. migrates, seeds, refreshes changed policy text and re-stages the cards.
 
 set -eu
 
@@ -43,12 +43,14 @@ alembic upgrade head
 # secret this process will actually use. Deterministic, ~1.2 s.
 if [ "${QR_HMAC_SECRET:-dev-qr-secret-change-me}" != "dev-qr-secret-change-me" ]; then
   echo "haqdaar: regenerating specimen cards for the deployed QR secret"
-  python -c "from app.mocks.doc_generator import generate_demo_docs; print(generate_demo_docs(force=True)['count'])" \
-    || echo "haqdaar: specimen regeneration skipped"
+  python -m app.mocks.doc_generator --force
 fi
 
 echo "haqdaar: seeding demo world"
 python -m app.mocks.seed --if-empty
+
+echo "haqdaar: refreshing changed policy excerpts"
+python -m app.ai.rag
 
 # Free tiers have no persistent disk: the database survives a restart but
 # UPLOAD_DIR does not, and `--if-empty` skips the staging step on an already
