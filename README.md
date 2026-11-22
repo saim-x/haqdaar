@@ -6,7 +6,7 @@ Haqdaar helps widowed women in Sindh apply for the fictional Sahara Widow Suppor
 
 > **PROTOTYPE - THIS IS NOT AN OFFICIAL GOVERNMENT SERVICE.** Haqdaar was built during the Coder's Cup 2026 hackathon as a working prototype. **Every identity, civil-registry, household-survey, benefits, payment, complaint, and SMS service it talks to is simulated** and lives under `/mock/v1/*`; no request ever reaches a real registry, bank, or telecom. **All data is 100 % synthetic**: every citizen, case, phone number, and document is fictional, and **every CNIC in this repository starts with the fictional prefix `99900`**. **Every generated card image is watermarked `MOCK SPECIMEN`.** No real personal data was used at any point, and nothing here should be presented to a citizen as a real entitlement.
 
-The public demo runs with `DEMO_MODE=true` and `AI_PROVIDER=fake`. The workflow, saved Urdu and Sindhi audio, local scam classifier, signed QR checks, policy retrieval, and audit chain run in this profile. Policy answers use the extractive fallback. Rehearse live dictation, dynamic speech, and the optional Anam video guide in a separate configured instance.
+The public demo runs with `DEMO_MODE=true` and `AI_PROVIDER=fake`. The workflow, saved Urdu audio, local scam classifier, signed QR checks, policy retrieval, and audit chain run in this profile. Policy answers use the extractive fallback. Rehearse live dictation, dynamic speech, and the optional Anam video guide in a separate configured instance.
 
 ---
 
@@ -19,7 +19,7 @@ The public demo runs with `DEMO_MODE=true` and `AI_PROVIDER=fake`. The workflow,
 | **Scam Classifier** | **0.9444 F1 · 0.9444 Precision · 0.04 FPR · 0.00 Hard-Neg FPR** | Held-out test set (`[[24, 1], [1, 17]]`), `GET /api/v1/eval/dashboard` |
 | **Document Verifier** | **100% genuine · 100% forged caught · 0.00% false-tamper** | 30-image eval set (clean, WhatsApp-compressed, forged, blurry) |
 | **Decision Router Safety** | **0.0% false approvals** at `τ = 0.90` · **`AUTO_REJECT` absent** | 133-case cost-matrix sweep + `test_no_auto_reject_route_action_exists` |
-| **Inclusion & Regional Languages** | **Urdu (`ur`, default), Sindhi (`sd`, سنڌي), and English (`en`)** | RTL, 138 saved Sindhi clips, Urdu prompts, Auto-Read, and guided tours |
+| **Inclusion & Regional Languages** | **Urdu (`ur`, default), Sindhi (`sd`, سنڌي), and English (`en`)** | RTL, live Sindhi speech, saved Urdu prompts, Auto-Read, and guided tours |
 | **Weak connections** | Offline outbox, Lite Mode, and a 150 KB gzipped entry budget | Workbox, Dexie, replay with `Idempotency-Key`, and `npm run budget` |
 | **Multi-Tenant SaaS & API** | **75 `/api/v1` endpoints** (85 total ops) · **5 RBAC roles** · **34 DB tables** | Strict JWT RBAC on every route, tenant isolation (`404` anti-leak), SHA-256 audit chain |
 
@@ -53,7 +53,7 @@ Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`**
 - **Quantified Practical Impact (3 pts):** At `τ = 0.90` on the 133-case benchmark, **55.6%** of cases auto-approve in **16 ms p50** with **0.0% false approvals** (expected cost **451** vs **2,011** at `τ = 0.50`), freeing officers for the uncertain minority.
 
 ### Category 4 - Accessibility & Inclusion (10 pts)
-- **Voice & Regional Language Support (4 pts):** Urdu, Sindhi, and English interface options, with RTL layouts for Urdu and Sindhi. Urdu and Sindhi include saved prompts, plus dictation and readback when live services are configured. **Auto-Read** is available from the citizen header.
+- **Voice & Regional Language Support (4 pts):** Urdu, Sindhi, and English interface options, with RTL layouts for Urdu and Sindhi. Urdu includes saved prompts. Both languages offer dictation and readback when live services are configured. **Auto-Read** is available from the citizen header.
 - **Low-Literacy Usability (3 pts):** One question per screen, ≥48 px tap targets (56 px primary), WCAG AA `≥ 5.4:1` contrast, **Approximate Age quick-picker** (`~25 / ~35 / ~45 / ~55 / ~65`), visual **Income Band tier bars**, custom digit pad, readback confirmation (including voice `"I don't know"`), and copyable reference codes everywhere.
 - **Weak Internet & 2G Resilience (3 pts):** Workbox caches the app shell and core audio. Dexie stores drafts and failed submissions for **Retry / Discard**, preserves the active family, and resends with the original idempotency key. **Lite Mode** limits background requests and illustrations. The frontend budget command enforces a `≤ 150 KB` gzipped entry bundle.
 
@@ -78,7 +78,7 @@ Open the [demo login](https://haqdaar-t2wr.onrender.com/login). Check [health](h
 
 | Minute | Persona / Route | What to Try & What It Proves |
 |---|---|---|
-| **0:00–0:35** | Fatima → **Citizen dashboard** | Explain the prototype. Choose **سنڌي**, start the tour, and click **Next** twice. Show the step count and play a saved prompt. |
+| **0:00–0:35** | Fatima → **Citizen dashboard** | Explain the prototype. Choose **سنڌي**, start the tour, and click **Next** twice. Show the step count and play a prompt if Gemini is configured. |
 | **0:35–1:10** | Fatima → **Ask a Question** | Ask `شناختی کارڈ نہیں ہے تو کیا کروں؟` and open the policy citation. Then ask about tomorrow's weather in Karachi and show that the system abstains. |
 | **1:10–1:40** | Public → **Scam checker** | Choose **Demo messages → Scam: extra fee request**. Compare its fee warning with the uncertainty response for `Bhai payment bhej dena`. |
 | **1:40–2:20** | Officer Sana → **Cases to review** | Open seeded case `HQ-2026-000101`. Show the mismatched document evidence, structured handoff, and the requirement for a second officer. |
@@ -101,7 +101,7 @@ Select **سنڌي** in the language menu. The application microphone, its transc
 
 For live dictation and playback, set `AI_PROVIDER=live`, `DEEPGRAM_API_KEY` for transcription, and `GEMINI_API_KEY` for dynamic Sindhi playback in the ignored root `.env`. Restart the backend or recreate the API container after changing credentials. Test the live recognizer with a native speaker and synthetic examples before the demo.
 
-The repository ships 138 saved Sindhi prompts, including every tour's narration. Five use Gemini and 133 use the offline eSpeak NG voice. The app loads `.clip` assets and plays their MP3 bytes in the page. The PWA precaches core prompts and caches others on demand. Pronunciation still needs a native Sindhi speaker's review.
+Sindhi playback uses the Gemini API and needs an internet connection. To enable it without changing the hosted demo’s other AI providers, set `GEMINI_API_KEY` and `GEMINI_ALLOW_LIVE_IN_FAKE_AI=true` in the Render service environment and redeploy.
 
 ### Evidence to capture before judging
 

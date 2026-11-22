@@ -74,21 +74,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const playAudioResponse = useCallback(
-    async (res: Response, signal: AbortSignal, savedSindhiClip = false): Promise<boolean> => {
-      if (!res.ok) return false;
-      let blob: Blob;
-      if (savedSindhiClip) {
-        // Static files may be served as generic bytes. Check the MP3 signature
-        // before giving the local blob its media type (missing files can return HTML).
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        const hasTag = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
-        const hasFrame = bytes[0] === 0xff && ((bytes[1] ?? 0) & 0xe0) === 0xe0;
-        if (bytes.length < 4 || (!hasTag && !hasFrame)) return false;
-        blob = new Blob([bytes], { type: 'audio/mpeg' });
-      } else {
-        if (!res.headers.get('Content-Type')?.startsWith('audio/')) return false;
-        blob = await res.blob();
-      }
+    async (res: Response, signal: AbortSignal): Promise<boolean> => {
+      if (!res.ok || !res.headers.get('Content-Type')?.startsWith('audio/')) return false;
+      const blob = await res.blob();
       if (signal.aborted || blob.size === 0) return false;
 
       const url = URL.createObjectURL(blob);
@@ -196,13 +184,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       playbackRef.current = playback;
       const { signal } = playback;
       let text = fallbackText ?? null;
-      if (key && locale === 'sd' && /^[a-z0-9_]+$/.test(key)) {
-        try {
-          // Keep the network request an app asset. Only the local blob is audio.
-          const clip = await fetch(`/audio/sd/${key}.clip`, { signal });
-          if (await playAudioResponse(clip, signal, true) || signal.aborted) return;
-        } catch { /* Dynamic speech or a device voice may still be available. */ }
-      }
       if (key && locale === 'ur') {
         if (await playClip(key, signal) || signal.aborted) return;
         const manifest = await loadManifest();
@@ -219,13 +200,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           return;
         }
         setLoadingControl(control ?? null);
-        if (!await playDynamic(text, signal) && !signal.aborted) playBrowser(text, fallbackText);
+        if (!await playDynamic(text, signal) && !signal.aborted) {
+          if (locale === 'sd') stop();
+          else playBrowser(text, fallbackText);
+        }
         setLoadingControl(null);
       } else if (!signal.aborted) {
         stop();
       }
     },
-    [locale, playAudioResponse, playClip, playDynamic, playBrowser, stop],
+    [locale, playClip, playDynamic, playBrowser, stop],
   );
 
   const playImmediate = useCallback((text: string) => {

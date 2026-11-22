@@ -102,9 +102,11 @@ def readback(field: str, value: Any) -> str:
 @lru_cache(maxsize=64)
 def synthesize(text: str) -> bytes:
     settings = get_settings()
-    if provider_mode() != "live":
+    key = settings.gemini_api_key.strip()
+    live_gemini_allowed = key and settings.gemini_allow_live_in_fake_ai and not settings.is_test
+    if provider_mode() != "live" and not live_gemini_allowed:
         raise ProviderError("Sindhi speech synthesis requires live mode", retryable=False)
-    if key := settings.gemini_api_key.strip():
+    if key:
         return _synthesize_gemini(text, key)
 
     token = settings.google_tts_access_token.strip()

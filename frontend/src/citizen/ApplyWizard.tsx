@@ -606,12 +606,16 @@ export function ApplyWizard() {
     const token = `${lang}:${step}`;
     if (lastSpokenStep.current === token) return;
     lastSpokenStep.current = token;
+    if (lang === 'sd') {
+      void play(null, stepSpokenText);
+      return;
+    }
     guide.speak({
       text: stepSpokenText,
       mood: 'listening',
       clipKey: lang === 'ur' ? `wizard_${step}` : undefined,
     });
-  }, [guide.active, guide.speak, lang, step, stepSpokenText]);
+  }, [guide.active, guide.speak, lang, play, step, stepSpokenText]);
 
   /** Mandatory readback, spoken face-to-face when the guide is open. */
   const handleReadback = useCallback(
