@@ -74,7 +74,7 @@ const SAMPLE_MESSAGES = [
       'نموني پيغام: حق دار ڪڏهن به PIN يا فيس نه گهرندو. ايپ ۾ درخواست جي حالت ڏسو. جيڪڏهن هي ڪم توهان نه ڪيو ته هتي اڪائونٽ ڏسو: haqdaar.example/check',
     ],
   },
-];
+] as const;
 
 /**
  * The guide's tone for a verdict. `warning` for a scam and `not_sure` for
