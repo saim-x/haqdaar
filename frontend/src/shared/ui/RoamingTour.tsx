@@ -16,7 +16,7 @@ type Stops = readonly [TourStop, ...TourStop[]];
 
 export function RoamingTour({ accountId, role, home, pages }: { accountId: string; role: Role; home: string; pages: Stops }) {
   const storageKey = `haqdaar:welcome-tour:v1:${role}:${accountId}`;
-  const { pick, lang } = useI18n();
+  const { pick, lang, t } = useI18n();
   const { lite } = useLiteMode();
   const { stop, play } = useAudio();
   const navigate = useNavigate();
@@ -221,8 +221,9 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
               className={`fixed left-0 top-0 z-10 flex w-[min(410px,calc(100%-24px))] flex-col rounded-[20px] border border-accent/30 bg-paper shadow-2xl motion-safe:transition-transform motion-safe:duration-300 ${asking ? 'max-h-[min(60dvh,440px)]' : 'max-h-[calc(100dvh-24px)]'}`}
               style={{ transform: activePosition ? `translate(${activePosition.panel.x}px,${activePosition.panel.y}px)` : 'translate(calc(50vw - 50%), max(12px, calc(50dvh - 50%)))' }}>
               <div className="flex shrink-0 items-center justify-between gap-2 px-3.5 pt-1.5">
-                <small className="text-meta font-medium text-accent-ink" aria-live="polite">
-                  {pick('مرحلہ', 'Step')} {new Intl.NumberFormat(lang).format(step + 1)} / {new Intl.NumberFormat(lang).format(pages.length)}
+                <small className="text-meta font-medium text-accent-ink" aria-live="polite" aria-atomic="true">
+                  {t('common.step')}{' '}
+                  <bdi dir="ltr">{new Intl.NumberFormat(lang).format(step + 1)} / {new Intl.NumberFormat(lang).format(pages.length)}</bdi>
                 </small>
                 <div className="flex flex-wrap items-center justify-end gap-x-1">
                   <button type="button" className="press min-h-tap rounded-control px-2 text-meta font-medium text-accent-ink hover:bg-accent-wash"
