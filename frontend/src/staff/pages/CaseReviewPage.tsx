@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../shared/api/client';
 import { ApiError, errorMessage } from '../../shared/api/errors';
 import { useAuth } from '../../shared/auth/AuthProvider';
+import { useI18n } from '../../shared/i18n/I18nProvider';
 import type { CaseStatus, OfficerCaseReview } from '../../shared/api/types';
 import { getAccessToken } from '../../shared/auth/session';
 import { API_BASE } from '../../shared/config';
@@ -117,6 +118,7 @@ function BackToCases() {
  * read the evidence first, and a wide form invites deciding before reading.
  */
 export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
+  const { lang, pick } = useI18n();
   const params = useParams();
   const id = caseId ?? params.id ?? '';
   const { session } = useAuth();
@@ -380,7 +382,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-caption text-ink-2">
                   {unresolvedRules.slice(0, 3).map((entry) => (
                     <li key={entry.rule_id}>
-                      {entry.reason_en || entry.label_en || 'This check needs a closer look.'}
+                      {pick(entry.reason_ur || entry.label_ur, entry.reason_en || entry.label_en) || staffText('This check needs a closer look.', lang)}
                       {entry.fact && Object.hasOwn(facts, entry.fact) && (
                         <> <a href={`#case-fact-${entry.fact}`} className="font-medium text-accent-ink underline">
                           {staffText("\r\n                          See ")}{factLabel(entry.fact)}
@@ -397,6 +399,10 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
           <Card>
             <CardTitle>{staffText("Case summary")}</CardTitle>
             {caseData.ai_case_note ? (
+              <>
+              <p className="mb-3 text-caption text-ink-2" dir="auto">
+                {pick(caseData.ai_case_note.summary_ur, caseData.ai_case_note.summary_en)}
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   {
@@ -421,13 +427,13 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                     items: caseData.ai_case_note.verified,
                   },
                 ].map(({ label, marker, skin, empty, items }) => (
-                  <section key={staffText(label)} className={`min-w-0 rounded-control border p-3 sm:p-4 ${skin}`}>
+                  <section key={label} className={`min-w-0 rounded-control border p-3 sm:p-4 ${skin}`}>
                     <h3 className="flex items-center gap-2 text-caption font-semibold text-ink">
                       <span className={`live-dot ${marker}`} aria-hidden />
                       {staffText(label)}
                     </h3>
                     {items.length === 0 ? (
-                      <p className="mt-2 text-caption text-ink-2">{empty}</p>
+                      <p className="mt-2 text-caption text-ink-2">{staffText(empty, lang)}</p>
                     ) : (
                       <ul className="mt-2 divide-y divide-ink/[0.08]">
                         {items.map((item) => {
@@ -453,9 +459,22 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                           const description = prefix && item.startsWith(prefix)
                             ? item.slice(prefix.length).trim()
                             : item;
+                          const ruleLabel = rule?.label_ur || rule?.label_en;
+                          let localized = staffText(description, lang);
+                          if (lang !== 'en' && ruleLabel && rule) {
+                            if (item.startsWith('Ask the applicant for: ')) {
+                              localized = `${staffText('Ask the applicant for:', lang)} ${rule.ask_prompt_ur || rule.ask_prompt_en || ruleLabel}`;
+                            } else if (item.startsWith('Obtain the missing fact for rule ')) {
+                              localized = `${staffText('Find the missing information:', lang)} ${ruleLabel}`;
+                            } else if (item.startsWith('Review rule ')) {
+                              localized = `${staffText('Review with the applicant:', lang)} ${ruleLabel}`;
+                            } else if (item.startsWith(prefix) && rule.label_en) {
+                              localized = description.replace(rule.label_en, () => ruleLabel);
+                            }
+                          }
                           return (
                             <li key={item} className="break-words py-2 text-caption leading-relaxed text-ink first:pt-0 last:pb-0">
-                              <p>{description || item}</p>
+                              <p dir="auto">{localized || item}</p>
                               <div className="flex flex-wrap gap-x-4">
                                 {document && (
                                   <a href={`#case-document-${document.id}`} className="mt-1 inline-flex min-h-8 items-center font-medium text-accent-ink underline">
@@ -475,6 +494,7 @@ export default function CaseReviewPage({ caseId }: { caseId?: string } = {}) {
                   </section>
                 ))}
               </div>
+              </>
             ) : (
               <p className="text-caption text-ink-2">{staffText("A case summary is not available yet. ")}<a href="#case-review-evidence" className="font-medium text-accent-ink underline">{staffText("See application details")}</a></p>
             )}

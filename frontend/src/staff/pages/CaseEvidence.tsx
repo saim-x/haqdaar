@@ -1,5 +1,6 @@
 import type { DraftAnswer, FactObject, FactState, RuleTraceEntry } from '../../shared/api/types';
 import { staffText } from '../staffI18n';
+import { useI18n } from '../../shared/i18n/I18nProvider';
 import {
   bandWord,
   Card,
@@ -232,7 +233,8 @@ const RESULT_TONE: Record<string, { dot: string; text: string }> = {
 const RESULT_FALLBACK = { dot: 'bg-ink-3', text: 'text-ink-3' };
 
 function TraceRow({ entry }: { entry: RuleTraceEntry }) {
-  const label = entry.label_en ?? entry.label_ur ?? null;
+  const { pick } = useI18n();
+  const label = pick(entry.label_ur, entry.label_en);
   const reasonEn = entry.reason_en ?? entry.fail_reason_en ?? entry.pass_reason_en ?? '';
   const reasonUr = entry.reason_ur ?? entry.fail_reason_ur ?? entry.pass_reason_ur ?? '';
   const askEn = entry.result === 'UNKNOWN' ? (entry.ask_prompt_en ?? null) : null;
@@ -287,18 +289,8 @@ function TraceRow({ entry }: { entry: RuleTraceEntry }) {
         {entry.required_for_auto && <span className="text-ink-3">{staffText("required for auto")}</span>}
       </p>
 
-      {reasonEn && <p className="mt-1.5 text-caption leading-[1.6] text-ink">{reasonEn}</p>}
-      {reasonUr && (
-        <p className="mt-0.5 text-caption leading-[1.7] text-ink-2" dir="rtl" lang="ur">
-          {reasonUr}
-        </p>
-      )}
-      {askEn && <p className="mt-1.5 text-meta leading-[1.6] text-warn">{staffText("Asks: ")}{askEn}</p>}
-      {askUr && (
-        <p className="text-meta leading-[1.7] text-warn" dir="rtl" lang="ur">
-          {askUr}
-        </p>
-      )}
+      {(reasonEn || reasonUr) && <p className="mt-1.5 text-caption leading-[1.6] text-ink" dir="auto">{pick(reasonUr, reasonEn)}</p>}
+      {(askEn || askUr) && <p className="mt-1.5 text-meta leading-[1.6] text-warn" dir="auto">{staffText("Asks: ")}{pick(askUr, askEn)}</p>}
 
       {(entry.on_fail || entry.on_unknown) && (
         <p className="mt-1.5 flex flex-wrap gap-x-4 text-meta text-ink-3">
