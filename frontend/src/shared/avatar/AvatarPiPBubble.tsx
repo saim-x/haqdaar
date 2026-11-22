@@ -16,7 +16,7 @@
  * worse than no control at all.
  */
 
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useId, useState } from 'react';
 import { useI18n } from '../i18n/I18nProvider';
 import { IconChevronDown, IconPlay } from '../ui/Icons';
 import type { AvatarGuide } from './types';
@@ -25,6 +25,9 @@ const AvatarStage = lazy(() => import('./AvatarStage'));
 
 export function AvatarPiPBubble({ guide }: { guide: AvatarGuide }) {
   const { t } = useI18n();
+  const [showMicNotice, setShowMicNotice] = useState(false);
+  const noticeId = useId();
+  const offersMicrophone = guide.conversational && guide.config?.provider === 'anam';
 
   if (!guide.available || guide.steppedDown) return null;
 
@@ -57,10 +60,40 @@ export function AvatarPiPBubble({ guide }: { guide: AvatarGuide }) {
     );
   }
 
+  if (showMicNotice && offersMicrophone) {
+    return (
+      <div className="card fixed bottom-[calc(env(safe-area-inset-bottom)+80px)] start-4 z-30 w-[min(320px,calc(100vw-2rem))] p-4">
+        <p id={noticeId} className="text-caption leading-[1.7] text-ink-2">
+          {t('avatar.micPrivacy')}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            aria-describedby={noticeId}
+            className="press min-h-tap rounded-control bg-accent-wash px-3 text-caption font-medium text-accent-ink"
+            onClick={() => {
+              setShowMicNotice(false);
+              guide.start(true);
+            }}
+          >
+            {t('avatar.startWithMic')}
+          </button>
+          <button
+            type="button"
+            className="press min-h-tap rounded-control bg-raised px-3 text-caption text-ink-2"
+            onClick={() => setShowMicNotice(false)}
+          >
+            {t('common.cancel')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
-      onClick={guide.start}
+      onClick={() => offersMicrophone ? setShowMicNotice(true) : guide.start()}
       data-testid="avatar-pip"
       aria-label={t('avatar.pipOpen')}
       title={t('avatar.pipOpen')}

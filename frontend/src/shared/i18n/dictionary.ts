@@ -372,6 +372,8 @@ export const ur = {
     'مائیک کی اجازت نہیں ملی — آپ نیچے لکھ کر یا بٹن دبا کر بھی سائرہ سے بات کر سکتی ہیں',
   'avatar.youSaid': 'آپ نے کہا',
   'avatar.liveConversation': 'لائیو اردو گفتگو',
+  'avatar.micPrivacy': 'گفتگو کے دوران آپ کے مائیک کی آواز Anam نامی بیرونی سروس کو بھیجی جاتی ہے۔ صرف عام سوال پوچھیں۔ شناختی کارڈ نمبر، فون نمبر، بینک تفصیلات، پاس ورڈ، پن یا تصدیقی کوڈ نہ بتائیں۔',
+  'avatar.startWithMic': 'مائیک کے ساتھ گفتگو شروع کریں',
   'avatar.greeting':
     'السلام علیکم، میں سائرہ ہوں۔ حقدار میں آپ کی مدد کے لیے حاضر ہوں۔ آپ اردو میں سوال پوچھ سکتی ہیں۔',
   'avatar.thinking': 'سوچ رہی ہوں…',
@@ -742,6 +744,8 @@ export const en: Record<DictKey, string> = {
     'Microphone permission was not granted - you can still talk to Saima by typing or tapping below',
   'avatar.youSaid': 'You said',
   'avatar.liveConversation': 'Live Urdu conversation',
+  'avatar.micPrivacy': 'During the conversation, your microphone audio is sent to Anam, an external service. Ask general questions only. Keep CNIC numbers, phone numbers, bank details, passwords, PINs and verification codes private.',
+  'avatar.startWithMic': 'Start conversation with microphone',
   'avatar.greeting':
     'Peace be upon you, I am Saima. I am here to help you with Haqdaar. You can ask your question in Urdu.',
   'avatar.thinking': 'Thinking…',

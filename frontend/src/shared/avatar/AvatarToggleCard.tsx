@@ -15,7 +15,7 @@
  * reassurance ("the audio guide is active"), never as an apology.
  */
 
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useId } from 'react';
 import { useI18n } from '../i18n/I18nProvider';
 import { useOffline } from '../offline/OfflineProvider';
 import { IconChevron, IconPlay, IconSpeaker } from '../ui/Icons';
@@ -31,6 +31,8 @@ interface AvatarToggleCardProps {
 export function AvatarToggleCard({ guide, className = '' }: AvatarToggleCardProps) {
   const { t } = useI18n();
   const { online } = useOffline();
+  const noticeId = useId();
+  const offersMicrophone = guide.conversational && guide.config?.provider === 'anam';
 
   if (!guide.available) return null;
 
@@ -74,9 +76,15 @@ export function AvatarToggleCard({ guide, className = '' }: AvatarToggleCardProp
 
   return (
     <div className={`card overflow-hidden ${className}`} data-testid="avatar-cta">
+      {offersMicrophone && (
+        <p id={noticeId} className="px-3.5 pt-3 text-meta leading-[1.7] text-ink-2">
+          {t('avatar.micPrivacy')}
+        </p>
+      )}
       <button
         type="button"
-        onClick={guide.start}
+        onClick={() => guide.start(offersMicrophone)}
+        aria-describedby={offersMicrophone ? noticeId : undefined}
         data-testid="avatar-start"
         className="press flex min-h-primary w-full items-center gap-3 px-3.5 py-3 text-start hover:bg-accent-wash/60"
       >
@@ -84,7 +92,9 @@ export function AvatarToggleCard({ guide, className = '' }: AvatarToggleCardProp
           <IconPlay size={18} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-body font-medium leading-[1.6] text-ink">{t('avatar.cta')}</span>
+          <span className="block text-body font-medium leading-[1.6] text-ink">
+            {offersMicrophone ? t('avatar.startWithMic') : t('avatar.cta')}
+          </span>
           <span className="mt-0.5 block text-meta leading-[1.7] text-ink-3">{t('avatar.ctaHint')}</span>
         </span>
         <IconChevron size={16} className="shrink-0 text-ink-3" />

@@ -135,7 +135,7 @@ const LiveVideo = memo(function LiveVideo({ videoId, muted }: { videoId: string;
 
 export default function AvatarStage({ guide, compact = false }: AvatarStageProps) {
   const { t } = useI18n();
-  const avatar = useAnamAvatar(guide.config, guide.surface);
+  const avatar = useAnamAvatar(guide.config, guide.surface, guide.microphoneAllowed);
   const { connect, disconnect, speak, state } = avatar;
   const startedRef = useRef(false);
 

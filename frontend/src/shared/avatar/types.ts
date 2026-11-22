@@ -116,7 +116,8 @@ export interface AvatarGuide {
   available: boolean;
   /** True when the guide is in two-way voice mode and can take a microphone. */
   conversational: boolean;
-  start(): void;
+  microphoneAllowed: boolean;
+  start(microphoneAllowed?: boolean): void;
   stop(): void;
   speak(request: SpeakRequest): void;
   /**

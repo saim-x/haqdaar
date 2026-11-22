@@ -147,6 +147,7 @@ export interface AnamAvatarController {
 export function useAnamAvatar(
   config: AvatarConfig | null,
   surface: AvatarSurface,
+  microphoneAllowed: boolean,
 ): AnamAvatarController {
   const { stop: stopAudio } = useAudio();
   const [state, setState] = useState<AvatarState>('idle');
@@ -545,10 +546,15 @@ export function useAnamAvatar(
       return;
     }
 
+    const wantsMic = sessionMode === 'conversational';
+    if (wantsMic && !microphoneAllowed) {
+      setState('degraded');
+      return;
+    }
+
     try {
       const mod = await import('@anam-ai/js-sdk');
       if (!mountedRef.current) return;
-      const wantsMic = sessionMode === 'conversational';
       const client = mod.createClient(session.session_token, {
         // Conversational mode is the only one where the vendor gets a microphone:
         // it needs ears to hold a conversation. Every other mode is mouth-only.
@@ -661,7 +667,7 @@ export function useAnamAvatar(
       await teardown();
       setState('degraded');
     }
-  }, [stopAudio, config, maxSeconds, state, surface, teardown, videoId]);
+  }, [stopAudio, config, maxSeconds, microphoneAllowed, state, surface, teardown, videoId]);
 
   const renew = useCallback(async () => {
     await teardown();

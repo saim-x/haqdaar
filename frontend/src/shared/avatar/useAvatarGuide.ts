@@ -72,6 +72,7 @@ export function useAvatarGuide(surface: AvatarSurface): AvatarGuide {
   const { online } = useOffline();
   const [config, setConfig] = useState<AvatarConfig | null>(configCache?.value ?? null);
   const [active, setActive] = useState(false);
+  const [microphoneAllowed, setMicrophoneAllowed] = useState(false);
   const handlerRef = useRef<((request: SpeakRequest) => void) | null>(null);
   const sendRef = useRef<((text: string) => void) | null>(null);
   const evidenceRef = useRef<
@@ -107,10 +108,11 @@ export function useAvatarGuide(surface: AvatarSurface): AvatarGuide {
     if (steppedDown && active) setActive(false);
   }, [steppedDown, active]);
 
-  const start = useCallback(() => {
+  const start = useCallback((allowMicrophone = false) => {
     if (!available || steppedDown) return;
+    setMicrophoneAllowed(allowMicrophone && conversational && config?.provider === 'anam');
     setActive(true);
-  }, [available, steppedDown]);
+  }, [available, steppedDown, conversational, config?.provider]);
 
   const stop = useCallback(() => {
     pendingRef.current = null;
@@ -182,6 +184,7 @@ export function useAvatarGuide(surface: AvatarSurface): AvatarGuide {
       steppedDown,
       available,
       conversational,
+      microphoneAllowed,
       start,
       stop,
       speak,
@@ -200,6 +203,7 @@ export function useAvatarGuide(surface: AvatarSurface): AvatarGuide {
       steppedDown,
       available,
       conversational,
+      microphoneAllowed,
       start,
       stop,
       speak,
