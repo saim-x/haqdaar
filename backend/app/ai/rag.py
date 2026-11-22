@@ -28,7 +28,14 @@ from pathlib import Path
 from typing import Any
 
 from app.ai import guardrails, text_index
-from app.ai.provider import EMBEDDING_DIM, _hash_embedding, cosine, get_provider, telemetry
+from app.ai.provider import (
+    EMBEDDING_DIM,
+    _hash_embedding,
+    cosine,
+    get_provider,
+    provider_mode,
+    telemetry,
+)
 from app.ai.text_index import (
     CHUNK_MAX_TOKENS,
     CHUNK_MIN_TOKENS,
@@ -360,11 +367,30 @@ def reindex_all(
     }
 
 
+def _corpus_embedding_dim(db: Any) -> int | None:
+    """Length of the vectors currently in the index, or ``None`` when it is empty."""
+    from sqlalchemy import select
+
+    chunks = _table("rag_chunks")
+    row = db.execute(select(chunks.c.embedding).limit(1)).first()
+    if row is None or row[0] is None:
+        return None
+    return len(row[0])
+
+
 def _refresh_bundled_policies() -> None:
     from app.db import SessionLocal
 
     with SessionLocal() as db:
-        summary = reindex_all(db, only_changed=True)
+        # `only_changed` compares chunk text, not vectors, so switching
+        # AI_PROVIDER from fake to live would leave the 64-dim hash vectors in
+        # place forever: retrieval would keep scoring hash against hash and the
+        # real embedding model would never be used. Re-embed the whole corpus
+        # the first time the index is found still in the fake space.
+        stale = provider_mode() == "live" and _corpus_embedding_dim(db) == EMBEDDING_DIM
+        if stale:
+            print("haqdaar: index is in the fake embedding space, re-embedding corpus")
+        summary = reindex_all(db, only_changed=not stale)
         db.commit()
     print(json.dumps(summary, ensure_ascii=False))
 

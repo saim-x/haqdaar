@@ -22,6 +22,7 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.ai.provider import provider_mode
 from app.config import settings, upload_root
 from app.db import SessionLocal
 from app.security.context import (
@@ -436,7 +437,18 @@ def create_app() -> FastAPI:
             "uploads": uploads_detail,
             "detail": {
                 "worker_heartbeat_stale": not worker_ok,
-                "ai_provider": settings.ai_provider,
+                # provider_mode(), not settings.ai_provider: the factory reads
+                # os.environ first, so this is the value actually in force.
+                "ai_provider": provider_mode(),
+                # A wrong base URL or model name degrades every call to the fake
+                # provider without raising, so the only way to tell a working
+                # deployment from a silently-fake one is to publish the config.
+                # Keys are reported as booleans, never echoed.
+                "ai_base_url": settings.openai_base_url or "https://api.openai.com/v1",
+                "ai_chat_model": settings.openai_chat_model,
+                "ai_embed_model": settings.openai_embed_model,
+                "ai_key_configured": bool(settings.openai_api_key),
+                "deepgram_key_configured": bool(settings.deepgram_api_key),
                 "demo_mode": settings.demo_mode,
                 "embedded_worker": settings.run_embedded_worker,
                 # A stale worker is either dead or unable to write. Without

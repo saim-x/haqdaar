@@ -30,8 +30,22 @@ services:
         value: prod
       - key: DEMO_MODE
         value: "true"
+      # Blueprint-managed vars are owned by this file: a dashboard edit to a key
+      # that appears here with a literal `value` is reverted on the next sync.
+      # That is why AI_PROVIDER sat at `fake` no matter what the dashboard said.
+      # It is `live` here so the deployed demo actually calls the model; with no
+      # key configured the ResilientProvider degrades to the fake provider per
+      # call instead of failing, so this is safe on a fresh clone.
+      #
+      # Set these in the dashboard (they are deliberately absent from this file
+      # so nothing here can overwrite them):
+      #   OPENAI_API_KEY      the vendor key
+      #   OPENAI_BASE_URL     https://api.mistral.ai/v1  (NOT .../openai/v1)
+      #   OPENAI_CHAT_MODEL   mistral-small-latest
+      #   OPENAI_EMBED_MODEL  mistral-embed
+      #   DEEPGRAM_API_KEY    Urdu speech-to-text
       - key: AI_PROVIDER
-        value: fake
+        value: live
       - key: ANAM_ENABLED
         value: "false"
       - key: RUN_EMBEDDED_WORKER
