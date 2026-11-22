@@ -284,6 +284,33 @@ def readback(field_key: str, value: Any, *, lang: str = "ur") -> tuple[str, str]
     )
 
 
+_KEYPAD_FIELDS = frozenset({"applicant_cnic", "spouse_cnic", "payout_phone"})
+_TEXT_FIELDS = frozenset({"applicant_full_name", "spouse_full_name"})
+
+
+def _retry_prompt(field_key: str, *, lang: str = "ur", no_speech: bool = False) -> tuple[str, str]:
+    """Build a spoken retry prompt that matches the field's actual UI control."""
+    if lang == "sd":
+        return sindhi.RETRY, _retry_prompt(field_key, lang="ur", no_speech=no_speech)[1]
+
+    lead_ur = "ہم آپ کی آواز نہیں سن سکے۔" if no_speech else "ہم ٹھیک سے سمجھ نہیں سکے۔"
+    lead_en = "We could not hear you." if no_speech else "We could not understand that."
+    if field_key in _KEYPAD_FIELDS:
+        return (
+            f"{lead_ur} براہ کرم دوبارہ بولیں یا کی پیڈ سے درج کریں۔",
+            f"{lead_en} Please speak again or use the keypad.",
+        )
+    if field_key in _TEXT_FIELDS:
+        return (
+            f"{lead_ur} براہ کرم دوبارہ بولیں یا اوپر لکھ دیں۔",
+            f"{lead_en} Please speak again or type it above.",
+        )
+    return (
+        f"{lead_ur} براہ کرم دوبارہ بولیں یا اوپر دیے گئے اختیارات میں سے منتخب کریں۔",
+        f"{lead_en} Please speak again or choose from the options above.",
+    )
+
+
 # --------------------------------------------------------------------------- #
 # pipeline
 # --------------------------------------------------------------------------- #
@@ -316,14 +343,15 @@ def transcribe_and_parse(
         transcript = guardrails.sanitize(db, stt.transcript or "", resource_type="voice", resource_id=field_key)
 
         if not transcript.strip():
+            retry_ur, retry_en = _retry_prompt(field_key, lang=lang, no_speech=True)
             return VoiceParseResult(
                 field_key=field_key,
                 transcript="",
                 parsed_value=None,
                 confidence=0.0,
                 missing_reason="NO_SPEECH",
-                readback_ur=sindhi.RETRY if lang == "sd" else "ہم آپ کی آواز نہیں سن سکے۔ براہ کرم دوبارہ بولیں یا کی پیڈ استعمال کریں۔",
-                readback_en="We could not hear you. Please speak again or use the keypad.",
+                readback_ur=retry_ur,
+                readback_en=retry_en,
                 needs_retry=True,
                 provider=stt.provider,
                 model=stt.model,
@@ -377,12 +405,15 @@ def transcribe_and_parse(
         value = None
         confidence = max(confidence, 0.90)
 
-    readback_ur, readback_en = readback(field_key, value, lang=lang)
     needs_retry = value is None and missing_reason != "USER_UNKNOWN"
     if confidence < CONFIDENCE_THRESHOLD and missing_reason != "USER_UNKNOWN":
         needs_retry = True
-    if lang == "sd" and needs_retry:
-        readback_ur = sindhi.RETRY
+    if value is None and missing_reason != "USER_UNKNOWN":
+        readback_ur, readback_en = _retry_prompt(field_key, lang=lang, no_speech=False)
+    else:
+        readback_ur, readback_en = readback(field_key, value, lang=lang)
+        if lang == "sd" and needs_retry:
+            readback_ur = sindhi.RETRY
 
     return VoiceParseResult(
         field_key=field_key,

@@ -1,0 +1,50 @@
+# Render blueprint - one free Docker web service.
+#
+#   Render Dashboard -> New -> Blueprint -> pick this repo -> Apply
+#   (it prompts for DATABASE_URL; paste a Neon free Postgres connection string)
+#
+# `plan` and `region` are deliberately omitted. Render renamed its plans from
+# `free` to instance sizes (`0.5c-512mb`, `1c-2g`, ...), so `plan: free` now
+# fails blueprint validation with "no such plan free for service type web".
+# Omitting both fields uses the workspace default, which is the free
+# 0.5c-512mb instance in the default region.
+#
+# The image is the same multi-stage Dockerfile used locally: stage 1 builds the
+# Vite PWA, stage 2 installs FastAPI and serves the built assets from /app/static.
+# scripts/start.sh migrates, seeds and binds to $PORT, and RUN_EMBEDDED_WORKER
+# keeps the SKIP LOCKED job queue alive without a second service.
+
+services:
+  - type: web
+    name: haqdaar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      # Paste the DIRECT (non-pooler) Neon connection string, e.g.
+      # postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      # start.sh rewrites the scheme to postgresql+psycopg:// for you.
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_ENV
+        value: prod
+      - key: DEMO_MODE
+        value: "true"
+      - key: AI_PROVIDER
+        value: fake
+      - key: ANAM_ENABLED
+        value: "false"
+      - key: RUN_EMBEDDED_WORKER
+        value: "true"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: STATIC_DIR
+        value: /app/static
+      - key: JWT_SECRET
+        generateValue: true
+      - key: QR_HMAC_SECRET
+        generateValue: true

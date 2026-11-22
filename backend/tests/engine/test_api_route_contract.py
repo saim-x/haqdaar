@@ -34,11 +34,11 @@ EXPECTED_EVAL_ROUTES = {("GET", "/eval/dashboard", 200)}
 @pytest.fixture
 def api_modules(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Any, Any]]:
     """Import both API modules against stubbed BE helpers."""
-    be_stubs.install(monkeypatch)
-    from app.api.v1 import admin_rules
-    from app.api.v1 import eval as eval_module
+    with be_stubs.install(monkeypatch):
+        from app.api.v1 import admin_rules
+        from app.api.v1 import eval as eval_module
 
-    yield admin_rules, eval_module
+        yield admin_rules, eval_module
 
 
 def _surface(router: Any) -> set[tuple[str, str, int]]:

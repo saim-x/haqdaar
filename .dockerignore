@@ -1,0 +1,31 @@
+# Build context hygiene. Without this, `docker build` uploads the local
+# virtualenv and node_modules (hundreds of MB) before the first layer runs.
+.git
+.github
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Python
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/*.egg-info
+backend/.venv
+backend/.pytest-uploads
+
+# Node
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/playwright-report
+
+# Not needed inside the image
+docs
+media
+*.pdf
+README.md
+AGENTS.md
+docker-compose.yml

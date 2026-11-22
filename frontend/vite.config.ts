@@ -73,7 +73,11 @@ export default defineConfig({
         ],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/mock\//],
+        // `/health` and `/metrics` are server routes, not app routes. Without
+        // them here the service worker answers a navigation to /health with the
+        // cached index.html, so the operator sees the SPA 404 page instead of
+        // the JSON probe.
+        navigateFallbackDenylist: [/^\/api\//, /^\/mock\//, /^\/health/, /^\/metrics/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

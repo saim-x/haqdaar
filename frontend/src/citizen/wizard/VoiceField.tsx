@@ -29,7 +29,9 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
   useEffect(() => {
     readbackRef.current = onReadback;
   }, [onReadback]);
-  const numeric = fieldKey.endsWith('_cnic') || fieldKey === 'payout_phone' || fieldKey === 'applicant_dob';
+  const hasKeypad = fieldKey.endsWith('_cnic') || fieldKey === 'payout_phone';
+  const numeric = hasKeypad || fieldKey === 'applicant_dob';
+  const retryClip = lang === 'sd' && hasKeypad ? 'needs_retry' : null;
   const capture = useVoiceCapture(numeric ? 25 : 12, true);
   const [parsed, setParsed] = useState<VoiceParseResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -87,7 +89,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
         // Mandatory voice readback (docs/11 §2.6): speak the confirmation immediately.
         const spoken = isRtl ? result.readback_ur : result.readback_en;
         if (spoken && !readbackRef.current?.(spoken)) {
-          void play(lang === 'sd' && result.needs_retry ? 'needs_retry' : null, spoken);
+          void play(result.needs_retry ? retryClip : null, spoken);
         }
       })
       .catch((err: unknown) => {
@@ -99,13 +101,13 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
     return () => {
       cancelled = true;
     };
-  }, [readyBlob, fieldKey, isRtl, lang, play]);
+  }, [readyBlob, fieldKey, isRtl, lang, play, retryClip]);
 
   if (capture.state === 'unsupported') return null;
   if (capture.state === 'denied') {
     return (
       <p className="mt-3 rounded-control bg-raised px-3 py-2 text-meta leading-[1.6] text-ink-2">
-        {t('scam.voiceUnavailable')}
+        {t('wizard.voice.unavailable')}
       </p>
     );
   }
@@ -182,7 +184,7 @@ export function VoiceField({ fieldKey, onConfirm, onReadback, valueText }: Voice
                   : String(parsed.parsed_value)}
             </p>
             <AudioButton
-              audioKey={lang === 'sd' && parsed.needs_retry ? 'needs_retry' : null}
+              audioKey={parsed.needs_retry ? retryClip : null}
               text={isRtl ? parsed.readback_ur : parsed.readback_en}
             />
           </div>

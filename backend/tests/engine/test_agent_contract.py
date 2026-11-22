@@ -36,10 +36,10 @@ EXPECTED_STEPS = (
 
 @pytest.fixture
 def agent(monkeypatch: pytest.MonkeyPatch) -> Iterator[Any]:
-    be_stubs.install(monkeypatch)
-    from app.agent import case_agent
+    with be_stubs.install(monkeypatch):
+        from app.agent import case_agent
 
-    yield case_agent
+        yield case_agent
 
 
 # -- exported entry points ----------------------------------------------

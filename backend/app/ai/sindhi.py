@@ -72,7 +72,7 @@ _WORDS = {
 }
 _CLOUD_MODEL = "gemini-3.1-flash-tts-preview"
 _GEMINI_MODEL = "gemini-3.8-flash-tts"
-RETRY = "مهرباني ڪري وري ڳالهايو يا ڪي پيڊ استعمال ڪريو."
+RETRY = "مهرباني ڪري وري ڳالهايو يا مٿي جواب ڏيو."
 
 
 def normalize_field(field: str, transcript: str) -> str:

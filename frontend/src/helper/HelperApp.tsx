@@ -325,6 +325,7 @@ export function HelperRosterPage() {
               </p>
             )}
             <input
+              type="text"
               value={renewOtp}
               onChange={(e) => setRenewOtp(e.target.value.replace(/\D+/g, '').slice(0, 6))}
               inputMode="numeric"
@@ -519,6 +520,7 @@ export function AddFamilyPage() {
         </label>
         <input
           id="family-name"
+          type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           className="mt-1.5"
@@ -701,6 +703,7 @@ export function AddFamilyPage() {
         <section className="card enter mt-4 p-5">
           <p className="text-body text-ink">{t('helper.otpPrompt')}</p>
           <input
+            type="text"
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D+/g, '').slice(0, 6))}
             inputMode="numeric"

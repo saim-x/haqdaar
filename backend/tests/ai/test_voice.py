@@ -270,6 +270,27 @@ class TestReadback:
             readback_ur, readback_en = voice.readback(field_key, None)
             assert readback_ur and readback_en, field_key
 
+    def test_retry_prompts_match_field_ui_controls(self) -> None:
+        name_res = voice.transcribe_and_parse(
+            None, audio_bytes=b"RIFF\x00\x00\x00\x00WAVE", mime_type="audio/wav", field_key="applicant_full_name"
+        )
+        assert "keypad" not in name_res.readback_en.lower()
+        assert "کی پیڈ" not in name_res.readback_ur
+        assert "type" in name_res.readback_en.lower()
+
+        district_res = voice.transcribe_and_parse(
+            None, audio_bytes=b"RIFF\x00\x00\x00\x00WAVE", mime_type="audio/wav", field_key="applicant_district"
+        )
+        assert "keypad" not in district_res.readback_en.lower()
+        assert "کی پیڈ" not in district_res.readback_ur
+        assert "choose" in district_res.readback_en.lower()
+
+        cnic_res = voice.transcribe_and_parse(
+            None, audio_bytes=b"RIFF\x00\x00\x00\x00WAVE", mime_type="audio/wav", field_key="applicant_cnic"
+        )
+        assert "keypad" in cnic_res.readback_en.lower()
+        assert "کی پیڈ" in cnic_res.readback_ur
+
 
 # --------------------------------------------------------------------------- #
 # schemas and TTS

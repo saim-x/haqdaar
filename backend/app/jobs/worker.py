@@ -34,13 +34,38 @@ from app.security.context import configure_logging, log_event
 
 logger = logging.getLogger("app.jobs.worker")
 
+#: Why the last heartbeat write failed, or ``None`` after a clean one.
+#: ``/health`` reports this so a worker that is alive but cannot write is
+#: distinguishable from one that never started - the two look identical from
+#: the outside, and both leave every case stuck in ``PROCESSING``.
+_last_heartbeat_error: str | None = None
+
+
+def last_heartbeat_error() -> str | None:
+    return _last_heartbeat_error
+
 
 def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def default_worker_id() -> str:
-    return f"{socket.gethostname()}-{os.getpid()}-{uuid.uuid4().hex[:6]}"
+#: ``worker_heartbeats.worker_id`` is ``VARCHAR(64)``. Render and Fly set a
+#: container hostname long enough that the composed id overflows it, and then
+#: every heartbeat INSERT fails with ``StringDataRightTruncation``. The worker
+#: keeps processing jobs, so the only symptom is ``/health`` reporting a dead
+#: worker forever - which is exactly the signal an operator trusts.
+WORKER_ID_MAX = 64
+
+
+def default_worker_id(prefix: str = "") -> str:
+    """A worker id that always fits ``worker_heartbeats.worker_id``.
+
+    The pid and random suffix are what make the id unique, so the hostname is
+    the part that gets shortened.
+    """
+    suffix = f"-{os.getpid()}-{uuid.uuid4().hex[:6]}"
+    head = f"{prefix}{socket.gethostname()}"
+    return f"{head[: WORKER_ID_MAX - len(suffix)]}{suffix}"
 
 
 class Worker:
@@ -67,6 +92,7 @@ class Worker:
         self._stop.set()
 
     def heartbeat(self, *, force: bool = False) -> None:
+        global _last_heartbeat_error
         now_monotonic = time.monotonic()
         if not force and now_monotonic - self._last_heartbeat < settings.worker_heartbeat_seconds:
             return
@@ -87,8 +113,13 @@ class Worker:
             )
             db.execute(stmt)
             db.commit()
-        except Exception:  # noqa: BLE001 - a missed heartbeat must not kill the worker
-            db.rollback()
+            _last_heartbeat_error = None
+        except Exception as exc:  # noqa: BLE001 - a missed heartbeat must not kill the worker
+            _last_heartbeat_error = f"{type(exc).__name__}: {exc}"[:300]
+            try:
+                db.rollback()
+            except Exception:  # noqa: BLE001 - a dead connection must not kill the thread
+                logger.exception("worker heartbeat rollback failed")
             logger.exception("worker heartbeat failed")
         finally:
             db.close()
@@ -190,7 +221,7 @@ def start_embedded_worker() -> Worker | None:
     global _embedded, _embedded_thread
     if _embedded is not None:
         return _embedded
-    _embedded = Worker(worker_id=f"embedded-{default_worker_id()}")
+    _embedded = Worker(worker_id=default_worker_id(prefix="embedded-"))
     _embedded_thread = threading.Thread(
         target=_embedded.run_forever, name="embedded-worker", daemon=True
     )
@@ -207,6 +238,16 @@ def stop_embedded_worker() -> None:
             _embedded_thread.join(timeout=10)
     _embedded = None
     _embedded_thread = None
+
+
+def embedded_worker_alive() -> bool:
+    """True while the embedded worker thread is running.
+
+    A thread that died on startup and a thread that is polling but cannot write
+    a heartbeat both leave ``worker_heartbeats`` empty. ``/health`` needs to
+    tell them apart, because the fixes are different.
+    """
+    return _embedded_thread is not None and _embedded_thread.is_alive()
 
 
 def worker_is_stale(db) -> bool:

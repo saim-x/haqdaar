@@ -353,3 +353,35 @@ def test_a_replayed_process_case_job_does_not_strand_the_case_in_processing(
         f"a replayed PROCESS_CASE job moved the case {decided_status} -> {case.status}"
     )
     assert case.status != "PROCESSING", "the case was stranded in the transient state"
+
+
+def test_worker_id_fits_the_heartbeat_column(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A worker id longer than the column makes a healthy worker look dead.
+
+    ``worker_heartbeats.worker_id`` is ``VARCHAR(64)``. Render and Fly set a
+    container hostname long enough that ``<hostname>-<pid>-<hex>`` overflows it,
+    and then every heartbeat INSERT fails with ``StringDataRightTruncation``.
+    The worker keeps processing jobs, so the only symptom is ``/health``
+    reporting a stale worker forever - the one signal an operator trusts.
+
+    The width is read from the model rather than hardcoded, so widening the
+    column does not silently invalidate this test.
+    """
+    from app.jobs.worker import default_worker_id
+    from app.models.jobs import WorkerHeartbeat
+
+    width = WorkerHeartbeat.__table__.c.worker_id.type.length
+    assert width is not None, "worker_id must stay a bounded VARCHAR"
+
+    # Longer than any laptop hostname, in the shape a PaaS actually assigns.
+    monkeypatch.setattr(
+        "app.jobs.worker.socket.gethostname", lambda: "srv-" + "a" * 60
+    )
+
+    for prefix in ("", "embedded-"):
+        worker_id = default_worker_id(prefix=prefix)
+        assert len(worker_id) <= width, f"{worker_id!r} is {len(worker_id)} > {width}"
+        assert worker_id.startswith(prefix), worker_id
+
+    # Shortening the hostname must not cost uniqueness.
+    assert default_worker_id() != default_worker_id()

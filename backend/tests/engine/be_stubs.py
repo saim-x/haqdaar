@@ -14,6 +14,9 @@ from __future__ import annotations
 
 import sys
 import types
+from collections.abc import Iterator
+from contextlib import contextmanager
+from importlib import import_module
 from typing import Any
 
 import pytest
@@ -83,7 +86,8 @@ def _require_roles(*roles: str) -> Any:
     return dependency
 
 
-def install(monkeypatch: pytest.MonkeyPatch) -> None:
+@contextmanager
+def install(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Install stand-ins for every BE module the Phase-2 code imports."""
     stubs = {
         "app.db": _module("app.db", get_db=lambda: None),
@@ -105,12 +109,30 @@ def install(monkeypatch: pytest.MonkeyPatch) -> None:
         "app.jobs.queue": _module("app.jobs.queue", enqueue_job=lambda *a, **k: None),
         "app.notify": _module("app.notify", create_notification=lambda *a, **k: None),
     }
-    for name, module in stubs.items():
-        monkeypatch.setitem(sys.modules, name, module)
-    for name in (
+    reimport = (
         "app.agent.deps",
         "app.agent.case_agent",
         "app.api.v1.admin_rules",
         "app.api.v1.eval",
-    ):
-        monkeypatch.delitem(sys.modules, name, raising=False)
+    )
+    missing = object()
+    parent_attributes = []
+    with monkeypatch.context() as patch:
+        for name, module in stubs.items():
+            patch.setitem(sys.modules, name, module)
+        for name in reimport:
+            # Importing a submodule also sets an attribute on its parent.
+            parent_name, _, attribute = name.rpartition(".")
+            attrs = vars(import_module(parent_name))
+            previous = attrs.pop(attribute, missing)
+            parent_attributes.append((attrs, attribute, previous))
+            patch.setitem(sys.modules, name, None)
+            del sys.modules[name]
+        try:
+            yield
+        finally:
+            for attrs, attribute, previous in parent_attributes:
+                if previous is missing:
+                    attrs.pop(attribute, None)
+                else:
+                    attrs[attribute] = previous

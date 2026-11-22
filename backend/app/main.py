@@ -423,6 +423,8 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["ops"], summary="Liveness + dependency health")
     def health() -> Response:
+        from app.jobs.worker import embedded_worker_alive, last_heartbeat_error
+
         db_ok, db_detail = _check_database()
         worker_ok, worker_detail = _check_worker()
         uploads_ok, uploads_detail = _check_uploads()
@@ -437,6 +439,10 @@ def create_app() -> FastAPI:
                 "ai_provider": settings.ai_provider,
                 "demo_mode": settings.demo_mode,
                 "embedded_worker": settings.run_embedded_worker,
+                # A stale worker is either dead or unable to write. Without
+                # these two fields the only way to tell is the platform log.
+                "worker_thread_alive": embedded_worker_alive(),
+                "worker_last_error": last_heartbeat_error(),
             },
         }
         return JSONResponse(status_code=200 if healthy else 503, content=body)

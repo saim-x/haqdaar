@@ -71,6 +71,11 @@ PUBLIC_ROUTE_PREFIXES = (
     "/docs",
     "/redoc",
     "/openapi.json",
+    # The SPA history fallback serves the PWA shell to anonymous browsers, so it
+    # carries no RBAC. It is safe because it 404s every API prefix before it
+    # touches the filesystem and refuses paths that escape ``static_dir``;
+    # ``test_spa_fallback_cannot_serve_api_paths`` pins both halves of that.
+    "/{full_path:path}",
     "/",
 )
 
@@ -228,6 +233,39 @@ def test_every_non_public_route_has_an_rbac_dependency() -> None:
     # lazy, so a resolver that silently finds nothing would hide every violation.
     assert checked > 50, f"route resolver only reached {checked} routes"
     assert not missing, "routes without an explicit RBAC dependency:\n" + "\n".join(sorted(missing))
+
+
+def test_spa_fallback_cannot_serve_api_paths() -> None:
+    """The SPA catch-all is public, so it must never answer for an API path.
+
+    ``/{full_path:path}`` is the only route in the app that matches arbitrary
+    URLs, which makes it the one place a missing RBAC dependency could leak
+    citizen data. It is exempted from the RBAC invariant above on the strength
+    of two guards, and both are asserted here: API prefixes 404 before the
+    filesystem is touched, and a traversal attempt cannot escape ``static_dir``.
+    """
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+
+    from app.main import create_app
+
+    app = create_app()
+    fallback = [route for path, route in _iter_routes(app) if path == "/{full_path:path}"]
+    if not fallback:
+        pytest.skip("static_dir has no index.html, so the SPA fallback is not mounted")
+
+    endpoint = fallback[0].endpoint
+
+    for path in ("api/v1/cases", "api/v1/citizens/1", "mock/v1/identity", "health", "metrics"):
+        with pytest.raises(StarletteHTTPException) as raised:
+            endpoint(path)
+        assert raised.value.status_code == 404, path
+
+    # A traversal must fall back to index.html rather than serve the target.
+    from app.config import settings
+
+    index_file = (settings.static_dir / "index.html").resolve()
+    escaped = endpoint("../../../../etc/passwd")
+    assert Path(escaped.path).resolve() == index_file
 
 
 def _iter_routes(app: object) -> list[tuple[str, object]]:
