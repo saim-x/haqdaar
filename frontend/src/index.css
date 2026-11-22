@@ -365,9 +365,12 @@
 
   /* ---- Motion --------------------------------------------------------- */
 
-  /* One entrance per route: a short fade and rise, staggered by 40ms. */
+  /* One entrance per route: a short fade and rise, staggered by 40ms.
+     Use `backwards` (not `both`) so the final `transform: translateY(0)` is
+     released once the animation finishes instead of leaving a permanent
+     stacking context on every animated block. */
   .enter {
-    animation: rise var(--dur-enter) var(--ease) both;
+    animation: rise var(--dur-enter) var(--ease) backwards;
   }
 
   .enter-1 { animation-delay: 0ms; }

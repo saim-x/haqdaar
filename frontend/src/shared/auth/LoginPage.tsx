@@ -111,7 +111,7 @@ export function LoginPage() {
     <div className="mx-auto w-full max-w-[560px] px-5 pb-16 pt-5 lg:flex lg:min-h-[calc(100vh-28px)] lg:max-w-[940px] lg:items-center">
       <div className={demoMode ? 'w-full lg:grid lg:grid-cols-2 lg:items-start lg:gap-16' : 'mx-auto w-full max-w-[480px]'}>
         <div>
-          <header className="enter enter-1 mb-7 mt-4 flex items-start justify-between gap-3">
+          <header className="enter enter-1 relative z-20 mb-7 mt-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1>
                 <BrandLockup height={44} alt={t('app.name')} />
