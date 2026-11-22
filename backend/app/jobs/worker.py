@@ -49,8 +49,23 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def default_worker_id() -> str:
-    return f"{socket.gethostname()}-{os.getpid()}-{uuid.uuid4().hex[:6]}"
+#: ``worker_heartbeats.worker_id`` is ``VARCHAR(64)``. Render and Fly set a
+#: container hostname long enough that the composed id overflows it, and then
+#: every heartbeat INSERT fails with ``StringDataRightTruncation``. The worker
+#: keeps processing jobs, so the only symptom is ``/health`` reporting a dead
+#: worker forever - which is exactly the signal an operator trusts.
+WORKER_ID_MAX = 64
+
+
+def default_worker_id(prefix: str = "") -> str:
+    """A worker id that always fits ``worker_heartbeats.worker_id``.
+
+    The pid and random suffix are what make the id unique, so the hostname is
+    the part that gets shortened.
+    """
+    suffix = f"-{os.getpid()}-{uuid.uuid4().hex[:6]}"
+    head = f"{prefix}{socket.gethostname()}"
+    return f"{head[: WORKER_ID_MAX - len(suffix)]}{suffix}"
 
 
 class Worker:
@@ -206,7 +221,7 @@ def start_embedded_worker() -> Worker | None:
     global _embedded, _embedded_thread
     if _embedded is not None:
         return _embedded
-    _embedded = Worker(worker_id=f"embedded-{default_worker_id()}")
+    _embedded = Worker(worker_id=default_worker_id(prefix="embedded-"))
     _embedded_thread = threading.Thread(
         target=_embedded.run_forever, name="embedded-worker", daemon=True
     )
