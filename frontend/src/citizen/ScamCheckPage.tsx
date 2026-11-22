@@ -43,11 +43,11 @@ const VERDICT: Record<
 
 const SAMPLE_MESSAGES = [
   {
-    label: ['Scam: fee and PIN request', 'فراڈ: فیس اور PIN کی درخواست', 'فريب: فيس ۽ PIN جي گهر'],
+    label: ['Scam: extra fee request', 'فراڈ: اضافی فیس مانگنا', 'فريب: وڌيڪ فيس گهرڻ'],
     text: [
-      'MOCK SAMPLE: Your 15,000 relief grant is approved. Pay a 500 processing fee now and send your PIN to release the money.',
-      'نمونہ پیغام: آپ کی 15,000 روپے امداد منظور ہو گئی۔ رقم جاری کروانے کے لیے ابھی 500 روپے فیس دیں اور اپنا PIN بھیجیں۔',
-      'نموني پيغام: توهان جي 15,000 رپين جي امداد منظور ٿي. رقم وٺڻ لاءِ هاڻي 500 رپيا فيس ڏيو ۽ پنهنجو PIN موڪليو.',
+      'MOCK SAMPLE: Your 15,000 relief grant is approved. Pay an extra 500 processing fee today to release the money.',
+      'نمونہ پیغام: آپ کی 15,000 روپے امداد منظور ہو گئی۔ رقم جاری کروانے کے لیے آج مزید 500 روپے فیس دیں۔',
+      'نموني پيغام: توهان جي 15,000 رپين جي امداد منظور ٿي. رقم وٺڻ لاءِ اڄ وڌيڪ 500 رپيا فيس ڏيو.',
     ],
   },
   {
@@ -100,6 +100,7 @@ export function ScamCheckPage() {
   const { t, lang } = useI18n();
   const [tab, setTab] = useState<Tab>('text');
   const [text, setText] = useState('');
+  const [showSamples, setShowSamples] = useState(false);
   const [result, setResult] = useState<ScamCheckResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -222,18 +223,20 @@ export function ScamCheckPage() {
 
         {tab === 'text' && (
           <section className="card enter enter-3 p-5">
-            <div className="mb-3 flex flex-wrap gap-2">
-              {SAMPLE_MESSAGES.map((sample) => (
-                <button
-                  key={sample.label[0]}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setText(sample.text[lang === 'en' ? 0 : lang === 'sd' ? 2 : 1])}
-                  className="press min-h-tap rounded-control border border-ink/[0.12] bg-raised px-3 text-meta font-medium text-ink-2 hover:bg-card disabled:opacity-50"
-                >
-                  {sample.label[lang === 'en' ? 0 : lang === 'sd' ? 2 : 1]}
-                </button>
-              ))}
+            <div className="mb-3">
+              <button type="button" aria-expanded={showSamples} onClick={() => setShowSamples(!showSamples)}
+                className="press min-h-tap rounded-control border border-ink/[0.12] bg-raised px-3 text-meta font-medium text-ink-2 hover:bg-card">
+                {lang === 'en' ? 'Demo messages' : lang === 'sd' ? 'ڊيمو پيغام' : 'نمونہ پیغامات'}
+              </button>
+              {showSamples && <div className="mt-2 flex flex-wrap gap-2">
+                {SAMPLE_MESSAGES.map((sample) => (
+                  <button key={sample.label[0]} type="button" disabled={busy}
+                    onClick={() => setText(sample.text[lang === 'en' ? 0 : lang === 'sd' ? 2 : 1])}
+                    className="press min-h-tap rounded-control border border-ink/[0.12] bg-raised px-3 text-meta font-medium text-ink-2 hover:bg-card disabled:opacity-50">
+                    {sample.label[lang === 'en' ? 0 : lang === 'sd' ? 2 : 1]}
+                  </button>
+                ))}
+              </div>}
             </div>
             <textarea
               id="scam-text"
