@@ -41,7 +41,17 @@ const VERDICT: Record<
   LIKELY_SCAM: { band: 'bg-negative', Icon: IconWarning, key: 'scam.verdict.LIKELY_SCAM' },
 };
 
-const SAMPLE_MESSAGES = [
+/**
+ * Every sample carries exactly one string per locale, in `en`/`ur`/`sd` order.
+ * The tuple type matters: `noUncheckedIndexedAccess` would otherwise widen
+ * `text[i]` to `string | undefined`, and `setText` only accepts a `string`.
+ */
+type SampleMessage = {
+  label: readonly [string, string, string];
+  text: readonly [string, string, string];
+};
+
+const SAMPLE_MESSAGES: readonly SampleMessage[] = [
   {
     label: ['Scam: extra fee request', 'فراڈ: اضافی فیس مانگنا', 'فريب: وڌيڪ فيس گهرڻ'],
     text: [
