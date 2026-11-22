@@ -1,20 +1,26 @@
 # Haqdaar (حقدار) - To Every Rightful Person, Safely
 
+[Open the live demo](https://haqdaar-t2wr.onrender.com/login) · [Check service health](https://haqdaar-t2wr.onrender.com/health) · [Try the scam checker](https://haqdaar-t2wr.onrender.com/scam-check) · [Read the API docs](https://haqdaar-t2wr.onrender.com/api/docs) · [Judge runbook](docs/15-demo-and-submission.md)
+
+Haqdaar helps widowed women in Sindh apply for the fictional Sahara Widow Support Grant, even on a weak connection. Citizens can listen to instructions and check suspicious messages. Officers get a review queue with the evidence behind each case, and auditors can verify the decision trail.
+
 > **PROTOTYPE - THIS IS NOT AN OFFICIAL GOVERNMENT SERVICE.** Haqdaar was built during the Coder's Cup 2026 hackathon as a working prototype. **Every identity, civil-registry, household-survey, benefits, payment, complaint, and SMS service it talks to is simulated** and lives under `/mock/v1/*`; no request ever reaches a real registry, bank, or telecom. **All data is 100 % synthetic**: every citizen, case, phone number, and document is fictional, and **every CNIC in this repository starts with the fictional prefix `99900`**. **Every generated card image is watermarked `MOCK SPECIMEN`.** No real personal data was used at any point, and nothing here should be presented to a citizen as a real entitlement.
+
+The public demo runs with `DEMO_MODE=true` and `AI_PROVIDER=fake`. The workflow, saved Urdu and Sindhi audio, local scam classifier, signed QR checks, policy retrieval, and audit chain run in this profile. Policy answers use the extractive fallback. Rehearse live dictation, dynamic speech, and the optional Anam video guide in a separate configured instance.
 
 ---
 
-### At a Glance - Verified Numbers (100% Green CI)
+### At a glance
 
 | Dimension | Verified Result | How It Is Proven |
 |---|---|---|
-| **Automated Test Suite** | **1,162 / 1,162 passing** (`0` failures, `ruff` `0` errors) | GitHub Actions CI (`postgres:16` + `pytest` + `ruff`) |
+| **Automated checks** | Backend engine and security invariants, frontend type checking, and browser tour coverage | [Verification commands](#9-quickstart--verification) |
 | **Functional AI Features** | **5 distinct AI systems** (rubric requires ≥ 3) | Scam ML + Doc CV/QR + Policy RAG + Voice STT/TTS + Case Agent |
 | **Scam Classifier** | **0.9444 F1 · 0.9444 Precision · 0.04 FPR · 0.00 Hard-Neg FPR** | Held-out test set (`[[24, 1], [1, 17]]`), `GET /api/v1/eval/dashboard` |
 | **Document Verifier** | **100% genuine · 100% forged caught · 0.00% false-tamper** | 30-image eval set (clean, WhatsApp-compressed, forged, blurry) |
 | **Decision Router Safety** | **0.0% false approvals** at `τ = 0.90` · **`AUTO_REJECT` absent** | 133-case cost-matrix sweep + `test_no_auto_reject_route_action_exists` |
-| **Inclusion & Regional Languages** | **Urdu (`ur`, default) + Sindhi (`sd`, سنڌي) + English (`en`)** | RTL, 73 Urdu MP3s, voice on every wizard step + Policy Q&A, Auto-Read, WCAG AA ≥ 5.4:1 |
-| **2G / Weak-Internet PWA** | **138.7 KB gzipped** (`≤ 150 KB` budget) · **63 precache entries (1,218 KiB)** | Local production build and `npm run budget`, Dexie offline outbox + `Idempotency-Key`, Lite Mode |
+| **Inclusion & Regional Languages** | **Urdu (`ur`, default), Sindhi (`sd`, سنڌي), and English (`en`)** | RTL, 138 saved Sindhi clips, Urdu prompts, Auto-Read, and guided tours |
+| **Weak connections** | Offline outbox, Lite Mode, and a 150 KB gzipped entry budget | Workbox, Dexie, replay with `Idempotency-Key`, and `npm run budget` |
 | **Multi-Tenant SaaS & API** | **75 `/api/v1` endpoints** (85 total ops) · **5 RBAC roles** · **34 DB tables** | Strict JWT RBAC on every route, tenant isolation (`404` anti-leak), SHA-256 audit chain |
 
 ---
@@ -37,7 +43,7 @@ Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`**
 - **Complete Multi-Tenant SaaS (8 pts):** 5 roles (`CITIZEN`, `HELPER`, `OFFICER`, `ADMIN`, `AUDITOR`), strict JWT RBAC enforced on every non-public route (automated route-table invariant test), `tenant_id` derived exclusively from JWT (foreign tenant/citizen IDs return `404` to prevent existence leaks), versioned JSON-DSL rules, Officer Queue with four-eyes approval (`403 SAME_OFFICER`) & citizen registry-correction resolution, Admin console (Rules + Digital Twin, Users, Reveal-Once scoped & rate-limited API keys, Mock chaos control, Jobs & Live System Health), and Auditor console (hash-chain verification, consent log, decision trace).
 - **Clean Layered Backend & API (5 pts):** **75 `/api/v1` endpoints** (85 total ops) across 21 modules, Pydantic v2 validation, structured bilingual error codes (`CONSENT_REVOKED`, `INVALID_TRANSITION`, `SAME_OFFICER`, `IDEMPOTENCY_CONFLICT`), `Idempotency-Key` replay/conflict handling, `ETag` conditional GETs, CORS + security headers, proxy-aware rate limiting, and OpenAPI at `/api/docs` & `/api/openapi.json`.
 - **PostgreSQL 16 Data Architecture (4 pts):** 27 application tables + 7 isolated mock tables across 4 linear Alembic migrations; transactional broker-free job queue (`SELECT ... FOR UPDATE SKIP LOCKED` with stale-lock recovery); `pg_advisory_xact_lock`-serialized SHA-256 audit hash chain; generated `tsvector` column; stored tri-state facts; DB-backed idempotency & worker heartbeats.
-- **CI, Testing & Observability (3 pts):** 3-job GitHub Actions CI (`Backend - ruff + pytest` with Postgres 16, `Frontend - typecheck + build + budget`, `Architectural invariants`) - **all 1,162 tests green**; `GET /health`, `GET /metrics` (Prometheus), `GET /api/v1/eval/dashboard` (live AI telemetry by task + guardrail counts), structured JSON logs with `X-Request-ID`, and `docker-compose.yml` with healthchecks.
+- **CI, Testing & Observability (3 pts):** GitHub Actions runs lint, PostgreSQL tests, architectural invariants, and the frontend build and bundle budget. `/health` reports the worker heartbeat and provider mode. `/metrics` and `/staff/eval` expose service and model measurements.
 
 ### Category 3 - Real-World Problem Solving (15 pts)
 - **Grounded in Sindh's Real Failure Modes (5 pts):** Designed around a widowed woman in Thatta who may not read forms, uses a dropping 2G phone, faces misspelled/missing government records, needs a trusted village helper serving 40 families on one phone, and is targeted by fake relief-payment scams.
@@ -47,9 +53,9 @@ Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`**
 - **Quantified Practical Impact (3 pts):** At `τ = 0.90` on the 133-case benchmark, **55.6%** of cases auto-approve in **16 ms p50** with **0.0% false approvals** (expected cost **451** vs **2,011** at `τ = 0.50`), freeing officers for the uncertain minority.
 
 ### Category 4 - Accessibility & Inclusion (10 pts)
-- **Voice & Regional Language Support (4 pts):** Urdu, Sindhi, and English interface options, with RTL layouts for Urdu and Sindhi. Urdu voice support includes prerecorded prompts, speech input on supported application fields and policy Q&A, and readback. **Auto-Read** is available from the citizen header.
+- **Voice & Regional Language Support (4 pts):** Urdu, Sindhi, and English interface options, with RTL layouts for Urdu and Sindhi. Urdu and Sindhi include saved prompts, plus dictation and readback when live services are configured. **Auto-Read** is available from the citizen header.
 - **Low-Literacy Usability (3 pts):** One question per screen, ≥48 px tap targets (56 px primary), WCAG AA `≥ 5.4:1` contrast, **Approximate Age quick-picker** (`~25 / ~35 / ~45 / ~55 / ~65`), visual **Income Band tier bars**, custom digit pad, readback confirmation (including voice `"I don't know"`), and copyable reference codes everywhere.
-- **Weak Internet & 2G Resilience (3 pts):** **136.0 KB gzipped** initial JS bundle (CI-enforced `≤ 150 KB`), Workbox precache trimmed 61% to **59 entries (1.0 MB)** with lazy `CacheFirst` audio caching, Dexie IndexedDB autosave & outbox preserving `X-Act-For-Citizen` + failed-sync **Retry / Discard** recovery controls, `ETag` 304 responses, and **Lite Mode** that actively pauses background polling and suppresses `.webp` illustrations.
+- **Weak Internet & 2G Resilience (3 pts):** Workbox caches the app shell and core audio. Dexie stores drafts and failed submissions for **Retry / Discard**, preserves the active family, and resends with the original idempotency key. **Lite Mode** limits background requests and illustrations. The frontend budget command enforces a `≤ 150 KB` gzipped entry bundle.
 
 ### Category 5 - Safety, Privacy & Reliability (15 pts)
 - **AI Uncertainty & Human Handoff (5 pts):** Tri-state canonical facts (`KNOWN`/`UNKNOWN` with `missing_reason`), **no `AUTO_REJECT` anywhere** (`PROCESSING → REJECTED` raises `409 INVALID_TRANSITION`), 4-pillar weakest-link confidence (`min`, never average), structured AI handoff notes, `CANNOT_TELL` scam band, `NOT_SURE` RAG abstention, and `WAITING_EXTERNAL` when registries fail.
@@ -68,16 +74,15 @@ Everything below maps directly to **`docs/AI_Hackathon_Evaluation_Rubrics.pdf`**
 
 ## 2. 3-Minute Judge Walkthrough (Live Demo)
 
-No setup or external phone required - log in with one click on `/login` (`DEMO_MODE=true`):
+Open the [demo login](https://haqdaar-t2wr.onrender.com/login). Check [health](https://haqdaar-t2wr.onrender.com/health) first and allow time for a cold start. Use the public demo for read-only judging and synthetic message checks. Use your disposable local stack to change decisions, withdraw consent, or simulate registry outages.
 
 | Minute | Persona / Route | What to Try & What It Proves |
 |---|---|---|
-| **0:00–0:45** | `widow_fatima` → `/c` | Switch **اردو / سنڌي / EN**, toggle **Auto-Read** & **Lite Mode**, open the wizard (`/c/apply/...`), use **🎤 Voice input** or **Approximate Age / Income Bands**, try `"I don't know"`, and test offline submit (queues safely in IndexedDB outbox). |
-| **0:45–1:15** | Public → `/scam-check` | No login needed. Paste a fake fee/PIN SMS, upload a screenshot, or record voice → see the **Calibrated Risk Band Gauge** and red flags. Paste a real `HQ-XXXXX` SMS from `/staff/device-sim` → `VERIFIED_OFFICIAL`; edit the PKR amount by 1 digit → numeric-tampering guard catches the forgery! |
-| **1:15–1:45** | `widow_fatima` → `/c/consent` & `/c/my-data` | Withdraw consent for `helper_ayesha` (or department), switch to `helper_ayesha` and try viewing Fatima → **blocked (`403 CONSENT_REVOKED`)**, then look at Fatima's **Access Log**: the blocked attempt is persisted! Click **Download my data (JSON)** or **Grant access again** to auto-resume held cases. |
-| **1:45–2:15** | `officer_sana` → `/staff/queue` & `/staff/cases/:id` | Inspect a `TAMPER_SUSPECTED` / `HIGH` case: see the **4-Pillar Weakest-Link Confidence Breakdown** (bottleneck highlighted), **Rule Trace**, **AI Handoff Note**, and **Agent Steps**. Approve once → moves to `PENDING_SECOND_APPROVAL`; try approving again as Sana → blocked (`403 SAME_OFFICER`) until `officer_imran` records second approval! |
-| **2:15–2:45** | `admin_bilal` → `/admin/rules` & `/staff/eval` | Edit an eligibility rule or threshold and click **Run Digital Twin** → preview flipped citizens, PKR budget delta, and **Route-Shift Transition Matrix** before publishing. Open `/staff/eval` → click thresholds on the **Interactive Cost U-Curve** and inspect **Live AI Telemetry by Task**. |
-| **2:45–3:00** | `auditor_nadia` → `/auditor/events` & `/transparency` | Click **Verify Hash Chain** to prove tamper-evident SHA-256 audit integrity, inspect any full decision trace, and visit `/transparency` for the honest 11-row **Real vs. Simulated** disclosure. |
+| **0:00–0:35** | Fatima → **Citizen dashboard** | Explain the prototype. Choose **سنڌي**, start the tour, and click **Next** twice. Show the step count and play a saved prompt. |
+| **0:35–1:10** | Fatima → **Ask a Question** | Ask `شناختی کارڈ نہیں ہے تو کیا کروں؟` and open the policy citation. Then ask about tomorrow's weather in Karachi and show that the system abstains. |
+| **1:10–1:40** | Public → **Scam checker** | Choose **Demo messages → Scam: extra fee request**. Compare its fee warning with the uncertainty response for `Bhai payment bhej dena`. |
+| **1:40–2:20** | Officer Sana → **Cases to review** | Open seeded case `HQ-2026-000101`. Show the mismatched document evidence, structured handoff, and the requirement for a second officer. |
+| **2:20–3:00** | Officer Sana → **Evaluation**, Auditor Nadia → **Audit log** | Compare decision costs at two thresholds and name the synthetic sample size. Show **Verify Hash Chain** and the [transparency page](https://haqdaar-t2wr.onrender.com/transparency). |
 
 ---
 
@@ -88,15 +93,15 @@ No setup or external phone required - log in with one click on `/login` (`DEMO_M
 3. Select **Approve** and **Save decision**. Show **Awaiting second approval** and point out that Sana cannot approve a second time. Sign in as Officer Imran and record the second approval.
 4. Once the background worker processes the simulated payout, open **Device Simulator** and look for the notification for the approved case. Use its verification code in the scam checker to show how a citizen can verify the message.
 
-The registry checks, payout, and SMS delivery are simulated. The queue, decisions, and audit trail are recorded by the application.
+Use this sequence on a disposable local stack with specimens generated for that stack's QR key. The registry checks, payout, and SMS delivery are simulated. The queue, decisions, and audit trail are recorded by the application.
 
 ### Sindhi speech
 
 Select **سنڌي** in the language menu. The application microphone, its transcription preview, and the Ask microphone use Deepgram Nova-3 with `language=sd`. The wizard still requires confirmation before accepting a dictated value. In Ask, Sindhi dictation fills the editable question field. Policy answers currently use the Urdu answer path.
 
-For live Sindhi playback, enable the Cloud Text-to-Speech API on a Google Cloud billing project. Set `AI_PROVIDER=live`, `DEEPGRAM_API_KEY`, `GOOGLE_CLOUD_PROJECT`, and `GOOGLE_TTS_ACCESS_TOKEN` in the ignored root `.env`. The Google token is a short-lived OAuth token with the cloud-platform scope. With Google Cloud CLI application default credentials configured, obtain it with `gcloud auth application-default print-access-token`. Restart the backend or recreate the API container after updating the token.
+For live dictation and playback, set `AI_PROVIDER=live`, `DEEPGRAM_API_KEY` for transcription, and `GEMINI_API_KEY` for dynamic Sindhi playback in the ignored root `.env`. Restart the backend or recreate the API container after changing credentials. Test the live recognizer with a native speaker and synthetic examples before the demo.
 
-For offline instructions, place reviewed native-speaker MP3 bytes under `frontend/public/audio/sd/` with the `.clip` suffix, such as `wizard_welcome.clip`. The app plays those assets in the browser and the PWA caches them. Check the recordings and Gemini's Sindhi pronunciation with a Pakistani Sindhi speaker using synthetic examples before a judge demo.
+The repository ships 138 saved Sindhi prompts, including every tour's narration. Five use Gemini and 133 use the offline eSpeak NG voice. The app loads `.clip` assets and plays their MP3 bytes in the page. The PWA precaches core prompts and caches others on demand. Pronunciation still needs a native Sindhi speaker's review.
 
 ### Evidence to capture before judging
 
@@ -217,7 +222,7 @@ Matches the exact eleven rows served by `GET /api/v1/transparency` and rendered 
 
 ## 7. Verified Benchmarks & Engineering Metrics
 
-Every figure below is measured from the running codebase and enforced by automated tests. Reproduce live at `GET /api/v1/eval/dashboard`.
+These measurements come from synthetic benchmark sets. Reproduce them in **Evaluation** at `GET /api/v1/eval/dashboard`. They provide evidence about the prototype on those inputs and do not estimate performance in a government program.
 
 ### Cost-Sensitive Decision Router Sweep (`n = 133`, `eval_cases.jsonl`)
 
@@ -252,7 +257,7 @@ Cost matrix stored in `rule_versions.rules_json.policy.cost_matrix`: Wrong auto-
 | False-tamper rate (including WhatsApp-compressed genuine cards) | **0.00 %** |
 | Blurry cards routed to `NEEDS_RETAKE` | **100 %** |
 
-### Automated Test Suite & PWA Bundle Budget
+### Verification coverage
 
 | Suite | Tests | Covers |
 |---|---:|---|
@@ -263,8 +268,7 @@ Cost matrix stored in `rule_versions.rules_json.policy.cost_matrix`: Wrong auto-
 | `backend/tests/security` | 21 | RBAC matrix, tenant isolation (`404`), consent enforcement incl. isolated denied-log persistence |
 | `backend/tests/test_conftest_heal.py` | 14 | Schema healing test harness |
 | `backend/tests/test_invariants.py` | 11 | Engine purity, mock-import ban, RBAC-on-every-route, no auto-reject, no raw PII in logs, transparency |
-| **Total Backend (CI Postgres 16)** | **1,162 passing** | **0 failures · `ruff check` 0 errors** |
-| **Frontend Citizen Bundle** | **136.0 KB / 150.0 KB** | **90.7 % of budget · 59 precache entries (1.0 MB) · Sindhi lazy chunk 4.3 KB** |
+| **Frontend citizen entry** | 150 KB gzipped budget | `npm --prefix frontend run budget` enforces the limit after a production build |
 
 ---
 
@@ -295,8 +299,7 @@ cp .env.example .env          # HOST_DB_PORT=5433, HOST_API_PORT=8010 by default
 docker compose up --build     # db + api (auto-migrates & seeds) + worker
 ```
 
-Public deployment: <https://haqdaar-t2wr.onrender.com> — a free Render instance, so the
-first request after an idle period takes ~50 s to wake. The URLs below are the local ones.
+The [public Render deployment](https://haqdaar-t2wr.onrender.com) may take time to wake after inactivity. The URLs below are for the local stack.
 
 | Endpoint / Surface | URL |
 |---|---|
@@ -322,7 +325,7 @@ npm --prefix frontend run build
 npm --prefix frontend run budget
 ```
 
-Reset demo data cleanly anytime: `docker compose exec api python -m app.mocks.seed --reset` (or `POST /api/v1/admin/demo/reset` as `ADMIN`).
+Reset fixtures only on a disposable local demo database with `docker compose exec api python -m app.mocks.seed --reset`. That command deletes existing cases. Hosted startup refreshes changed bundled policy excerpts separately so it can preserve existing cases and rules.
 
 ---
 
@@ -335,7 +338,7 @@ Reset demo data cleanly anytime: `docker compose exec api python -m app.mocks.se
 | Backend Platform, Engine, AI & Mocks | [`backend/app/`](backend/app/) |
 | Frontend PWA & Staff Consoles | [`frontend/src/`](frontend/src/) |
 | Live Deployment | <https://haqdaar-t2wr.onrender.com> |
-| Demo Video & Slides | `<!-- PLACEHOLDER: video & slides links -->` |
+| Demo script & submission checklist | [Judge runbook](docs/15-demo-and-submission.md) |
 
 ```text
 backend/
@@ -349,7 +352,7 @@ backend/
     agent/           Case agent, fact assembly, strict HTTP MockClient
     ai/              AIProvider (live|fake), scam ML, OpenCV/QR verifier, hybrid RAG, voice, guardrails
     mocks/           7 simulated DPI services under /mock/v1/* + synthetic seed
-  tests/             1,162 tests (engine, ai, integration, mocks, security, invariants)
+  tests/             Engine, AI, integration, mocks, security, and invariants
 frontend/            React 18 + Vite 5 + Tailwind + Workbox PWA (Urdu/Sindhi/EN) + Staff Consoles
 docs/                Frozen architecture, API contracts, decision log & rubric traceability
 docker-compose.yml   PostgreSQL 16 + API + background worker
