@@ -69,6 +69,42 @@ def test_deepgram_wizard_parses_locally(
     assert result.provider == "deepgram"
 
 
+@pytest.mark.parametrize(
+    ("recognized", "expected"),
+    [
+        ("منهنجو سوال آهي", "منهنجو سوال آهي"),
+        ("मेरा सवाल है", ""),
+        ("12345", "12345"),
+    ],
+)
+def test_sindhi_deepgram_transcript_uses_expected_script(
+    monkeypatch: pytest.MonkeyPatch, recognized: str, expected: str
+) -> None:
+    import httpx
+
+    monkeypatch.setattr(provider.get_settings(), "deepgram_api_key", "test-key")
+
+    def transcribe(url: str, **kwargs: Any) -> httpx.Response:
+        assert kwargs["params"]["model"] == "nova-3"
+        assert kwargs["params"]["language"] == "sd"
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", url),
+            json={
+                "metadata": {"duration": 2.0},
+                "results": {"channels": [{"alternatives": [
+                    {"transcript": recognized, "confidence": 0.98},
+                ]}]},
+            },
+        )
+
+    monkeypatch.setattr(provider.httpx, "post", transcribe)
+    result = provider.LiveOpenAIProvider().transcribe_urdu(b"sample audio", language="sd")
+    assert result.language == "sd"
+    assert result.transcript == expected
+    assert result.available is bool(expected)
+
+
 # --------------------------------------------------------------------------- #
 # Urdu numerals - the core of the wizard
 # --------------------------------------------------------------------------- #

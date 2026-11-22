@@ -1075,6 +1075,13 @@ class LiveOpenAIProvider:
             payload = response.json()
             alternative = payload["results"]["channels"][0]["alternatives"][0]
             transcript = alternative["transcript"].strip()
+            wrong_script = language == "sd" and any(
+                "\u0900" <= char <= "\u097f" and char.isalpha() for char in transcript
+            )
+            if wrong_script:
+                # The Sindhi UI uses Perso-Arabic script. Do not guess whether
+                # Devanagari output is Hindi or Sindhi, or change what was said.
+                transcript = ""
             confidence = float(alternative["confidence"]) if transcript else 0.0
             duration = float(payload["metadata"]["duration"])
         except Exception as exc:
@@ -1097,7 +1104,7 @@ class LiveOpenAIProvider:
             latency_ms=int((time.perf_counter() - started) * 1000),
             input_tokens=int(duration * 100),
             succeeded=bool(transcript),
-            error_code=None if transcript else "EMPTY_TRANSCRIPT",
+            error_code="UNEXPECTED_SCRIPT" if wrong_script else (None if transcript else "EMPTY_TRANSCRIPT"),
         )
         return STTResult(
             transcript=transcript,
@@ -1556,12 +1563,17 @@ class ResilientProvider:
         self.live = live
         self.fake = fake
         self.breaker = breaker or CircuitBreaker()
-        self.voice_breaker = CircuitBreaker()
+        self.stt_breaker = CircuitBreaker()
+        self.tts_breaker = CircuitBreaker()
         self.fallback_count = 0
 
     def _call(self, method: str, *args: Any, **kwargs: Any) -> Any:
-        is_voice = method in {"transcribe_urdu", "synthesize_urdu_tts"}
-        breaker = self.voice_breaker if is_voice else self.breaker
+        if method == "transcribe_urdu":
+            breaker = self.stt_breaker
+        elif method == "synthesize_urdu_tts":
+            breaker = self.tts_breaker
+        else:
+            breaker = self.breaker
         if breaker.is_open:
             self.fallback_count += 1
             return getattr(self.fake, method)(*args, **kwargs)

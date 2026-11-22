@@ -49,6 +49,7 @@ export function AskPage() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [voiceRetry, setVoiceRetry] = useState(false);
   const nextId = useRef(1);
   const capture = useVoiceCapture(15);
   const guide = useAvatarGuide('ask');
@@ -147,6 +148,7 @@ export function AskPage() {
     if (!readyBlob) return;
     let cancelled = false;
     setTranscribing(true);
+    setVoiceRetry(false);
     const form = new FormData();
     form.append('audio', readyBlob, 'question.webm');
     form.append('lang', lang);
@@ -158,10 +160,15 @@ export function AskPage() {
         if (res.transcript?.trim()) {
           if (lang === 'sd') setQuestion(res.transcript.trim());
           else void ask(res.transcript.trim());
+        } else {
+          setVoiceRetry(true);
         }
       })
       .catch(() => {
-        if (!cancelled) capture.reset();
+        if (!cancelled) {
+          capture.reset();
+          setVoiceRetry(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setTranscribing(false);
@@ -329,7 +336,11 @@ export function AskPage() {
           <button
             type="button"
             disabled={busy || transcribing}
-            onClick={() => (recording ? capture.stop() : void capture.start())}
+            onClick={() => {
+              setVoiceRetry(false);
+              if (recording) capture.stop();
+              else void capture.start();
+            }}
             aria-label={recording ? t('wizard.voice.listening') : t('common.speak')}
             title={t('common.speak')}
             className={`press grid h-tap w-tap shrink-0 place-items-center rounded-control border ${
@@ -363,6 +374,11 @@ export function AskPage() {
           {t('ask.send')}
         </TapButton>
       </form>
+      {voiceRetry && (
+        <p className="mt-2 text-caption text-ink-2" role="status">
+          {t('wizard.voice.notUnderstood')}
+        </p>
+      )}
     </div>
   );
 }
