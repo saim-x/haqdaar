@@ -108,6 +108,8 @@ export const ur = {
   'helper.checkPermissions': 'اجازت دوبارہ چیک کریں',
   'home.continueApplication': 'درخواست جاری رکھیں',
   'home.helpAndTools': 'مدد اور سہولتیں',
+  'home.guidePitch': 'مائیک دبائیں اور اپنی آواز میں پوچھیں۔ پڑھنا ضروری نہیں۔',
+  'home.guideCta': 'بات شروع کریں',
 
   'status.DRAFT': 'درخواست محفوظ ہے',
   'status.SUBMITTED': 'جانچ جاری ہے',
@@ -483,6 +485,8 @@ export const en: Record<DictKey, string> = {
   'helper.checkPermissions': 'Check permission again',
   'home.continueApplication': 'Continue application',
   'home.helpAndTools': 'Help and tools',
+  'home.guidePitch': 'Tap the mic and ask in your own voice. No reading needed.',
+  'home.guideCta': 'Start talking',
 
   'status.DRAFT': 'Draft saved',
   'status.SUBMITTED': 'Checking your application',

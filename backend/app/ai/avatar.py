@@ -48,8 +48,8 @@ from app.security import audit
 
 logger = logging.getLogger("haqdaar.ai.avatar")
 
-#: The four citizen surfaces allowed to open a guide session (ADR-025).
-SURFACES = frozenset({"ask", "case_status", "wizard", "scam_check"})
+#: The citizen surfaces allowed to open a guide session (ADR-025, Amendment 2).
+SURFACES = frozenset({"ask", "case_status", "wizard", "scam_check", "home"})
 
 PERSONA_NAME_UR = "سائرہ — حقدار گائیڈ"
 PERSONA_NAME_EN = "Saima — Haqdaar Guide"
@@ -399,6 +399,7 @@ _SURFACE_HINT = {
     "case_status": "her own case status screen",
     "wizard": "the application wizard",
     "scam_check": "the scam-check screen",
+    "home": "the home screen, where she has not chosen a task yet",
 }
 
 

@@ -16,8 +16,8 @@ export type AvatarProvider = 'anam' | 'fake';
  */
 export type AvatarMode = 'conversational' | 'passthrough' | 'talk';
 
-/** The four citizen screens allowed to open a guide session. */
-export type AvatarSurface = 'ask' | 'case_status' | 'wizard' | 'scam_check';
+/** The citizen screens allowed to open a guide session (ADR-025, Amendment 2). */
+export type AvatarSurface = 'ask' | 'case_status' | 'wizard' | 'scam_check' | 'home';
 
 /**
  * `degraded` is a first-class state, not an error: the video is unavailable and

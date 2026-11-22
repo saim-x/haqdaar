@@ -5,6 +5,8 @@ import { api } from '../shared/api/client';
 import { ApiError, errorMessage } from '../shared/api/errors';
 import type { CaseStatus, CaseView, Program } from '../shared/api/types';
 import { useAuth } from '../shared/auth/AuthProvider';
+import { AvatarHero } from '../shared/avatar/AvatarHero';
+import { useAvatarGuide } from '../shared/avatar/useAvatarGuide';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { enqueue } from '../shared/offline/outbox';
@@ -50,6 +52,7 @@ export function CitizenHome() {
   const { t, lang, pick } = useI18n();
   const { session, actFor } = useAuth();
   const { lite } = useLiteMode();
+  const guide = useAvatarGuide('home');
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -226,25 +229,29 @@ export function CitizenHome() {
         )}
       </section>
 
-      {/* Support rows. Same height, same gap, one icon column. */}
-      <h2 className="section-label enter enter-3 mb-2 mt-6">{t('home.helpAndTools')}</h2>
-      <ul className="card enter enter-3 overflow-hidden">
+      {/* The guide, promoted out of "Ask a question". It is the only surface
+          built for citizens who cannot read, so it gets a portrait and a 56px
+          button rather than a row in a list. */}
+      <AvatarHero guide={guide} className="enter enter-3 mt-4" />
+
+      {/* Support tiles. Two columns, equal height, one listen affordance each. */}
+      <h2 className="section-label enter enter-4 mb-2 mt-6">{t('home.helpAndTools')}</h2>
+      <ul className="enter enter-4 grid grid-cols-2 gap-3">
         {rows.map(({ key, to, label, hint, Icon }) => (
-          <li key={key} className="flex items-center gap-2 border-b border-ink/[0.08] px-2 last:border-b-0">
+          <li key={key} className="card flex flex-col overflow-hidden">
             <Link
               to={to}
-              className="press flex min-h-primary min-w-0 flex-1 items-center gap-3 px-2 py-3.5 text-start hover:bg-raised/60 rounded-control transition-colors"
+              className="press flex min-w-0 flex-1 flex-col p-3.5 text-start transition-colors hover:bg-raised/50"
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-accent-wash text-accent-ink shadow-hair">
-                <Icon size={20} />
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-accent-wash text-accent-ink">
+                <Icon size={18} />
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-body-lg font-medium leading-[1.4] text-ink">{label}</span>
-                <span className="mt-0.5 block text-caption leading-[1.5] text-ink-3">{hint}</span>
+              <span className="mt-2.5 block text-body font-medium leading-[1.45] text-ink">
+                {label}
               </span>
-              <IconChevron size={18} className="shrink-0 text-accent-ink" />
+              <span className="mt-1 block text-meta leading-[1.6] text-ink-3">{hint}</span>
             </Link>
-            <div className="shrink-0 pe-1">
+            <div className="flex justify-end px-1.5 pb-1.5">
               <AudioButton
                 audioKey={key === 'ask' ? 'ask_intro' : isHelper && key === 'data' ? undefined : `home_${key}`}
                 label={`${t('common.listen')} · ${label}`}
@@ -257,7 +264,7 @@ export function CitizenHome() {
       </ul>
 
       {!lite && (
-        <p className="enter enter-4 mt-6 text-caption leading-[1.7] text-ink-3">{t('home.offlineNote')}</p>
+        <p className="enter enter-5 mt-6 text-caption leading-[1.7] text-ink-3">{t('home.offlineNote')}</p>
       )}
     </div>
   );
