@@ -43,27 +43,27 @@ const VERDICT: Record<
 
 const SAMPLE_MESSAGES = [
   {
-    label: ['Suspicious: fee request', 'مشکوک: فیس مانگنا', 'شڪي: فيس جي گهر'],
+    label: ['Grant update with a condition', 'رقم کی اطلاع اور شرط', 'امداد جي خبر ۽ شرط'],
     text: [
-      'MOCK SAMPLE: Your relief grant is ready. Pay a processing fee today and send your PIN to claim it.',
-      'نمونہ پیغام: آپ کی امدادی رقم تیار ہے۔ وصول کرنے کے لیے آج فیس دیں اور اپنا PIN بھیجیں۔',
-      'نموني پيغام: توهان جي امدادي رقم تيار آهي. وٺڻ لاءِ اڄ فيس ڏيو ۽ پنهنجو PIN موڪليو.',
+      'MOCK SAMPLE: Your 15,000 relief payment is being processed. If it does not arrive by Friday, call the number in this message. No fee is required.',
+      'نمونہ پیغام: آپ کی 15,000 روپے کی امداد زیرِ عمل ہے۔ اگر جمعہ تک نہ آئے تو اس پیغام میں دیے گئے نمبر پر فون کریں۔ کوئی فیس نہیں۔',
+      'نموني پيغام: توهان جي 15,000 رپين جي امداد تيار ٿي رهي آهي. جمعي تائين نه اچي ته هن پيغام واري نمبر تي فون ڪريو. ڪا فيس ناهي.',
     ],
   },
   {
-    label: ['Uncertain: vague payment notice', 'غیر واضح: ادائیگی کا پیغام', 'غير واضح: ادائيگيءَ جو پيغام'],
+    label: ['Payment failed, retry requested', 'ادائیگی ناکام، دوبارہ کوشش', 'ادائيگي ناڪام، ٻيهر ڪوشش'],
     text: [
-      'MOCK SAMPLE: A payment update is available. Contact the local office for more information.',
-      'نمونہ پیغام: ادائیگی کی تازہ اطلاع موجود ہے۔ مزید معلومات کے لیے مقامی دفتر سے رابطہ کریں۔',
-      'نموني پيغام: ادائيگيءَ جي نئين ڄاڻ موجود آهي. وڌيڪ ڄاڻ لاءِ مقامي آفيس سان رابطو ڪريو.',
+      'MOCK SAMPLE: Your relief payment could not be delivered. Reply with your account number so we can retry it. There is no charge.',
+      'نمونہ پیغام: آپ کی امدادی رقم نہیں پہنچ سکی۔ دوبارہ بھیجنے کے لیے اپنا اکاؤنٹ نمبر جواب میں بھیجیں۔ کوئی فیس نہیں۔',
+      'نموني پيغام: توهان جي امدادي رقم نه پهتي. ٻيهر موڪلڻ لاءِ پنهنجو اڪائونٽ نمبر جواب ۾ موڪليو. ڪا فيس ناهي.',
     ],
   },
   {
-    label: ['Safer: no payment or PIN request', 'نسبتاً محفوظ: فیس یا PIN نہیں مانگا', 'وڌيڪ محفوظ: فيس يا PIN نه گهريو'],
+    label: ['Safety reminder with a link', 'حفاظتی پیغام اور لنک', 'حفاظتي پيغام ۽ لنڪ'],
     text: [
-      'MOCK SAMPLE: Your application is under review. Check its status in the official Haqdaar app. Never share your PIN.',
-      'نمونہ پیغام: آپ کی درخواست زیرِ جائزہ ہے۔ سرکاری حق دار ایپ میں حالت دیکھیں۔ اپنا PIN کسی کو نہ دیں۔',
-      'نموني پيغام: توهان جي درخواست جاچي پئي وڃي. حق دار ايپ ۾ حالت ڏسو. پنهنجو PIN ڪنهن سان نه ونڊيو.',
+      'MOCK SAMPLE: Haqdaar will never ask for your PIN or a fee. Check your application status in the app. If this was not you, review your account here: haqdaar.example/check',
+      'نمونہ پیغام: حق دار کبھی آپ کا PIN یا فیس نہیں مانگتا۔ ایپ میں درخواست کی حالت دیکھیں۔ اگر یہ آپ نے نہیں کیا تو یہاں اکاؤنٹ دیکھیں: haqdaar.example/check',
+      'نموني پيغام: حق دار ڪڏهن به PIN يا فيس نه گهرندو. ايپ ۾ درخواست جي حالت ڏسو. جيڪڏهن هي ڪم توهان نه ڪيو ته هتي اڪائونٽ ڏسو: haqdaar.example/check',
     ],
   },
 ];
