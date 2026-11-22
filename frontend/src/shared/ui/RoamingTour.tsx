@@ -110,14 +110,6 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
     return stop;
   }, [running, stop]);
 
-  useEffect(() => {
-    if (!running || !page || route !== page.to) return;
-    playImmediate(`${pick(page.title[1], page.title[0])}. ${pick(page.text[1], page.text[0])}`);
-    return () => {
-      stop();
-    };
-  }, [running, page, route, lang, pick, playImmediate, stop]);
-
   function markSeen() {
     setSeen(true);
     try { localStorage.setItem(storageKey, 'seen'); } catch { /* Storage may be disabled. */ }
@@ -126,7 +118,7 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   function go(index: number) {
     const next = pages[index];
     if (!next) return;
-    stop();
+    playImmediate(`${pick(next.title[1], next.title[0])}. ${pick(next.text[1], next.text[0])}`);
     setAsking(false);
     setStep(index);
     try { sessionStorage.setItem(sessionStepKey, String(index)); } catch { /* Session storage may be disabled. */ }
