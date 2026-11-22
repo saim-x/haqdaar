@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     mock_base_url: str = "http://127.0.0.1:8000/mock"
     ai_provider: Literal["live", "fake"] = "fake"
     openai_api_key: str = ""
+    #: Point the OpenAI SDK at an OpenAI-compatible gateway (Mistral, vLLM,
+    #: LiteLLM, ...). Blank means api.openai.com. See docs/07 §2.
+    openai_base_url: str = ""
     deepgram_api_key: str = ""
     google_cloud_project: str = ""
     google_tts_access_token: str = ""

@@ -972,12 +972,19 @@ class LiveOpenAIProvider:
         self,
         *,
         api_key: str | None = None,
+        base_url: str | None = None,
         chat_model: str = "gpt-4o-mini",
         embed_model: str = "text-embedding-3-small",
         timeout_s: float = 10.0,
         tts_voice: str = "flux-ambreen-ur",
     ) -> None:
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY") or get_settings().openai_api_key
+        #: Blank means api.openai.com. Set it to an OpenAI-compatible gateway
+        #: (e.g. https://api.mistral.ai/openai/v1) to run the text layer on a
+        #: different vendor without touching the call sites.
+        self.base_url = (
+            base_url or os.environ.get("OPENAI_BASE_URL") or get_settings().openai_base_url
+        ).strip()
         self.chat_model = chat_model
         self.embed_model = embed_model
         self.timeout_s = timeout_s
@@ -994,7 +1001,12 @@ class LiveOpenAIProvider:
             from openai import OpenAI  # type: ignore
         except Exception as exc:  # pragma: no cover
             raise ProviderError(f"openai SDK unavailable: {exc}", code="NO_SDK") from exc
-        self._client = OpenAI(api_key=self.api_key, timeout=self.timeout_s, max_retries=0)
+        self._client = OpenAI(
+            api_key=self.api_key,
+            timeout=self.timeout_s,
+            max_retries=0,
+            **({"base_url": self.base_url} if self.base_url else {}),
+        )
         return self._client
 
     @staticmethod
@@ -1011,14 +1023,25 @@ class LiveOpenAIProvider:
 
     def _chat_json(self, system: str, user: str, schema: dict[str, Any], name: str) -> dict[str, Any]:
         client = self._openai()
+        if self.base_url:
+            # OpenAI-compatible gateways (Mistral, vLLM, LiteLLM) implement JSON
+            # mode but not OpenAI's strict json_schema, so the schema travels in
+            # the prompt and the reply is parsed defensively below.
+            response_format: dict[str, Any] = {"type": "json_object"}
+            system = (
+                f"{system}\n\nReturn only a JSON object that validates against this "
+                f"JSON Schema. No prose, no markdown fences.\n{json.dumps(schema)}"
+            )
+        else:
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {"name": name, "strict": True, "schema": schema},
+            }
         try:
             response = client.chat.completions.create(
                 model=self.chat_model,
                 temperature=0,
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {"name": name, "strict": True, "schema": schema},
-                },
+                response_format=response_format,
                 messages=[
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
