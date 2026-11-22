@@ -6,6 +6,8 @@ import { roleHome } from '../shared/auth/roleHome';
 import type { Session } from '../shared/auth/session';
 import { useDemoMode } from '../shared/auth/useDemoMode';
 import { BrandLockup } from '../shared/ui/Brand';
+import { LanguageSelector } from '../shared/ui/LanguageSelector';
+import { useI18n } from '../shared/i18n/I18nProvider';
 import type { Role } from '../shared/api/types';
 import {
   IconChart,
@@ -91,6 +93,19 @@ const NAV: NavGroup[] = [
   },
 ];
 
+const STAFF_LABELS: Record<string, [string, string]> = {
+  Cases: ['کیسز', 'ڪيس'], Reports: ['رپورٹس', 'رپورٽون'], Administration: ['انتظامیہ', 'انتظام'], Audit: ['آڈٹ', 'آڊٽ'], Demo: ['ڈیمو', 'ڊيمو'],
+  'Cases to review': ['جائزے کے لیے کیسز', 'جائزي لاءِ ڪيس'], Evaluation: ['جائزہ', 'جائزو'], Analytics: ['تجزیات', 'تجزيا'],
+  'Rules & Digital Twin': ['قواعد اور ڈیجیٹل ٹوئن', 'قاعدا ۽ ڊجيٽل ٽوئن'], Users: ['صارفین', 'استعمال ڪندڙ'], 'API keys': ['API کیز', 'API ڪيز'],
+  'Jobs & Health': ['کام اور نظام کی حالت', 'ڪم ۽ نظام جي حالت'], 'Audit events': ['آڈٹ واقعات', 'آڊٽ واقعا'], 'Consent audit': ['رضامندی کا آڈٹ', 'رضامندي آڊٽ'],
+  'Rule history': ['قواعد کی تاریخ', 'قاعدن جي تاريخ'], 'Device simulator': ['ڈیوائس سمیولیٹر', 'ڊوائيس سميوليٽر'], 'Mock services': ['نقلی سروسز', 'نقلي خدمتون'],
+  Menu: ['مینو', 'مينيو'], 'Real vs Simulated': ['حقیقی اور نقلی', 'حقيقي ۽ نقلي'], 'Sign out': ['لاگ آؤٹ', 'لاگ آئوٽ'],
+};
+
+function staffLabel(label: string, lang: 'ur' | 'sd' | 'en') {
+  return lang === 'en' ? label : STAFF_LABELS[label]?.[lang === 'ur' ? 0 : 1] ?? label;
+}
+
 function PageFallback() {
   return (
     <div className="py-10" role="status" aria-label="Loading console">
@@ -108,11 +123,12 @@ function StaffNavigation({ groups, current, onNavigate }: {
   current: NavItem;
   onNavigate?: () => void;
 }) {
+  const { lang } = useI18n();
   return (
     <nav aria-label="Workspace" className="space-y-5 px-3 py-4">
       {groups.map(({ title, items }) => (
         <div key={title}>
-          <p className="mb-1 px-3 text-meta font-medium text-ink-3">{title}</p>
+          <p className="mb-1 px-3 text-meta font-medium text-ink-3">{staffLabel(title, lang)}</p>
           <ul className="space-y-1">
             {items.map(({ to, label, Icon }) => (
               <li key={to}>
@@ -127,7 +143,7 @@ function StaffNavigation({ groups, current, onNavigate }: {
                   }`}
                 >
                   <Icon size={17} className="shrink-0" />
-                  <span>{label}</span>
+                  <span>{staffLabel(label, lang)}</span>
                 </Link>
               </li>
             ))}
@@ -144,6 +160,7 @@ function StaffApp({ children, session, groups, current }: {
   groups: NavGroup[];
   current: NavItem;
 }) {
+  const { lang, dir } = useI18n();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -157,13 +174,13 @@ function StaffApp({ children, session, groups, current }: {
   return (
     <div
       className="flex min-h-[calc(100dvh-var(--banner-h))] bg-paper text-ink"
-      dir="ltr"
-      lang="en"
+      dir={dir}
+      lang={lang}
     >
       <aside className="sticky top-[var(--banner-h)] hidden max-h-[calc(100dvh-var(--banner-h))] w-[232px] shrink-0 self-start overflow-y-auto border-e border-ink/[0.08] bg-card md:block">
         <div className="border-b border-ink/[0.08] px-5 py-4">
           <BrandLockup height={22} />
-          <p className="mt-1.5 text-meta text-ink-3">{roleWord(role)} workspace</p>
+          <p className="mt-1.5 text-meta text-ink-3">{lang === 'en' ? `${roleWord(role)} workspace` : `${role === 'OFFICER' ? (lang === 'ur' ? 'افسر' : 'آفيسر') : role === 'ADMIN' ? (lang === 'ur' ? 'منتظم' : 'منتظم') : (lang === 'ur' ? 'آڈیٹر' : 'آڊيٽر')} ${lang === 'ur' ? 'ورک اسپیس' : 'ڪم جي جاءِ'}`}</p>
         </div>
 
         <StaffNavigation groups={groups} current={current} />
@@ -191,15 +208,16 @@ function StaffApp({ children, session, groups, current }: {
               Menu
             </button>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-caption font-semibold text-ink">{current.label}</p>
+              <p className="truncate text-caption font-semibold text-ink">{staffLabel(current.label, lang)}</p>
               <p className="truncate text-meta text-ink-3">{session.tenant?.name ?? 'Platform scope'}</p>
             </div>
             <Link
               to="/transparency"
               className="press hidden rounded-control px-2 py-1.5 text-meta text-ink-2 hover:bg-raised hover:text-ink sm:inline-block"
             >
-              Real vs Simulated
+              {staffLabel('Real vs Simulated', lang)}
             </Link>
+            <LanguageSelector className="min-h-[40px]" />
             <button
               type="button"
               onClick={() => {
@@ -208,7 +226,7 @@ function StaffApp({ children, session, groups, current }: {
               className="press flex min-h-tap shrink-0 items-center gap-2 rounded-control px-2 text-meta text-ink-2 hover:bg-raised hover:text-ink"
             >
               <IconLogout size={16} />
-              Sign out
+              {staffLabel('Sign out', lang)}
             </button>
           </div>
           <div
