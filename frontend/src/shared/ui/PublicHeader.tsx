@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { roleHome } from '../auth/roleHome';
 import { useI18n } from '../i18n/I18nProvider';
-import { BrandMark } from './Brand';
+import { BrandLockup } from './Brand';
 import { LanguageSelector } from './LanguageSelector';
 import { IconChevron } from './Icons';
 
@@ -14,8 +14,9 @@ export function PublicHeader() {
   return (
     <header className="sticky top-[var(--banner-h)] z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
       <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2">
-        <BrandMark size={22} />
-        <span className="text-body-lg font-medium tracking-tight text-ink">{t('app.name')}</span>
+        <Link to={home} className="shrink-0" aria-label={t('app.name')}>
+          <BrandLockup height={22} alt={t('app.name')} />
+        </Link>
         <div className="ms-auto flex items-center gap-1">
           <LanguageSelector className="border-transparent bg-transparent px-2 hover:border-ink/[0.12]" />
           <Link

@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAudio } from '../shared/audio/AudioProvider';
 import { useAuth } from '../shared/auth/AuthProvider';
 import { useI18n } from '../shared/i18n/I18nProvider';
 import { useLiteMode } from '../shared/lite/LiteModeProvider';
 import { useOffline } from '../shared/offline/OfflineProvider';
-import { BrandMark } from '../shared/ui/Brand';
+import { BrandLockup } from '../shared/ui/Brand';
 import { LanguageSelector } from '../shared/ui/LanguageSelector';
 import { OfflinePill } from '../shared/ui/OfflinePill';
 import {
@@ -16,7 +17,7 @@ import {
   IconUsers,
 } from '../shared/ui/Icons';
 
-export function CitizenLayout() {
+export function CitizenLayout({ children }: { children?: ReactNode } = {}) {
   const { t } = useI18n();
   const { session, actFor, logout } = useAuth();
   const { lite, toggle: toggleLite } = useLiteMode();
@@ -24,11 +25,12 @@ export function CitizenLayout() {
   const { needsAttention, retryOne, discardOne } = useOffline();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const cleanPath = pathname.replace(/\/$/, '');
   const focused = pathname.startsWith('/c/apply/');
   const isHelper = session?.user.role === 'HELPER';
   const hasWorkspace = !isHelper || Boolean(actFor);
 
-  if (!hasWorkspace && pathname.replace(/\/$/, '') !== '/c/ask') {
+  if (!hasWorkspace && cleanPath !== '/c/ask' && cleanPath !== '/scam-check') {
     return <Navigate to="/h" replace />;
   }
 
@@ -46,8 +48,9 @@ export function CitizenLayout() {
     <div className="flex min-h-[calc(100dvh-var(--banner-h))] flex-col">
       <header className="sticky top-[var(--banner-h)] z-40 border-b border-ink/[0.08] bg-paper/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2">
-          <BrandMark size={24} />
-          <span className="text-body-lg font-semibold tracking-tight text-ink">{t('app.name')}</span>
+          <NavLink to={hasWorkspace ? '/c' : '/h'} className="shrink-0" aria-label={t('app.name')}>
+            <BrandLockup height={24} alt={t('app.name')} />
+          </NavLink>
           <OfflinePill compact />
           <div className="ms-auto flex items-center gap-1">
             <button
@@ -145,7 +148,7 @@ export function CitizenLayout() {
       </header>
 
       <main className="flex-1">
-        <Outlet />
+        {children ?? <Outlet />}
       </main>
 
       {!focused && (

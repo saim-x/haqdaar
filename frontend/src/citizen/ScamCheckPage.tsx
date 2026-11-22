@@ -106,7 +106,7 @@ function moodForVerdict(verdict: ScamVerdict): AvatarMood {
  * screenshot as `image`, or a voice note as `audio`. The voice tab used to be a
  * disabled button promising a future feature; it now records and uploads.
  */
-export function ScamCheckPage() {
+export function ScamCheckPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { t, lang } = useI18n();
   const [tab, setTab] = useState<Tab>('text');
   const [text, setText] = useState('');
@@ -194,7 +194,7 @@ export function ScamCheckPage() {
 
   return (
     <>
-      <PublicHeader />
+      {!embedded && <PublicHeader />}
       <div className="screen px-4 sm:px-6">
         <ScreenHeader
           title={t('scam.title')}

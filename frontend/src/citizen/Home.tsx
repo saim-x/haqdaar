@@ -132,20 +132,23 @@ export function CitizenHome() {
   ];
 
   return (
-    <div className="screen">
-      <header className="enter enter-1">
-        <h1 className="text-title font-medium leading-[1.35] text-ink">{programName}</h1>
-        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption text-ink-3">
-          <span className="text-ink-2">{displayName}</span>
-          {identity && (
-            <>
-              <span aria-hidden className="text-ink-3/60">
-                ·
-              </span>
-              <span className="num font-mono">{identity}</span>
-            </>
-          )}
-        </p>
+    <div className="screen pt-4">
+      <header className="enter enter-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-meta font-medium text-accent-ink">{t('home.greeting')}</p>
+          <h1 className="mt-0.5 text-title-lg font-semibold leading-[1.3] text-ink">{programName}</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption text-ink-3">
+            <span className="font-medium text-ink-2">{displayName}</span>
+            {identity && (
+              <>
+                <span aria-hidden className="text-ink-3/60">
+                  ·
+                </span>
+                <span className="num font-mono">{identity}</span>
+              </>
+            )}
+          </p>
+        </div>
       </header>
 
       {error && (
@@ -158,7 +161,7 @@ export function CitizenHome() {
       )}
 
       {/* The lead surface. One accent, one primary action. */}
-      <section className="card enter enter-2 mt-5 overflow-hidden border-accent/25">
+      <section className="card enter enter-2 mt-4 overflow-hidden border-accent/25">
         {cases.isLoading || (programs.isLoading && !activeCase) ? (
           <p className="px-5 py-6 text-caption text-ink-2" role="status">{t('common.loading')}</p>
         ) : loadError && !activeCase ? (
@@ -235,36 +238,37 @@ export function CitizenHome() {
       <AvatarHero guide={guide} className="enter enter-3 mt-4" />
 
       {/* Support tiles. Two columns, equal height, one listen affordance each. */}
-      <h2 className="section-label enter enter-4 mb-2 mt-6">{t('home.helpAndTools')}</h2>
+      <h2 className="section-label enter enter-4 mb-2.5 mt-5">{t('home.helpAndTools')}</h2>
       <ul className="enter enter-4 grid grid-cols-2 gap-3">
         {rows.map(({ key, to, label, hint, Icon }) => (
-          <li key={key} className="card flex flex-col overflow-hidden">
-            <Link
-              to={to}
-              className="press flex min-w-0 flex-1 flex-col p-3.5 text-start transition-colors hover:bg-raised/50"
-            >
+          <li key={key} className="card relative flex flex-col overflow-hidden transition-colors hover:border-accent/30">
+            <div className="flex items-start justify-between gap-1 px-3.5 pt-3">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-accent-wash text-accent-ink">
                 <Icon size={18} />
               </span>
-              <span className="mt-2.5 block text-body font-medium leading-[1.45] text-ink">
-                {label}
-              </span>
-              <span className="mt-1 block text-meta leading-[1.6] text-ink-3">{hint}</span>
-            </Link>
-            <div className="flex justify-end px-1.5 pb-1.5">
               <AudioButton
                 audioKey={key === 'ask' ? 'ask_intro' : isHelper && key === 'data' ? undefined : `home_${key}`}
                 label={`${t('common.listen')} · ${label}`}
                 text={hint}
                 variant="quiet"
+                className="-me-1.5 -mt-1.5"
               />
             </div>
+            <Link
+              to={to}
+              className="press flex min-w-0 flex-1 flex-col px-3.5 pb-3.5 pt-2 text-start hover:bg-raised/40"
+            >
+              <span className="block text-body font-semibold leading-[1.4] text-ink">
+                {label}
+              </span>
+              <span className="mt-1 block text-meta leading-[1.55] text-ink-3">{hint}</span>
+            </Link>
           </li>
         ))}
       </ul>
 
       {!lite && (
-        <p className="enter enter-5 mt-6 text-caption leading-[1.7] text-ink-3">{t('home.offlineNote')}</p>
+        <p className="enter enter-5 mt-5 text-center text-meta leading-[1.7] text-ink-3">{t('home.offlineNote')}</p>
       )}
     </div>
   );

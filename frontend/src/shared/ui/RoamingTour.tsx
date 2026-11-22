@@ -41,6 +41,10 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   const [seen, setSeen] = useState(() => {
     try { return localStorage.getItem(storageKey) === 'seen'; } catch { return false; }
   });
+  const dismissedKey = `${storageKey}:dismissed`;
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(dismissedKey) === '1'; } catch { return false; }
+  });
   const page = step === null ? null : pages[step] ?? pages[0];
 
   useEffect(() => {
@@ -130,6 +134,12 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
     try { localStorage.setItem(storageKey, 'seen'); } catch { /* Storage may be disabled. */ }
   }
 
+  function dismissStrip() {
+    setDismissed(true);
+    markSeen();
+    try { localStorage.setItem(dismissedKey, '1'); } catch { /* Storage may be disabled. */ }
+  }
+
   function go(index: number) {
     const next = pages[index];
     if (!next) return;
@@ -171,31 +181,41 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
 
   return (
     <>
-      {route === home && (
-        <section className="mx-auto w-full max-w-[560px] px-4 pt-3" aria-label={pick('حق دار کا تعارف', 'Haqdaar tour')}>
-          <div className={seen ? 'flex justify-end' : 'flex flex-wrap items-center justify-between gap-x-3 rounded-control border border-ink/10 bg-card px-3'}>
+      {route === home && !dismissed && (
+        <section className="mx-auto w-full max-w-[560px] px-4 pt-2.5" aria-label={pick('حق دار کا تعارف', 'Haqdaar tour')}>
+          <div className={seen
+            ? 'flex items-center justify-end gap-1'
+            : 'flex flex-wrap items-center justify-between gap-x-2 rounded-control border border-ink/10 bg-card px-3 py-1'
+          }>
             {!seen && (
               <div className="flex items-center gap-2">
                 {!lite && (
-                  <img src="/icons/haqdaar-tour-guide.webp" width="36" height="36" alt="" className="h-9 w-9 rounded-full bg-accent-wash object-contain" />
+                  <img src="/icons/haqdaar-tour-guide.webp" width="32" height="32" alt="" className="h-8 w-8 rounded-full bg-accent-wash object-contain" />
                 )}
-                <p className="text-body font-medium text-ink">{pick('پہلی بار آئے ہیں؟', 'First time here?')}</p>
+                <p className="text-caption font-medium text-ink">{pick('پہلی بار آئے ہیں؟', 'First time here?')}</p>
               </div>
             )}
-            <button ref={launcher} type="button" className="press min-h-tap rounded-control px-2 text-caption font-medium text-accent-ink hover:bg-accent-wash"
-              onClick={() => {
-                if (!dialog.current) return;
-                dialog.current.returnValue = '';
-                dialog.current.showModal();
-                go(0);
-              }}>
-              {seen ? pick('تعارف دوبارہ دیکھیں', 'Replay tour') : pick('مختصر تعارف دیکھیں', 'Take a quick tour')}
-            </button>
-            {!seen && (
-              <button type="button" className="press min-h-tap rounded-control px-2 text-meta text-ink-3" onClick={() => { markSeen(); launcher.current?.focus(); }}>
-                {pick('ابھی نہیں', 'Skip for now')}
+            <div className="ms-auto flex items-center gap-0.5">
+              <button ref={launcher} type="button" className="press min-h-tap rounded-control px-2.5 text-caption font-medium text-accent-ink hover:bg-accent-wash"
+                onClick={() => {
+                  if (!dialog.current) return;
+                  dialog.current.returnValue = '';
+                  dialog.current.showModal();
+                  go(0);
+                }}>
+                {seen ? pick('تعارف دوبارہ دیکھیں', 'Replay tour') : pick('مختصر تعارف دیکھیں', 'Take a quick tour')}
               </button>
-            )}
+              <button
+                type="button"
+                onClick={dismissStrip}
+                aria-label={t('common.close')}
+                title={t('common.close')}
+                data-testid="tour-dismiss"
+                className="press grid h-tap w-tap shrink-0 place-items-center rounded-control text-ink-3 hover:bg-raised hover:text-ink"
+              >
+                <IconCross size={15} />
+              </button>
+            </div>
           </div>
         </section>
       )}

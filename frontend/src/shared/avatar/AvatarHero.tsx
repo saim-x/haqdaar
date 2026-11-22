@@ -11,7 +11,6 @@
  * lifecycle is duplicated here, so the two surfaces cannot drift apart.
  */
 
-import { useId } from 'react';
 import { useI18n } from '../i18n/I18nProvider';
 import { IconMic, IconPlay } from '../ui/Icons';
 import { TapButton } from '../ui/TapButton';
@@ -26,7 +25,6 @@ interface AvatarHeroProps {
 
 export function AvatarHero({ guide, className = '' }: AvatarHeroProps) {
   const { t, pick } = useI18n();
-  const noticeId = useId();
 
   if (!guide.available) return null;
 
@@ -43,31 +41,22 @@ export function AvatarHero({ guide, className = '' }: AvatarHeroProps) {
 
   return (
     <section className={`card overflow-hidden ${className}`} data-testid="avatar-hero">
-      <div className="flex items-start gap-3.5 p-4">
-        {/* A squircle, not a circle: the round portrait is the default every
-            product reaches for, and this one is a character, not an account. */}
-        <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-panel border border-accent/20">
+      <div className="flex items-center gap-3.5 p-4">
+        <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-panel border border-accent/25 bg-raised shadow-hair">
           <GuideFace showLevel={false} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-meta text-ink-3">{t('avatar.governance')}</p>
-          <h2 className="mt-0.5 text-lead font-medium leading-[1.4] text-ink">{personaName}</h2>
-          <p className="mt-1 text-caption leading-[1.7] text-ink-2">{t('home.guidePitch')}</p>
+          <p className="text-meta font-medium text-accent-ink">{t('avatar.governance')}</p>
+          <h2 className="mt-0.5 text-lead font-semibold leading-[1.35] text-ink">{personaName}</h2>
+          <p className="mt-0.5 text-caption leading-[1.6] text-ink-2">{t('home.guidePitch')}</p>
         </div>
       </div>
-
-      {offersMicrophone && (
-        <p id={noticeId} className="px-4 pb-2.5 text-meta leading-[1.7] text-ink-3">
-          {t('avatar.micPrivacy')}
-        </p>
-      )}
 
       <div className="px-4 pb-4">
         <TapButton
           size="primary"
           block
           onClick={() => guide.start(offersMicrophone)}
-          aria-describedby={offersMicrophone ? noticeId : undefined}
           data-testid="avatar-start"
           icon={offersMicrophone ? <IconMic size={18} /> : <IconPlay size={18} />}
         >
@@ -86,7 +75,7 @@ export function AvatarHero({ guide, className = '' }: AvatarHeroProps) {
         guide.conversational && (
           <p
             data-testid="avatar-live-badge"
-            className="flex items-center gap-1.5 border-t border-ink/[0.08] px-4 py-2 text-meta text-accent-ink"
+            className="flex items-center gap-1.5 border-t border-ink/[0.08] bg-raised/35 px-4 py-2 text-meta text-accent-ink"
           >
             <span className="live-dot bg-accent" aria-hidden />
             {t('avatar.liveConversation')}

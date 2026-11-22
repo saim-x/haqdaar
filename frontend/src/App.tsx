@@ -62,6 +62,19 @@ function NotFound() {
   );
 }
 
+function ScamCheckRoute() {
+  const { session } = useAuth();
+  const role = session?.user.role;
+  if (role === 'CITIZEN' || role === 'HELPER') {
+    return (
+      <CitizenLayout>
+        <ScamCheckPage embedded />
+      </CitizenLayout>
+    );
+  }
+  return <ScamCheckPage />;
+}
+
 export default function App() {
   const location = useLocation();
   const { session } = useAuth();
@@ -87,8 +100,8 @@ export default function App() {
             }
           />
 
-          {/* Public - zero login (F-14, F-31). */}
-          <Route path="/scam-check" element={<ScamCheckPage />} />
+          {/* Public - zero login (F-14, F-31); keeps citizen nav when signed in. */}
+          <Route path="/scam-check" element={<ScamCheckRoute />} />
           <Route path="/transparency" element={<TransparencyPage />} />
 
           {/* Citizen PWA */}
