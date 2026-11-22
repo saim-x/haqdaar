@@ -295,6 +295,9 @@ cp .env.example .env          # HOST_DB_PORT=5433, HOST_API_PORT=8010 by default
 docker compose up --build     # db + api (auto-migrates & seeds) + worker
 ```
 
+Public deployment: <https://haqdaar-t2wr.onrender.com> — a free Render instance, so the
+first request after an idle period takes ~50 s to wake. The URLs below are the local ones.
+
 | Endpoint / Surface | URL |
 |---|---|
 | Web App (PWA + Staff Consoles) | http://127.0.0.1:8010/ |
@@ -331,7 +334,7 @@ Reset demo data cleanly anytime: `docker compose exec api python -m app.mocks.se
 | Architecture Blueprint & ADRs | [`docs/00-index.md`](docs/00-index.md) · [`docs/17-decision-log.md`](docs/17-decision-log.md) |
 | Backend Platform, Engine, AI & Mocks | [`backend/app/`](backend/app/) |
 | Frontend PWA & Staff Consoles | [`frontend/src/`](frontend/src/) |
-| Live Deployment | `<!-- PLACEHOLDER: deployed URL -->` |
+| Live Deployment | <https://haqdaar-t2wr.onrender.com> |
 | Demo Video & Slides | `<!-- PLACEHOLDER: video & slides links -->` |
 
 ```text
