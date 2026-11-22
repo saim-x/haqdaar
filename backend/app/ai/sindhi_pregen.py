@@ -21,6 +21,8 @@ from app.config import get_settings
 
 FRONTEND = Path(__file__).resolve().parents[3] / "frontend"
 OUTPUT = FRONTEND / "public/audio/sd"
+# Store MP3 bytes as app assets so browser download managers see non-media URLs.
+CLIP_SUFFIX = ".clip"
 
 PROMPTS = {
     "wizard_consent": "درخواست جانچڻ لاءِ سماجي بهبود کاتي کي توهان جي سڃاڻپ، گهريلو معلومات ۽ دستاويز ڏسڻ جي اجازت ڏيو. توهان ڪنهن به وقت اجازت واپس وٺي سگهو ٿا.",
@@ -149,7 +151,7 @@ def main() -> int:
     failed = 0
     for text, names in groups.items():
         digest = hashlib.sha256(text.encode()).hexdigest()
-        paths = [OUTPUT / f"{name}.mp3" for name in names]
+        paths = [OUTPUT / f"{name}{CLIP_SUFFIX}" for name in names]
         existing = next(
             (
                 (name, path)
@@ -192,7 +194,7 @@ def main() -> int:
         save_manifest()
     ready = sum(
         manifest.get(name, {}).get("sha256") == hashlib.sha256(text.encode()).hexdigest()
-        and (OUTPUT / f"{name}.mp3").is_file()
+        and (OUTPUT / f"{name}{CLIP_SUFFIX}").is_file()
         for name, text in prompts.items()
     )
     print(f"{ready}/{len(prompts)} Sindhi clips ready", flush=True)

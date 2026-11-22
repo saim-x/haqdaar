@@ -69,7 +69,7 @@ export default defineConfig({
         globPatterns: [
           '**/*.{js,css,html,svg,png,webp,woff2,json}',
           'audio/ur/{home_apply,offline_saved,wizard_queued,wizard_welcome,scam_intro}.mp3',
-          'audio/sd/{home_apply,offline_saved,wizard_queued,wizard_welcome,scam_intro}.mp3',
+          'audio/sd/{home_apply,offline_saved,wizard_queued,wizard_welcome,scam_intro}.clip',
         ],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
@@ -104,7 +104,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\/audio\/sd\/.*\.mp3$/,
+            urlPattern: /\/audio\/sd\/.*\.clip$/,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'sindhi-audio',

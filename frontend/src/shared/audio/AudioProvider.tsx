@@ -9,7 +9,7 @@ import { audioUrl, loadManifest, resolveAudioKey } from './manifest';
  * One shared <audio> element for the whole app.
  *
  * Playback order for a prompt:
- *   1. pre-cached static MP3 from `public/audio/ur/<key>.mp3` (0 ms, works offline)
+ *   1. a saved prompt from `public/audio`, available offline when cached
  *   2. dynamic TTS via `POST /voice/tts` for signed-in users
  *   3. browser TTS when a clip or server TTS is unavailable
  */
@@ -74,9 +74,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const playAudioResponse = useCallback(
-    async (res: Response, signal: AbortSignal): Promise<boolean> => {
-      if (!res.ok || !res.headers.get('Content-Type')?.startsWith('audio/')) return false;
-      const blob = await res.blob();
+    async (res: Response, signal: AbortSignal, savedSindhiClip = false): Promise<boolean> => {
+      if (!res.ok) return false;
+      let blob: Blob;
+      if (savedSindhiClip) {
+        // Static files may be served as generic bytes. Check the MP3 signature
+        // before giving the local blob its media type (missing files can return HTML).
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        const hasTag = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
+        const hasFrame = bytes[0] === 0xff && ((bytes[1] ?? 0) & 0xe0) === 0xe0;
+        if (bytes.length < 4 || (!hasTag && !hasFrame)) return false;
+        blob = new Blob([bytes], { type: 'audio/mpeg' });
+      } else {
+        if (!res.headers.get('Content-Type')?.startsWith('audio/')) return false;
+        blob = await res.blob();
+      }
       if (signal.aborted || blob.size === 0) return false;
 
       const url = URL.createObjectURL(blob);
@@ -186,8 +198,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       let text = fallbackText ?? null;
       if (key && locale === 'sd' && /^[a-z0-9_]+$/.test(key)) {
         try {
-          const clip = await fetch(`/audio/sd/${key}.mp3`, { signal });
-          if (clip.headers.get('Content-Type')?.startsWith('audio/') && await playAudioResponse(clip, signal)) return;
+          // Keep the network request an app asset. Only the local blob is audio.
+          const clip = await fetch(`/audio/sd/${key}.clip`, { signal });
+          if (await playAudioResponse(clip, signal, true) || signal.aborted) return;
         } catch { /* Dynamic speech or a device voice may still be available. */ }
       }
       if (key && locale !== 'sd') {
