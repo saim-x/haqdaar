@@ -107,8 +107,7 @@ export function RoamingTour({ accountId, role, home, pages }: { accountId: strin
   useEffect(() => {
     if (!running) return;
     panel.current?.querySelector('button')?.focus({ preventScroll: true });
-    return stop;
-  }, [running, stop]);
+  }, [running]);
 
   function markSeen() {
     setSeen(true);
