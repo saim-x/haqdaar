@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from app.ai import guardrails, text_index
-from app.ai.provider import EMBEDDING_DIM, cosine, get_provider, telemetry
+from app.ai.provider import EMBEDDING_DIM, _hash_embedding, cosine, get_provider, telemetry
 from app.ai.text_index import (
     CHUNK_MAX_TOKENS,
     CHUNK_MIN_TOKENS,
@@ -112,6 +112,7 @@ class RetrievedChunk:
     dense_score: float = 0.0
     lexical_score: float = 0.0
     hybrid_score: float = 0.0
+    used_hash_embeddings: bool = False
 
     def citation(self) -> dict[str, Any]:
         return {
@@ -236,8 +237,6 @@ def _embed(text: str) -> list[float]:
         vector = provider.embed_texts([text])[0]
     except Exception as exc:  # pragma: no cover - provider already degrades
         logger.warning("embedding failed, using local hash: %s", exc)
-        from app.ai.provider import _hash_embedding
-
         vector = _hash_embedding(text)
     return [float(value) for value in vector]
 
@@ -610,7 +609,15 @@ def retrieve(
         return []
 
     query_vector = _embed(question)
-    fallback_vector: list[float] | None = None
+    # Compare the entire result set in one vector space. This also handles an
+    # outage with a live index, or a live provider with an index built offline.
+    use_hash_embeddings = len(query_vector) == EMBEDDING_DIM or any(
+        len(row["embedding"]) != len(query_vector)
+        for row in rows
+        if row["embedding"] is not None
+    )
+    if use_hash_embeddings and len(query_vector) != EMBEDDING_DIM:
+        query_vector = _hash_embedding(question)
     lexical = _lexical_scores(db, question, [row["id"] for row in rows])
 
     scored: list[RetrievedChunk] = []
@@ -618,16 +625,12 @@ def retrieve(
         embedding = row["embedding"]
         if embedding is None:
             continue
-        vector = [float(value) for value in embedding]
-        if len(vector) != len(query_vector):
-            # DB was seeded in fake mode (64-dim) while running live (1536-dim) or vice versa.
-            if fallback_vector is None or len(fallback_vector) != len(vector):
-                from app.ai.provider import FakeDeterministicProvider
-
-                fallback_vector = FakeDeterministicProvider().embed_texts([question])[0]
-            dense = cosine(fallback_vector, vector) if len(fallback_vector) == len(vector) else 0.0
-        else:
-            dense = cosine(query_vector, vector)
+        vector = (
+            _hash_embedding(row["content"])
+            if use_hash_embeddings
+            else [float(value) for value in embedding]
+        )
+        dense = cosine(query_vector, vector)
         dense = max(0.0, min(1.0, dense))
         lex = lexical.get(str(row["id"]), 0.0)
         hybrid = DENSE_WEIGHT * dense + LEXICAL_WEIGHT * lex
@@ -642,6 +645,7 @@ def retrieve(
                 dense_score=round(dense, 4),
                 lexical_score=round(lex, 4),
                 hybrid_score=round(hybrid, 4),
+                used_hash_embeddings=use_hash_embeddings,
             )
         )
 
@@ -765,11 +769,12 @@ def ask(
 
     chunks = retrieve(db, cleaned, program_id=program_id, top_k=top_k)
     top_score = chunks[0].hybrid_score if chunks else 0.0
-    threshold = abstain_threshold()
+    using_hash_embeddings = _is_fake_mode() or bool(chunks and chunks[0].used_hash_embeddings)
+    threshold = ABSTAIN_THRESHOLD_FAKE if using_hash_embeddings else ABSTAIN_THRESHOLD_LIVE
     coverage = _corpus_coverage(cleaned)
 
     low_coverage = coverage < MIN_CORPUS_COVERAGE
-    if not _is_fake_mode() and top_score >= threshold + 0.12:
+    if not using_hash_embeddings and top_score >= threshold + 0.12:
         # Live dense embeddings handle Roman-Urdu/Sindhi/paraphrased queries whose surface tokens
         # may not appear verbatim in static markdown files.
         low_coverage = False

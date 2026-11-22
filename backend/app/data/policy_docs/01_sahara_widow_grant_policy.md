@@ -75,8 +75,9 @@ request is **not** an accusation of forgery.
 
 ## 4. Payout Schedule and Amount
 
-The grant is paid monthly. The base amount is **PKR 12,000 per month**. The
-payment is initiated automatically once the application is approved, and the
+The grant is paid monthly. Under the prototype's initial rules, the base amount
+is **PKR 12,000 per month**, plus **PKR 1,000 per child under 18** for up to five
+children. Payment starts automatically once the application is approved, and the
 citizen receives an SMS with a verification code when the money leaves the
 department. Payment normally reaches a mobile wallet within one working day.
 
@@ -84,7 +85,9 @@ If a payment fails - for example because the wallet account is dormant or the
 account title does not match the applicant's name - the case is flagged for an
 officer. The citizen is never asked to pay a fee to release the grant.
 
-گرانٹ ماہانہ دی جاتی ہے۔ بنیادی رقم بارہ ہزار روپے ماہانہ ہے۔ منظوری کے بعد ادائیگی
+گرانٹ ماہانہ دی جاتی ہے۔ اس نمونے کے ابتدائی قواعد کے مطابق بنیادی رقم بارہ ہزار
+روپے ماہانہ ہے۔ اٹھارہ سال سے کم عمر ہر بچے کے لیے ایک ہزار روپے اضافی ملتے ہیں،
+زیادہ سے زیادہ پانچ بچوں تک۔ منظوری کے بعد ادائیگی
 خودکار طور پر شروع ہو جاتی ہے اور رقم بھیجتے وقت شہری کو تصدیقی کوڈ کے ساتھ پیغام
 بھیجا جاتا ہے۔ اگر والٹ اکاؤنٹ بند ہو یا اکاؤنٹ کا نام درخواست گزار کے نام سے مختلف
 ہو تو ادائیگی ناکام ہو جاتی ہے اور کیس افسر کو بھیج دیا جاتا ہے۔ گرانٹ جاری کرنے کے
