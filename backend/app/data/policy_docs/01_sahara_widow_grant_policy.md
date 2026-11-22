@@ -123,7 +123,26 @@ who made the original decision.
 ہے۔ غلط مسترد ہونے کی صورت میں تیس دن کے اندر ایک اپیل کی جا سکتی ہے، جسے پہلے
 افسر کے علاوہ کسی دوسرے افسر کا جائزہ لے گا۔
 
-## 7. What This Grant Is Not
+## 7. If You Do Not Have a CNIC
+
+If you do not have a CNIC, do not enter another person's number or make one up.
+This prototype cannot complete a Sahara application without the applicant's own
+valid CNIC and a readable photograph of its front side. Ask a community helper or
+department officer for assistance, and contact NADRA for current instructions on
+first-time registration. Haqdaar cannot issue a CNIC or promise that an
+application can proceed without one. Missing identity information must be
+handled by a person; the system must not automatically reject the applicant.
+
+اگر آپ کے پاس شناختی کارڈ نہیں ہے تو کسی دوسرے شخص کا نمبر نہ لکھیں اور نہ ہی
+فرضی نمبر بنائیں۔ اس نمونے کے نظام میں درخواست گزار کے اپنے کارآمد شناختی کارڈ اور
+اس کے سامنے والے حصے کی صاف تصویر کے بغیر سہارا گرانٹ کی درخواست مکمل نہیں ہو سکتی۔
+مدد کے لیے کمیونٹی مددگار یا محکمے کے افسر سے بات کریں، اور پہلی بار شناختی کارڈ
+بنوانے کی تازہ ہدایات کے لیے نادرا سے رابطہ کریں۔ حقدار شناختی کارڈ جاری نہیں کر
+سکتا اور نہ ہی اس کے بغیر درخواست آگے بڑھنے کی ضمانت دے سکتا ہے۔ شناختی معلومات نہ
+ہونے کی صورت میں انسان کو مدد کرنی چاہیے؛ نظام خودکار طور پر درخواست مسترد نہیں
+کرے گا۔
+
+## 8. What This Grant Is Not
 
 The Sahara Widow Grant is not a loan and does not have to be repaid. It is not
 inherited and it does not pass to the children automatically. It does not require
