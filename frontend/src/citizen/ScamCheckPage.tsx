@@ -41,6 +41,33 @@ const VERDICT: Record<
   LIKELY_SCAM: { band: 'bg-negative', Icon: IconWarning, key: 'scam.verdict.LIKELY_SCAM' },
 };
 
+const SAMPLE_MESSAGES = [
+  {
+    label: ['Suspicious: fee request', 'مشکوک: فیس مانگنا', 'شڪي: فيس جي گهر'],
+    text: [
+      'MOCK SAMPLE: Your relief grant is ready. Pay a processing fee today and send your PIN to claim it.',
+      'نمونہ پیغام: آپ کی امدادی رقم تیار ہے۔ وصول کرنے کے لیے آج فیس دیں اور اپنا PIN بھیجیں۔',
+      'نموني پيغام: توهان جي امدادي رقم تيار آهي. وٺڻ لاءِ اڄ فيس ڏيو ۽ پنهنجو PIN موڪليو.',
+    ],
+  },
+  {
+    label: ['Uncertain: vague payment notice', 'غیر واضح: ادائیگی کا پیغام', 'غير واضح: ادائيگيءَ جو پيغام'],
+    text: [
+      'MOCK SAMPLE: A payment update is available. Contact the local office for more information.',
+      'نمونہ پیغام: ادائیگی کی تازہ اطلاع موجود ہے۔ مزید معلومات کے لیے مقامی دفتر سے رابطہ کریں۔',
+      'نموني پيغام: ادائيگيءَ جي نئين ڄاڻ موجود آهي. وڌيڪ ڄاڻ لاءِ مقامي آفيس سان رابطو ڪريو.',
+    ],
+  },
+  {
+    label: ['Safer: no payment or PIN request', 'نسبتاً محفوظ: فیس یا PIN نہیں مانگا', 'وڌيڪ محفوظ: فيس يا PIN نه گهريو'],
+    text: [
+      'MOCK SAMPLE: Your application is under review. Check its status in the official Haqdaar app. Never share your PIN.',
+      'نمونہ پیغام: آپ کی درخواست زیرِ جائزہ ہے۔ سرکاری حق دار ایپ میں حالت دیکھیں۔ اپنا PIN کسی کو نہ دیں۔',
+      'نموني پيغام: توهان جي درخواست جاچي پئي وڃي. حق دار ايپ ۾ حالت ڏسو. پنهنجو PIN ڪنهن سان نه ونڊيو.',
+    ],
+  },
+];
+
 /**
  * The guide's tone for a verdict. `warning` for a scam and `not_sure` for
  * `CANNOT_TELL` are the two that matter: the first is a shield, the second is an
@@ -187,6 +214,19 @@ export function ScamCheckPage() {
 
         {tab === 'text' && (
           <section className="card enter enter-3 p-5">
+            <div className="mb-3 flex flex-wrap gap-2">
+              {SAMPLE_MESSAGES.map((sample) => (
+                <button
+                  key={sample.label[0]}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setText(sample.text[lang === 'en' ? 0 : lang === 'sd' ? 2 : 1])}
+                  className="press min-h-tap rounded-control border border-ink/[0.12] bg-raised px-3 text-meta font-medium text-ink-2 hover:bg-card disabled:opacity-50"
+                >
+                  {sample.label[lang === 'en' ? 0 : lang === 'sd' ? 2 : 1]}
+                </button>
+              ))}
+            </div>
             <textarea
               id="scam-text"
               rows={5}
